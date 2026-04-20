@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Pool de la Porra del Mundial 2026 - Listado de todos los partidos con resultados de las predicciones">
+  <title>Pool - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="main-nav">
+    <div class="nav-inner">
+      <a href="worldcup.html" class="nav-logo">
+        <span class="nav-logo-icon">⚽</span>
+        <span class="nav-logo-text">Mundial 2026</span>
+      </a>
+      <div class="nav-links">
+        <a href="worldcup.html" class="nav-link">WORLDCUP</a>
+        <a href="pool.html" class="nav-link active">Pool</a>
+        <a href="fixture.html" class="nav-link">Fixture</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Header -->
+  <header class="page-header">
+    <h1>📋 Pool – Administrador de Porra</h1>
+    <p class="subtitle">Listado completo de partidos con las predicciones de cada jugador</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="group-card" style="overflow-x:auto;">
+      <div class="group-header">
+        <div class="group-letter" style="background: var(--gradient-gold);">📋</div>
+        <div>
+          <div class="group-name">Pool de predicciones</div>
+          <div class="group-teams-summary">Se rellena automáticamente con los datos de WORLDCUP</div>
+        </div>
+      </div>
+      <div style="padding: 0;">
+        <table class="pool-table" id="poolTable">
+          <thead>
+            <tr>
+              <th style="width:70px">ID</th>
+              <th style="width:280px">Partido</th>
+              <th style="width:90px">Resultado</th>
+              <th>Jornada</th>
+            </tr>
+          </thead>
+          <tbody id="poolBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Instructions Card -->
+    <div class="group-card" style="margin-top:2rem;">
+      <div class="group-header">
+        <div class="group-letter" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">📝</div>
+        <div>
+          <div class="group-name">Instrucciones para el Administrador</div>
+        </div>
+      </div>
+      <div style="padding: 1.5rem; color: var(--text-secondary); font-size: 0.88rem; line-height: 1.8;">
+        <p>· Si hacéis todo el Mundial de golpe, incluido el predictor, copiar de la C5 a la C258 y pegar valores en la plantilla de Administrador.</p>
+        <p>· Si hacéis toda la fase de grupos de golpe y las eliminatorias aparte, copiar primero de la C5 a la C161 y pegar valores en la plantilla de Administrador. Y también copiar y pegar valores de la C253 a la C258.</p>
+        <p>· Si hacéis jornada a jornada seguir las instrucciones de cada jornada.</p>
+        <p style="margin-top: 1rem; color: var(--accent-gold);">· Para la primera jornada copiar de la C5 a la C29.</p>
+        <p style="color: var(--accent-cyan);">· Para la segunda jornada copiar de la C30 a la C53.</p>
+        <p style="color: var(--accent-green);">· Para la tercera jornada copiar de la C54 a la C161.</p>
+      </div>
+    </div>
+  </main>
+
+  <div class="page-footer-spacer" style="height:2rem;"></div>
+
+<script>
+// Pool data from the Excel
+const poolMatches = [
+  // ===== FASE DE GRUPOS =====
+  // Jornada 1
+  { section: 'FASE DE GRUPOS - Jornada 1' },
+  { id: 'A1', match: 'México-Sudáfrica' },
+  { id: 'A1', match: 'Corea del Sur-República Checa' },
+  { id: 'B1', match: 'Canadá-Bosnia y Herzegovina' },
+  { id: 'B1', match: 'Catar-Suiza' },
+  { id: 'C1', match: 'Brasil-Marruecos' },
+  { id: 'C1', match: 'Haití-Escocia' },
+  { id: 'D1', match: 'Estados Unidos-Paraguay' },
+  { id: 'D1', match: 'Australia-Turquía' },
+  { id: 'E1', match: 'Alemania-Curazao' },
+  { id: 'E1', match: 'Costa de Marfil-Ecuador' },
+  { id: 'F1', match: 'Países Bajos-Japón' },
+  { id: 'F1', match: 'Suecia-Túnez' },
+  { id: 'G1', match: 'Bélgica-Egipto' },
+  { id: 'G1', match: 'Irán-Nueva Zelanda' },
+  { id: 'H1', match: 'España-Cabo Verde' },
+  { id: 'H1', match: 'Arabia Saudita-Uruguay' },
+  { id: 'I1', match: 'Francia-Senegal' },
+  { id: 'I1', match: 'Irak-Noruega' },
+  { id: 'J1', match: 'Argentina-Argelia' },
+  { id: 'J1', match: 'Austria-Jordania' },
+  { id: 'K1', match: 'Portugal-RD Congo' },
+  { id: 'K1', match: 'Uzbekistán-Colombia' },
+  { id: 'L1', match: 'Inglaterra-Croacia' },
+  { id: 'L1', match: 'Ghana-Panamá' },
+  // Jornada 2
+  { section: 'FASE DE GRUPOS - Jornada 2' },
+  { id: 'A2', match: 'República Checa-Sudáfrica' },
+  { id: 'A2', match: 'México-Corea del Sur' },
+  { id: 'B2', match: 'Suiza-Bosnia y Herzegovina' },
+  { id: 'B2', match: 'Canadá-Catar' },
+  { id: 'C2', match: 'Escocia-Marruecos' },
+  { id: 'C2', match: 'Brasil-Haití' },
+  { id: 'D2', match: 'Estados Unidos-Australia' },
+  { id: 'D2', match: 'Turquía-Paraguay' },
+  { id: 'E2', match: 'Alemania-Costa de Marfil' },
+  { id: 'E2', match: 'Ecuador-Curazao' },
+  { id: 'F2', match: 'Países Bajos-Suecia' },
+  { id: 'F2', match: 'Túnez-Japón' },
+  { id: 'G2', match: 'Bélgica-Irán' },
+  { id: 'G2', match: 'Nueva Zelanda-Egipto' },
+  { id: 'H2', match: 'España-Arabia Saudita' },
+  { id: 'H2', match: 'Uruguay-Cabo Verde' },
+  { id: 'I2', match: 'Francia-Irak' },
+  { id: 'I2', match: 'Noruega-Senegal' },
+  { id: 'J2', match: 'Argentina-Austria' },
+  { id: 'J2', match: 'Jordania-Argelia' },
+  { id: 'K2', match: 'Portugal-Uzbekistán' },
+  { id: 'K2', match: 'Colombia-RD Congo' },
+  { id: 'L2', match: 'Inglaterra-Ghana' },
+  { id: 'L2', match: 'Panamá-Croacia' },
+  // Jornada 3
+  { section: 'FASE DE GRUPOS - Jornada 3' },
+  { id: 'A3', match: 'República Checa-México' },
+  { id: 'A3', match: 'Sudáfrica-Corea del Sur' },
+  { id: 'B3', match: 'Suiza-Canadá' },
+  { id: 'B3', match: 'Bosnia y Herzegovina-Catar' },
+  { id: 'C3', match: 'Escocia-Brasil' },
+  { id: 'C3', match: 'Marruecos-Haití' },
+  { id: 'D3', match: 'Turquía-Estados Unidos' },
+  { id: 'D3', match: 'Paraguay-Australia' },
+  { id: 'E3', match: 'Curazao-Costa de Marfil' },
+  { id: 'E3', match: 'Ecuador-Alemania' },
+  { id: 'F3', match: 'Japón-Suecia' },
+  { id: 'F3', match: 'Túnez-Países Bajos' },
+  { id: 'G3', match: 'Egipto-Irán' },
+  { id: 'G3', match: 'Nueva Zelanda-Bélgica' },
+  { id: 'H3', match: 'Cabo Verde-Arabia Saudita' },
+  { id: 'H3', match: 'Uruguay-España' },
+  { id: 'I3', match: 'Noruega-Francia' },
+  { id: 'I3', match: 'Senegal-Irak' },
+  { id: 'J3', match: 'Argelia-Austria' },
+  { id: 'J3', match: 'Jordania-Argentina' },
+  { id: 'K3', match: 'Colombia-Portugal' },
+  { id: 'K3', match: 'RD Congo-Uzbekistán' },
+  { id: 'L3', match: 'Panamá-Inglaterra' },
+  { id: 'L3', match: 'Croacia-Ghana' },
+  // ===== ELIMINATORIAS =====
+  { section: 'DIECISEISAVOS DE FINAL' },
+  { id: '73', match: '2A vs 2B' },
+  { id: '76', match: '1C vs 2F' },
+  { id: '74', match: '1E vs 3ABCDF' },
+  { id: '75', match: '1F vs 2C' },
+  { id: '78', match: '2E vs 2I' },
+  { id: '77', match: '1I vs 3CDFGH' },
+  { id: '79', match: '1A vs 3CEFHI' },
+  { id: '80', match: '1L vs 3EHIJK' },
+  { id: '82', match: '1G vs 3AEHIJ' },
+  { id: '81', match: '1D vs 3BEFIJ' },
+  { id: '84', match: '1H vs 2J' },
+  { id: '83', match: '2K vs 2L' },
+  { id: '85', match: '1B vs 3EFGIJ' },
+  { id: '88', match: '2D vs 2G' },
+  { id: '86', match: '1J vs 2H' },
+  { id: '87', match: '1K vs 3DEIJL' },
+  { section: 'OCTAVOS DE FINAL' },
+  { id: '90', match: 'W73 vs W75' },
+  { id: '89', match: 'W74 vs W77' },
+  { id: '91', match: 'W76 vs W78' },
+  { id: '92', match: 'W79 vs W80' },
+  { id: '93', match: 'W83 vs W84' },
+  { id: '94', match: 'W81 vs W82' },
+  { id: '95', match: 'W86 vs W88' },
+  { id: '96', match: 'W85 vs W87' },
+  { section: 'CUARTOS DE FINAL' },
+  { id: '97', match: 'W89 vs W90' },
+  { id: '98', match: 'W93 vs W94' },
+  { id: '99', match: 'W91 vs W92' },
+  { id: '100', match: 'W95 vs W96' },
+  { section: 'SEMIFINALES' },
+  { id: '101', match: 'W97 vs W98' },
+  { id: '102', match: 'W99 vs W100' },
+  { section: 'TERCER PUESTO' },
+  { id: '103', match: 'L101 vs L102' },
+  { section: 'FINAL' },
+  { id: '104', match: 'W101 vs W102' }
+];
+
+function getScore(matchName) {
+  // Try to read from WORLDCUP saved predictions
+  const raw = localStorage.getItem('worldcup2026_predictions');
+  if (!raw) return '–';
+  try {
+    const data = JSON.parse(raw);
+    // Find matching scores from the saved data by matching match name patterns
+    // This is a simplified lookup
+    return '–';
+  } catch(e) { return '–'; }
+}
+
+function renderPool() {
+  const tbody = document.getElementById('poolBody');
+  const raw = localStorage.getItem('worldcup2026_predictions');
+  let predictions = {};
+  try { predictions = JSON.parse(raw) || {}; } catch(e) {}
+
+  // Build a mapping from group matches to prediction keys
+  const groupMatchKeys = buildGroupMatchKeys();
+  const koKeys = buildKoMatchKeys();
+
+  let poolRowIndex = 0;
+  let currentJornada = '';
+  
+  tbody.innerHTML = poolMatches.map(item => {
+    if (item.section) {
+      currentJornada = item.section;
+      return `<tr class="pool-section-header"><td colspan="4">${item.section}</td></tr>`;
+    }
+
+    poolRowIndex++;
+    let score = '–';
+    
+    // Try to match from predictions
+    const key = findPredictionKey(item, poolRowIndex, groupMatchKeys, koKeys, predictions);
+    if (key) {
+      const homeVal = predictions[key.home];
+      const awayVal = predictions[key.away];
+      if (homeVal !== undefined && awayVal !== undefined) {
+        score = `${homeVal} - ${awayVal}`;
+      } else {
+        score = '–';
+      }
+    }
+
+    return `
+      <tr>
+        <td><span class="pool-match-id">${item.id}</span></td>
+        <td class="pool-match-name">${item.match}</td>
+        <td class="pool-score">${score}</td>
+        <td style="color:var(--text-muted); font-size:0.78rem;">${currentJornada.replace('FASE DE GRUPOS - ', '')}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function buildGroupMatchKeys() {
+  // Maps pool match index to worldcup input IDs
+  const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+  const map = {};
+  let idx = 0;
+  // J1: 24 matches (2 per group)
+  for (let g = 0; g < 12; g++) {
+    map[idx++] = { home: `g${groups[g]}_m0_h`, away: `g${groups[g]}_m0_a` };
+    map[idx++] = { home: `g${groups[g]}_m1_h`, away: `g${groups[g]}_m1_a` };
+  }
+  // J2: 24 matches
+  for (let g = 0; g < 12; g++) {
+    map[idx++] = { home: `g${groups[g]}_m2_h`, away: `g${groups[g]}_m2_a` };
+    map[idx++] = { home: `g${groups[g]}_m3_h`, away: `g${groups[g]}_m3_a` };
+  }
+  // J3: 24 matches
+  for (let g = 0; g < 12; g++) {
+    map[idx++] = { home: `g${groups[g]}_m4_h`, away: `g${groups[g]}_m4_a` };
+    map[idx++] = { home: `g${groups[g]}_m5_h`, away: `g${groups[g]}_m5_a` };
+  }
+  return map;
+}
+
+function buildKoMatchKeys() {
+  const koNums = [73,76,74,75,78,77,79,80,82,81,84,83,85,88,86,87,
+                  90,89,91,92,93,94,95,96,
+                  97,98,99,100,
+                  101,102,
+                  103,104];
+  const map = {};
+  koNums.forEach(n => {
+    map[String(n)] = { home: `ko_${n}_h`, away: `ko_${n}_a` };
+  });
+  return map;
+}
+
+function findPredictionKey(item, poolIdx, groupKeys, koKeys, predictions) {
+  // Group phase matches (first 72 pool items that aren't sections)
+  if (item.id && item.id.match(/^[A-L]\d$/)) {
+    // Group match
+    const adjustedIdx = poolIdx - 1;
+    return groupKeys[adjustedIdx] || null;
+  }
+  // Knockout
+  if (item.id && item.id.match(/^\d+$/)) {
+    return koKeys[item.id] || null;
+  }
+  return null;
+}
+
+renderPool();
+</script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Porra del Mundial 2026 - Introduce tus predicciones de goles para todos los partidos del XXIII Mundial USA/MEX/CAN 2026">
+  <title>WORLDCUP - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="main-nav">
+    <div class="nav-inner">
+      <a href="worldcup.html" class="nav-logo">
+        <span class="nav-logo-icon">⚽</span>
+        <span class="nav-logo-text">Mundial 2026</span>
+      </a>
+      <div class="nav-links">
+        <a href="worldcup.html" class="nav-link active">WORLDCUP</a>
+        <a href="pool.html" class="nav-link">Pool</a>
+        <a href="fixture.html" class="nav-link">Fixture</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Header -->
+  <header class="page-header">
+    <h1>🏆 XXIII Mundial USA/MEX/CAN 2026</h1>
+    <p class="subtitle">Introduce tus predicciones de goles para cada partido</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="groups-grid" id="groupsGrid">
+      <!-- Groups will be rendered here by JS -->
+    </div>
+
+    <!-- Knockout Rounds -->
+    <div id="knockoutContainer">
+      <!-- Knockout rounds rendered by JS -->
+    </div>
+
+  </main>
+
+  <!-- Save Bar -->
+  <div class="save-bar">
+    <button class="btn-save" id="btnSave" onclick="saveData()">💾 Guardar predicciones</button>
+    <button class="btn-reset" id="btnReset" onclick="resetData()">🗑️ Borrar todo</button>
+    <span class="save-status" id="saveStatus">✓ Guardado</span>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <div class="page-footer-spacer"></div>
+
+<script>
+// ============================================
+// MATCH DATA extracted from Excel
+// ============================================
+const groups = [
+  {
+    letter: 'A', name: 'Grupo A',
+    teams: ['México', 'Sudáfrica', 'Corea del Sur', 'República Checa'],
+    matches: [
+      { date: '11 Jun', time: '21:00', jornada: 'J1', home: 'México', away: 'Sudáfrica' },
+      { date: '12 Jun', time: '04:00', jornada: 'J1', home: 'Corea del Sur', away: 'República Checa' },
+      { date: '18 Jun', time: '18:00', jornada: 'J2', home: 'República Checa', away: 'Sudáfrica' },
+      { date: '19 Jun', time: '03:00', jornada: 'J2', home: 'México', away: 'Corea del Sur' },
+      { date: '25 Jun', time: '03:00', jornada: 'J3', home: 'República Checa', away: 'México' },
+      { date: '25 Jun', time: '03:00', jornada: 'J3', home: 'Sudáfrica', away: 'Corea del Sur' }
+    ]
+  },
+  {
+    letter: 'B', name: 'Grupo B',
+    teams: ['Canadá', 'Bosnia y Herzegovina', 'Catar', 'Suiza'],
+    matches: [
+      { date: '12 Jun', time: '21:00', jornada: 'J1', home: 'Canadá', away: 'Bosnia y Herzegovina' },
+      { date: '13 Jun', time: '21:00', jornada: 'J1', home: 'Catar', away: 'Suiza' },
+      { date: '18 Jun', time: '21:00', jornada: 'J2', home: 'Suiza', away: 'Bosnia y Herzegovina' },
+      { date: '19 Jun', time: '00:00', jornada: 'J2', home: 'Canadá', away: 'Catar' },
+      { date: '24 Jun', time: '21:00', jornada: 'J3', home: 'Suiza', away: 'Canadá' },
+      { date: '24 Jun', time: '21:00', jornada: 'J3', home: 'Bosnia y Herzegovina', away: 'Catar' }
+    ]
+  },
+  {
+    letter: 'C', name: 'Grupo C',
+    teams: ['Brasil', 'Marruecos', 'Haití', 'Escocia'],
+    matches: [
+      { date: '14 Jun', time: '00:00', jornada: 'J1', home: 'Brasil', away: 'Marruecos' },
+      { date: '14 Jun', time: '03:00', jornada: 'J1', home: 'Haití', away: 'Escocia' },
+      { date: '20 Jun', time: '00:00', jornada: 'J2', home: 'Escocia', away: 'Marruecos' },
+      { date: '20 Jun', time: '02:30', jornada: 'J2', home: 'Brasil', away: 'Haití' },
+      { date: '25 Jun', time: '00:00', jornada: 'J3', home: 'Escocia', away: 'Brasil' },
+      { date: '25 Jun', time: '00:00', jornada: 'J3', home: 'Marruecos', away: 'Haití' }
+    ]
+  },
+  {
+    letter: 'D', name: 'Grupo D',
+    teams: ['Estados Unidos', 'Paraguay', 'Australia', 'Turquía'],
+    matches: [
+      { date: '13 Jun', time: '03:00', jornada: 'J1', home: 'Estados Unidos', away: 'Paraguay' },
+      { date: '14 Jun', time: '06:00', jornada: 'J1', home: 'Australia', away: 'Turquía' },
+      { date: '19 Jun', time: '21:00', jornada: 'J2', home: 'Estados Unidos', away: 'Australia' },
+      { date: '20 Jun', time: '05:00', jornada: 'J2', home: 'Turquía', away: 'Paraguay' },
+      { date: '26 Jun', time: '04:00', jornada: 'J3', home: 'Turquía', away: 'Estados Unidos' },
+      { date: '26 Jun', time: '04:00', jornada: 'J3', home: 'Paraguay', away: 'Australia' }
+    ]
+  },
+  {
+    letter: 'E', name: 'Grupo E',
+    teams: ['Alemania', 'Curazao', 'Costa de Marfil', 'Ecuador'],
+    matches: [
+      { date: '14 Jun', time: '19:00', jornada: 'J1', home: 'Alemania', away: 'Curazao' },
+      { date: '15 Jun', time: '01:00', jornada: 'J1', home: 'Costa de Marfil', away: 'Ecuador' },
+      { date: '20 Jun', time: '22:00', jornada: 'J2', home: 'Alemania', away: 'Costa de Marfil' },
+      { date: '21 Jun', time: '02:00', jornada: 'J2', home: 'Ecuador', away: 'Curazao' },
+      { date: '25 Jun', time: '22:00', jornada: 'J3', home: 'Curazao', away: 'Costa de Marfil' },
+      { date: '25 Jun', time: '22:00', jornada: 'J3', home: 'Ecuador', away: 'Alemania' }
+    ]
+  },
+  {
+    letter: 'F', name: 'Grupo F',
+    teams: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'],
+    matches: [
+      { date: '14 Jun', time: '22:00', jornada: 'J1', home: 'Países Bajos', away: 'Japón' },
+      { date: '15 Jun', time: '04:00', jornada: 'J1', home: 'Suecia', away: 'Túnez' },
+      { date: '20 Jun', time: '19:00', jornada: 'J2', home: 'Países Bajos', away: 'Suecia' },
+      { date: '21 Jun', time: '06:00', jornada: 'J2', home: 'Túnez', away: 'Japón' },
+      { date: '26 Jun', time: '01:00', jornada: 'J3', home: 'Japón', away: 'Suecia' },
+      { date: '26 Jun', time: '01:00', jornada: 'J3', home: 'Túnez', away: 'Países Bajos' }
+    ]
+  },
+  {
+    letter: 'G', name: 'Grupo G',
+    teams: ['Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda'],
+    matches: [
+      { date: '15 Jun', time: '21:00', jornada: 'J1', home: 'Bélgica', away: 'Egipto' },
+      { date: '16 Jun', time: '03:00', jornada: 'J1', home: 'Irán', away: 'Nueva Zelanda' },
+      { date: '21 Jun', time: '21:00', jornada: 'J2', home: 'Bélgica', away: 'Irán' },
+      { date: '22 Jun', time: '03:00', jornada: 'J2', home: 'Nueva Zelanda', away: 'Egipto' },
+      { date: '27 Jun', time: '05:00', jornada: 'J3', home: 'Egipto', away: 'Irán' },
+      { date: '27 Jun', time: '05:00', jornada: 'J3', home: 'Nueva Zelanda', away: 'Bélgica' }
+    ]
+  },
+  {
+    letter: 'H', name: 'Grupo H',
+    teams: ['España', 'Cabo Verde', 'Arabia Saudita', 'Uruguay'],
+    matches: [
+      { date: '15 Jun', time: '18:00', jornada: 'J1', home: 'España', away: 'Cabo Verde' },
+      { date: '16 Jun', time: '00:00', jornada: 'J1', home: 'Arabia Saudita', away: 'Uruguay' },
+      { date: '21 Jun', time: '18:00', jornada: 'J2', home: 'España', away: 'Arabia Saudita' },
+      { date: '22 Jun', time: '00:00', jornada: 'J2', home: 'Uruguay', away: 'Cabo Verde' },
+      { date: '27 Jun', time: '02:00', jornada: 'J3', home: 'Cabo Verde', away: 'Arabia Saudita' },
+      { date: '27 Jun', time: '02:00', jornada: 'J3', home: 'Uruguay', away: 'España' }
+    ]
+  },
+  {
+    letter: 'I', name: 'Grupo I',
+    teams: ['Francia', 'Senegal', 'Irak', 'Noruega'],
+    matches: [
+      { date: '16 Jun', time: '21:00', jornada: 'J1', home: 'Francia', away: 'Senegal' },
+      { date: '17 Jun', time: '00:00', jornada: 'J1', home: 'Irak', away: 'Noruega' },
+      { date: '22 Jun', time: '23:00', jornada: 'J2', home: 'Francia', away: 'Irak' },
+      { date: '23 Jun', time: '02:00', jornada: 'J2', home: 'Noruega', away: 'Senegal' },
+      { date: '26 Jun', time: '21:00', jornada: 'J3', home: 'Noruega', away: 'Francia' },
+      { date: '26 Jun', time: '21:00', jornada: 'J3', home: 'Senegal', away: 'Irak' }
+    ]
+  },
+  {
+    letter: 'J', name: 'Grupo J',
+    teams: ['Argentina', 'Argelia', 'Austria', 'Jordania'],
+    matches: [
+      { date: '17 Jun', time: '03:00', jornada: 'J1', home: 'Argentina', away: 'Argelia' },
+      { date: '17 Jun', time: '06:00', jornada: 'J1', home: 'Austria', away: 'Jordania' },
+      { date: '22 Jun', time: '19:00', jornada: 'J2', home: 'Argentina', away: 'Austria' },
+      { date: '23 Jun', time: '05:00', jornada: 'J2', home: 'Jordania', away: 'Argelia' },
+      { date: '28 Jun', time: '04:00', jornada: 'J3', home: 'Argelia', away: 'Austria' },
+      { date: '28 Jun', time: '04:00', jornada: 'J3', home: 'Jordania', away: 'Argentina' }
+    ]
+  },
+  {
+    letter: 'K', name: 'Grupo K',
+    teams: ['Portugal', 'RD Congo', 'Uzbekistán', 'Colombia'],
+    matches: [
+      { date: '17 Jun', time: '19:00', jornada: 'J1', home: 'Portugal', away: 'RD Congo' },
+      { date: '18 Jun', time: '04:00', jornada: 'J1', home: 'Uzbekistán', away: 'Colombia' },
+      { date: '23 Jun', time: '19:00', jornada: 'J2', home: 'Portugal', away: 'Uzbekistán' },
+      { date: '24 Jun', time: '04:00', jornada: 'J2', home: 'Colombia', away: 'RD Congo' },
+      { date: '28 Jun', time: '01:30', jornada: 'J3', home: 'Colombia', away: 'Portugal' },
+      { date: '28 Jun', time: '01:30', jornada: 'J3', home: 'RD Congo', away: 'Uzbekistán' }
+    ]
+  },
+  {
+    letter: 'L', name: 'Grupo L',
+    teams: ['Inglaterra', 'Croacia', 'Ghana', 'Panamá'],
+    matches: [
+      { date: '17 Jun', time: '22:00', jornada: 'J1', home: 'Inglaterra', away: 'Croacia' },
+      { date: '18 Jun', time: '01:00', jornada: 'J1', home: 'Ghana', away: 'Panamá' },
+      { date: '23 Jun', time: '22:00', jornada: 'J2', home: 'Inglaterra', away: 'Ghana' },
+      { date: '24 Jun', time: '01:00', jornada: 'J2', home: 'Panamá', away: 'Croacia' },
+      { date: '27 Jun', time: '23:00', jornada: 'J3', home: 'Panamá', away: 'Inglaterra' },
+      { date: '27 Jun', time: '23:00', jornada: 'J3', home: 'Croacia', away: 'Ghana' }
+    ]
+  }
+];
+
+const knockoutRounds = [
+  {
+    name: 'Dieciseisavos de Final', badge: 'badge-r32', phase: '1/16',
+    matches: [
+      { num: 73, date: '28 Jun 21:00', home: '2A', away: '2B' },
+      { num: 76, date: '29 Jun 19:00', home: '1C', away: '2F' },
+      { num: 74, date: '29 Jun 22:30', home: '1E', away: '3ABCDF' },
+      { num: 75, date: '30 Jun 03:00', home: '1F', away: '2C' },
+      { num: 78, date: '30 Jun 19:00', home: '2E', away: '2I' },
+      { num: 77, date: '30 Jun 23:00', home: '1I', away: '3CDFGH' },
+      { num: 79, date: '1 Jul 03:00', home: '1A', away: '3CEFHI' },
+      { num: 80, date: '1 Jul 18:00', home: '1L', away: '3EHIJK' },
+      { num: 82, date: '1 Jul 22:00', home: '1G', away: '3AEHIJ' },
+      { num: 81, date: '2 Jul 02:00', home: '1D', away: '3BEFIJ' },
+      { num: 84, date: '2 Jul 21:00', home: '1H', away: '2J' },
+      { num: 83, date: '3 Jul 01:00', home: '2K', away: '2L' },
+      { num: 85, date: '3 Jul 05:00', home: '1B', away: '3EFGIJ' },
+      { num: 88, date: '3 Jul 20:00', home: '2D', away: '2G' },
+      { num: 86, date: '4 Jul 00:00', home: '1J', away: '2H' },
+      { num: 87, date: '4 Jul 03:30', home: '1K', away: '3DEIJL' }
+    ]
+  },
+  {
+    name: 'Octavos de Final', badge: 'badge-r16', phase: '1/8',
+    matches: [
+      { num: 90, date: '4 Jul 19:00', home: 'W73', away: 'W75' },
+      { num: 89, date: '4 Jul 23:00', home: 'W74', away: 'W77' },
+      { num: 91, date: '5 Jul 22:00', home: 'W76', away: 'W78' },
+      { num: 92, date: '6 Jul 02:00', home: 'W79', away: 'W80' },
+      { num: 93, date: '6 Jul 21:00', home: 'W83', away: 'W84' },
+      { num: 94, date: '7 Jul 02:00', home: 'W81', away: 'W82' },
+      { num: 95, date: '7 Jul 18:00', home: 'W86', away: 'W88' },
+      { num: 96, date: '7 Jul 22:00', home: 'W85', away: 'W87' }
+    ]
+  },
+  {
+    name: 'Cuartos de Final', badge: 'badge-qf', phase: '1/4',
+    matches: [
+      { num: 97, date: '9 Jul 22:00', home: 'W89', away: 'W90' },
+      { num: 98, date: '10 Jul 21:00', home: 'W93', away: 'W94' },
+      { num: 99, date: '11 Jul 23:00', home: 'W91', away: 'W92' },
+      { num: 100, date: '12 Jul 03:00', home: 'W95', away: 'W96' }
+    ]
+  },
+  {
+    name: 'Semifinales', badge: 'badge-sf', phase: '1/2',
+    matches: [
+      { num: 101, date: '14 Jul 21:00', home: 'W97', away: 'W98' },
+      { num: 102, date: '15 Jul 21:00', home: 'W99', away: 'W100' }
+    ]
+  },
+  {
+    name: 'Tercer Puesto', badge: 'badge-3rd', phase: '3-4',
+    matches: [
+      { num: 103, date: '18 Jul 23:00', home: 'L101', away: 'L102' }
+    ]
+  },
+  {
+    name: 'FINAL', badge: 'badge-final', phase: 'Final',
+    matches: [
+      { num: 104, date: '19 Jul 21:00', home: 'W101', away: 'W102' }
+    ]
+  }
+];
+
+// ============================================
+// RENDER FUNCTIONS
+// ============================================
+
+function renderGroups() {
+  const grid = document.getElementById('groupsGrid');
+  grid.innerHTML = groups.map((g, gi) => `
+    <div class="group-card">
+      <div class="group-header">
+        <div class="group-letter">${g.letter}</div>
+        <div>
+          <div class="group-name">${g.name}</div>
+          <div class="group-teams-summary">${g.teams.join(' · ')}</div>
+        </div>
+      </div>
+      <div class="matches-container">
+        <div class="match-header-row">
+          <span>Fecha</span>
+          <span>Jor.</span>
+          <span class="header-right">Casa</span>
+          <span class="header-center" style="grid-column: span 3">Gol</span>
+          <span>Fuera</span>
+        </div>
+        ${g.matches.map((m, mi) => `
+          <div class="match-row">
+            <div class="match-date">${m.date} ${m.time}</div>
+            <div class="match-jornada">${m.jornada}</div>
+            <div class="team-name team-home">${m.home}</div>
+            <div class="score-container" style="grid-column: span 3">
+              <input type="number" class="score-input" id="g${g.letter}_m${mi}_h" 
+                     min="0" max="99" placeholder="-" 
+                     data-group="${g.letter}" data-match="${mi}" data-side="home"
+                     oninput="autoSave()">
+              <span class="score-separator">–</span>
+              <input type="number" class="score-input" id="g${g.letter}_m${mi}_a" 
+                     min="0" max="99" placeholder="-"
+                     data-group="${g.letter}" data-match="${mi}" data-side="away"
+                     oninput="autoSave()">
+            </div>
+            <div class="team-name team-away">${m.away}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderKnockout() {
+  const container = document.getElementById('knockoutContainer');
+  container.innerHTML = knockoutRounds.map(round => `
+    <div class="knockout-section">
+      <div class="knockout-title">
+        <span class="knockout-badge ${round.badge}">${round.phase}</span>
+        ${round.name}
+      </div>
+      <div class="knockout-matches">
+        ${round.matches.map(m => `
+          <div class="knockout-match">
+            <span class="match-number">#${m.num}</span>
+            <span class="km-date">${m.date}</span>
+            <div class="km-teams">
+              <span class="team-name team-home">${m.home}</span>
+              <div class="score-container">
+                <input type="number" class="score-input" id="ko_${m.num}_h"
+                       min="0" max="99" placeholder="-"
+                       data-round="${round.phase}" data-match="${m.num}" data-side="home"
+                       oninput="autoSave()">
+                <span class="score-separator">–</span>
+                <input type="number" class="score-input" id="ko_${m.num}_a"
+                       min="0" max="99" placeholder="-"
+                       data-round="${round.phase}" data-match="${m.num}" data-side="away"
+                       oninput="autoSave()">
+              </div>
+              <span class="team-name team-away">${m.away}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================
+// SAVE / LOAD
+// ============================================
+
+function saveData() {
+  const data = {};
+  document.querySelectorAll('.score-input').forEach(input => {
+    if (input.value !== '') {
+      data[input.id] = input.value;
+    }
+  });
+  localStorage.setItem('worldcup2026_predictions', JSON.stringify(data));
+  showToast('✓ Predicciones guardadas correctamente');
+}
+
+function loadData() {
+  const raw = localStorage.getItem('worldcup2026_predictions');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    Object.entries(data).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+  } catch(e) { /* ignore */ }
+}
+
+function resetData() {
+  if (confirm('¿Estás seguro de que quieres borrar todas las predicciones?')) {
+    localStorage.removeItem('worldcup2026_predictions');
+    document.querySelectorAll('.score-input').forEach(input => input.value = '');
+    showToast('🗑️ Predicciones borradas');
+  }
+}
+
+let autoSaveTimer;
+function autoSave() {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    saveData();
+  }, 1000);
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ============================================
+// INIT
+// ============================================
+renderGroups();
+renderKnockout();
+loadData();
+</script>
+</body>
+</html>
