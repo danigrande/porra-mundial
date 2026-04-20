@@ -22,7 +22,8 @@
       <div class="nav-links">
         <a href="worldcup.html" class="nav-link active">World Cup Predictions</a>
         <a href="pool.html" class="nav-link">Predictions</a>
-        <a href="fixture.html" class="nav-link">Results</a>
+        <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
+        <a href="player_scores.html" class="nav-link">Leaderboard</a>
       </div>
     </div>
   </nav>
@@ -46,10 +47,25 @@
         </div>
       </div>
       <div style="padding: 1.25rem;">
-        <input type="text" id="playerName" class="score-input" placeholder="Escribe tu nombre..."
-          style="width:100%; height:48px; font-size:1rem; font-weight:600; text-align:left; padding:0 16px; border-radius:var(--radius-md);">
-        <p id="nameError" style="color:var(--accent-red); font-size:0.78rem; margin-top:8px; display:none;">⚠️ Debes
-          introducir tu nombre para poder guardar</p>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="playerName" class="score-input" placeholder="Escribe tu nombre..."
+            style="flex:1; height:48px; font-size:1rem; font-weight:600; text-align:left; padding:0 16px; border-radius:var(--radius-md);">
+          <input type="password" id="playerPin" placeholder="PIN 4 díg." maxlength="4"
+            style="width:110px; height:48px; font-size:1rem; font-weight:600; text-align:center; padding:0; border-radius:var(--radius-md); background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color);">
+        </div>
+        <p id="nameError" style="color:var(--accent-red); font-size:0.78rem; margin-top:8px; display:none;">⚠️ Debes introducir tu nombre y un PIN de 4 números</p>
+        
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border-color);">
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">¿Quieres recuperar otro usuario?</div>
+          <div style="display: flex; gap: 8px;">
+            <select id="cloudPlayerSelect" style="flex: 1; height:42px; font-size:0.9rem; padding:0 12px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--radius-md);">
+              <option value="">Cargando jugadores en la nube...</option>
+            </select>
+            <button onclick="recoverPrediction()" class="save-btn" style="height:42px; padding:0 16px; width:auto;">
+              ⬇️ Recuperar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -57,10 +73,16 @@
       <!-- Groups will be rendered here by JS -->
     </div>
 
+    <!-- Best Thirds Section -->
+    <div id="bestThirdContainer"></div>
+
     <!-- Knockout Rounds -->
     <div id="knockoutContainer">
       <!-- Knockout rounds rendered by JS -->
     </div>
+
+    <!-- Honor Roll & Awards Section -->
+    <div id="awardsContainer"></div>
 
   </main>
 
@@ -81,7 +103,7 @@
     // CONFIGURATION
     // ============================================
     // ¡Pega aquí la URL de tu Google Apps Script cuando la tengas!
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6pGgaZd4-sv8oBfZZSN2ylgvp7-yVZis2KdOm14RE7uTbV9ypdMXlr3zjPBZC4VRy/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztK5Dqlt48dUWYtc1CxG8sKb54c-_9_3G0KAS3uFkvn-pa6hTGZBk4I6X54lt59aY/exec';
 
     // ============================================
     // MATCH DATA extracted from Excel
@@ -233,6 +255,28 @@
       }
     ];
 
+    const teamCodes = {
+      'México': 'mx', 'Sudáfrica': 'za', 'Corea del Sur': 'kr', 'República Checa': 'cz',
+      'Canadá': 'ca', 'Bosnia y Herzegovina': 'ba', 'Catar': 'qa', 'Suiza': 'ch',
+      'Brasil': 'br', 'Marruecos': 'ma', 'Haití': 'ht', 'Escocia': 'gb-sct',
+      'Estados Unidos': 'us', 'Paraguay': 'py', 'Australia': 'au', 'Turquía': 'tr',
+      'Alemania': 'de', 'Curazao': 'cw', 'Costa de Marfil': 'ci', 'Ecuador': 'ec',
+      'Países Bajos': 'nl', 'Japón': 'jp', 'Suecia': 'se', 'Túnez': 'tn',
+      'Bélgica': 'be', 'Egipto': 'eg', 'Irán': 'ir', 'Nueva Zelanda': 'nz',
+      'España': 'es', 'Cabo Verde': 'cv', 'Arabia Saudita': 'sa', 'Uruguay': 'uy',
+      'Francia': 'fr', 'Senegal': 'sn', 'Irak': 'iq', 'Noruega': 'no',
+      'Argentina': 'ar', 'Argelia': 'dz', 'Austria': 'at', 'Jordania': 'jo',
+      'Portugal': 'pt', 'RD Congo': 'cd', 'Uzbekistán': 'uz', 'Colombia': 'co',
+      'Inglaterra': 'gb-eng', 'Croacia': 'hr', 'Ghana': 'gh', 'Panamá': 'pa'
+    };
+
+    function getTeam(name) {
+      const code = teamCodes[name];
+      return code
+        ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img" alt="${name}"> ${name}`
+        : name;
+    }
+
     const knockoutRounds = [
       {
         name: 'Dieciseisavos de Final', badge: 'badge-r32', phase: '1/16',
@@ -309,37 +353,69 @@
       <div class="group-header">
         <div class="group-letter">${g.letter}</div>
         <div>
-          <div class="group-name">${g.name}</div>
-          <div class="group-teams-summary">${g.teams.join(' · ')}</div>
+          <div class="group-name">Grupo ${g.letter}</div>
+          <div class="group-teams-summary">${g.teams.map(t => {
+        const code = teamCodes[t];
+        const flagImg = code ? `<img src="https://flagcdn.com/w40/${code}.png" style="width:16px; height:auto; margin-right:4px; vertical-align:middle; border-radius:1px;">` : '';
+        return flagImg + t;
+      }).join(' · ')}</div>
         </div>
       </div>
-      <div class="matches-container">
-        <div class="match-header-row">
-          <span>Fecha</span>
-          <span>Jor.</span>
-          <span class="header-right">Casa</span>
-          <span class="header-center" style="grid-column: span 3">Gol</span>
-          <span>Fuera</span>
-        </div>
-        ${g.matches.map((m, mi) => `
-          <div class="match-row">
-            <div class="match-date">${m.date} ${m.time}</div>
-            <div class="match-jornada">${m.jornada}</div>
-            <div class="team-name team-home">${m.home}</div>
-            <div class="score-container" style="grid-column: span 3">
-              <input type="number" class="score-input" id="g${g.letter}_m${mi}_h" 
-                     min="0" max="99" placeholder="-" 
-                     data-group="${g.letter}" data-match="${mi}" data-side="home"
-                     oninput="autoSave()">
-              <span class="score-separator">–</span>
-              <input type="number" class="score-input" id="g${g.letter}_m${mi}_a" 
-                     min="0" max="99" placeholder="-"
-                     data-group="${g.letter}" data-match="${mi}" data-side="away"
-                     oninput="autoSave()">
+      
+      <div class="group-layout">
+        <div class="matches-section">
+          <div class="matches-container">
+            <div class="match-header-row">
+              <span>Fecha</span>
+              <span>Jor.</span>
+              <span class="header-right">Casa</span>
+              <span class="header-center" style="grid-column: span 3">Gol</span>
+              <span>Fuera</span>
             </div>
-            <div class="team-name team-away">${m.away}</div>
+            ${g.matches.map((m, mi) => `
+              <div class="match-row">
+                <div class="match-date">${m.date} ${m.time}</div>
+                <div class="match-jornada">${m.jornada}</div>
+                <div class="team-name team-home">${getTeam(m.home)}</div>
+                <div class="score-container" style="grid-column: span 3">
+                  <input type="number" class="score-input" id="g${g.letter}_m${mi}_h" 
+                         min="0" max="99" placeholder="-" 
+                         data-group="${g.letter}" data-match="${mi}" data-side="home"
+                         oninput="handleInput('${g.letter}')">
+                  <span class="score-separator">–</span>
+                  <input type="number" class="score-input" id="g${g.letter}_m${mi}_a" 
+                         min="0" max="99" placeholder="-"
+                         data-group="${g.letter}" data-match="${mi}" data-side="away"
+                         oninput="handleInput('${g.letter}')">
+                </div>
+                <div class="team-name team-away">${getTeam(m.away)}</div>
+              </div>
+            `).join('')}
           </div>
-        `).join('')}
+        </div>
+
+        <div class="standings-section">
+          <div style="font-size:0.7rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.75rem; font-weight:700; letter-spacing:1px; text-align:center;">Posiciones Grupo ${g.letter}</div>
+          <table class="prediction-standings">
+            <thead>
+              <tr>
+                <th class="pos-col">Pos</th>
+                <th class="team-col">Selección</th>
+                <th>Pts</th>
+                <th>J</th>
+                <th>G</th>
+                <th>E</th>
+                <th>P</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DG</th>
+              </tr>
+            </thead>
+            <tbody id="tbody_${g.letter}">
+              <!-- Updated via JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   `).join('');
@@ -348,36 +424,453 @@
     function renderKnockout() {
       const container = document.getElementById('knockoutContainer');
       container.innerHTML = knockoutRounds.map(round => `
-    <div class="knockout-section">
+    <div class="knockout-section" id="section_${round.phase.replace('/', '-')}">
+      <div id="lock_msg_${round.phase.replace('/', '-')}" style="display:none;"></div>
       <div class="knockout-title">
         <span class="knockout-badge ${round.badge}">${round.phase}</span>
         ${round.name}
       </div>
       <div class="knockout-matches">
-        ${round.matches.map(m => `
+        ${round.matches.map(m => {
+        const resolvedHome = resolveTeam(m.home);
+        const resolvedAway = resolveTeam(m.away);
+        return `
           <div class="knockout-match">
             <span class="match-number">#${m.num}</span>
             <span class="km-date">${m.date}</span>
             <div class="km-teams">
-              <span class="team-name team-home">${m.home}</span>
-              <div class="score-container">
-                <input type="number" class="score-input" id="ko_${m.num}_h"
-                       min="0" max="99" placeholder="-"
-                       data-round="${round.phase}" data-match="${m.num}" data-side="home"
-                       oninput="autoSave()">
-                <span class="score-separator">–</span>
-                <input type="number" class="score-input" id="ko_${m.num}_a"
-                       min="0" max="99" placeholder="-"
-                       data-round="${round.phase}" data-match="${m.num}" data-side="away"
-                       oninput="autoSave()">
+              <span class="team-name team-home" id="team_name_${m.num}_h">${getTeam(resolvedHome)}</span>
+              <div class="score-outer">
+                <div class="score-container">
+                  <input type="number" class="score-input ko-input" id="ko_${m.num}_h"
+                         min="0" max="99" placeholder="-"
+                         data-round="${round.phase}" data-match="${m.num}" data-side="home"
+                         oninput="handleInput()">
+                  <span class="score-separator">–</span>
+                  <input type="number" class="score-input ko-input" id="ko_${m.num}_a"
+                         min="0" max="99" placeholder="-"
+                         data-round="${round.phase}" data-match="${m.num}" data-side="away"
+                         oninput="handleInput()">
+                </div>
+                
+                <!-- Penalties (Conditional) -->
+                <div id="pen_container_${m.num}" class="penalties-container" style="display:none;">
+                  <div class="pen-label">(Penaltis)</div>
+                  <div class="pen-inputs">
+                    <input type="number" class="score-input pen-input" id="pen_${m.num}_h" 
+                           min="0" max="99" placeholder="-" 
+                           oninput="handleInput()">
+                    <span class="score-separator" style="font-size:0.7rem;">–</span>
+                    <input type="number" class="score-input pen-input" id="pen_${m.num}_a" 
+                           min="0" max="99" placeholder="-" 
+                           oninput="handleInput()">
+                  </div>
+                </div>
               </div>
-              <span class="team-name team-away">${m.away}</span>
+              <span class="team-name team-away" id="team_name_${m.num}_a">${getTeam(resolvedAway)}</span>
             </div>
           </div>
-        `).join('')}
+          `;
+      }).join('')}
       </div>
     </div>
   `).join('');
+    }
+    function getGroupStandings(groupLetter) {
+      const g = groups.find(x => x.letter === groupLetter);
+      if (!g) return [];
+
+      const stats = {};
+      g.teams.forEach(t => {
+        stats[t] = { name: t, pts: 0, j: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, dg: 0 };
+      });
+
+      g.matches.forEach((m, mi) => {
+        const hInput = document.getElementById(`g${groupLetter}_m${mi}_h`);
+        const aInput = document.getElementById(`g${groupLetter}_m${mi}_a`);
+
+        if (hInput && aInput && hInput.value !== '' && aInput.value !== '') {
+          const gh = parseInt(hInput.value);
+          const ga = parseInt(aInput.value);
+
+          const sHome = stats[m.home];
+          const sAway = stats[m.away];
+
+          sHome.j++; sAway.j++;
+          sHome.gf += gh; sHome.gc += ga;
+          sAway.gf += ga; sAway.gc += gh;
+
+          if (gh > ga) {
+            sHome.g++; sHome.pts += 3;
+            sAway.p++;
+          } else if (gh < ga) {
+            sAway.g++; sAway.pts += 3;
+            sHome.p++;
+          } else {
+            sHome.e++; sHome.pts += 1;
+            sAway.e++; sAway.pts += 1;
+          }
+        }
+      });
+
+      Object.values(stats).forEach(s => s.dg = s.gf - s.gc);
+
+      return Object.values(stats).sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.dg !== a.dg) return b.dg - a.dg;
+        return b.gf - a.gf;
+      });
+    }
+
+    function updateStandings(groupLetter) {
+      const sorted = getGroupStandings(groupLetter);
+      const tbody = document.getElementById(`tbody_${groupLetter}`);
+      if (tbody) {
+        tbody.innerHTML = sorted.map((s, idx) => `
+          <tr>
+            <td class="pos-col">${idx + 1}</td>
+            <td class="team-col">${getTeam(s.name)}</td>
+            <td class="pts-col">${s.pts}</td>
+            <td>${s.j}</td>
+            <td>${s.g}</td>
+            <td>${s.e}</td>
+            <td>${s.p}</td>
+            <td>${s.gf}</td>
+            <td>${s.gc}</td>
+            <td>${s.dg}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function resolveTeam(code) {
+      if (!code) return '?';
+      if (!/^[123]/.test(code) && !/^[WL]\d+$/.test(code) && code !== 'WF' && code !== 'LF') return code;
+
+      const groupMatch = code.match(/^([12])([A-L])$/);
+      if (groupMatch) {
+        const pos = parseInt(groupMatch[1]) - 1;
+        const letter = groupMatch[2];
+        const standings = getGroupStandings(letter);
+        return standings[pos] ? standings[pos].name : code;
+      }
+
+      if (code.startsWith('3')) {
+        const allowedGroups = code.substring(1).split('');
+        const bestThirds = calculateBestThirdsList();
+        const match = bestThirds.find(t => allowedGroups.includes(t.group));
+        return match ? match.name : code;
+      }
+
+      const matchRef = code.match(/^([WL])(\d+)$/);
+      if (matchRef) {
+        const type = matchRef[1];
+        const num = matchRef[2];
+        const hInput = document.getElementById(`ko_${num}_h`);
+        const aInput = document.getElementById(`ko_${num}_a`);
+
+        if (!hInput || !aInput || hInput.value === '' || aInput.value === '') return code;
+
+        const gh = parseInt(hInput.value);
+        const ga = parseInt(aInput.value);
+
+        let targetMatch = null;
+        for (const round of knockoutRounds) {
+          targetMatch = round.matches.find(m => m.num == num);
+          if (targetMatch) break;
+        }
+        if (!targetMatch) return code;
+
+        if (gh > ga) return type === 'W' ? resolveTeam(targetMatch.home) : resolveTeam(targetMatch.away);
+        if (ga > gh) return type === 'W' ? resolveTeam(targetMatch.away) : resolveTeam(targetMatch.home);
+
+        // It's a draw -> check penalties
+        const phInput = document.getElementById(`pen_${num}_h`);
+        const paInput = document.getElementById(`pen_${num}_a`);
+        if (phInput && paInput && phInput.value !== '' && paInput.value !== '') {
+          const ph = parseInt(phInput.value);
+          const pa = parseInt(paInput.value);
+          if (ph > pa) return type === 'W' ? resolveTeam(targetMatch.home) : resolveTeam(targetMatch.away);
+          if (pa > ph) return type === 'W' ? resolveTeam(targetMatch.away) : resolveTeam(targetMatch.home);
+        }
+
+        return code;
+      }
+
+      if (code === 'WF') return resolveTeam('W104');
+      if (code === 'LF') return resolveTeam('L104');
+
+      return code;
+    }
+
+    function calculateBestThirdsList() {
+      const thirds = groups.map(g => {
+        const standings = getGroupStandings(g.letter);
+        const third = standings[2];
+        return { ...third, group: g.letter };
+      });
+      thirds.sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.dg !== a.dg) return b.dg - a.dg;
+        return b.gf - a.gf;
+      });
+      return thirds;
+    }
+
+    function updateBestThirds() {
+      const best = calculateBestThirdsList();
+      const container = document.getElementById('bestThirdContainer');
+      container.innerHTML = `
+        <div class="group-card best-thirds-card">
+          <div class="group-header" style="background: var(--gradient-primary);">
+            <div class="group-letter">🏆</div>
+            <div>
+              <div class="group-name">Mejores terceros</div>
+              <div class="group-teams-summary">Los 8 mejores clasifican a Dieciseisavos</div>
+            </div>
+          </div>
+          <div style="padding: 1.25rem;">
+            <table class="prediction-standings">
+              <thead>
+                <tr>
+                  <th class="pos-col">Pos</th>
+                  <th class="team-col">Selección</th>
+                  <th>Pts</th>
+                  <th>J</th>
+                  <th>G</th>
+                  <th>E</th>
+                  <th>P</th>
+                  <th>GF</th>
+                  <th>GC</th>
+                  <th>DG</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${best.map((s, idx) => {
+        const isQualifying = idx < 8;
+        const rowClass = isQualifying ? 'qualifying-row' : 'non-qualifying-row';
+        const cutOffClass = idx === 7 ? 'cut-off-line' : '';
+        return `
+                    <tr class="${rowClass} ${cutOffClass}">
+                      <td class="pos-col">${idx + 1}</td>
+                      <td class="team-col">${getTeam(s.name)} <small style="color:var(--text-muted)">(${s.group})</small></td>
+                      <td class="pts-col">${s.pts}</td>
+                      <td>${s.j}</td>
+                      <td>${s.g}</td>
+                      <td>${s.e}</td>
+                      <td>${s.p}</td>
+                      <td>${s.gf}</td>
+                      <td>${s.gc}</td>
+                      <td>${s.dg}</td>
+                    </tr>
+                  `;
+      }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAwards() {
+      const container = document.getElementById('awardsContainer');
+      container.innerHTML = `
+        <div class="group-card awards-card">
+          <div class="group-header" style="background: var(--gradient-header);">
+            <div class="group-letter">🥇</div>
+            <div class="group-name">Cuadro de honor</div>
+          </div>
+          <table class="awards-table">
+            <tr>
+              <td class="awards-label">🏆 Campeón</td>
+              <td class="awards-value" id="honor_champion">-</td>
+            </tr>
+            <tr>
+              <td class="awards-label">🥈 Subcampeón</td>
+              <td class="awards-value" id="honor_runnerup">-</td>
+            </tr>
+            <tr>
+              <td class="awards-label">🥉 3º puesto</td>
+              <td class="awards-value" id="honor_third">-</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="group-card awards-card">
+          <div class="group-header" style="background: var(--gradient-gold);">
+            <div class="group-letter">👟</div>
+            <div class="group-name">Bota de Oro (Máximo goleador)</div>
+          </div>
+          <table class="awards-table">
+            <tr>
+              <td class="awards-label">Oro</td>
+              <td class="awards-value"><input type="text" id="boot_gold" class="award-input" placeholder="Escribe un jugador..."></td>
+            </tr>
+            <tr>
+              <td class="awards-label">Plata</td>
+              <td class="awards-value"><input type="text" id="boot_silver" class="award-input" placeholder="Escribe un jugador..."></td>
+            </tr>
+            <tr>
+              <td class="awards-label">Bronce</td>
+              <td class="awards-value"><input type="text" id="boot_bronze" class="award-input" placeholder="Escribe un jugador..."></td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="group-card awards-card">
+          <div class="group-header" style="background: var(--gradient-primary);">
+            <div class="group-letter">⚽</div>
+            <div class="group-name">Balón de Oro (Mejor jugador)</div>
+          </div>
+          <table class="awards-table">
+            <tr>
+              <td class="awards-label">Oro</td>
+              <td class="awards-value"><input type="text" id="ball_gold" class="award-input" placeholder="Escribe un jugador..."></td>
+            </tr>
+            <tr>
+              <td class="awards-label">Plata</td>
+              <td class="awards-value"><input type="text" id="ball_silver" class="award-input" placeholder="Escribe un jugador..."></td>
+            </tr>
+            <tr>
+              <td class="awards-label">Bronce</td>
+              <td class="awards-value"><input type="text" id="ball_bronze" class="award-input" placeholder="Escribe un jugador..."></td>
+            </tr>
+          </table>
+        </div>
+      `;
+
+      document.querySelectorAll('.award-input').forEach(input => {
+        input.oninput = () => autoSave();
+      });
+    }
+
+    function updateHonorRoll() {
+      const champ = resolveTeam('WF');
+      const runner = resolveTeam('LF');
+      const third = resolveTeam('W103');
+
+      const champEl = document.getElementById('honor_champion');
+      const runnerEl = document.getElementById('honor_runnerup');
+      const thirdEl = document.getElementById('honor_third');
+
+      if (champEl) champEl.innerHTML = champ !== 'WF' ? `<div class="honor-resolved">${getTeam(champ)}</div>` : '-';
+      if (runnerEl) runnerEl.innerHTML = runner !== 'LF' ? `<div class="honor-resolved">${getTeam(runner)}</div>` : '-';
+      if (thirdEl) thirdEl.innerHTML = third !== 'W103' ? `<div class="honor-resolved">${getTeam(third)}</div>` : '-';
+    }
+
+    function updateKnockoutNames() {
+      knockoutRounds.forEach(round => {
+        round.matches.forEach(m => {
+          const hName = resolveTeam(m.home);
+          const aName = resolveTeam(m.away);
+          const hEl = document.getElementById(`team_name_${m.num}_h`);
+          const aEl = document.getElementById(`team_name_${m.num}_a`);
+          if (hEl) hEl.innerHTML = getTeam(hName);
+          if (aEl) aEl.innerHTML = getTeam(aName);
+        });
+      });
+    }
+
+    function updatePenaltyVisibility() {
+      knockoutRounds.forEach(round => {
+        round.matches.forEach(m => {
+          const hInput = document.getElementById(`ko_${m.num}_h`);
+          const aInput = document.getElementById(`ko_${m.num}_a`);
+          const container = document.getElementById(`pen_container_${m.num}`);
+
+          if (hInput && aInput && container) {
+            const hVal = hInput.value;
+            const aVal = aInput.value;
+
+            if (hVal !== '' && aVal !== '' && parseInt(hVal) === parseInt(aVal)) {
+              container.style.display = 'flex';
+              // Check penalty draw validation
+              const phInput = document.getElementById(`pen_${m.num}_h`);
+              const paInput = document.getElementById(`pen_${m.num}_a`);
+              if (phInput && paInput && phInput.value !== '' && paInput.value !== '') {
+                if (parseInt(phInput.value) === parseInt(paInput.value)) {
+                  phInput.style.setProperty('border-color', 'var(--accent-red)', 'important');
+                  paInput.style.setProperty('border-color', 'var(--accent-red)', 'important');
+                } else {
+                  phInput.style.setProperty('border-color', 'rgba(245, 158, 11, 0.3)', 'important');
+                  paInput.style.setProperty('border-color', 'rgba(245, 158, 11, 0.3)', 'important');
+                }
+              }
+            } else {
+              container.style.display = 'none';
+            }
+          }
+        });
+      });
+    }
+
+    function handleInput(groupLetter) {
+      if (groupLetter) {
+        updateStandings(groupLetter);
+        updateBestThirds();
+      }
+      updatePenaltyVisibility();
+      updateKnockoutNames();
+      updateHonorRoll();
+      updatePhaseLocks();
+      autoSave();
+    }
+
+    function updatePhaseLocks() {
+      const isRoundComplete = (phase) => {
+        const round = knockoutRounds.find(r => r.phase === phase);
+        if (!round) return false;
+        return round.matches.every(m => {
+          const hInput = document.getElementById(`ko_${m.num}_h`);
+          const aInput = document.getElementById(`ko_${m.num}_a`);
+          if (!hInput || !aInput || hInput.value === '' || aInput.value === '') return false;
+
+          if (parseInt(hInput.value) === parseInt(aInput.value)) {
+            const phInput = document.getElementById(`pen_${m.num}_h`);
+            const paInput = document.getElementById(`pen_${m.num}_a`);
+            if (!phInput || !paInput || phInput.value === '' || paInput.value === '') return false;
+            if (parseInt(phInput.value) === parseInt(paInput.value)) return false;
+          }
+          return true;
+        });
+      };
+
+      const allGroupInputs = document.querySelectorAll('#groupsGrid .score-input');
+      const groupsComplete = Array.from(allGroupInputs).every(i => i.value !== '');
+      toggleSection('1/16', !groupsComplete, 'la fase de grupos');
+
+      const r32Complete = groupsComplete && isRoundComplete('1/16');
+      toggleSection('1/8', !r32Complete, 'los Dieciseisavos de Final');
+
+      const r16Complete = r32Complete && isRoundComplete('1/8');
+      toggleSection('1/4', !r16Complete, 'los Octavos de Final');
+
+      const qfComplete = r16Complete && isRoundComplete('1/4');
+      toggleSection('1/2', !qfComplete, 'los Cuartos de Final');
+
+      const sfComplete = qfComplete && isRoundComplete('1/2');
+      toggleSection('3-4', !sfComplete, 'las Semifinales');
+      toggleSection('Final', !sfComplete, 'las Semifinales');
+    }
+
+    function toggleSection(phase, locked, prevPhaseName) {
+      const sectionId = `section_${phase.replace('/', '-')}`;
+      const msgId = `lock_msg_${phase.replace('/', '-')}`;
+      const section = document.getElementById(sectionId);
+      const msgContainer = document.getElementById(msgId);
+
+      if (!section) return;
+
+      if (locked) {
+        section.classList.add('locked-section');
+        section.querySelectorAll('input').forEach(i => i.disabled = true);
+        msgContainer.innerHTML = `<div class="phase-lock-msg"><span>🔒</span> Se necesita introducir valores en ${prevPhaseName} para poder continuar</div>`;
+        msgContainer.style.display = 'block';
+      } else {
+        section.classList.remove('locked-section');
+        section.querySelectorAll('input').forEach(i => i.disabled = false);
+        msgContainer.style.display = 'none';
+      }
     }
 
     // ============================================
@@ -390,40 +883,42 @@
       if (isSaving) return;
 
       const nameInput = document.getElementById('playerName');
+      const pinInput = document.getElementById('playerPin');
       const nameError = document.getElementById('nameError');
       const name = nameInput.value.trim();
+      const pin = pinInput.value.trim();
 
-      if (!name) {
+      const isValidPin = /^\d{4}$/.test(pin);
+
+      if (!name || !isValidPin) {
         nameError.style.display = 'block';
-        nameInput.style.borderColor = 'var(--accent-red)';
-        nameInput.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.2)';
+        nameInput.style.borderColor = !name ? 'var(--accent-red)' : 'var(--border-color)';
+        pinInput.style.borderColor = !isValidPin ? 'var(--accent-red)' : 'var(--border-color)';
         nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showToast('⚠️ Introduce tu nombre antes de guardar');
+        showToast('⚠️ Nombre y PIN de 4 números obligatorios');
         return;
       }
 
       nameError.style.display = 'none';
       nameInput.style.borderColor = 'var(--accent-green)';
+      pinInput.style.borderColor = 'var(--accent-green)';
       nameInput.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
 
-      const data = { _playerName: name };
-      document.querySelectorAll('.score-input').forEach(input => {
+      const data = { _playerName: name, _playerPin: pin };
+      document.querySelectorAll('.score-input, .award-input, .pen-input').forEach(input => {
         if (input.id !== 'playerName' && input.value !== '') {
           data[input.id] = input.value;
         }
       });
 
-      // Guardado local (backup instantáneo)
       localStorage.setItem('worldcup2026_predictions', JSON.stringify(data));
       document.getElementById('saveStatus').textContent = 'Guardado localmente';
 
-      // Si no hay URL configurada, paramos aquí
       if (!SCRIPT_URL || SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
         showToast('✓ Predicciones guardadas en tu navegador');
         return;
       }
 
-      // Guardado en la nube (Google Sheets)
       isSaving = true;
       document.getElementById('btnSave').textContent = '⏳ Guardando en la nube...';
       document.getElementById('btnSave').style.opacity = '0.7';
@@ -438,7 +933,7 @@
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
           body: JSON.stringify(payload),
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } // text/plain to avoid CORS preflight
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
 
         const result = await response.json();
@@ -458,8 +953,6 @@
       }
     }
 
-
-
     function loadData() {
       const raw = localStorage.getItem('worldcup2026_predictions');
       if (!raw) return;
@@ -468,8 +961,12 @@
         if (data._playerName) {
           document.getElementById('playerName').value = data._playerName;
         }
+        if (data._playerPin) {
+          const pinEl = document.getElementById('playerPin');
+          if (pinEl) pinEl.value = data._playerPin;
+        }
         Object.entries(data).forEach(([id, val]) => {
-          if (id === '_playerName') return;
+          if (id === '_playerName' || id === '_playerPin') return;
           const el = document.getElementById(id);
           if (el) el.value = val;
         });
@@ -479,14 +976,23 @@
     function resetData() {
       if (confirm('¿Estás seguro de que quieres borrar todas las predicciones?')) {
         localStorage.removeItem('worldcup2026_predictions');
-        document.querySelectorAll('.score-input').forEach(input => input.value = '');
+        document.querySelectorAll('.score-input, .award-input, .pen-input').forEach(input => input.value = '');
         document.getElementById('playerName').value = '';
+        const pinEl = document.getElementById('playerPin');
+        if (pinEl) pinEl.value = '';
         document.getElementById('nameError').style.display = 'none';
+
+        groups.forEach(g => updateStandings(g.letter));
+        updateBestThirds();
+        updatePenaltyVisibility();
+        updateHonorRoll();
+        updateKnockoutNames();
+        updatePhaseLocks();
+
         showToast('🗑️ Predicciones borradas');
       }
     }
 
-    let autoSaveTimer;
     function autoSave() {
       clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(() => {
@@ -502,11 +1008,90 @@
     }
 
     // ============================================
+    // RECOVERY LOGIC
+    // ============================================
+
+    let cloudDictionary = {};
+
+    async function loadCloudPlayers() {
+      const select = document.getElementById('cloudPlayerSelect');
+      if (!SCRIPT_URL || SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
+         select.innerHTML = '<option value="">(Nube no configurada)</option>';
+         return;
+      }
+      try {
+        const response = await fetch(SCRIPT_URL);
+        const result = await response.json();
+        if (result.status === 'success' && result.data) {
+          cloudDictionary = result.data;
+          select.innerHTML = '<option value="">-- Selecciona un jugador --</option>';
+          Object.keys(cloudDictionary).sort().forEach(name => {
+             select.innerHTML += `<option value="${name}">${name}</option>`;
+          });
+        }
+      } catch (e) {
+        select.innerHTML = '<option value="">Error cargando nube</option>';
+      }
+    }
+
+    function recoverPrediction() {
+      const select = document.getElementById('cloudPlayerSelect');
+      const name = select.value;
+      if (!name || !cloudDictionary[name]) return;
+      
+      const rawData = cloudDictionary[name];
+      const data = typeof rawData.predictions === 'string' ? JSON.parse(rawData.predictions) : rawData.predictions;
+      
+      const cloudPin = data._playerPin || '';
+      
+      if (cloudPin !== '') {
+        const inputPin = prompt(`Introduce el PIN de 4 dígitos para recuperar a "${name}":`);
+        if (inputPin === null) return; // cancelled
+        if (inputPin !== cloudPin) {
+          alert('❌ PIN incorrecto. Acceso denegado.');
+          return;
+        }
+      }
+      
+      if (!confirm(`¿Quieres sobreescribir el formulario actual con las predicciones de "${name}"?`)) return;
+      
+      document.querySelectorAll('.score-input, .award-input, .pen-input').forEach(input => input.value = '');
+      
+      document.getElementById('playerName').value = name;
+      const elPin = document.getElementById('playerPin');
+      if (elPin && cloudPin) elPin.value = cloudPin;
+      
+      Object.entries(data).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && el.id !== 'playerName' && el.id !== 'playerPin') {
+          el.value = val;
+        }
+      });
+      
+      groups.forEach(g => updateStandings(g.letter));
+      updateBestThirds();
+      updatePenaltyVisibility();
+      updateHonorRoll();
+      updateKnockoutNames();
+      updatePhaseLocks();
+      
+      showToast(`✅ Predicciones de ${name} recuperadas`);
+    }
+
+    // ============================================
     // INIT
     // ============================================
     renderGroups();
     renderKnockout();
+    renderAwards();
     loadData();
+    loadCloudPlayers();
+    groups.forEach(g => updateStandings(g.letter));
+    updateBestThirds();
+    updatePenaltyVisibility();
+    updateKnockoutNames();
+    updateHonorRoll();
+    updatePhaseLocks();
   </script>
 </body>
 

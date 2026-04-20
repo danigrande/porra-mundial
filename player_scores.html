@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Clasificación y Puntuaciones de la Porra - Mundial 2026">
+  <title>Leaderboard - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .leaderboard-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 2rem;
+    }
+
+    .lb-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 100px 120px 60px;
+      padding: 1rem 1.5rem;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .lb-row:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .lb-header-row {
+      background: rgba(0, 0, 0, 0.2);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+      cursor: default;
+    }
+
+    .lb-header-row:hover {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .lb-rank {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .lb-top1 .lb-rank {
+      color: var(--accent-gold);
+    }
+
+    .lb-top2 .lb-rank {
+      color: #d1d5db;
+      /* silver */
+    }
+
+    .lb-top3 .lb-rank {
+      color: #b45309;
+      /* bronze */
+    }
+
+    .lb-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .lb-you-badge {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--accent-blue);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .lb-plenos {
+      font-size: 0.9rem;
+      color: var(--accent-cyan);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .lb-points {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      text-align: right;
+    }
+
+    .lb-pts-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .lb-trend {
+      text-align: center;
+      font-size: 1.1rem;
+    }
+
+    .trend-up {
+      color: var(--accent-green);
+    }
+
+    .trend-dn {
+      color: var(--accent-red);
+    }
+
+    .trend-eq {
+      color: var(--text-muted);
+    }
+
+    /* Expandable Breakdown */
+    .lb-breakdown {
+      grid-column: 1 / -1;
+      background: rgba(0, 0, 0, 0.15);
+      border-top: 1px dashed var(--border-color);
+      padding: 1.5rem;
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .lb-b-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .lb-b-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .lb-b-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .lb-b-value span {
+      color: var(--text-primary);
+    }
+
+    .info-banner {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .lb-row {
+        grid-template-columns: 40px 1fr 80px 80px 40px;
+        padding: 0.8rem;
+      }
+
+      .lb-rank {
+        font-size: 1.2rem;
+      }
+
+      .lb-name {
+        font-size: 0.95rem;
+      }
+
+      .lb-points {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navigation -->
+  <nav class="main-nav">
+    <div class="nav-inner">
+      <a href="worldcup.html" class="nav-logo">
+        <span class="nav-logo-icon">⚽</span>
+        <span class="nav-logo-text">Mundial 2026</span>
+      </a>
+      <div class="nav-links">
+        <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
+        <a href="pool.html" class="nav-link">Predictions</a>
+        <a href="fixture.html" class="nav-link">Results</a>
+        <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
+        <a href="player_scores.html" class="nav-link active">Leaderboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Header -->
+  <header class="page-header">
+    <h1>📈 Clasificación General</h1>
+    <p class="subtitle">Descubre cómo van tus predicciones comparado con la realidad</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="info-banner">
+      <span style="font-size: 1.5rem;">ℹ️</span>
+      <div>
+        <div style="font-weight: 600; color: var(--accent-green);">Simulación activada</div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
+          Esta tabla toma tus predicciones locales y las evalúa contra los resultados generados aleatoriamente en
+          <strong>fixture_testing.html</strong>, usando las reglas definidas en <strong>scoring_criteria.html</strong>.
+          <br>
+          <em>(Abre e interactúa siempre primero con la pestaña de resultados de prueba para generar una nueva
+            simulación).</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="leaderboard-card" id="leaderboardContainer">
+      <div class="lb-row lb-header-row">
+        <div style="text-align:center;">Pos</div>
+        <div>Jugador</div>
+        <div>Plenos 🎯</div>
+        <div style="text-align:right;">Puntos Totales</div>
+        <div style="text-align:center;">Trend</div>
+      </div>
+
+      <div id="lbBody">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <div class="page-footer-spacer" style="height:4rem;"></div>
+
+  <script>
+    // ==========================================
+    // SIMULATION CONFIGURATION
+    // ==========================================
+    
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztK5Dqlt48dUWYtc1CxG8sKb54c-_9_3G0KAS3uFkvn-pa6hTGZBk4I6X54lt59aY/exec';
+
+    // Load external data
+    const realityStr = localStorage.getItem('worldcup2026_testing_reality');
+    const rulesStr = localStorage.getItem('worldcup2026_scoring');
+
+    const reality = realityStr ? JSON.parse(realityStr) : null;
+    let rules = rulesStr ? JSON.parse(rulesStr) : {};
+
+    let players = [];
+
+    // ==========================================
+    // SCORING ENGINE
+    // ==========================================
+
+    function getRule(id, fallback) {
+      return rules[id] !== undefined ? parseFloat(rules[id]) : fallback;
+    }
+
+    function calculateScore(prediction) {
+      let totalPts = 0;
+      let exactHits = 0;
+      let groupPts = 0;
+      let koPts = 0;
+
+      if (!reality) return { totalPts, exactHits, groupPts, koPts };
+
+      const opt_diff_adjust = getRule('opt_diff_adjust', 0) / 100;
+
+      // Points distribution lists
+      const ptsRules = {
+        group: {
+          sign: getRule('pts_group_sign', 10),
+          diff: getRule('pts_group_diff', 10),
+          exact: getRule('pts_group_exact', 10)
+        },
+        ko: {
+          sign: getRule('pts_ko_sign', 10),
+          diff: getRule('pts_ko_diff', 10),
+          exact: getRule('pts_ko_exact', 10)
+        }
+      };
+
+      function evaluateMatch(mKey, hKey, aKey, isGroup) {
+        const pRules = isGroup ? ptsRules.group : ptsRules.ko;
+
+        const rH = parseInt(reality[hKey]);
+        const rA = parseInt(reality[aKey]);
+        const pH = parseInt(prediction[hKey]);
+        const pA = parseInt(prediction[aKey]);
+
+        if (isNaN(rH) || isNaN(rA) || isNaN(pH) || isNaN(pA)) return 0;
+
+        let mPts = 0;
+
+        const rSign = rH > rA ? '1' : rH === rA ? 'X' : '2';
+        const pSign = pH > pA ? '1' : pH === pA ? 'X' : '2';
+
+        if (rSign === pSign) {
+          mPts += pRules.sign; // Acertó signo
+
+          if (rH === pH && rA === pA) {
+            // Pleno!
+            mPts += pRules.exact;
+            mPts += pRules.diff;
+            exactHits++;
+          } else {
+            // Evaluamos la diferencia con ajuste %
+            let rDiff = rH - rA;
+            let pDiff = pH - pA;
+            let desvio = rSign === 'X' ? Math.abs(rH - pH) : Math.abs(rDiff - pDiff);
+
+            let diffPoints = 0;
+            if (opt_diff_adjust === 0) {
+              if (desvio === 0) diffPoints = pRules.diff;
+            } else {
+              diffPoints = pRules.diff - (desvio * opt_diff_adjust * pRules.diff);
+            }
+            if (diffPoints > 0) mPts += diffPoints;
+          }
+        }
+
+        return mPts;
+      }
+
+      // Loop through all keys looking for 'ko_X_h' and 'gX_mY_h'
+      Object.keys(reality).forEach(key => {
+        if (key.endsWith('_h')) {
+          const matchPrefix = key.substring(0, key.length - 2); // 'ko_95' or 'gA_m1'
+          const hKey = matchPrefix + '_h';
+          const aKey = matchPrefix + '_a';
+
+          if (matchPrefix.startsWith('pen_')) return; // Penalties don't score directly like normal matches
+
+          const isGroup = matchPrefix.startsWith('g');
+          const pts = evaluateMatch(matchPrefix, hKey, aKey, isGroup);
+
+          totalPts += pts;
+          if (isGroup) groupPts += pts;
+          else koPts += pts;
+        }
+      });
+
+      // We will skip advanced rules like honor rolls and exact standings since they require heavier reality resolution,
+      // but this is an incredibly powerful baseline for the simulated leaderboard!
+
+      return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts) };
+    }
+
+    // ==========================================
+    // RENDER LEADERBOARD
+    // ==========================================
+
+    function renderLeaderboard() {
+      const container = document.getElementById('lbBody');
+      
+      if (!reality) {
+        container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+          Debes abrir la pestaña <strong>Results</strong> que usa <em>fixture_testing.html</em> primero para generar una realidad simulada.
+        </div>`;
+        return;
+      }
+      
+      const scoreResults = players.map(p => {
+      const s = calculateScore(p);
+      return {
+        name: p._playerName || 'Unknown',
+        isYou: !p._isBot,
+        ...s,
+        trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.5 ? 'dn' : 'eq' // Fancy simulated trend
+      };
+    });
+
+      scoreResults.sort((a, b) => b.totalPts - a.totalPts);
+
+      let html = '';
+      scoreResults.forEach((r, idx) => {
+        const topClass = idx === 0 ? 'lb-top1' : idx === 1 ? 'lb-top2' : idx === 2 ? 'lb-top3' : '';
+        const trendIcon = r.trend === 'up' ? '▲' : r.trend === 'dn' ? '▼' : '–';
+
+        html += `
+          <div class="lb-row ${topClass}" onclick="toggleBreakdown(${idx})">
+            <div class="lb-rank">${idx + 1}</div>
+            <div class="lb-name">
+              ${r.name}
+              ${r.isYou ? '<span class="lb-you-badge">TÚ</span>' : ''}
+            </div>
+            <div class="lb-plenos">
+              <span>${r.exactHits}</span> 
+            </div>
+            <div class="lb-points">
+              ${r.totalPts}<span class="lb-pts-label">pts</span>
+            </div>
+            <div class="lb-trend trend-${r.trend}">${trendIcon}</div>
+            
+            <div class="lb-breakdown" id="breakdown_${idx}">
+              <div class="lb-b-item">
+                <span class="lb-b-label">Puntos de Grupos</span>
+                <span class="lb-b-value"><span>${r.groupPts}</span> pts</span>
+              </div>
+              <div class="lb-b-item">
+                <span class="lb-b-label">Puntos Eliminatorias</span>
+                <span class="lb-b-value"><span>${r.koPts}</span> pts</span>
+              </div>
+              <div class="lb-b-item">
+                <span class="lb-b-label">Aciertos Exactos</span>
+                <span class="lb-b-value"><span>${r.exactHits}</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted)">(${Math.round((r.exactHits / 104) * 100)}%)</span></span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    async function initLeaderboard() {
+      const container = document.getElementById('lbBody');
+      
+      if (!reality) {
+        renderLeaderboard();
+        return;
+      }
+      
+      container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⏳ Obteniendo predicciones de la nube...</div>`;
+      
+      try {
+        if (SCRIPT_URL && SCRIPT_URL !== 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
+          // Fetch rules
+          try {
+            const rulesResponse = await fetch(`${SCRIPT_URL}?action=getRules`);
+            const rulesResult = await rulesResponse.json();
+            if (rulesResult.status === 'success' && rulesResult.data) {
+               const rawObj = rulesResult.data;
+               rules = typeof rawObj === 'string' ? JSON.parse(rawObj) : rawObj;
+            }
+          } catch(e) { console.warn("No se pudieron obtener las reglas de la nube.", e); }
+
+          // Fetch predictions
+          const response = await fetch(SCRIPT_URL);
+          const result = await response.json();
+          if (result.status === 'success' && result.data) {
+             Object.keys(result.data).forEach(pName => {
+                const isLocalUser = (localStorage.getItem('worldcup2026_predictions') && JSON.parse(localStorage.getItem('worldcup2026_predictions'))._playerName === pName);
+                const rawObj = result.data[pName];
+                const preds = typeof rawObj.predictions === 'string' ? JSON.parse(rawObj.predictions) : rawObj.predictions;
+                players.push({ _playerName: pName, _isBot: !isLocalUser, ...preds });
+             });
+          }
+        }
+      } catch (err) {
+        console.warn("Error cargando nube, usamos local.", err);
+      }
+      
+      // Fallback
+      if (players.length === 0) {
+        const rosterStr = localStorage.getItem('worldcup2026_roster');
+        const roster = rosterStr ? JSON.parse(rosterStr) : [];
+        players = [...roster];
+        
+        // Add active prediction if we don't have a roster either
+        if (players.length === 0) {
+          const localUserStr = localStorage.getItem('worldcup2026_predictions');
+          if (localUserStr) players.push(JSON.parse(localUserStr));
+        }
+      }
+      if (players.length === 0) {
+        players.push({ _playerName: "Nadie ha guardado aún", _isBot: false });
+      }
+
+      renderLeaderboard();
+    }
+
+    initLeaderboard();
+
+    function toggleBreakdown(idx) {
+      const bd = document.getElementById(`breakdown_${idx}`);
+      if (!bd) return;
+      if (bd.style.display === 'grid') {
+        bd.style.display = 'none';
+      } else {
+        // close others
+        document.querySelectorAll('.lb-breakdown').forEach(el => el.style.display = 'none');
+        bd.style.display = 'grid';
+      }
+    }
+  </script>
+</body>
+
+</html>

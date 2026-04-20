@@ -30,6 +30,19 @@
   --radius-xl: 20px;
 }
 
+/* ===== Flags ===== */
+.flag-img {
+  width: 22px;
+  height: 15px;
+  object-fit: cover;
+  vertical-align: middle;
+  margin-right: 8px;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: inline-block;
+}
+
 /* ===== Reset & Base ===== */
 *, *::before, *::after {
   margin: 0;
@@ -612,8 +625,218 @@ body::before {
 /* ===== Groups Grid ===== */
 .groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+  grid-template-columns: 1fr; /* Full width cards to fit side-by-side tables */
+  gap: 2.5rem;
+}
+
+.group-layout {
+  display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.matches-section {
+  flex: 1 1 600px;
+  min-width: 0;
+}
+
+.standings-section {
+  flex: 1 1 350px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Prediction Standings Table */
+.prediction-standings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.prediction-standings thead th {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--text-secondary);
+  padding: 0.6rem 0.4rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.prediction-standings tbody td {
+  padding: 0.6rem 0.4rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.prediction-standings .pts-col {
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+.prediction-standings .team-col {
+  text-align: left;
+  padding-left: 0.75rem;
+  font-weight: 600;
+}
+
+.prediction-standings .pos-col {
+  color: var(--text-muted);
+  width: 28px;
+}
+
+/* Best Thirds Specific */
+.best-thirds-card {
+  max-width: 900px;
+  margin: 2rem auto;
+}
+
+.qualifying-row {
+  background: rgba(16, 185, 129, 0.05) !important;
+}
+
+.non-qualifying-row {
+  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.15) !important;
+}
+
+.cut-off-line {
+  border-bottom: 2px solid var(--accent-gold) !important;
+}
+
+/* Phase Lock Messages */
+.phase-lock-msg {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-gold);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 0.8rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: fadeInUp 0.4s ease;
+}
+
+.phase-lock-msg span {
+  font-size: 1.2rem;
+}
+
+.locked-section .knockout-match {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+.locked-section .knockout-title {
+  opacity: 0.6;
+}
+
+.knockout-section.locked-section {
+  pointer-events: none; /* Just in case */
+}
+
+/* Awards Section Styling */
+.awards-card {
+  max-width: 900px;
+  margin: 2rem auto;
+}
+
+.awards-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.awards-table td {
+  padding: 0.8rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+}
+
+.awards-label {
+  width: 40%;
+  color: var(--text-secondary);
+  font-weight: 500;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.awards-value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.awards-value input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--border-color);
+  color: var(--text-primary);
+  width: 100%;
+  padding: 4px 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  outline: none;
+}
+
+.awards-value input:focus {
+  border-bottom-color: var(--accent-blue);
+}
+
+.honor-resolved {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent-gold);
+}
+
+/* Penalties Styling */
+.penalties-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 6px;
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-sm);
+  animation: fadeInDown 0.3s ease;
+}
+
+.pen-label {
+  font-size: 0.65rem;
+  color: var(--accent-gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pen-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pen-input {
+  width: 36px !important;
+  height: 28px !important;
+  font-size: 0.75rem !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.pen-input:focus {
+  border-color: var(--accent-gold) !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
 }
 
 /* ===== Fixture Grid ===== */

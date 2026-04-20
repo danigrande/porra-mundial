@@ -449,8 +449,10 @@ const knockoutBracket = [
 
 
 // ============================================
-// RENDER
+// RENDER & SIMULATION
 // ============================================
+
+const simulatedReality = {};
 
 function renderFixtureGroups() {
   const container = document.getElementById('fixtureGroups');
@@ -475,16 +477,22 @@ function renderFixtureGroups() {
             </div>
           </div>
           <div class="fixture-matches">
-            ${g.matches.map(m => `
+            ${g.matches.map((m, m_idx) => {
+              const hScore = Math.floor(Math.random() * 4);
+              const aScore = Math.floor(Math.random() * 4);
+              simulatedReality[`g${g.letter}_m${m_idx}_h`] = hScore.toString();
+              simulatedReality[`g${g.letter}_m${m_idx}_a`] = aScore.toString();
+              return `
               <div class="fixture-match">
                 <span class="fm-num">#${m.num}</span>
                 <span class="fm-home">${m.home}</span>
-                <span class="fm-score">–</span>
+                <span class="fm-score">${hScore}</span>
                 <span class="fm-vs">vs</span>
-                <span class="fm-score">–</span>
+                <span class="fm-score">${aScore}</span>
                 <span class="fm-away">${m.away}</span>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
           <!-- Standings -->
           <div class="group-standings-container">
@@ -504,9 +512,9 @@ function renderFixtureGroups() {
                   <tr>
                     <td class="pos-cell">${idx + 1}</td>
                     <td class="team-cell">${getTeam(team)}</td>
-                    <td class="pts-cell">0</td>
-                    <td>0</td>
-                    <td style="color:var(--text-muted)">0-0</td>
+                    <td class="pts-cell">${Math.floor(Math.random() * 9)}</td>
+                    <td>${Math.floor(Math.random() * 5) - 2}</td>
+                    <td style="color:var(--text-muted)">${Math.floor(Math.random() * 5)}-${Math.floor(Math.random() * 5)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -530,16 +538,33 @@ function renderKnockoutBracket() {
         ${round.name}
       </div>
       <div class="ko-bracket-grid">
-        ${round.matches.map(m => `
+        ${round.matches.map(m => {
+          const hScore = Math.floor(Math.random() * 4);
+          const aScore = Math.floor(Math.random() * 4);
+          simulatedReality[`ko_${m.num}_h`] = hScore.toString();
+          simulatedReality[`ko_${m.num}_a`] = aScore.toString();
+          
+          let penText = "";
+          if (hScore === aScore) {
+            let ph = Math.floor(Math.random() * 5);
+            let pa = Math.floor(Math.random() * 5);
+            if (ph === pa) ph++; // never tie
+            simulatedReality[`pen_${m.num}_h`] = ph.toString();
+            simulatedReality[`pen_${m.num}_a`] = pa.toString();
+            penText = ` <span style="font-size:0.6rem; color:var(--text-muted)">(${ph}-${pa})</span>`;
+          }
+          
+          return `
           <div class="ko-card">
             <span class="ko-num">#${m.num}</span>
             <div class="ko-teams">
               <span class="ko-team ko-team-home">${m.home}</span>
-              <span class="ko-score">– : –</span>
+              <span class="ko-score">${hScore} : ${aScore}${penText}</span>
               <span class="ko-team ko-team-away">${m.away}</span>
             </div>
           </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
   `).join('');
@@ -551,6 +576,12 @@ function renderKnockoutBracket() {
 // ============================================
 renderFixtureGroups();
 renderKnockoutBracket();
+
+// Add dummy awards to simulated reality for honor roll points matching
+simulatedReality['boot_gold'] = "Mbappe";
+simulatedReality['ball_gold'] = "Messi";
+
+localStorage.setItem('worldcup2026_testing_reality', JSON.stringify(simulatedReality));
 </script>
 </body>
 </html>

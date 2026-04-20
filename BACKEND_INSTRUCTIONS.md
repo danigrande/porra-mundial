@@ -141,7 +141,7 @@ function doOptions(e) {
 5. Google te pedirá permisos. Dale a "Autorizar accesos", elige tu cuenta, puede que salga un aviso de "Google no ha verificado esta aplicación" -> dale a "Configuración avanzada" abajo y "Ir a Proyecto (inseguro)" y dale a "Permitir".
 6. Se generará una **URL de la aplicación web** (empieza por `https://script.google.com/macros/s/...`). 
 7. **COPIA ESA URL.**
-https://script.google.com/macros/s/AKfycbx6pGgaZd4-sv8oBfZZSN2ylgvp7-yVZis2KdOm14RE7uTbV9ypdMXlr3zjPBZC4VRy/exec
+https://script.google.com/macros/s/AKfycbztK5Dqlt48dUWYtc1CxG8sKb54c-_9_3G0KAS3uFkvn-pa6hTGZBk4I6X54lt59aY/exec
 
 ## Paso 4: Añadir la URL a los archivos HTML
 Ahora necesitas reemplazar el texto `TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI` en los archivos `worldcup.html` y `pool.html` con la URL que acabas de copiar de Google Apps Script.
