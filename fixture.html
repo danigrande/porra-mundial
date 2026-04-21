@@ -136,6 +136,7 @@
         <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
         <a href="pool.html" class="nav-link">Predictions</a>
         <a href="fixture.html" class="nav-link active">Results</a>
+        <a href="fixture_testing.html" class="nav-link">Results Testing</a>
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link">Leaderboard</a>
       </div>
@@ -156,6 +157,9 @@
 
     <!-- Knockout Bracket -->
     <div id="fixtureBracket"></div>
+
+    <!-- Awards Section -->
+    <div id="awardsContainer"></div>
 
 
   </main>
@@ -448,6 +452,105 @@ const knockoutBracket = [
 
 
 
+// Store for knockout results (can be populated from a data source later)
+const knockoutResults = {}; 
+
+function getGroupStandings(groupLetter) {
+  const g = fixtureGroups.find(x => x.letter === groupLetter);
+  if (!g) return [];
+
+  // Initialize stats
+  const stats = {};
+  g.teams.forEach(t => {
+    stats[t.full] = { name: t.full, pts: 0, j: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, dg: 0 };
+  });
+
+  // Calculate based on match scores (if present in the data)
+  g.matches.forEach(m => {
+    if (m.scoreH != null && m.scoreA != null) {
+      const gh = parseInt(m.scoreH);
+      const ga = parseInt(m.scoreA);
+      const sHome = stats[m.home_full] || stats[fixtureGroups.find(x => x.letter === groupLetter).teams.find(t => t.abbr === m.home).full];
+      // Note: for simplicity in this template, we'll assume m.home matches t.full or use a mapping. 
+      // In the current fixture.html, m.home is an abbreviation. Let's find full name.
+      const homeFull = g.teams.find(t => t.abbr === m.home)?.full;
+      const awayFull = g.teams.find(t => t.abbr === m.away)?.full;
+
+      if (homeFull && awayFull) {
+        stats[homeFull].j++; stats[awayFull].j++;
+        stats[homeFull].gf += gh; stats[homeFull].gc += ga;
+        stats[awayFull].gf += ga; stats[awayFull].gc += gh;
+        if (gh > ga) { stats[homeFull].g++; stats[homeFull].pts += 3; stats[awayFull].p++; }
+        else if (gh < ga) { stats[awayFull].g++; stats[awayFull].pts += 3; stats[homeFull].p++; }
+        else { stats[homeFull].e++; stats[homeFull].pts += 1; stats[awayFull].e++; stats[awayFull].pts += 1; }
+      }
+    }
+  });
+
+  Object.values(stats).forEach(s => s.dg = s.gf - s.gc);
+
+  return Object.values(stats).sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.dg !== a.dg) return b.dg - a.dg;
+    return b.gf - a.gf;
+  });
+}
+
+function resolveTeam(code) {
+  if (!code) return '?';
+  // If it's already a team name (from teamCodes), keep it
+  if (teamCodes[code]) return code;
+
+  // Resolve 1A, 2B, etc.
+  const groupMatch = code.match(/^([1-2])([A-L])$/);
+  if (groupMatch) {
+    const pos = parseInt(groupMatch[1]) - 1;
+    const letter = groupMatch[2];
+    const standings = getGroupStandings(letter);
+    // Check if group is "complete" or has enough data. For now, if standings[pos] exists and has points > 0? 
+    // Actually, user said "until result is known". Let's assume it's known if matches are played.
+    // A simpler condition: if any match in group has a score.
+    const group = fixtureGroups.find(x => x.letter === letter);
+    const hasScores = group && group.matches.some(m => m.scoreH != null);
+    
+    if (hasScores && standings[pos]) return standings[pos].name;
+    return code; 
+  }
+
+  // Resolve best thirds (3ABCDF)
+  if (code.startsWith('3')) {
+    // For now, since calculation of 8 best thirds is complex, keep placeholder unless results are there
+    return code; 
+  }
+
+  // Resolve W73, L101
+  const matchRef = code.match(/^([WL])(\d+)$/);
+  if (matchRef) {
+    const type = matchRef[1];
+    const num = matchRef[2];
+    const res = knockoutResults[num];
+    if (!res) return code;
+
+    let targetMatch = null;
+    for (const round of knockoutBracket) {
+      targetMatch = round.matches.find(m => m.num == num);
+      if (targetMatch) break;
+    }
+    if (!targetMatch) return code;
+
+    if (res.h > res.a) return type === 'W' ? resolveTeam(targetMatch.home) : resolveTeam(targetMatch.away);
+    if (res.a > res.h) return type === 'W' ? resolveTeam(targetMatch.away) : resolveTeam(targetMatch.home);
+    if (res.h === res.a && res.ph != null) {
+      if (res.ph > res.pa) return type === 'W' ? resolveTeam(targetMatch.home) : resolveTeam(targetMatch.away);
+      return type === 'W' ? resolveTeam(targetMatch.away) : resolveTeam(targetMatch.home);
+    }
+    return code;
+  }
+
+  return code;
+}
+
+
 // ============================================
 // RENDER
 // ============================================
@@ -475,16 +578,20 @@ function renderFixtureGroups() {
             </div>
           </div>
           <div class="fixture-matches">
-            ${g.matches.map(m => `
+            ${g.matches.map(m => {
+              const hScore = m.scoreH != null ? m.scoreH : "–";
+              const aScore = m.scoreA != null ? m.scoreA : "–";
+              return `
               <div class="fixture-match">
                 <span class="fm-num">#${m.num}</span>
                 <span class="fm-home">${m.home}</span>
-                <span class="fm-score">–</span>
+                <span class="fm-score">${hScore}</span>
                 <span class="fm-vs">vs</span>
-                <span class="fm-score">–</span>
+                <span class="fm-score">${aScore}</span>
                 <span class="fm-away">${m.away}</span>
               </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
           <!-- Standings -->
           <div class="group-standings-container">
@@ -530,19 +637,113 @@ function renderKnockoutBracket() {
         ${round.name}
       </div>
       <div class="ko-bracket-grid">
-        ${round.matches.map(m => `
+        ${round.matches.map(m => {
+          const homeTeam = resolveTeam(m.home);
+          const awayTeam = resolveTeam(m.away);
+          const res = knockoutResults[m.num];
+          const hScore = res ? res.h : "–";
+          const aScore = res ? res.a : "–";
+          const penText = (res && res.ph != null) ? ` <span style="font-size:0.6rem; color:var(--text-muted)">(${res.ph}-${res.pa})</span>` : "";
+          
+          return `
           <div class="ko-card">
             <span class="ko-num">#${m.num}</span>
-            <div class="ko-teams">
-              <span class="ko-team ko-team-home">${m.home}</span>
-              <span class="ko-score">– : –</span>
-              <span class="ko-team ko-team-away">${m.away}</span>
+            <div class="ko-teams" style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span class="ko-team" style="text-align: left; display: flex; align-items: center;">${getTeam(homeTeam)}</span>
+                <span class="ko-score" style="min-width: 25px; text-align: right;">${hScore}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span class="ko-team" style="text-align: left; display: flex; align-items: center;">${getTeam(awayTeam)}</span>
+                <span class="ko-score" style="min-width: 25px; text-align: right;">${aScore}${penText}</span>
+              </div>
             </div>
           </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
   `).join('');
+}
+
+
+// Actual awards winners (to be populated later)
+const actualAwards = {
+  boot: { gold: "-", silver: "-", bronze: "-" },
+  ball: { gold: "-", silver: "-", bronze: "-" }
+};
+
+function renderAwards() {
+  const container = document.getElementById('awardsContainer');
+  
+  const champ = resolveTeam('WF');
+  const runner = resolveTeam('LF');
+  const third = resolveTeam('W103');
+
+  container.innerHTML = `
+    <div class="group-card awards-card">
+      <div class="group-header" style="background: var(--gradient-header);">
+        <div class="group-letter">🥇</div>
+        <div class="group-name">Cuadro de honor</div>
+      </div>
+      <table class="awards-table">
+        <tr>
+          <td class="awards-label">🏆 Campeón</td>
+          <td class="awards-value" id="honor_champion">${champ !== 'WF' ? `<div class="honor-resolved">${getTeam(champ)}</div>` : '-'}</td>
+        </tr>
+        <tr>
+          <td class="awards-label">🥈 Subcampeón</td>
+          <td class="awards-value" id="honor_runnerup">${runner !== 'LF' ? `<div class="honor-resolved">${getTeam(runner)}</div>` : '-'}</td>
+        </tr>
+        <tr>
+          <td class="awards-label">🥉 3º puesto</td>
+          <td class="awards-value" id="honor_third">${third !== 'W103' ? `<div class="honor-resolved">${getTeam(third)}</div>` : '-'}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="group-card awards-card">
+      <div class="group-header" style="background: var(--gradient-gold);">
+        <div class="group-letter">👟</div>
+        <div class="group-name">Bota de Oro (Máximo goleador)</div>
+      </div>
+      <table class="awards-table">
+        <tr>
+          <td class="awards-label">Oro</td>
+          <td class="awards-value">${actualAwards.boot.gold}</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Plata</td>
+          <td class="awards-value">${actualAwards.boot.silver}</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Bronce</td>
+          <td class="awards-value">${actualAwards.boot.bronze}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="group-card awards-card">
+      <div class="group-header" style="background: var(--gradient-primary);">
+        <div class="group-letter">⚽</div>
+        <div class="group-name">Balón de Oro (Mejor jugador)</div>
+      </div>
+      <table class="awards-table">
+        <tr>
+          <td class="awards-label">Oro</td>
+          <td class="awards-value">${actualAwards.ball.gold}</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Plata</td>
+          <td class="awards-value">${actualAwards.ball.silver}</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Bronce</td>
+          <td class="awards-value">${actualAwards.ball.bronze}</td>
+        </tr>
+      </table>
+    </div>
+  `;
 }
 
 
@@ -551,6 +752,7 @@ function renderKnockoutBracket() {
 // ============================================
 renderFixtureGroups();
 renderKnockoutBracket();
+renderAwards();
 </script>
 </body>
 </html>

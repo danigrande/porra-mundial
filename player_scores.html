@@ -157,6 +157,62 @@
       color: var(--text-primary);
     }
 
+    .lb-history-container {
+      grid-column: 1 / -1;
+      margin-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 1rem;
+    }
+
+    .lb-history-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--accent-cyan);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lb-history-scroll {
+      max-height: 250px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .lb-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+
+    .lb-history-table th {
+      text-align: left;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-secondary);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      position: sticky;
+      top: 0;
+    }
+
+    .lb-history-table td {
+      padding: 8px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .hist-match { font-weight: 600; color: var(--text-primary); }
+    .hist-pts { font-weight: 800; color: var(--accent-gold); text-align: right; }
+    .hist-reason { color: var(--text-muted); font-size: 0.75rem; }
+
+    .lb-history-scroll::-webkit-scrollbar { width: 6px; }
+    .lb-history-scroll::-webkit-scrollbar-track { background: transparent; }
+    .lb-history-scroll::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 10px; }
+
     .info-banner {
       background: rgba(16, 185, 129, 0.1);
       border: 1px solid rgba(16, 185, 129, 0.2);
@@ -202,6 +258,7 @@
         <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
         <a href="pool.html" class="nav-link">Predictions</a>
         <a href="fixture.html" class="nav-link">Results</a>
+        <a href="fixture_testing.html" class="nav-link">Results Testing</a>
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link active">Leaderboard</a>
       </div>
@@ -265,6 +322,59 @@
 
     let players = [];
 
+    // Metadata for resolving match names
+    const fixtureGroups = [
+      { letter: 'A', teams: ['México', 'Sudáfrica', 'Corea del Sur', 'República Checa'] },
+      { letter: 'B', teams: ['Canadá', 'Bosnia y Herzegovina', 'Catar', 'Suiza'] },
+      { letter: 'C', teams: ['Brasil', 'Marruecos', 'Haití', 'Escocia'] },
+      { letter: 'D', teams: ['Estados Unidos', 'Paraguay', 'Australia', 'Turquía'] },
+      { letter: 'E', teams: ['Alemania', 'Curazao', 'Costa de Marfil', 'Ecuador'] },
+      { letter: 'F', teams: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'] },
+      { letter: 'G', teams: ['Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda'] },
+      { letter: 'H', teams: ['España', 'Cabo Verde', 'Arabia Saudita', 'Uruguay'] },
+      { letter: 'I', teams: ['Francia', 'Senegal', 'Irak', 'Noruega'] },
+      { letter: 'J', teams: ['Argentina', 'Argelia', 'Austria', 'Jordania'] },
+      { letter: 'K', teams: ['Portugal', 'RD Congo', 'Uzbekistán', 'Colombia'] },
+      { letter: 'L', teams: ['Inglaterra', 'Croacia', 'Ghana', 'Panamá'] }
+    ];
+
+    const knockoutBracket = [
+      { name: '1/16 Final', matches: [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87] },
+      { name: '1/8 Final', matches: [90, 89, 91, 92, 93, 94, 95, 96] },
+      { name: '1/4 Final', matches: [97, 98, 99, 100] },
+      { name: 'Semifinales', matches: [101, 102] },
+      { name: '3er Puesto', matches: [103] },
+      { name: 'FINAL', matches: [104] }
+    ];
+
+    function resolveMatchName(prefix) {
+      if (prefix.startsWith('g')) {
+        const groupMatch = prefix.match(/^g([A-L])_m(\d+)$/);
+        if (groupMatch) {
+          const letter = groupMatch[1];
+          const mIdx = parseInt(groupMatch[2]);
+          const group = fixtureGroups.find(g => g.letter === letter);
+          if (group) {
+            // Reconstruct pairings based on official order
+            const t = group.teams;
+            const pairings = [
+              [t[0], t[1]], [t[2], t[3]], // J1
+              [t[3], t[1]], [t[0], t[2]], // J2
+              [t[3], t[0]], [t[1], t[2]]  // J3
+            ];
+            const pair = pairings[mIdx];
+            return pair ? `${pair[0]} vs ${pair[1]}` : `Grupo ${letter} #${mIdx+1}`;
+          }
+        }
+      } else if (prefix.startsWith('ko_')) {
+        const num = prefix.substring(3);
+        let roundName = "";
+        knockoutBracket.forEach(r => { if (r.matches.includes(parseInt(num))) roundName = r.name; });
+        return `${roundName} (#${num})`;
+      }
+      return prefix;
+    }
+
     // ==========================================
     // SCORING ENGINE
     // ==========================================
@@ -305,23 +415,23 @@
         const pH = parseInt(prediction[hKey]);
         const pA = parseInt(prediction[aKey]);
 
-        if (isNaN(rH) || isNaN(rA) || isNaN(pH) || isNaN(pA)) return 0;
+        if (isNaN(rH) || isNaN(rA) || isNaN(pH) || isNaN(pA)) return { mPts: 0, reasons: [] };
 
         let mPts = 0;
+        let reasons = [];
 
         const rSign = rH > rA ? '1' : rH === rA ? 'X' : '2';
         const pSign = pH > pA ? '1' : pH === pA ? 'X' : '2';
 
         if (rSign === pSign) {
-          mPts += pRules.sign; // Acertó signo
+          mPts += pRules.sign; 
+          reasons.push(`Signo (${pRules.sign})`);
 
           if (rH === pH && rA === pA) {
-            // Pleno!
-            mPts += pRules.exact;
-            mPts += pRules.diff;
+            mPts += (pRules.exact + pRules.diff);
+            reasons.push(`Exacto (+${pRules.exact + pRules.diff})`);
             exactHits++;
           } else {
-            // Evaluamos la diferencia con ajuste %
             let rDiff = rH - rA;
             let pDiff = pH - pA;
             let desvio = rSign === 'X' ? Math.abs(rH - pH) : Math.abs(rDiff - pDiff);
@@ -332,12 +442,17 @@
             } else {
               diffPoints = pRules.diff - (desvio * opt_diff_adjust * pRules.diff);
             }
-            if (diffPoints > 0) mPts += diffPoints;
+            if (diffPoints > 0) {
+              mPts += diffPoints;
+              reasons.push(`Diferencia (+${Math.round(diffPoints)})`);
+            }
           }
         }
 
-        return mPts;
+        return { mPts: Math.round(mPts), reasons };
       }
+
+      const history = [];
 
       // Loop through all keys looking for 'ko_X_h' and 'gX_mY_h'
       Object.keys(reality).forEach(key => {
@@ -349,7 +464,16 @@
           if (matchPrefix.startsWith('pen_')) return; // Penalties don't score directly like normal matches
 
           const isGroup = matchPrefix.startsWith('g');
-          const pts = evaluateMatch(matchPrefix, hKey, aKey, isGroup);
+          const result = evaluateMatch(matchPrefix, hKey, aKey, isGroup);
+          const pts = result.mPts;
+
+          if (pts > 0) {
+            history.push({
+              match: resolveMatchName(matchPrefix),
+              pts: pts,
+              reason: result.reasons.join(', ')
+            });
+          }
 
           totalPts += pts;
           if (isGroup) groupPts += pts;
@@ -357,10 +481,7 @@
         }
       });
 
-      // We will skip advanced rules like honor rolls and exact standings since they require heavier reality resolution,
-      // but this is an incredibly powerful baseline for the simulated leaderboard!
-
-      return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts) };
+      return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), history };
     }
 
     // ==========================================
@@ -421,6 +542,30 @@
               <div class="lb-b-item">
                 <span class="lb-b-label">Aciertos Exactos</span>
                 <span class="lb-b-value"><span>${r.exactHits}</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted)">(${Math.round((r.exactHits / 104) * 100)}%)</span></span>
+              </div>
+
+              <div class="lb-history-container">
+                <div class="lb-history-title"><span>📝</span> Desglose detallado de puntos</div>
+                <div class="lb-history-scroll">
+                  <table class="lb-history-table">
+                    <thead>
+                      <tr>
+                        <th>Partido</th>
+                        <th style="text-align:right">Pts</th>
+                        <th>Motivo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${r.history.length > 0 ? r.history.map(h => `
+                        <tr>
+                          <td class="hist-match">${h.match}</td>
+                          <td class="hist-pts">+${h.pts}</td>
+                          <td class="hist-reason">${h.reason}</td>
+                        </tr>
+                      `).join('') : '<tr><td colspan="3" style="text-align:center; padding:2rem; color:var(--text-muted)">No hay puntos registrados aún</td></tr>'}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

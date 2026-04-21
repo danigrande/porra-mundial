@@ -44,6 +44,7 @@
         <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
         <a href="pool.html" class="nav-link active">Predictions</a>
         <a href="fixture.html" class="nav-link">Results</a>
+        <a href="fixture_testing.html" class="nav-link">Results Testing</a>
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link">Leaderboard</a>
       </div>
@@ -222,7 +223,15 @@
       { section: 'TERCER PUESTO' },
       { id: '103', match: 'L101 vs L102' },
       { section: 'FINAL' },
-      { id: '104', match: 'W101 vs W102' }
+      { id: '104', match: 'W101 vs W102' },
+      // ===== PREMIOS INDIVIDUALES =====
+      { section: 'PREMIOS INDIVIDUALES' },
+      { id: 'BG', match: 'Bota de Oro (Oro)', single: 'boot_gold' },
+      { id: 'BS', match: 'Bota de Oro (Plata)', single: 'boot_silver' },
+      { id: 'BB', match: 'Bota de Oro (Bronce)', single: 'boot_bronze' },
+      { id: 'AG', match: 'Balón de Oro (Oro)', single: 'ball_gold' },
+      { id: 'AS', match: 'Balón de Oro (Plata)', single: 'ball_silver' },
+      { id: 'AB', match: 'Balón de Oro (Bronce)', single: 'ball_bronze' }
     ];
 
     const teamCodes = {
@@ -361,10 +370,14 @@
           let score = '–';
           
           if (key) {
-            const h = playerPredictions[key.home];
-            const a = playerPredictions[key.away];
-            if (h !== undefined && h !== "" && a !== undefined && a !== "") {
-              score = `${h} - ${a}`;
+            if (key.single) {
+              score = playerPredictions[key.single] || '–';
+            } else {
+              const h = playerPredictions[key.home];
+              const a = playerPredictions[key.away];
+              if (h !== undefined && h !== "" && a !== undefined && a !== "") {
+                score = `${h} - ${a}`;
+              }
             }
           }
           playerCells += `<td class="pool-score">${score}</td>`;
@@ -426,6 +439,10 @@
       // Knockout
       if (item.id && item.id.match(/^\d+$/)) {
         return koKeys[item.id] || null;
+      }
+      // Awards (Individual Prizes)
+      if (item.single) {
+        return { single: item.single };
       }
       return null;
     }

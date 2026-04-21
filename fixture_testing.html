@@ -135,7 +135,8 @@
       <div class="nav-links">
         <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
         <a href="pool.html" class="nav-link">Predictions</a>
-        <a href="fixture.html" class="nav-link active">Results</a>
+        <a href="fixture.html" class="nav-link">Results</a>
+        <a href="fixture_testing.html" class="nav-link active">Results Testing</a>
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link">Leaderboard</a>
       </div>
@@ -156,6 +157,9 @@
 
     <!-- Knockout Bracket -->
     <div id="fixtureBracket"></div>
+
+    <!-- Awards Section -->
+    <div id="awardsContainer"></div>
 
 
   </main>
@@ -530,7 +534,28 @@ function renderFixtureGroups() {
 
 function renderKnockoutBracket() {
   const container = document.getElementById('fixtureBracket');
-  
+  const winners = {};
+  const losers = {};
+
+  function resolve(code) {
+    // 1A, 2B, etc.
+    const groupMatch = code.match(/^([1-2])([A-L])$/);
+    if (groupMatch) {
+      const idx = groupMatch[2].charCodeAt(0) - 'A'.charCodeAt(0);
+      return fixtureGroups[idx].standings[parseInt(groupMatch[1]) - 1];
+    }
+    // Best thirds (3ABCDF -> pick first group in list as representative)
+    if (code.startsWith('3')) {
+      const firstGroup = code[1];
+      const idx = firstGroup.charCodeAt(0) - 'A'.charCodeAt(0);
+      return fixtureGroups[idx] ? fixtureGroups[idx].standings[2] : code;
+    }
+    // Winners and Losers from previous matches
+    if (code.startsWith('W')) return winners[code.substring(1)] || code;
+    if (code.startsWith('L')) return losers[code.substring(1)] || code;
+    return code;
+  }
+
   container.innerHTML = knockoutBracket.map(round => `
     <div class="knockout-section">
       <div class="knockout-title">
@@ -539,28 +564,41 @@ function renderKnockoutBracket() {
       </div>
       <div class="ko-bracket-grid">
         ${round.matches.map(m => {
+          const homeTeam = resolve(m.home);
+          const awayTeam = resolve(m.away);
           const hScore = Math.floor(Math.random() * 4);
           const aScore = Math.floor(Math.random() * 4);
-          simulatedReality[`ko_${m.num}_h`] = hScore.toString();
-          simulatedReality[`ko_${m.num}_a`] = aScore.toString();
+          simulatedReality['ko_' + m.num + '_h'] = hScore.toString();
+          simulatedReality['ko_' + m.num + '_a'] = aScore.toString();
           
           let penText = "";
+          let winSide = hScore > aScore ? 'home' : (aScore > hScore ? 'away' : null);
+          
           if (hScore === aScore) {
             let ph = Math.floor(Math.random() * 5);
             let pa = Math.floor(Math.random() * 5);
-            if (ph === pa) ph++; // never tie
-            simulatedReality[`pen_${m.num}_h`] = ph.toString();
-            simulatedReality[`pen_${m.num}_a`] = pa.toString();
+            if (ph === pa) ph++; 
+            simulatedReality['pen_' + m.num + '_h'] = ph.toString();
+            simulatedReality['pen_' + m.num + '_a'] = pa.toString();
             penText = ` <span style="font-size:0.6rem; color:var(--text-muted)">(${ph}-${pa})</span>`;
+            winSide = ph > pa ? 'home' : 'away';
           }
+          
+          winners[m.num] = winSide === 'home' ? homeTeam : awayTeam;
+          losers[m.num] = winSide === 'home' ? awayTeam : homeTeam;
           
           return `
           <div class="ko-card">
             <span class="ko-num">#${m.num}</span>
-            <div class="ko-teams">
-              <span class="ko-team ko-team-home">${m.home}</span>
-              <span class="ko-score">${hScore} : ${aScore}${penText}</span>
-              <span class="ko-team ko-team-away">${m.away}</span>
+            <div class="ko-teams" style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span class="ko-team" style="text-align: left; display: flex; align-items: center;">${getTeam(homeTeam)}</span>
+                <span class="ko-score" style="min-width: 25px; text-align: right;">${hScore}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span class="ko-team" style="text-align: left; display: flex; align-items: center;">${getTeam(awayTeam)}</span>
+                <span class="ko-score" style="min-width: 25px; text-align: right;">${aScore}${penText}</span>
+              </div>
             </div>
           </div>
           `;
@@ -568,6 +606,84 @@ function renderKnockoutBracket() {
       </div>
     </div>
   `).join('');
+}
+
+
+
+function renderAwards() {
+  const container = document.getElementById('awardsContainer');
+  
+  // Resolve honor roll from simulation results
+  const winners = {}; // We'd need to access these from renderKnockoutBracket or stored winner map
+  // For simplicity in testing, we use getTeam on the final winner
+  const champ = resolveTeam('W104');
+  const runner = resolveTeam('L104');
+  const third = resolveTeam('W103');
+
+  container.innerHTML = `
+    <div class="group-card awards-card">
+      <div class="group-header" style="background: var(--gradient-header);">
+        <div class="group-letter">🥇</div>
+        <div class="group-name">Cuadro de honor</div>
+      </div>
+      <table class="awards-table">
+        <tr>
+          <td class="awards-label">🏆 Campeón</td>
+          <td class="awards-value"><div class="honor-resolved">${getTeam(champ)}</div></td>
+        </tr>
+        <tr>
+          <td class="awards-label">🥈 Subcampeón</td>
+          <td class="awards-value"><div class="honor-resolved">${getTeam(runner)}</div></td>
+        </tr>
+        <tr>
+          <td class="awards-label">🥉 3º puesto</td>
+          <td class="awards-value"><div class="honor-resolved">${getTeam(third)}</div></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="group-card awards-card">
+      <div class="group-header" style="background: var(--gradient-gold);">
+        <div class="group-letter">👟</div>
+        <div class="group-name">Bota de Oro (Máximo goleador)</div>
+      </div>
+      <table class="awards-table">
+        <tr>
+          <td class="awards-label">Oro</td>
+          <td class="awards-value">${simulatedReality['boot_gold']} (${getTeam(resolveTeam('1A'))})</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Plata</td>
+          <td class="awards-value">${simulatedReality['boot_silver']} (${getTeam(resolveTeam('1B'))})</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Bronce</td>
+          <td class="awards-value">${simulatedReality['boot_bronze']} (${getTeam(resolveTeam('1C'))})</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="group-card awards-card">
+      <div class="group-header" style="background: var(--gradient-primary);">
+        <div class="group-letter">⚽</div>
+        <div class="group-name">Balón de Oro (Mejor jugador)</div>
+      </div>
+      <table class="awards-table">
+        <tr>
+          <td class="awards-label">Oro</td>
+          <td class="awards-value">${simulatedReality['ball_gold']} (${getTeam(resolveTeam('1A'))})</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Plata</td>
+          <td class="awards-value">${simulatedReality['ball_silver']} (${getTeam(resolveTeam('1B'))})</td>
+        </tr>
+        <tr>
+          <td class="awards-label">Bronce</td>
+          <td class="awards-value">${simulatedReality['ball_bronze']} (${getTeam(resolveTeam('1C'))})</td>
+        </tr>
+      </table>
+    </div>
+  `;
 }
 
 
@@ -579,7 +695,13 @@ renderKnockoutBracket();
 
 // Add dummy awards to simulated reality for honor roll points matching
 simulatedReality['boot_gold'] = "Mbappe";
+simulatedReality['boot_silver'] = "Haaland";
+simulatedReality['boot_bronze'] = "Vinicius Jr";
 simulatedReality['ball_gold'] = "Messi";
+simulatedReality['ball_silver'] = "De Bruyne";
+simulatedReality['ball_bronze'] = "Musiala";
+
+renderAwards();
 
 localStorage.setItem('worldcup2026_testing_reality', JSON.stringify(simulatedReality));
 </script>
