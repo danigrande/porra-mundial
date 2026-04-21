@@ -199,13 +199,26 @@ body::before {
   font-family: 'Outfit', sans-serif;
   font-size: 2.2rem;
   font-weight: 800;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.header-icon {
+  -webkit-text-fill-color: initial;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.header-text-gradient {
   background: linear-gradient(135deg, #fff 0%, #c7d2fe 50%, #a5b4fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  position: relative;
-  z-index: 1;
-  margin-bottom: 0.5rem;
 }
 
 .page-header .subtitle {
@@ -960,12 +973,14 @@ body::before {
   transform: translateY(0);
 }
 
-.btn-recover svg {
+.btn-recover svg, .btn-recover span.icon {
+  font-size: 1.2rem;
   transition: transform 0.25s ease;
+  line-height: 1;
 }
 
-.btn-recover:hover svg {
-  transform: translateY(1px);
+.btn-recover:hover svg, .btn-recover:hover span.icon {
+  transform: translateY(1px) scale(1.1);
 }
 
 /* ===== Cloud Action Button ===== */
@@ -1001,12 +1016,14 @@ body::before {
   transform: none;
 }
 
-.btn-cloud svg {
+.btn-cloud svg, .btn-cloud span.icon {
+  font-size: 1.3rem;
   transition: transform 0.3s ease;
+  line-height: 1;
 }
 
-.btn-cloud:hover svg {
-  transform: translateY(-3px);
+.btn-cloud:hover svg, .btn-cloud:hover span.icon {
+  transform: translateY(-3px) scale(1.1);
 }
 
 
