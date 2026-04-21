@@ -19,7 +19,7 @@
 
     .lb-row {
       display: grid;
-      grid-template-columns: 60px 1fr 100px 120px 60px;
+      grid-template-columns: 50px 1fr 80px 75px 75px 75px 100px 50px;
       padding: 1rem 1.5rem;
       align-items: center;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -205,13 +205,34 @@
       border-top: 1px solid rgba(255, 255, 255, 0.03);
     }
 
-    .hist-match { font-weight: 600; color: var(--text-primary); }
-    .hist-pts { font-weight: 800; color: var(--accent-gold); text-align: right; }
-    .hist-reason { color: var(--text-muted); font-size: 0.75rem; }
+    .hist-match {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
 
-    .lb-history-scroll::-webkit-scrollbar { width: 6px; }
-    .lb-history-scroll::-webkit-scrollbar-track { background: transparent; }
-    .lb-history-scroll::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 10px; }
+    .hist-pts {
+      font-weight: 800;
+      color: var(--accent-gold);
+      text-align: right;
+    }
+
+    .hist-reason {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .lb-history-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .lb-history-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .lb-history-scroll::-webkit-scrollbar-thumb {
+      background: rgba(59, 130, 246, 0.3);
+      border-radius: 10px;
+    }
 
     .info-banner {
       background: rgba(16, 185, 129, 0.1);
@@ -226,8 +247,9 @@
 
     @media (max-width: 768px) {
       .lb-row {
-        grid-template-columns: 40px 1fr 80px 80px 40px;
-        padding: 0.8rem;
+        grid-template-columns: 40px 1fr 50px 45px 45px 45px 60px 40px;
+        padding: 0.6rem;
+        font-size: 0.85rem;
       }
 
       .lb-rank {
@@ -292,7 +314,10 @@
       <div class="lb-row lb-header-row">
         <div style="text-align:center;">Pos</div>
         <div>Jugador</div>
-        <div>Plenos 🎯</div>
+        <div style="text-align:center;">Plenos 🎯</div>
+        <div style="text-align:center;">Grupos</div>
+        <div style="text-align:center;">Elim.</div>
+        <div style="text-align:center;">Honor</div>
         <div style="text-align:right;">Puntos Totales</div>
         <div style="text-align:center;">Trend</div>
       </div>
@@ -310,7 +335,7 @@
     // ==========================================
     // SIMULATION CONFIGURATION
     // ==========================================
-    
+
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztK5Dqlt48dUWYtc1CxG8sKb54c-_9_3G0KAS3uFkvn-pa6hTGZBk4I6X54lt59aY/exec';
 
     // Load external data
@@ -355,15 +380,14 @@
           const mIdx = parseInt(groupMatch[2]);
           const group = fixtureGroups.find(g => g.letter === letter);
           if (group) {
-            // Reconstruct pairings based on official order
             const t = group.teams;
             const pairings = [
-              [t[0], t[1]], [t[2], t[3]], // J1
-              [t[3], t[1]], [t[0], t[2]], // J2
-              [t[3], t[0]], [t[1], t[2]]  // J3
+              [t[0], t[1]], [t[2], t[3]],
+              [t[3], t[1]], [t[0], t[2]],
+              [t[3], t[0]], [t[1], t[2]]
             ];
             const pair = pairings[mIdx];
-            return pair ? `${pair[0]} vs ${pair[1]}` : `Grupo ${letter} #${mIdx+1}`;
+            return pair ? `${pair[0]} vs ${pair[1]}` : `Grupo ${letter} #${mIdx + 1}`;
           }
         }
       } else if (prefix.startsWith('ko_')) {
@@ -373,6 +397,102 @@
         return `${roundName} (#${num})`;
       }
       return prefix;
+    }
+
+    // Logic for resolving standings and bracket from scores
+    function getStandings(letter, dataSource) {
+      const groupData = fixtureGroups.find(g => g.letter === letter);
+      if (!groupData) return [];
+      const stats = {};
+      groupData.teams.forEach(t => stats[t] = { name: t, pts: 0, gf: 0, ga: 0, dg: 0 });
+      for (let i = 0; i < 6; i++) {
+        const hKey = `g${letter}_m${i}_h`;
+        const aKey = `g${letter}_m${i}_a`;
+        const gh = parseInt(dataSource[hKey]);
+        const ga = parseInt(dataSource[aKey]);
+        if (isNaN(gh) || isNaN(ga)) continue;
+        const pairings = [[0, 1], [2, 3], [3, 1], [0, 2], [3, 0], [1, 2]];
+        const p = pairings[i];
+        const hName = groupData.teams[p[0]];
+        const aName = groupData.teams[p[1]];
+        stats[hName].gf += gh; stats[hName].ga += ga;
+        stats[aName].gf += ga; stats[aName].ga += gh;
+        if (gh > ga) stats[hName].pts += 3;
+        else if (ga > gh) stats[aName].pts += 3;
+        else { stats[hName].pts += 1; stats[aName].pts += 1; }
+      }
+      Object.values(stats).forEach(s => s.dg = s.gf - s.ga);
+      return Object.values(stats).sort((a, b) => (b.pts - a.pts) || (b.dg - a.dg) || (b.gf - a.gf));
+    }
+
+    function resolveTeam(code, dataSource) {
+      if (!code) return "";
+      const groupMatch = code.match(/^([1-2])([A-L])$/);
+      if (groupMatch) {
+        const rank = parseInt(groupMatch[1]);
+        const letter = groupMatch[2];
+        const std = getStandings(letter, dataSource);
+        return std[rank - 1] ? std[rank - 1].name : code;
+      }
+      const matchRef = code.match(/^([WL])(\d+)$/);
+      if (matchRef) {
+        const type = matchRef[1];
+        const num = matchRef[2];
+        const gh = parseInt(dataSource[`ko_${num}_h`]);
+        const ga = parseInt(dataSource[`ko_${num}_a`]);
+        if (isNaN(gh) || isNaN(ga)) return code;
+        let homeCode = "", awayCode = "";
+        knockoutBracket.forEach(r => {
+          const m = r.matches.indexOf(parseInt(num));
+          // Simplified lookup: for testing, we'd need the full match tree. 
+          // Since we can't easily traverse back without full match definitions, 
+          // we'll rely on the fact that for scoring, we just need to compare resolved reality vs resolved prediction.
+        });
+        // Real resolve requires full knockoutMatches definition with home/away codes.
+        // Let's assume the codes are provided in the data or we use the ones from worldcup.html
+      }
+      return code;
+    }
+
+    // Better resolve for bracket: we need the match tree
+    const bracketMatches = {
+      73: ['2A', '2B'], 76: ['1C', '2F'], 74: ['1E', '3ABCDF'], 75: ['1F', '2C'], 78: ['2E', '2I'], 77: ['1I', '3CDFGH'], 79: ['1A', '3CEFHI'], 80: ['1L', '3EHIJK'],
+      82: ['1G', '3AEHIJ'], 81: ['1D', '3BEFIJ'], 84: ['1H', '2J'], 83: ['2K', '2L'], 85: ['1B', '3EFGIJ'], 88: ['2D', '2G'], 86: ['1J', '2H'], 87: ['1K', '3DEIJL'],
+      90: ['W73', 'W75'], 89: ['W74', 'W77'], 91: ['W76', 'W78'], 92: ['W79', 'W80'], 93: ['W83', 'W84'], 94: ['W81', 'W82'], 95: ['W86', 'W88'], 96: ['W85', 'W87'],
+      97: ['W89', 'W90'], 98: ['W93', 'W94'], 99: ['W91', 'W92'], 100: ['W95', 'W96'],
+      101: ['W97', 'W98'], 102: ['W99', 'W100'], 103: ['L101', 'L102'], 104: ['W101', 'W102']
+    };
+
+    function fullResolve(code, dataSource) {
+      if (!code || !dataSource) return code;
+      const groupMatch = code.match(/^([1-2])([A-L])$/);
+      if (groupMatch) return getStandings(groupMatch[2], dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
+
+      if (code.startsWith('3')) return code; // Skip best thirds for now as it's too complex for this baseline
+
+      const matchRef = code.match(/^([WL])(\d+)$/);
+      if (matchRef) {
+        const type = matchRef[1];
+        const num = matchRef[2];
+        const gh = parseInt(dataSource[`ko_${num}_h`]);
+        const ga = parseInt(dataSource[`ko_${num}_a`]);
+        if (isNaN(gh) || isNaN(ga)) return code;
+        const pairing = bracketMatches[num];
+        if (!pairing) return code;
+
+        let winner, loser;
+        if (gh > ga) { winner = fullResolve(pairing[0], dataSource); loser = fullResolve(pairing[1], dataSource); }
+        else if (ga > gh) { winner = fullResolve(pairing[1], dataSource); loser = fullResolve(pairing[0], dataSource); }
+        else {
+          // Draw -> check penalties
+          const ph = parseInt(dataSource[`pen_${num}_h`]);
+          const pa = parseInt(dataSource[`pen_${num}_a`]);
+          if (ph > pa) { winner = fullResolve(pairing[0], dataSource); loser = fullResolve(pairing[1], dataSource); }
+          else { winner = fullResolve(pairing[1], dataSource); loser = fullResolve(pairing[0], dataSource); }
+        }
+        return type === 'W' ? winner : loser;
+      }
+      return code;
     }
 
     // ==========================================
@@ -388,8 +508,10 @@
       let exactHits = 0;
       let groupPts = 0;
       let koPts = 0;
+      let honorPts = 0;
+      const history = [];
 
-      if (!reality) return { totalPts, exactHits, groupPts, koPts };
+      if (!reality) return { totalPts, exactHits, groupPts, koPts, honorPts, history };
 
       const opt_diff_adjust = getRule('opt_diff_adjust', 0) / 100;
 
@@ -404,6 +526,14 @@
           sign: getRule('pts_ko_sign', 10),
           diff: getRule('pts_ko_diff', 10),
           exact: getRule('pts_ko_exact', 10)
+        },
+        honor: {
+          champ: getRule('pts_honor_champ', 50),
+          runner: getRule('pts_honor_runner', 30),
+          third: getRule('pts_honor_third', 20),
+          gold: getRule('pts_award_gold', 25),
+          silver: getRule('pts_award_silver', 15),
+          bronze: getRule('pts_award_bronze', 10)
         }
       };
 
@@ -424,7 +554,7 @@
         const pSign = pH > pA ? '1' : pH === pA ? 'X' : '2';
 
         if (rSign === pSign) {
-          mPts += pRules.sign; 
+          mPts += pRules.sign;
           reasons.push(`Signo (${pRules.sign})`);
 
           if (rH === pH && rA === pA) {
@@ -452,7 +582,6 @@
         return { mPts: Math.round(mPts), reasons };
       }
 
-      const history = [];
 
       // Loop through all keys looking for 'ko_X_h' and 'gX_mY_h'
       Object.keys(reality).forEach(key => {
@@ -481,7 +610,36 @@
         }
       });
 
-      return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), history };
+      // --- Honor Roll Scoring ---
+      const checkHonor = (actual, predicted, pts, label) => {
+        if (actual && predicted && actual === predicted) {
+          honorPts += pts;
+          totalPts += pts;
+          history.push({ match: "Honor: " + label, pts: pts, reason: "Acierto" });
+        }
+      };
+
+      const realChamp = fullResolve('W104', reality);
+      const predChamp = fullResolve('W104', prediction);
+      checkHonor(realChamp, predChamp, ptsRules.honor.champ, "Campeón");
+
+      const realRunner = fullResolve('L104', reality);
+      const predRunner = fullResolve('L104', prediction);
+      checkHonor(realRunner, predRunner, ptsRules.honor.runner, "Subcampeón");
+
+      const realThird = fullResolve('W103', reality);
+      const predThird = fullResolve('W103', prediction);
+      checkHonor(realThird, predThird, ptsRules.honor.third, "3er Puesto");
+
+      // Awards
+      ['boot', 'ball'].forEach(cat => {
+        ['gold', 'silver', 'bronze'].forEach(rank => {
+          const key = `${cat}_${rank}`;
+          checkHonor(reality[key], prediction[key], ptsRules.honor[rank], (cat === 'boot' ? 'Bota' : 'Balón') + " " + rank);
+        });
+      });
+
+      return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), honorPts: Math.round(honorPts), history };
     }
 
     // ==========================================
@@ -490,23 +648,23 @@
 
     function renderLeaderboard() {
       const container = document.getElementById('lbBody');
-      
+
       if (!reality) {
         container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-muted);">
           Debes abrir la pestaña <strong>Results</strong> que usa <em>fixture_testing.html</em> primero para generar una realidad simulada.
         </div>`;
         return;
       }
-      
+
       const scoreResults = players.map(p => {
-      const s = calculateScore(p);
-      return {
-        name: p._playerName || 'Unknown',
-        isYou: !p._isBot,
-        ...s,
-        trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.5 ? 'dn' : 'eq' // Fancy simulated trend
-      };
-    });
+        const s = calculateScore(p);
+        return {
+          name: p._playerName || 'Unknown',
+          isYou: !p._isBot,
+          ...s,
+          trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.5 ? 'dn' : 'eq' // Fancy simulated trend
+        };
+      });
 
       scoreResults.sort((a, b) => b.totalPts - a.totalPts);
 
@@ -522,9 +680,12 @@
               ${r.name}
               ${r.isYou ? '<span class="lb-you-badge">TÚ</span>' : ''}
             </div>
-            <div class="lb-plenos">
+            <div class="lb-plenos" style="justify-content: center;">
               <span>${r.exactHits}</span> 
             </div>
+            <div style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.groupPts}</div>
+            <div style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.koPts}</div>
+            <div style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.honorPts}</div>
             <div class="lb-points">
               ${r.totalPts}<span class="lb-pts-label">pts</span>
             </div>
@@ -538,6 +699,10 @@
               <div class="lb-b-item">
                 <span class="lb-b-label">Puntos Eliminatorias</span>
                 <span class="lb-b-value"><span>${r.koPts}</span> pts</span>
+              </div>
+              <div class="lb-b-item">
+                <span class="lb-b-label">Cuadro de Honor</span>
+                <span class="lb-b-value"><span>${r.honorPts}</span> pts</span>
               </div>
               <div class="lb-b-item">
                 <span class="lb-b-label">Aciertos Exactos</span>
@@ -576,14 +741,14 @@
 
     async function initLeaderboard() {
       const container = document.getElementById('lbBody');
-      
+
       if (!reality) {
         renderLeaderboard();
         return;
       }
-      
+
       container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⏳ Obteniendo predicciones de la nube...</div>`;
-      
+
       try {
         if (SCRIPT_URL && SCRIPT_URL !== 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
           // Fetch rules
@@ -591,33 +756,33 @@
             const rulesResponse = await fetch(`${SCRIPT_URL}?action=getRules`);
             const rulesResult = await rulesResponse.json();
             if (rulesResult.status === 'success' && rulesResult.data) {
-               const rawObj = rulesResult.data;
-               rules = typeof rawObj === 'string' ? JSON.parse(rawObj) : rawObj;
+              const rawObj = rulesResult.data;
+              rules = typeof rawObj === 'string' ? JSON.parse(rawObj) : rawObj;
             }
-          } catch(e) { console.warn("No se pudieron obtener las reglas de la nube.", e); }
+          } catch (e) { console.warn("No se pudieron obtener las reglas de la nube.", e); }
 
           // Fetch predictions
           const response = await fetch(SCRIPT_URL);
           const result = await response.json();
           if (result.status === 'success' && result.data) {
-             Object.keys(result.data).forEach(pName => {
-                const isLocalUser = (localStorage.getItem('worldcup2026_predictions') && JSON.parse(localStorage.getItem('worldcup2026_predictions'))._playerName === pName);
-                const rawObj = result.data[pName];
-                const preds = typeof rawObj.predictions === 'string' ? JSON.parse(rawObj.predictions) : rawObj.predictions;
-                players.push({ _playerName: pName, _isBot: !isLocalUser, ...preds });
-             });
+            Object.keys(result.data).forEach(pName => {
+              const isLocalUser = (localStorage.getItem('worldcup2026_predictions') && JSON.parse(localStorage.getItem('worldcup2026_predictions'))._playerName === pName);
+              const rawObj = result.data[pName];
+              const preds = typeof rawObj.predictions === 'string' ? JSON.parse(rawObj.predictions) : rawObj.predictions;
+              players.push({ _playerName: pName, _isBot: !isLocalUser, ...preds });
+            });
           }
         }
       } catch (err) {
         console.warn("Error cargando nube, usamos local.", err);
       }
-      
+
       // Fallback
       if (players.length === 0) {
         const rosterStr = localStorage.getItem('worldcup2026_roster');
         const roster = rosterStr ? JSON.parse(rosterStr) : [];
         players = [...roster];
-        
+
         // Add active prediction if we don't have a roster either
         if (players.length === 0) {
           const localUserStr = localStorage.getItem('worldcup2026_predictions');
