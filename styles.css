@@ -84,10 +84,10 @@ body::before {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 14, 26, 0.85);
+  background: rgba(10, 14, 26, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
-  padding: 0 2rem;
+  padding: 0 1rem;
 }
 
 .nav-inner {
@@ -124,12 +124,23 @@ body::before {
 .nav-links {
   display: flex;
   gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE/Edge */
+  padding: 8px 0;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+.nav-links::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .nav-link {
   text-decoration: none;
   color: var(--text-secondary);
-  padding: 8px 18px;
+  padding: 8px 14px;
+  white-space: nowrap;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
@@ -211,7 +222,7 @@ body::before {
   z-index: 1;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem 1rem;
 }
 
 /* ===== Group Card ===== */
@@ -918,6 +929,87 @@ body::before {
   color: var(--accent-red);
 }
 
+/* ===== Recover Button ===== */
+.btn-recover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 42px;
+}
+
+.btn-recover:hover {
+  background: var(--accent-cyan);
+  color: var(--bg-primary);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-recover:active {
+  transform: translateY(0);
+}
+
+.btn-recover svg {
+  transition: transform 0.25s ease;
+}
+
+.btn-recover:hover svg {
+  transform: translateY(1px);
+}
+
+/* ===== Cloud Action Button ===== */
+.btn-cloud {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 12px 28px;
+  border-radius: var(--radius-md);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-cloud:hover {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-cloud:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-cloud svg {
+  transition: transform 0.3s ease;
+}
+
+.btn-cloud:hover svg {
+  transform: translateY(-3px);
+}
+
+
 .save-status {
   font-size: 0.8rem;
   color: var(--accent-green);
@@ -962,28 +1054,103 @@ body::before {
   .groups-grid,
   .fixture-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .nav-logo-text {
+    display: none; /* Hide text on very small nav */
   }
 
   .knockout-matches {
     grid-template-columns: 1fr;
   }
 
-  .match-row {
-    grid-template-columns: 70px 40px 1fr 60px 20px 60px 1fr;
-    padding: 0.5rem 0.5rem;
-    gap: 4px;
+  /* Compact Match Row for Mobile */
+  .match-row, .match-header-row {
+    grid-template-columns: 60px 40px 1fr 40px 15px 40px 1fr !important;
+    padding: 0.6rem 0.4rem !important;
+    gap: 4px !important;
   }
 
-  .match-date { font-size: 0.65rem; }
-  .team-name { font-size: 0.78rem; }
-  .score-input { width: 44px; height: 36px; font-size: 1rem; }
+  .match-header-row span {
+    font-size: 0.55rem;
+  }
 
-  .page-header h1 { font-size: 1.5rem; }
+  .match-date { font-size: 0.65rem; min-width: auto; }
+  .match-jornada { font-size: 0.6rem; padding: 1px 6px; }
+  .team-name { font-size: 0.75rem; font-weight: 500; }
+  .score-input { width: 38px; height: 34px; font-size: 0.95rem; border-width: 1px; }
+  .score-separator { font-size: 0.8rem; }
 
-  .nav-links { gap: 0; }
-  .nav-link { padding: 6px 10px; font-size: 0.78rem; }
+  .page-header { padding: 2rem 1rem; }
+  .page-header h1 { font-size: 1.6rem; }
+  .page-header .subtitle { font-size: 0.85rem; }
 
-  .main-content { padding: 1rem; }
+  .group-header { padding: 0.8rem 1rem; }
+  .group-letter { width: 32px; height: 32px; font-size: 1rem; }
+  .group-name { font-size: 1rem; }
+
+  .group-layout { padding: 0 0.5rem 0.5rem; gap: 1rem; }
+
+  .main-content { padding: 1rem 0.5rem; }
+
+  /* Utility to hide less important table columns on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .prediction-standings {
+    font-size: 0.75rem;
+  }
+  
+  .prediction-standings th, 
+  .prediction-standings td {
+    padding: 0.5rem 0.3rem !important;
+  }
+
+  .knockout-match {
+    padding: 0.75rem;
+  }
+  
+  .knockout-match .km-teams {
+    gap: 4px;
+  }
+  
+  .knockout-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .save-bar {
+    padding: 0.75rem 1rem;
+  }
+  
+  .btn-save {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    flex: 2;
+  }
+  
+  .btn-reset {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-logo-icon { font-size: 1.3rem; }
+  
+  .match-row, .match-header-row {
+    grid-template-columns: 50px 35px 1fr 35px 10px 35px 1fr !important;
+  }
+  
+  .team-name { font-size: 0.7rem; }
+  
+  /* Stack recovery name inputs if needed */
+  .group-card .score-input[style*="flex:1"] {
+    width: 100%;
+  }
 }
 
 /* ===== Animations ===== */

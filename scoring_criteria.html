@@ -39,7 +39,7 @@
   <!-- Main Content -->
   <main class="main-content">
 
-    <div class="groups-grid" style="grid-template-columns: 1fr;">
+    <div class="groups-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
 
       <!-- Fase de Grupos -->
       <div class="group-card">
@@ -180,8 +180,9 @@
       </div>
 
       <div style="text-align: center; margin-top: 2rem;">
-        <button id="btnSaveCloud" onclick="saveCriteriaToCloud()" class="save-btn" style="padding: 12px 24px;">
-          ☁️ Guardar Configuración en la Nube
+        <button id="btnSaveCloud" onclick="saveCriteriaToCloud()" class="btn-cloud">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a5.5 5.5 0 0 0 2.5-10.5 8.5 8.5 0 1 0-15.5 1.5 4.5 4.5 0 0 0 2 8.5"></path><polyline points="9 11 12 8 15 11"></polyline><line x1="12" y1="8" x2="12" y2="14"></line></svg>
+          <span>Guardar Configuración en la Nube</span>
         </button>
       </div>
       
@@ -224,8 +225,8 @@
       const data = JSON.parse(raw);
       
       const btn = document.getElementById('btnSaveCloud');
-      btn.textContent = '⏳ Subiendo a la nube...';
-      btn.style.opacity = '0.7';
+      const btnSpan = btn.querySelector('span');
+      btnSpan.textContent = '⏳ Subiendo a la nube...';
       btn.disabled = true;
 
       try {
@@ -244,8 +245,9 @@
         console.error("Error sincronizando reglas", e);
         showToast('❌ Error al subir la configuración');
       } finally {
-        btn.textContent = '☁️ Guardar Configuración en la Nube';
-        btn.style.opacity = '1';
+        const btn = document.getElementById('btnSaveCloud');
+        const btnSpan = btn.querySelector('span');
+        btnSpan.textContent = 'Guardar Configuración en la Nube';
         btn.disabled = false;
       }
     }

@@ -603,7 +603,7 @@ function renderFixtureGroups() {
                   <th style="text-align:left">Sel</th>
                   <th>Pts</th>
                   <th>DG</th>
-                  <th>GF-GC</th>
+                  <th class="hide-mobile">GF-GC</th>
                 </tr>
               </thead>
               <tbody>
@@ -613,7 +613,7 @@ function renderFixtureGroups() {
                     <td class="team-cell">${getTeam(team)}</td>
                     <td class="pts-cell">0</td>
                     <td>0</td>
-                    <td style="color:var(--text-muted)">0-0</td>
+                    <td class="hide-mobile" style="color:var(--text-muted)">0-0</td>
                   </tr>
                 `).join('')}
               </tbody>

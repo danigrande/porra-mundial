@@ -247,8 +247,8 @@
 
     @media (max-width: 768px) {
       .lb-row {
-        grid-template-columns: 40px 1fr 50px 45px 45px 45px 60px 40px;
-        padding: 0.6rem;
+        grid-template-columns: 40px 1fr 80px 40px;
+        padding: 0.6rem 0.8rem;
         font-size: 0.85rem;
       }
 
@@ -314,10 +314,10 @@
       <div class="lb-row lb-header-row">
         <div style="text-align:center;">Pos</div>
         <div>Jugador</div>
-        <div style="text-align:center;">Plenos 🎯</div>
-        <div style="text-align:center;">Grupos</div>
-        <div style="text-align:center;">Elim.</div>
-        <div style="text-align:center;">Honor</div>
+        <div class="hide-mobile" style="text-align:center;">Plenos 🎯</div>
+        <div class="hide-mobile" style="text-align:center;">Grupos</div>
+        <div class="hide-mobile" style="text-align:center;">Elim.</div>
+        <div class="hide-mobile" style="text-align:center;">Honor</div>
         <div style="text-align:right;">Puntos Totales</div>
         <div style="text-align:center;">Trend</div>
       </div>
@@ -680,12 +680,12 @@
               ${r.name}
               ${r.isYou ? '<span class="lb-you-badge">TÚ</span>' : ''}
             </div>
-            <div class="lb-plenos" style="justify-content: center;">
+            <div class="lb-plenos hide-mobile" style="justify-content: center;">
               <span>${r.exactHits}</span> 
             </div>
-            <div style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.groupPts}</div>
-            <div style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.koPts}</div>
-            <div style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.honorPts}</div>
+            <div class="hide-mobile" style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.groupPts}</div>
+            <div class="hide-mobile" style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.koPts}</div>
+            <div class="hide-mobile" style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.honorPts}</div>
             <div class="lb-points">
               ${r.totalPts}<span class="lb-pts-label">pts</span>
             </div>

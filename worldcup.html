@@ -63,8 +63,9 @@
             <select id="cloudPlayerSelect" style="flex: 1; height:42px; font-size:0.9rem; padding:0 12px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--radius-md);">
               <option value="">Cargando jugadores en la nube...</option>
             </select>
-            <button onclick="recoverPrediction()" class="save-btn" style="height:42px; padding:0 16px; width:auto;">
-              ⬇️ Recuperar
+            <button onclick="recoverPrediction()" class="btn-recover">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a5.5 5.5 0 0 0 2.5-10.5 8.5 8.5 0 1 0-15.5 1.5 4.5 4.5 0 0 0 2 8.5"></path><polyline points="15 13 12 16 9 13"></polyline><line x1="12" y1="10" x2="12" y2="16"></line></svg>
+              Recuperar
             </button>
           </div>
         </div>
@@ -404,12 +405,12 @@
                 <th class="pos-col">Pos</th>
                 <th class="team-col">Selección</th>
                 <th>Pts</th>
-                <th>J</th>
-                <th>G</th>
-                <th>E</th>
-                <th>P</th>
-                <th>GF</th>
-                <th>GC</th>
+                <th class="hide-mobile">J</th>
+                <th class="hide-mobile">G</th>
+                <th class="hide-mobile">E</th>
+                <th class="hide-mobile">P</th>
+                <th class="hide-mobile">GF</th>
+                <th class="hide-mobile">GC</th>
                 <th>DG</th>
               </tr>
             </thead>
@@ -533,12 +534,12 @@
             <td class="pos-col">${idx + 1}</td>
             <td class="team-col">${getTeam(s.name)}</td>
             <td class="pts-col">${s.pts}</td>
-            <td>${s.j}</td>
-            <td>${s.g}</td>
-            <td>${s.e}</td>
-            <td>${s.p}</td>
-            <td>${s.gf}</td>
-            <td>${s.gc}</td>
+            <td class="hide-mobile">${s.j}</td>
+            <td class="hide-mobile">${s.g}</td>
+            <td class="hide-mobile">${s.e}</td>
+            <td class="hide-mobile">${s.p}</td>
+            <td class="hide-mobile">${s.gf}</td>
+            <td class="hide-mobile">${s.gc}</td>
             <td>${s.dg}</td>
           </tr>
         `).join('');
@@ -638,12 +639,12 @@
                   <th class="pos-col">Pos</th>
                   <th class="team-col">Selección</th>
                   <th>Pts</th>
-                  <th>J</th>
-                  <th>G</th>
-                  <th>E</th>
-                  <th>P</th>
-                  <th>GF</th>
-                  <th>GC</th>
+                  <th class="hide-mobile">J</th>
+                  <th class="hide-mobile">G</th>
+                  <th class="hide-mobile">E</th>
+                  <th class="hide-mobile">P</th>
+                  <th class="hide-mobile">GF</th>
+                  <th class="hide-mobile">GC</th>
                   <th>DG</th>
                 </tr>
               </thead>
@@ -657,12 +658,12 @@
                       <td class="pos-col">${idx + 1}</td>
                       <td class="team-col">${getTeam(s.name)} <small style="color:var(--text-muted)">(${s.group})</small></td>
                       <td class="pts-col">${s.pts}</td>
-                      <td>${s.j}</td>
-                      <td>${s.g}</td>
-                      <td>${s.e}</td>
-                      <td>${s.p}</td>
-                      <td>${s.gf}</td>
-                      <td>${s.gc}</td>
+                      <td class="hide-mobile">${s.j}</td>
+                      <td class="hide-mobile">${s.g}</td>
+                      <td class="hide-mobile">${s.e}</td>
+                      <td class="hide-mobile">${s.p}</td>
+                      <td class="hide-mobile">${s.gf}</td>
+                      <td class="hide-mobile">${s.gc}</td>
                       <td>${s.dg}</td>
                     </tr>
                   `;
