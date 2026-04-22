@@ -290,14 +290,16 @@
 
     <div class="info-banner">
       <span style="font-size: 1.5rem;">ℹ️</span>
-      <div>
-        <div style="font-weight: 600; color: var(--accent-green);">Simulación activada</div>
+      <div style="flex:1">
+        <div style="font-weight: 600; color: var(--accent-green); display: flex; align-items: center; justify-content: space-between;">
+          <span>Simulación activada</span>
+          <button onclick="handleRegenerate()" class="nav-link" style="font-size: 0.7rem; padding: 4px 8px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 4px; cursor: pointer; color: var(--accent-green); font-weight: 700;">
+            🔄 Regenerar realidad
+          </button>
+        </div>
         <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
-          Esta tabla toma tus predicciones locales y las evalúa contra los resultados generados aleatoriamente en
-          <strong>fixture_testing.html</strong>, usando las reglas definidas en <strong>scoring_criteria.html</strong>.
-          <br>
-          <em>(Abre e interactúa siempre primero con la pestaña de resultados de prueba para generar una nueva
-            simulación).</em>
+          Esta tabla toma tus predicciones y las evalúa contra resultados simulados aleatoriamente. 
+          Si no se detectan resultados de <strong>fixture_testing.html</strong>, se generarán otros nuevos automáticamente.
         </div>
       </div>
     </div>
@@ -331,13 +333,73 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztK5Dqlt48dUWYtc1CxG8sKb54c-_9_3G0KAS3uFkvn-pa6hTGZBk4I6X54lt59aY/exec';
 
     // Load external data
-    const realityStr = localStorage.getItem('worldcup2026_testing_reality');
-    const rulesStr = localStorage.getItem('worldcup2026_scoring');
-
-    const reality = realityStr ? JSON.parse(realityStr) : null;
-    let rules = rulesStr ? JSON.parse(rulesStr) : {};
-
+    let reality = null;
+    let rules = {};
     let players = [];
+
+    function loadLocalData() {
+      const realityStr = localStorage.getItem('worldcup2026_testing_reality');
+      const rulesStr = localStorage.getItem('worldcup2026_scoring');
+      reality = realityStr ? JSON.parse(realityStr) : null;
+      rules = rulesStr ? JSON.parse(rulesStr) : {};
+    }
+
+    loadLocalData();
+
+    // Cross-tab synchronization
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'worldcup2026_testing_reality') {
+        console.log("Detectado cambio en realidad simulada, actualizando...");
+        loadLocalData();
+        renderLeaderboard();
+      }
+    });
+
+    function handleRegenerate() {
+      generateSimulatedReality();
+      loadLocalData();
+      renderLeaderboard();
+      // Show toast if available (styles.css might have it)
+      const toast = document.getElementById('toast');
+      if (toast) {
+        toast.textContent = "¡Realidad regenerada!";
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      } else {
+        alert("¡Realidad regenerada con éxito!");
+      }
+    }
+
+    function generateSimulatedReality() {
+      const sim = {};
+      // Groups A-L, matches 0-5
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+      letters.forEach(l => {
+        for (let i = 0; i < 6; i++) {
+          sim[`g${l}_m${i}_h`] = Math.floor(Math.random() * 4).toString();
+          sim[`g${l}_m${i}_a`] = Math.floor(Math.random() * 4).toString();
+        }
+      });
+      // Knockout 73-104
+      for (let i = 73; i <= 104; i++) {
+        const h = Math.floor(Math.random() * 4);
+        const a = Math.floor(Math.random() * 4);
+        sim[`ko_${i}_h`] = h.toString();
+        sim[`ko_${i}_a`] = a.toString();
+        if (h === a) {
+          const ph = Math.floor(Math.random() * 5) + 1;
+          const pa = Math.floor(Math.random() * 5);
+          sim[`pen_${i}_h`] = ph.toString();
+          sim[`pen_${i}_a`] = (ph === pa ? pa + 1 : pa).toString();
+        }
+      }
+      // Awards
+      sim['boot_gold'] = "Mbappe"; sim['boot_silver'] = "Haaland"; sim['boot_bronze'] = "Vinicius Jr";
+      sim['ball_gold'] = "Messi"; sim['ball_silver'] = "De Bruyne"; sim['ball_bronze'] = "Musiala";
+
+      localStorage.setItem('worldcup2026_testing_reality', JSON.stringify(sim));
+      return sim;
+    }
 
     // Metadata for resolving match names
     const fixtureGroups = [
@@ -732,6 +794,12 @@
 
     async function initLeaderboard() {
       const container = document.getElementById('lbBody');
+
+      if (!reality) {
+        console.log("No se detectó realidad simulada. Generando una nueva...");
+        generateSimulatedReality();
+        loadLocalData();
+      }
 
       if (!reality) {
         renderLeaderboard();
