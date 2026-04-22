@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      max-width: 600px;
+      margin: 2rem auto;
+      box-shadow: var(--shadow-card);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-blue);
+      outline: none;
+    }
+
+    .btn-save {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, filter 0.2s;
+      margin-top: 1rem;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    .info-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    .status-msg {
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 600;
+      padding: 0.5rem;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .status-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); display: block; }
+    .status-error { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="main-nav">
+    <div class="nav-inner">
+      <a href="worldcup.html" class="nav-logo">
+        <span class="nav-logo-icon">⚽</span>
+        <span class="nav-logo-text">Mundial 2026</span>
+      </a>
+      <div class="nav-links">
+        <a href="worldcup.html" class="nav-link">Predictions</a>
+        <a href="player_scores.html" class="nav-link">Leaderboard</a>
+        <a href="about_user.html" class="nav-link active">Mi Perfil</a>
+      </div>
+      <div id="navUserInfo" class="nav-user">
+        <span class="nav-user-name" id="displayUserName"></span>
+        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <h1><span class="header-icon">👤</span> <span class="header-text-gradient">Configura tu Perfil IA</span></h1>
+    <p class="subtitle">Cuéntanos sobre ti para que los resúmenes sean más divertidos y personalizados</p>
+  </header>
+
+  <main class="main-content">
+    <div class="profile-card">
+      <div id="statusMsg" class="status-msg"></div>
+
+      <form id="profileForm">
+        <div class="form-group">
+          <label for="nickname">Nickname (Cómo te llamará la IA)</label>
+          <input type="text" id="nickname" class="form-control" placeholder="Ej: El Mago de la Porra" required>
+        </div>
+
+        <div class="form-group">
+          <label for="humor_style">Estilo de Humor de la IA</label>
+          <select id="humor_style" class="form-control">
+            <option value="Sarcástico y mordaz">Sarcástico y mordaz (Nivel Pro)</option>
+            <option value="Divertido y amigable">Divertido y amigable</option>
+            <option value="Épico y motivador">Épico y motivador</option>
+            <option value="Analítico y serio">Analítico y serio</option>
+            <option value="Troll total">Troll total 😈</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="likes">Cosas que te gustan (separadas por comas)</label>
+          <textarea id="likes" class="form-control" rows="2" placeholder="Ej: Real Madrid, Goles de chilena, Ganar en el último minuto"></textarea>
+          <p class="info-note">La IA te felicitará cuando algo de esto ocurra.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="dislikes">Cosas que NO te gustan (separadas por comas)</label>
+          <textarea id="dislikes" class="form-control" rows="2" placeholder="Ej: El VAR, Perder tiempo, Los penaltis fallados"></textarea>
+          <p class="info-note">La IA se burlará de ti si esto sucede o te dará ánimos.</p>
+        </div>
+
+        <button type="submit" id="saveBtn" class="btn-save">Guardar Configuración</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUG7NAswIhcLn90C6JkA_Dt-45HBz8Klvmwij2UO0ilh85KUs6tUTz05-wALfTulnN/exec';
+    let currentUser = null;
+
+    function checkAuth() {
+      const raw = localStorage.getItem('worldcup2026_user');
+      if (!raw) {
+        window.location.href = 'login.html';
+        return;
+      }
+      currentUser = JSON.parse(raw);
+      document.getElementById('displayUserName').textContent = currentUser.name;
+    }
+
+    async function loadCurrentInfo() {
+      try {
+        // Fetch ALL info and filter for current user (simpler than making a specific API for one user)
+        const res = await fetch(`${SCRIPT_URL}?action=getAllInfo`);
+        const result = await res.json();
+        if (result.status === 'success' && result.data[currentUser.name]) {
+          const info = result.data[currentUser.name];
+          document.getElementById('nickname').value = info.nickname || '';
+          document.getElementById('humor_style').value = info.humor_style || 'Divertido y amigable';
+          document.getElementById('likes').value = (info.likes || []).join(', ');
+          document.getElementById('dislikes').value = (info.dislikes || []).join(', ');
+        }
+      } catch (e) {
+        console.error("Error al cargar info:", e);
+      }
+    }
+
+    document.getElementById('profileForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('saveBtn');
+      const statusMsg = document.getElementById('statusMsg');
+      
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Guardando...';
+      statusMsg.className = 'status-msg';
+
+      const data = {
+        nickname: document.getElementById('nickname').value,
+        humor_style: document.getElementById('humor_style').value,
+        likes: document.getElementById('likes').value.split(',').map(s => s.trim()).filter(s => s),
+        dislikes: document.getElementById('dislikes').value.split(',').map(s => s.trim()).filter(s => s)
+      };
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'saveInfo',
+            playerName: currentUser.name,
+            data: data
+          })
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          statusMsg.textContent = '¡Configuración guardada con éxito!';
+          statusMsg.classList.add('status-success');
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (err) {
+        statusMsg.textContent = 'Error: ' + err.message;
+        statusMsg.classList.add('status-error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Guardar Configuración';
+      }
+    };
+
+    function handleLogout() {
+      localStorage.removeItem('worldcup2026_user');
+      window.location.href = 'login.html';
+    }
+
+    checkAuth();
+    loadCurrentInfo();
+  </script>
+</body>
+</html>

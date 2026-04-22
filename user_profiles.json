@@ -1,0 +1,26 @@
+{
+  "Dani": {
+    "nickname": "El Optimista",
+    "likes": ["Atacar siempre", "Real Madrid", "Goles de chilena"],
+    "dislikes": ["El VAR", "Perder tiempo", "Empates a cero"],
+    "humor_style": "Sarcástico pero amigable"
+  },
+  "Judas": {
+    "nickname": "El Traidor",
+    "likes": ["Resultados inesperados", "Equipos pequeños", "La emoción"],
+    "dislikes": ["Los favoritos", "Aburrimiento"],
+    "humor_style": "Cínico y mordaz"
+  },
+  "Harrry": {
+    "nickname": "El Mago",
+    "likes": ["Estadísticas", "Harry Kane", "Táctica pura"],
+    "dislikes": ["Fallar penaltis", "Suerte", "Caos"],
+    "humor_style": "Intelectual y serio"
+  },
+  "Dani Grande": {
+    "nickname": "El Jefe",
+    "likes": ["Liderazgo", "Ganar", "Organización"],
+    "dislikes": ["Desorden", "Excusa"],
+    "humor_style": "Autoritario y divertido"
+  }
+}

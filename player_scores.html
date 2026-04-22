@@ -256,7 +256,43 @@
         font-size: 1.1rem;
       }
     }
+    .ai-summary-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text-primary);
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .ai-btn {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      margin-left: 10px;
+      font-weight: 700;
+      transition: transform 0.2s;
+    }
+
+    .ai-btn:hover {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
+
 </head>
 
 <body>
@@ -275,7 +311,9 @@
         <a href="fixture_testing.html" class="nav-link">Results Testing</a>
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link active">Leaderboard</a>
+        <a href="about_user.html" class="nav-link">Mi Perfil</a>
       </div>
+
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
         <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
@@ -334,7 +372,7 @@
     // SIMULATION CONFIGURATION
     // ==========================================
 
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrpOaWum_dL1cYBx-OHd1zv8W6j0Sgr7VKRP3Fny505zP6ILIKTHmdL42wKBhH9V0j/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUG7NAswIhcLn90C6JkA_Dt-45HBz8Klvmwij2UO0ilh85KUs6tUTz05-wALfTulnN/exec';
 
     let currentUser = null;
 
@@ -775,8 +813,14 @@
               ${r.totalPts}<span class="lb-pts-label">pts</span>
             </div>
             <div class="lb-trend trend-${r.trend}">${trendIcon}</div>
+            <button class="ai-btn" onclick="event.stopPropagation(); fetchAISummary('${r.name}', ${idx})">✨ Resumen IA</button>
             
+            <div class="ai-summary-box" id="ai_summary_${idx}" style="${savedSummaries[r.name] ? 'display:block' : ''}">
+              ${savedSummaries[r.name] ? `<strong>IA:</strong> ${savedSummaries[r.name]}` : ''}
+            </div>
+
             <div class="lb-breakdown" id="breakdown_${idx}">
+
               <div class="lb-b-item">
                 <span class="lb-b-label">Puntos de Grupos</span>
                 <span class="lb-b-value"><span>${r.groupPts}</span> pts</span>
@@ -824,6 +868,20 @@
       container.innerHTML = html;
     }
 
+    let savedSummaries = {};
+
+    async function fetchSavedSummaries() {
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getAllSummaries`);
+        const result = await res.json();
+        if (result.status === 'success') {
+          savedSummaries = result.data || {};
+        }
+      } catch (e) {
+        console.error("Error fetching summaries:", e);
+      }
+    }
+
     async function initLeaderboard() {
       const container = document.getElementById('lbBody');
 
@@ -863,6 +921,9 @@
               players.push({ _playerName: pName, _isBot: !isLocalUser, ...preds });
             });
           }
+          
+          // Fetch summaries
+          await fetchSavedSummaries();
         }
       } catch (err) {
         console.warn("Error cargando nube, usamos local.", err);
@@ -891,14 +952,29 @@
     initLeaderboard();
 
     function toggleBreakdown(idx) {
-      const bd = document.getElementById(`breakdown_${idx}`);
-      if (!bd) return;
-      if (bd.style.display === 'grid') {
-        bd.style.display = 'none';
-      } else {
-        // close others
-        document.querySelectorAll('.lb-breakdown').forEach(el => el.style.display = 'none');
-        bd.style.display = 'grid';
+      const el = document.getElementById(`breakdown_${idx}`);
+      const isVisible = el.style.display === 'grid';
+      // Close all others
+      document.querySelectorAll('.lb-breakdown').forEach(d => d.style.display = 'none');
+      el.style.display = isVisible ? 'none' : 'grid';
+    }
+
+    async function fetchAISummary(playerName, idx) {
+      const box = document.getElementById(`ai_summary_${idx}`);
+      box.style.display = 'block';
+      box.innerHTML = '<i>✨ Generando resumen divertido...</i>';
+      
+      try {
+        const response = await fetch(`http://localhost:5000/summary/${encodeURIComponent(playerName)}`);
+        const data = await response.json();
+        
+        if (data.summary) {
+          box.innerHTML = `<strong>IA:</strong> ${data.summary}`;
+        } else {
+          box.innerHTML = `<span style="color:var(--accent-red)">⚠️ ${data.error || 'Error al conectar con el servidor'}</span>`;
+        }
+      } catch (e) {
+        box.innerHTML = `<span style="color:var(--accent-red)">⚠️ Asegúrate de que server.py esté corriendo en el puerto 5000</span>`;
       }
     }
   </script>

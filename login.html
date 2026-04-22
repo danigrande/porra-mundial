@@ -104,7 +104,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrpOaWum_dL1cYBx-OHd1zv8W6j0Sgr7VKRP3Fny505zP6ILIKTHmdL42wKBhH9V0j/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUG7NAswIhcLn90C6JkA_Dt-45HBz8Klvmwij2UO0ilh85KUs6tUTz05-wALfTulnN/exec';
 
     async function fetchPlayers() {
       const select = document.getElementById('loginPlayerSelect');
@@ -198,6 +198,16 @@
       nameEl.classList.remove('input-error');
       pinEl.classList.remove('input-error');
       pinErrorEl.style.display = 'none';
+
+      // Frontend Validation: Check if name already exists
+      const loginSelect = document.getElementById('loginPlayerSelect');
+      const existingNames = Array.from(loginSelect.options).map(opt => opt.value.toLowerCase());
+      
+      if (existingNames.includes(name.toLowerCase())) {
+        nameEl.classList.add('input-error');
+        showToast('❌ El nombre ya está en uso', true);
+        return;
+      }
 
       if (!name || pin.length !== 4 || !isNumeric) {
         if (!name) nameEl.classList.add('input-error');
