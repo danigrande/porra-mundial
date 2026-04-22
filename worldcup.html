@@ -27,6 +27,10 @@
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link">Leaderboard</a>
       </div>
+      <div id="navUserInfo" class="nav-user" style="display:none;">
+        <span class="nav-user-name" id="displayUserName"></span>
+        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+      </div>
     </div>
   </nav>
 
@@ -39,35 +43,13 @@
   <!-- Main Content -->
   <main class="main-content">
 
-    <!-- Name Field -->
-    <div class="group-card" style="margin-bottom:2rem; max-width:600px;">
-      <div class="group-header">
-        <div class="group-letter" style="background: var(--gradient-gold);">👤</div>
-        <div>
-          <div class="group-name">Tu nombre</div>
-          <div class="group-teams-summary">Obligatorio para guardar las predicciones</div>
-        </div>
-      </div>
-      <div style="padding: 1.25rem;">
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="playerName" class="score-input" placeholder="Escribe tu nombre..."
-            style="flex:1; height:48px; font-size:1rem; font-weight:600; text-align:left; padding:0 16px; border-radius:var(--radius-md);">
-          <input type="password" id="playerPin" placeholder="PIN 4 díg." maxlength="4"
-            style="width:110px; height:48px; font-size:1rem; font-weight:600; text-align:center; padding:0; border-radius:var(--radius-md); background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color);">
-        </div>
-        <p id="nameError" style="color:var(--accent-red); font-size:0.78rem; margin-top:8px; display:none;">⚠️ Debes introducir tu nombre y un PIN de 4 números</p>
-        
-        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border-color);">
-          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">¿Quieres recuperar otro usuario?</div>
-          <div style="display: flex; gap: 8px;">
-            <select id="cloudPlayerSelect" style="flex: 1; height:42px; font-size:0.9rem; padding:0 12px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--radius-md);">
-              <option value="">Cargando jugadores en la nube...</option>
-            </select>
-            <button onclick="recoverPrediction()" class="btn-recover">
-              <span class="icon">☁️</span>
-              Recuperar
-            </button>
-          </div>
+    <!-- Page notification for current user -->
+    <div id="userNotification" class="group-card" style="margin-bottom:2rem; background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); display:none;">
+      <div style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 1.2rem;">👋</span>
+        <div style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary);">
+          Sesión iniciada como: <strong id="userNameHighlight" style="color:var(--accent-green)"></strong>. 
+          Sus predicciones se guardarán automáticamente en la nube.
         </div>
       </div>
     </div>
@@ -106,7 +88,7 @@
     // CONFIGURATION
     // ============================================
     // ¡Pega aquí la URL de tu Google Apps Script cuando la tengas!
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztK5Dqlt48dUWYtc1CxG8sKb54c-_9_3G0KAS3uFkvn-pa6hTGZBk4I6X54lt59aY/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrpOaWum_dL1cYBx-OHd1zv8W6j0Sgr7VKRP3Fny505zP6ILIKTHmdL42wKBhH9V0j/exec';
 
     // ============================================
     // MATCH DATA extracted from Excel
@@ -816,7 +798,6 @@
       updateKnockoutNames();
       updateHonorRoll();
       updatePhaseLocks();
-      autoSave();
     }
 
     function updatePhaseLocks() {
@@ -877,39 +858,58 @@
     }
 
     // ============================================
+    // AUTH & SESSION
+    // ============================================
+
+    let currentUser = null;
+
+    function checkAuth() {
+      const raw = localStorage.getItem('worldcup2026_user');
+      if (!raw) {
+        window.location.href = 'login.html';
+        return;
+      }
+      try {
+        currentUser = JSON.parse(raw);
+        if (!currentUser.name || !currentUser.pin) {
+          throw new Error("Invalid session");
+        }
+        
+        // Update UI
+        document.getElementById('navUserInfo').style.display = 'flex';
+        document.getElementById('displayUserName').textContent = currentUser.name;
+        document.getElementById('userNotification').style.display = 'block';
+        document.getElementById('userNameHighlight').textContent = currentUser.name;
+      } catch (e) {
+        localStorage.removeItem('worldcup2026_user');
+        window.location.href = 'login.html';
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('¿Quieres cerrar la sesión? Tus datos locales se mantendrán pero no se sincronizarán hasta que vuelvas a entrar.')) {
+        localStorage.removeItem('worldcup2026_user');
+        window.location.href = 'login.html';
+      }
+    }
+
+    // ============================================
     // SAVE / LOAD
     // ============================================
 
     let isSaving = false;
 
     async function saveData() {
-      if (isSaving) return;
+      if (isSaving || !currentUser) return;
 
-      const nameInput = document.getElementById('playerName');
-      const pinInput = document.getElementById('playerPin');
-      const nameError = document.getElementById('nameError');
-      const name = nameInput.value.trim();
-      const pin = pinInput.value.trim();
+      const name = currentUser.name;
+      const pin = currentUser.pin;
 
-      const isValidPin = /^\d{4}$/.test(pin);
+      // data object for LOCAL STORAGE (includes name for session safety)
+      const data = { _playerName: name };
 
-      if (!name || !isValidPin) {
-        nameError.style.display = 'block';
-        nameInput.style.borderColor = !name ? 'var(--accent-red)' : 'var(--border-color)';
-        pinInput.style.borderColor = !isValidPin ? 'var(--accent-red)' : 'var(--border-color)';
-        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showToast('⚠️ Nombre y PIN de 4 números obligatorios');
-        return;
-      }
-
-      nameError.style.display = 'none';
-      nameInput.style.borderColor = 'var(--accent-green)';
-      pinInput.style.borderColor = 'var(--accent-green)';
-      nameInput.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
-
-      const data = { _playerName: name, _playerPin: pin };
       document.querySelectorAll('.score-input, .award-input, .pen-input').forEach(input => {
-        if (input.id !== 'playerName' && input.value !== '') {
+        if (input.value !== '') {
           data[input.id] = input.value;
         }
       });
@@ -927,10 +927,14 @@
       document.getElementById('btnSave').style.opacity = '0.7';
 
       try {
+        // Pack for CLOUD (we remove _playerName because it's already in the root)
+        const cloudData = { ...data };
+        delete cloudData._playerName;
+
         const payload = {
           action: 'save',
           playerName: name,
-          predictions: data
+          predictions: cloudData
         };
 
         const response = await fetch(SCRIPT_URL, {
@@ -956,34 +960,77 @@
       }
     }
 
-    function loadData() {
+    async function loadData() {
+      // 1. Try Local Storage first
       const raw = localStorage.getItem('worldcup2026_predictions');
-      if (!raw) return;
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          if (data._playerName === currentUser.name) {
+            applyDataToForm(data);
+            return; // Local data found and matches user
+          }
+        } catch (e) { /* ignore */ }
+      }
+
+      // 2. If no local data, try Cloud
+      await loadDataFromCloud();
+    }
+
+    async function loadDataFromCloud() {
+      if (!SCRIPT_URL) return;
+      
+      const saveStatus = document.getElementById('saveStatus');
+      const oldStatus = saveStatus.textContent;
+      saveStatus.textContent = '🔍 Sincronizando datos...';
+      saveStatus.classList.add('show');
+
       try {
-        const data = JSON.parse(raw);
-        if (data._playerName) {
-          document.getElementById('playerName').value = data._playerName;
+        const response = await fetch(SCRIPT_URL);
+        const result = await response.json();
+        
+        if (result.status === 'success' && result.data && result.data[currentUser.name]) {
+          const cloudEntry = result.data[currentUser.name];
+          const cloudData = cloudEntry.predictions;
+          
+          // Inject name for local storage consistency
+          cloudData._playerName = currentUser.name;
+          
+          applyDataToForm(cloudData);
+          localStorage.setItem('worldcup2026_predictions', JSON.stringify(cloudData));
+          showToast('☁️ Datos recuperados de la nube');
+          saveStatus.textContent = '☁️ Sincronizado';
+        } else {
+          saveStatus.textContent = '✓ Sin datos previos';
         }
-        if (data._playerPin) {
-          const pinEl = document.getElementById('playerPin');
-          if (pinEl) pinEl.value = data._playerPin;
-        }
-        Object.entries(data).forEach(([id, val]) => {
-          if (id === '_playerName' || id === '_playerPin') return;
-          const el = document.getElementById(id);
-          if (el) el.value = val;
-        });
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        console.error("Error fetching cloud data:", e);
+        saveStatus.textContent = '⚠️ Error al sincronizar';
+      } finally {
+        setTimeout(() => saveStatus.classList.remove('show'), 3000);
+      }
+    }
+
+    function applyDataToForm(data) {
+      Object.entries(data).forEach(([id, val]) => {
+        if (id === '_playerName') return;
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      });
+
+      // Recalculate everything
+      groups.forEach(g => updateStandings(g.letter));
+      updateBestThirds();
+      updatePenaltyVisibility();
+      updateKnockoutNames();
+      updateHonorRoll();
+      updatePhaseLocks();
     }
 
     function resetData() {
-      if (confirm('¿Estás seguro de que quieres borrar todas las predicciones?')) {
+      if (confirm('¿Estás seguro de que quieres borrar todas tus predicciones?')) {
         localStorage.removeItem('worldcup2026_predictions');
         document.querySelectorAll('.score-input, .award-input, .pen-input').forEach(input => input.value = '');
-        document.getElementById('playerName').value = '';
-        const pinEl = document.getElementById('playerPin');
-        if (pinEl) pinEl.value = '';
-        document.getElementById('nameError').style.display = 'none';
 
         groups.forEach(g => updateStandings(g.letter));
         updateBestThirds();
@@ -996,12 +1043,7 @@
       }
     }
 
-    function autoSave() {
-      clearTimeout(autoSaveTimer);
-      autoSaveTimer = setTimeout(() => {
-        saveData();
-      }, 1000);
-    }
+
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
@@ -1010,91 +1052,30 @@
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
-    // ============================================
-    // RECOVERY LOGIC
-    // ============================================
+    // RECOVERY LOGIC REMOVED (Handled by Login system)
 
-    let cloudDictionary = {};
-
-    async function loadCloudPlayers() {
-      const select = document.getElementById('cloudPlayerSelect');
-      if (!SCRIPT_URL || SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
-         select.innerHTML = '<option value="">(Nube no configurada)</option>';
-         return;
-      }
-      try {
-        const response = await fetch(SCRIPT_URL);
-        const result = await response.json();
-        if (result.status === 'success' && result.data) {
-          cloudDictionary = result.data;
-          select.innerHTML = '<option value="">-- Selecciona un jugador --</option>';
-          Object.keys(cloudDictionary).sort().forEach(name => {
-             select.innerHTML += `<option value="${name}">${name}</option>`;
-          });
-        }
-      } catch (e) {
-        select.innerHTML = '<option value="">Error cargando nube</option>';
-      }
-    }
-
-    function recoverPrediction() {
-      const select = document.getElementById('cloudPlayerSelect');
-      const name = select.value;
-      if (!name || !cloudDictionary[name]) return;
-      
-      const rawData = cloudDictionary[name];
-      const data = typeof rawData.predictions === 'string' ? JSON.parse(rawData.predictions) : rawData.predictions;
-      
-      const cloudPin = data._playerPin || '';
-      
-      if (cloudPin !== '') {
-        const inputPin = prompt(`Introduce el PIN de 4 dígitos para recuperar a "${name}":`);
-        if (inputPin === null) return; // cancelled
-        if (inputPin !== cloudPin) {
-          alert('❌ PIN incorrecto. Acceso denegado.');
-          return;
-        }
-      }
-      
-      if (!confirm(`¿Quieres sobreescribir el formulario actual con las predicciones de "${name}"?`)) return;
-      
-      document.querySelectorAll('.score-input, .award-input, .pen-input').forEach(input => input.value = '');
-      
-      document.getElementById('playerName').value = name;
-      const elPin = document.getElementById('playerPin');
-      if (elPin && cloudPin) elPin.value = cloudPin;
-      
-      Object.entries(data).forEach(([id, val]) => {
-        const el = document.getElementById(id);
-        if (el && el.id !== 'playerName' && el.id !== 'playerPin') {
-          el.value = val;
-        }
-      });
-      
-      groups.forEach(g => updateStandings(g.letter));
-      updateBestThirds();
-      updatePenaltyVisibility();
-      updateHonorRoll();
-      updateKnockoutNames();
-      updatePhaseLocks();
-      
-      showToast(`✅ Predicciones de ${name} recuperadas`);
-    }
 
     // ============================================
     // INIT
     // ============================================
-    renderGroups();
-    renderKnockout();
-    renderAwards();
-    loadData();
-    loadCloudPlayers();
-    groups.forEach(g => updateStandings(g.letter));
-    updateBestThirds();
-    updatePenaltyVisibility();
-    updateKnockoutNames();
-    updateHonorRoll();
-    updatePhaseLocks();
+    async function init() {
+      checkAuth();
+      renderGroups();
+      renderKnockout();
+      renderAwards();
+      
+      await loadData();
+
+      // Ensure all derived states are computed
+      groups.forEach(g => updateStandings(g.letter));
+      updateBestThirds();
+      updatePenaltyVisibility();
+      updateKnockoutNames();
+      updateHonorRoll();
+      updatePhaseLocks();
+    }
+
+    init();
   </script>
 </body>
 

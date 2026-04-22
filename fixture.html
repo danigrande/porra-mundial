@@ -140,6 +140,10 @@
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link">Leaderboard</a>
       </div>
+      <div id="navUserInfo" class="nav-user" style="display:none;">
+        <span class="nav-user-name" id="displayUserName"></span>
+        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+      </div>
     </div>
   </nav>
 
@@ -427,6 +431,35 @@ const knockoutBracket = [
     ]
   }
 ];
+
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrpOaWum_dL1cYBx-OHd1zv8W6j0Sgr7VKRP3Fny505zP6ILIKTHmdL42wKBhH9V0j/exec';
+
+    let currentUser = null;
+
+    function checkAuth() {
+      const raw = localStorage.getItem('worldcup2026_user');
+      if (!raw) {
+        window.location.href = 'login.html';
+        return;
+      }
+      try {
+        currentUser = JSON.parse(raw);
+        if (!currentUser.name || !currentUser.pin) throw new Error();
+        
+        document.getElementById('navUserInfo').style.display = 'flex';
+        document.getElementById('displayUserName').textContent = currentUser.name;
+      } catch (e) {
+        localStorage.removeItem('worldcup2026_user');
+        window.location.href = 'login.html';
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('¿Quieres cerrar sesión?')) {
+        localStorage.removeItem('worldcup2026_user');
+        window.location.href = 'login.html';
+      }
+    }
 
     const teamCodes = {
       'México': 'mx', 'Sudáfrica': 'za', 'Corea del Sur': 'kr', 'República Checa': 'cz',
@@ -750,6 +783,7 @@ function renderAwards() {
 // ============================================
 // INIT
 // ============================================
+checkAuth();
 renderFixtureGroups();
 renderKnockoutBracket();
 renderAwards();

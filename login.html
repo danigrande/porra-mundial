@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .error-msg {
+      color: var(--accent-red);
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      animation: fadeIn 0.3s ease;
+    }
+    .error-msg::before { content: '⚠️'; }
+    .input-error {
+      border-color: var(--accent-red) !important;
+      background-color: rgba(239, 68, 68, 0.05) !important;
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .toast.error {
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+      box-shadow: 0 4px 24px rgba(239, 68, 68, 0.2);
+    }
+  </style>
+</head>
+<body class="login-page">
+
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">⚽</div>
+      <h1 class="login-title">Porra Mundial 2026</h1>
+      <p class="login-subtitle" id="formSubtitle">Inicia sesión para ver tu clasificación</p>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label" for="loginPlayerSelect">Selecciona tu usuario</label>
+        <select id="loginPlayerSelect" class="login-input">
+          <option value="">Cargando jugadores...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="loginPin">Tu PIN de 4 dígitos</label>
+        <div class="pin-container">
+          <input type="password" id="loginPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+          <button type="button" class="pin-toggle" onclick="togglePin('loginPin')">👁️</button>
+        </div>
+        <p id="loginPinError" class="error-msg" style="display:none;"></p>
+      </div>
+
+      <button class="login-btn btn-primary" id="btnLogin" onclick="handleLogin()">
+        <span>Entrar</span>
+        <span class="icon">➜</span>
+      </button>
+
+      <div class="login-switch">
+        ¿No tienes usuario? <span onclick="switchForm('register')">Regístrate aquí</span>
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" style="display: none;">
+      <div class="form-group">
+        <label class="form-label" for="regName">Nombre del jugador</label>
+        <input type="text" id="regName" class="login-input" placeholder="Ej: Dani Grande">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="regPin">Crea tu PIN de 4 dígitos</label>
+        <div class="pin-container">
+          <input type="password" id="regPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+          <button type="button" class="pin-toggle" onclick="togglePin('regPin')">👁️</button>
+        </div>
+        <p id="regPinError" class="error-msg" style="display:none;"></p>
+      </div>
+
+      <button class="login-btn btn-primary" id="btnRegister" onclick="handleRegister()">
+        <span>Crear cuenta</span>
+        <span class="icon">✨</span>
+      </button>
+
+      <div class="login-switch">
+        ¿Ya tienes cuenta? <span onclick="switchForm('login')">Inicia sesión</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrpOaWum_dL1cYBx-OHd1zv8W6j0Sgr7VKRP3Fny505zP6ILIKTHmdL42wKBhH9V0j/exec';
+
+    async function fetchPlayers() {
+      const select = document.getElementById('loginPlayerSelect');
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=getPlayers`);
+        const result = await response.json();
+        if (result.status === 'success') {
+          select.innerHTML = '<option value="">-- Selecciona tu nombre --</option>';
+          result.data.sort().forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        select.innerHTML = '<option value="">Error cargando nuble</option>';
+      }
+    }
+
+    function togglePin(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function switchForm(type) {
+      document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
+      document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
+      document.getElementById('formSubtitle').textContent = type === 'login' ? 'Inicia sesión para ver tu clasificación' : 'Regístrate para participar en la porra';
+    }
+
+    async function handleLogin() {
+      const nameEl = document.getElementById('loginPlayerSelect');
+      const pinEl = document.getElementById('loginPin');
+      const pinErrorEl = document.getElementById('loginPinError');
+      
+      const name = nameEl.value;
+      const pin = pinEl.value;
+      const isNumeric = /^\d+$/.test(pin);
+
+      // Reset errors
+      pinEl.classList.remove('input-error');
+      pinErrorEl.style.display = 'none';
+
+      if (!name || pin.length !== 4 || !isNumeric) {
+        if (!name) nameEl.classList.add('input-error');
+        if (pin.length !== 4 || !isNumeric) {
+          pinEl.classList.add('input-error');
+          pinErrorEl.textContent = !isNumeric ? 'El PIN solo debe contener números' : 'El PIN debe ser de 4 números';
+          pinErrorEl.style.display = 'flex';
+        }
+        showToast('⚠️ Datos incorrectos', true);
+        return;
+      }
+
+      setLoading('btnLogin', true);
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'login', playerName: name, playerPin: pin }),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+          saveSession(name, pin);
+          showToast('✅ Login correcto. Redirigiendo...');
+          setTimeout(() => window.location.href = 'worldcup.html', 1000);
+        } else {
+          pinEl.classList.add('input-error');
+          pinErrorEl.textContent = 'PIN incorrecto. Inténtalo de nuevo.';
+          pinErrorEl.style.display = 'flex';
+          showToast('❌ PIN incorrecto', true);
+        }
+      } catch (e) {
+        showToast('⚠️ Error conectando con el servidor', true);
+      } finally {
+        setLoading('btnLogin', false);
+      }
+    }
+
+    async function handleRegister() {
+      const nameEl = document.getElementById('regName');
+      const pinEl = document.getElementById('regPin');
+      const pinErrorEl = document.getElementById('regPinError');
+      
+      const name = nameEl.value.trim();
+      const pin = pinEl.value;
+      const isNumeric = /^\d+$/.test(pin);
+
+      // Reset
+      nameEl.classList.remove('input-error');
+      pinEl.classList.remove('input-error');
+      pinErrorEl.style.display = 'none';
+
+      if (!name || pin.length !== 4 || !isNumeric) {
+        if (!name) nameEl.classList.add('input-error');
+        if (pin.length !== 4 || !isNumeric) {
+          pinEl.classList.add('input-error');
+          pinErrorEl.textContent = !isNumeric ? 'El PIN solo debe contener números' : 'Introduce un PIN de 4 números';
+          pinErrorEl.style.display = 'flex';
+        }
+        showToast('⚠️ Datos incorrectos', true);
+        return;
+      }
+
+      setLoading('btnRegister', true);
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'register', playerName: name, playerPin: pin }),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+          saveSession(name, pin);
+          showToast('✨ Registro completado con éxito');
+          setTimeout(() => window.location.href = 'worldcup.html', 1500);
+        } else {
+          showToast('❌ ' + result.message, true);
+          if (result.message.includes('ya existe')) {
+            nameEl.classList.add('input-error');
+          }
+        }
+      } catch (e) {
+        showToast('⚠️ Error en el registro', true);
+      } finally {
+        setLoading('btnRegister', false);
+      }
+    }
+
+    function saveSession(name, pin) {
+      localStorage.setItem('worldcup2026_user', JSON.stringify({ name, pin }));
+    }
+
+    function setLoading(btnId, isLoading) {
+      const btn = document.getElementById(btnId);
+      btn.classList.toggle('loading', isLoading);
+      btn.disabled = isLoading;
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      
+      if (isError) toast.classList.add('error');
+      else toast.classList.remove('error');
+
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    window.onload = fetchPlayers;
+  </script>
+</body>
+</html>
