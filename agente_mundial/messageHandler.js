@@ -159,7 +159,18 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned) {
   await refreshCache();
 
   // Identificar al jugador
-  const playerName = identifyPlayer(senderPhone);
+  let playerName = identifyPlayer(senderPhone);
+  
+  // Si no se identifica por teléfono, pero senderPhone coincide con un nombre de jugador
+  // (esto ocurre cuando la petición viene de la API de la web)
+  if (!playerName && cachedProfiles && cachedProfiles[senderPhone]) {
+    playerName = senderPhone;
+  }
+  // También mirar en el config local por si acaso
+  if (!playerName && config.playerProfiles[senderPhone]) {
+    playerName = senderPhone;
+  }
+
   const intent = detectIntent(text);
 
   // Manejar ayuda directamente (sin LLM)
