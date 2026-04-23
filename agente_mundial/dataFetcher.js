@@ -115,3 +115,31 @@ export async function getPlayerProfile(playerName) {
     humor_style: 'Divertido y amigable',
   };
 }
+
+/**
+ * Obtiene la configuración dinámica (como GROUP_ID) desde Google Sheets.
+ */
+export async function getDynamicConfig() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getConfigs`);
+    const data = await response.json();
+    return data.status === 'success' ? data.data : {};
+  } catch (error) {
+    console.error('Error fetching dynamic configs:', error.message);
+    return {};
+  }
+}
+
+/**
+ * Obtiene el mapeo de teléfonos a jugadores desde Google Sheets.
+ */
+export async function getPhoneMapping() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getPhoneMapping`);
+    const data = await response.json();
+    return data.status === 'success' ? data.data : {};
+  } catch (error) {
+    console.error('Error fetching phone mapping:', error.message);
+    return {};
+  }
+}

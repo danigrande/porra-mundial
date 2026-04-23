@@ -120,6 +120,12 @@
         </div>
 
         <div class="form-group">
+          <label for="phone">Tu Número de WhatsApp (Formato: 34600112233)</label>
+          <input type="text" id="phone" class="form-control" placeholder="Ej: 34600112233" required>
+          <p class="info-note">Importante: Sin el '+' y con el prefijo del país (34 para España).</p>
+        </div>
+
+        <div class="form-group">
           <label for="humor_style">Estilo de Humor de la IA</label>
           <select id="humor_style" class="form-control">
             <option value="Sarcástico y mordaz">Sarcástico y mordaz (Nivel Pro)</option>
@@ -148,7 +154,7 @@
   </main>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUG7NAswIhcLn90C6JkA_Dt-45HBz8Klvmwij2UO0ilh85KUs6tUTz05-wALfTulnN/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjmNz4XOWRsgll8V_eFprG1WelZNkPproSiOOQSc_4QfYD5sTdGqlmClpdIcYNYG6Y/exec';
     let currentUser = null;
 
     function checkAuth() {
@@ -169,6 +175,7 @@
         if (result.status === 'success' && result.data[currentUser.name]) {
           const info = result.data[currentUser.name];
           document.getElementById('nickname').value = info.nickname || '';
+          document.getElementById('phone').value = info.phone || '';
           document.getElementById('humor_style').value = info.humor_style || 'Divertido y amigable';
           document.getElementById('likes').value = (info.likes || []).join(', ');
           document.getElementById('dislikes').value = (info.dislikes || []).join(', ');
@@ -189,6 +196,7 @@
 
       const data = {
         nickname: document.getElementById('nickname').value,
+        phone: document.getElementById('phone').value.replace(/[^0-9]/g, ''),
         humor_style: document.getElementById('humor_style').value,
         likes: document.getElementById('likes').value.split(',').map(s => s.trim()).filter(s => s),
         dislikes: document.getElementById('dislikes').value.split(',').map(s => s.trim()).filter(s => s)
@@ -203,6 +211,17 @@
             data: data
           })
         });
+        
+        // También actualizamos el teléfono en la tabla Pool
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'updatePhone',
+            playerName: currentUser.name,
+            phone: data.phone
+          })
+        });
+
         const result = await response.json();
         
         if (result.status === 'success') {

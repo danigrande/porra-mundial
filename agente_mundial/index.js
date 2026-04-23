@@ -13,7 +13,7 @@ import qrcode from 'qrcode-terminal';
 import cors from 'cors';
 import { schedule } from 'node-cron';
 import config from './config.js';
-import { processMessage, generateGroupSummary, forceRefresh } from './messageHandler.js';
+import { processMessage, generateGroupSummary, forceRefresh, getBotConfig } from './messageHandler.js';
 
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });
@@ -202,8 +202,11 @@ async function startBot() {
         if (isMentioned) console.log('   ✅ Mención detectada');
 
         // --- FILTRO DE GRUPO ---
+        // Priorizar el ID de grupo del Excel, si no existe usar el del .env
+        const dynamicGroupId = getBotConfig().WHATSAPP_GROUP_ID || config.bot.groupId;
+        
         // Si hay un grupo configurado, solo responder en ese grupo (si el mensaje viene de un grupo)
-        if (config.bot.groupId && isGroup && chatId !== config.bot.groupId) {
+        if (dynamicGroupId && isGroup && chatId !== dynamicGroupId) {
           console.log(`⏩ Mensaje de otro grupo ignorado (ID: ${chatId})`);
           continue;
         }
@@ -237,28 +240,28 @@ async function startBot() {
   // Resumen diario a las 23:00 (hora España)
   // Cron: "0 23 * * *" = a las 23:00 cada día
   // NOTA: El timezone depende del servidor. En Render (UTC), sería "0 21 * * *" para España (UTC+2)
-  if (config.bot.groupId) {
-    schedule('0 21 * * *', async () => {
-      console.log('📢 Generando resumen programado de la jornada...');
-      try {
-        await forceRefresh();
-        const summary = await generateGroupSummary();
+  // Resumen diario a las 23:00 (hora España)
+  schedule('0 21 * * *', async () => {
+    const dynamicGroupId = getBotConfig().WHATSAPP_GROUP_ID || config.bot.groupId;
+    if (!dynamicGroupId) return;
 
-        if (summary) {
-          await sock.sendMessage(config.bot.groupId, {
-            text: `📊 *RESUMEN DE LA JORNADA* 📊\n\n${summary}`,
-          });
-          console.log('✅ Resumen publicado en el grupo');
-        }
-      } catch (error) {
-        console.error('Error publicando resumen:', error.message);
+    console.log(`📢 Generando resumen programado para el grupo: ${dynamicGroupId}`);
+    try {
+      await forceRefresh();
+      const summary = await generateGroupSummary();
+
+      if (summary) {
+        await sock.sendMessage(dynamicGroupId, {
+          text: `📊 *RESUMEN DE LA JORNADA* 📊\n\n${summary}`,
+        });
+        console.log('✅ Resumen publicado en el grupo');
       }
-    }, {
-      timezone: 'Europe/Madrid',
-    });
-
-    console.log('⏰ Resumen programado: todos los días a las 23:00 (Madrid)');
-  }
+    } catch (error) {
+      console.error('Error publicando resumen:', error.message);
+    }
+  }, {
+    timezone: 'Europe/Madrid',
+  });
 
   return sock;
 }

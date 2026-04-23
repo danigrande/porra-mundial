@@ -13,68 +13,72 @@ import { generateResponse, generateDailySummary } from './groqEngine.js';
 // Cache para evitar llamadas excesivas a Google Sheets
 let cachedLeaderboard = null;
 let cachedProfiles = null;
+let cachedPhoneMapping = null;
+let cachedBotConfigs = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 /**
+ * Obtiene la configuración actual de la cache.
+ */
+export function getBotConfig() {
+  return cachedBotConfigs || {};
+}
+
+/**
  * Refresca la cache de datos si ha expirado.
  */
-async function refreshCache() {
+export async function refreshCache() {
   const now = Date.now();
   if (cachedLeaderboard && (now - cacheTimestamp) < CACHE_TTL) {
     return; // Cache aún válida
   }
 
-  console.log('📊 Refrescando cache de datos...');
+  console.log('📊 Refrescando cache dinámica desde Google Sheets...');
   try {
-    const [predictions, profiles] = await Promise.all([
+    const [predictions, profiles, phoneMapping, botConfigs] = await Promise.all([
       getAllPredictions(),
       getAllProfiles(),
+      import('./dataFetcher.js').then(m => m.getPhoneMapping()),
+      import('./dataFetcher.js').then(m => m.getDynamicConfig()),
     ]);
 
     cachedProfiles = profiles;
+    cachedPhoneMapping = phoneMapping;
+    cachedBotConfigs = botConfigs;
 
-    // Para el leaderboard necesitamos los resultados reales
-    // En producción, estos vendrán de fixture_testing o de resultados reales
-    // Por ahora, intentamos obtenerlos de las predicciones existentes
-    // NOTA: El scoring real requiere "reality" data - que vendrá del fixture
-    // Por ahora, construimos un leaderboard simplificado
     if (Object.keys(predictions).length > 0) {
-      // Intentar obtener reality data del Google Script
-      // (esto podría requerir un endpoint adicional en el futuro)
       cachedLeaderboard = Object.entries(predictions).map(([name, data], idx) => ({
         name,
         position: idx + 1,
-        totalPts: 0,
-        exactHits: 0,
-        groupPts: 0,
-        koPts: 0,
-        honorPts: 0,
-        hasPredictions: true,
+        totalPts: 0, // En el futuro se calcularán con la realidad
+        ...data,
       }));
     }
 
     cacheTimestamp = now;
-    console.log(`✅ Cache refrescada: ${cachedLeaderboard?.length || 0} jugadores`);
+    console.log(`✅ Datos sincronizados: ${Object.keys(phoneMapping).length} teléfonos, Grupo: ${botConfigs.WHATSAPP_GROUP_ID || 'No fijado'}`);
   } catch (error) {
-    console.error('Error refrescando cache:', error.message);
+    console.error('Error refrescando cache dinámica:', error.message);
   }
 }
 
 /**
  * Identifica al jugador por su número de teléfono.
- * @param {string} phoneNumber - Número en formato "34612345678@s.whatsapp.net"
- * @returns {string|null} Nombre del jugador o null
  */
 export function identifyPlayer(phoneNumber) {
-  // Extraer solo los dígitos del número
   const digits = phoneNumber.replace(/[^0-9]/g, '');
-
-  // Buscar en el mapeo
-  for (const [phone, name] of Object.entries(config.phoneToPlayer)) {
-    if (digits.includes(phone) || phone.includes(digits)) {
-      return name;
+  
+  // 1. Intentar con la cache dinámica del Excel
+  if (cachedPhoneMapping) {
+    for (const [phone, name] of Object.entries(cachedPhoneMapping)) {
+      if (digits.includes(phone) || phone.includes(digits)) return name;
     }
+  }
+
+  // 2. Fallback al config.js local (por si falla el Excel)
+  for (const [phone, name] of Object.entries(config.phoneToPlayer)) {
+    if (digits.includes(phone) || phone.includes(digits)) return name;
   }
 
   return null;
