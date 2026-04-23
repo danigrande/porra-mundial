@@ -4,19 +4,17 @@
 // Conecta WhatsApp (Baileys) con el motor de IA.
 // Incluye servidor Express para keep-alive en Render.
 
-import { default as makeWASocket, useMultiFileAuthState, DisconnectReason, makeInMemoryStore } from '@whiskeysockets/baileys';
+import { default as makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import express from 'express';
+import qrcode from 'qrcode-terminal';
 import { schedule } from 'node-cron';
 import config from './config.js';
 import { processMessage, generateGroupSummary, forceRefresh } from './messageHandler.js';
 
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });
-
-// Store en memoria para manejar reintentos de mensajes
-const store = makeInMemoryStore({ logger });
 
 // ==========================================
 // SERVIDOR EXPRESS (Keep-alive para Render)
@@ -57,13 +55,15 @@ async function startBot() {
   // Autenticación persistente (se guarda en ./auth_info)
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
 
+  // Obtener la última versión de WhatsApp Web
+  const { version, isLatest } = await fetchLatestBaileysVersion();
+  console.log(` usando WA v${version.join('.')}, isLatest: ${isLatest}`);
+
   const sock = makeWASocket({
+    version,
     auth: state,
     logger,
-    printQRInTerminal: true, // Muestra QR en la consola para escanear
-    browser: ['Agente Mundial', 'Chrome', '120.0.0'],
-    // Generar link de pairing si no hay QR disponible
-    // (útil para Render donde no ves la consola)
+    browser: Browsers.ubuntu('Chrome'),
     generateHighQualityLinkPreview: false,
   });
 
@@ -77,15 +77,17 @@ async function startBot() {
     if (qr) {
       console.log('\n📱 Escanea este QR con WhatsApp:');
       console.log('   (Abre WhatsApp > Ajustes > Dispositivos vinculados > Vincular dispositivo)\n');
+      qrcode.generate(qr, { small: true });
     }
 
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+      console.log('❌ Error de conexión:', reason, lastDisconnect?.error?.message);
 
       if (reason === DisconnectReason.loggedOut) {
         console.log('❌ Sesión cerrada. Elimina ./auth_info y escanea QR de nuevo.');
       } else {
-        console.log(`⚠️ Conexión perdida (razón: ${reason}). Reconectando en 5s...`);
+        console.log(`⚠️ Reconectando en 5s...`);
         setTimeout(startBot, 5000);
       }
     }
@@ -96,12 +98,8 @@ async function startBot() {
     }
   });
 
-  // ==========================================
-  // LISTENER DE MENSAJES
-  // ==========================================
-
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    if (type !== 'notify') return; // Solo mensajes nuevos
+    if (type !== 'notify') return;
 
     for (const msg of messages) {
       try {
@@ -111,48 +109,74 @@ async function startBot() {
         // Extraer texto del mensaje
         const text = msg.message?.conversation
           || msg.message?.extendedTextMessage?.text
+          || msg.message?.buttonsResponseMessage?.selectedButtonId
+          || msg.message?.listResponseMessage?.title
           || '';
 
-        if (!text.trim()) continue; // Ignorar mensajes sin texto
-
-        // Determinar si es grupo o chat privado
-        const isGroup = msg.key.remoteJid?.endsWith('@g.us');
         const chatId = msg.key.remoteJid;
+        console.log(`📍 Chat ID detectado: ${chatId}`);
+        
+        // En grupos, el emisor real suele estar en participant o participantAlt
+        const rawSender = msg.key.participantAlt || msg.key.participant || msg.key.remoteJidAlt || msg.key.remoteJid || '';
+        const senderPhone = rawSender.split('@')[0];
 
-        // Si hay un grupo configurado, solo responder en ese grupo
-        if (config.bot.groupId && isGroup && chatId !== config.bot.groupId) {
+        console.log(`📥 Mensaje de ${senderPhone} (Nombre: ${msg.pushName || '?'}): "${text.substring(0, 50)}"`);
+        console.log(`   Tipo: ${chatId.endsWith('@g.us') ? 'Grupo' : 'Privado'}`);
+
+        if (!text.trim()) {
+          console.log('⏩ Mensaje vacío o no es texto, ignorando.');
           continue;
         }
 
-        // Extraer número del remitente
-        const senderPhone = isGroup
-          ? msg.key.participant || ''
-          : msg.key.remoteJid || '';
+        // Determinar si es grupo o chat privado
+        const isGroup = chatId?.endsWith('@g.us');
 
-        // Comprobar si el bot fue mencionado
+        // Si hay un grupo configurado, solo responder en ese grupo
+        if (config.bot.groupId && isGroup && chatId !== config.bot.groupId) {
+          console.log(`⏩ Mensaje de grupo ignorado (ID: ${chatId})`);
+          continue;
+        }
+
+        // Comprobar si el bot fue mencionado (oficialmente o por texto)
+        const botId = sock.user?.id.split(':')[0];
+        const botLid = sock.authState.creds.me?.lid?.split(':')[0]?.split('@')[0];
+        console.log(`🔍 DEBUG MENCIONES: Bot ID=${botId}, Bot LID=${botLid}, Texto="${text}"`);
+        
         const mentionedJids = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-        const isMentioned = mentionedJids.some(jid => jid === sock.user?.id);
+        
+        // Es mencionado si su ID o su LID están en la lista de menciones oficiales
+        const isMentionedOfficial = mentionedJids.some(jid => 
+          (botId && jid.includes(botId)) || (botLid && jid.includes(botLid))
+        );
+        
+        // O si el texto contiene @ seguido de cualquiera de sus IDs o palabras clave
+        const textLower = text.toLowerCase();
+        const isMentionedText = (botId && text.includes('@' + botId)) || 
+                               (botLid && text.includes('@' + botLid)) ||
+                               textLower.includes('@agente') || 
+                               textLower.includes('@bot');
+        
+        const isMentioned = isMentionedOfficial || isMentionedText;
+        if (isMentioned) console.log('✅ ¡Mención detectada!');
 
         // Procesar el mensaje
         const response = await processMessage(text, senderPhone, isGroup, isMentioned);
 
         if (response) {
-          console.log(`💬 ${senderPhone.split('@')[0]}: "${text.substring(0, 50)}..."`);
-          console.log(`🤖 Respondiendo: "${response.substring(0, 80)}..."`);
+          console.log(`🤖 Respondiendo a ${senderPhone}: "${response.substring(0, 80)}..."`);
 
-          // Simular "escribiendo..." para parecer más natural
+          // Simular "escribiendo..."
           await sock.presenceSubscribe(chatId);
           await sock.sendPresenceUpdate('composing', chatId);
-
-          // Esperar un poco (más natural, menos riesgo)
-          const typingDelay = Math.min(response.length * 30, 3000);
-          await new Promise(r => setTimeout(r, typingDelay));
+          await new Promise(r => setTimeout(r, 2000));
 
           // Enviar respuesta
           await sock.sendMessage(chatId, { text: response });
+        } else {
+          console.log('⏩ El bot decidió no responder (no activado por trigger word).');
         }
       } catch (error) {
-        console.error('Error procesando mensaje:', error.message);
+        console.error('❌ Error procesando mensaje:', error);
       }
     }
   });

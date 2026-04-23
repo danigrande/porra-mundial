@@ -132,18 +132,7 @@ export function detectIntent(text) {
  */
 export function shouldRespond(text, isGroup, isMentioned) {
   if (!isGroup) return true; // En chat privado siempre responde
-
-  if (isMentioned) return true; // Si lo mencionan directamente
-
-  // Trigger words que activan al bot en el grupo
-  const lower = text.toLowerCase();
-  const triggers = [
-    'agente', 'agente mundial', 'bot', 'mundial bot',
-    'oye bot', 'hey bot', 'ei bot', 'eh bot',
-    '@agente', '@bot',
-  ];
-
-  return triggers.some(t => lower.includes(t));
+  return isMentioned; // En grupo SOLO si ha sido mencionado directamente con @
 }
 
 /**
@@ -174,13 +163,12 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned) {
     return `🏆 *Agente Mundial* — Tu asistente de la Porra
 
 Puedes preguntarme cosas como:
-• "¿Cómo voy?" — Tu posición y puntos
-• "¿Quién va primero?" — Ranking general
-• "¿Por qué tengo tan pocos puntos?" — Análisis
-• "Resumen" — Resumen de la jornada
-• Cualquier otra pregunta sobre la porra
+• "@Agente ¿Cómo voy?" — Tu posición y puntos
+• "@Agente ¿Quién va primero?" — Ranking general
+• "@Agente ¿Por qué tengo tan pocos puntos?" — Análisis
+• "@Agente Resumen" — Resumen de la jornada
 
-Solo escucho cuando me mencionan ("agente", "bot") 👂`;
+Solo escucho en el grupo cuando me mencionas con @ 👂`;
   }
 
   // Construir contexto para el LLM
