@@ -67,18 +67,31 @@ async function startBot() {
     generateHighQualityLinkPreview: false,
   });
 
+  // ==========================================
+  // CÓDIGO DE EMPAREJAMIENTO (Pairing Code)
+  // ==========================================
+  if (!sock.authState.creds.registered) {
+    const phoneNumber = process.env.BOT_PHONE || '34643429479';
+    console.log(`\n🔑 Solicitando código de emparejamiento para: ${phoneNumber}...`);
+    
+    setTimeout(async () => {
+      try {
+        const code = await sock.requestPairingCode(phoneNumber);
+        console.log('\n******************************************');
+        console.log(`*  TU CÓDIGO DE WHATSAPP ES:  ${code}  *`);
+        console.log('******************************************\n');
+      } catch (error) {
+        console.error('Error solicitando código:', error.message);
+      }
+    }, 5000); // 5 segundos para asegurar que el socket está listo
+  }
+
   // Guardar credenciales cuando se actualicen
   sock.ev.on('creds.update', saveCreds);
 
   // Manejar estado de conexión
   sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
-
-    if (qr) {
-      console.log('\n📱 Escanea este QR con WhatsApp:');
-      console.log('   (Abre WhatsApp > Ajustes > Dispositivos vinculados > Vincular dispositivo)\n');
-      qrcode.generate(qr, { small: true });
-    }
+    const { connection, lastDisconnect } = update;
 
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
