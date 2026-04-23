@@ -81,6 +81,12 @@ async function startBot() {
     if (!fs.existsSync(AUTH_FOLDER)) fs.mkdirSync(AUTH_FOLDER);
     const credsJson = Buffer.from(process.env.WA_SESSION_DATA, 'base64').toString('utf-8');
     fs.writeFileSync(`${AUTH_FOLDER}/creds.json`, credsJson);
+  } else {
+    // Si no hay variable de entorno y NO estamos registrados, limpiamos para evitar conflictos
+    if (fs.existsSync(AUTH_FOLDER) && !fs.existsSync(`${AUTH_FOLDER}/creds.json`)) {
+      console.log('🧹 Limpiando archivos de sesión antiguos...');
+      fs.rmSync(AUTH_FOLDER, { recursive: true, force: true });
+    }
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
@@ -101,20 +107,24 @@ async function startBot() {
   // ==========================================
   // CÓDIGO DE EMPAREJAMIENTO (Pairing Code)
   // ==========================================
+  let isPairing = false;
   if (!sock.authState.creds.registered) {
+    isPairing = true;
     const phoneNumber = process.env.BOT_PHONE || '34643429479';
-    console.log(`\n🔑 Solicitando código de emparejamiento para: ${phoneNumber}...`);
+    console.log(`\n🔑 Solicitando código para: ${phoneNumber}...`);
     
     setTimeout(async () => {
       try {
         const code = await sock.requestPairingCode(phoneNumber);
         console.log('\n******************************************');
         console.log(`*  TU CÓDIGO DE WHATSAPP ES:  ${code}  *`);
-        console.log('******************************************\n');
+        console.log('******************************************');
+        console.log('⚠️  Tienes 2 minutos para meterlo en tu móvil.\n');
       } catch (error) {
         console.error('Error solicitando código:', error.message);
+        isPairing = false;
       }
-    }, 5000); // 5 segundos para asegurar que el socket está listo
+    }, 5000); 
   }
 
   // Guardar credenciales cuando se actualicen
@@ -128,11 +138,18 @@ async function startBot() {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
       console.log('❌ Error de conexión:', reason, lastDisconnect?.error?.message);
 
+      // Si estamos en medio de un emparejamiento, NO REINICIAMOS automáticamente
+      // para no invalidar el código que el usuario está escribiendo.
+      if (isPairing && reason === 408) {
+        console.log('⏳ Timeout de espera (408). Mantén la calma, el código sigue activo o se generará uno nuevo pronto.');
+        return;
+      }
+
       if (reason === DisconnectReason.loggedOut) {
-        console.log('❌ Sesión cerrada. Elimina ./auth_info y escanea QR de nuevo.');
+        console.log('❌ Sesión cerrada. Elimina la variable WA_SESSION_DATA y el código QR de nuevo.');
       } else {
-        console.log(`⚠️ Reconectando en 5s...`);
-        setTimeout(startBot, 5000);
+        console.log(`⚠️ Reconectando en 7s...`);
+        setTimeout(startBot, 7000);
       }
     }
 
