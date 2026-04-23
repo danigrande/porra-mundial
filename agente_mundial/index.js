@@ -4,6 +4,7 @@
 // Conecta WhatsApp (Baileys) con el motor de IA.
 // Incluye servidor Express para keep-alive en Render.
 
+import fs from 'fs';
 import { default as makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
@@ -70,8 +71,19 @@ app.listen(config.bot.port, () => {
 // ==========================================
 
 async function startBot() {
-  // Autenticación persistente (se guarda en ./auth_info)
-  const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
+  // ==========================================
+  // GESTIÓN DE SESIÓN (Variable de Entorno o Carpeta)
+  // ==========================================
+  const AUTH_FOLDER = './auth_info';
+  
+  if (process.env.WA_SESSION_DATA) {
+    console.log('📦 Cargando sesión desde variable de entorno...');
+    if (!fs.existsSync(AUTH_FOLDER)) fs.mkdirSync(AUTH_FOLDER);
+    const credsJson = Buffer.from(process.env.WA_SESSION_DATA, 'base64').toString('utf-8');
+    fs.writeFileSync(`${AUTH_FOLDER}/creds.json`, credsJson);
+  }
+
+  const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
 
   // Obtener la última versión de WhatsApp Web
   const { version, isLatest } = await fetchLatestBaileysVersion();
@@ -81,6 +93,7 @@ async function startBot() {
     version,
     auth: state,
     logger,
+    printQRInTerminal: false,
     browser: Browsers.ubuntu('Chrome'),
     generateHighQualityLinkPreview: false,
   });
@@ -125,6 +138,21 @@ async function startBot() {
 
     if (connection === 'open') {
       console.log('\n✅ ¡Agente Mundial conectado a WhatsApp!\n');
+      
+      // Imprimir el string de la sesión para que el usuario pueda copiarlo a Render
+      if (!process.env.WA_SESSION_DATA) {
+        try {
+          const creds = fs.readFileSync(`${AUTH_FOLDER}/creds.json`);
+          const sessionString = creds.toString('base64');
+          console.log('\n------------------ COPIA ESTA SESIÓN PARA RENDER ------------------');
+          console.log(sessionString);
+          console.log('-------------------------------------------------------------------\n');
+          console.log('💡 Pega este texto largo en Render con el nombre: WA_SESSION_DATA\n');
+        } catch (e) {
+          console.error('Error al generar session string:', e.message);
+        }
+      }
+
       console.log(`📋 Escuchando mensajes${config.bot.groupId ? ' en grupo: ' + config.bot.groupId : ' (todos los chats)'}...`);
     }
   });
@@ -144,43 +172,20 @@ async function startBot() {
           || msg.message?.listResponseMessage?.title
           || '';
 
+        if (!text.trim()) continue;
+
         const chatId = msg.key.remoteJid;
-        console.log(`📍 Chat ID detectado: ${chatId}`);
-        
-        // En grupos, el emisor real suele estar en participant o participantAlt
-        const rawSender = msg.key.participantAlt || msg.key.participant || msg.key.remoteJidAlt || msg.key.remoteJid || '';
-        const senderPhone = rawSender.split('@')[0];
-
-        console.log(`📥 Mensaje de ${senderPhone} (Nombre: ${msg.pushName || '?'}): "${text.substring(0, 50)}"`);
-        console.log(`   Tipo: ${chatId.endsWith('@g.us') ? 'Grupo' : 'Privado'}`);
-
-        if (!text.trim()) {
-          console.log('⏩ Mensaje vacío o no es texto, ignorando.');
-          continue;
-        }
-
-        // Determinar si es grupo o chat privado
         const isGroup = chatId?.endsWith('@g.us');
-
-        // Si hay un grupo configurado, solo responder en ese grupo
-        if (config.bot.groupId && isGroup && chatId !== config.bot.groupId) {
-          console.log(`⏩ Mensaje de grupo ignorado (ID: ${chatId})`);
-          continue;
-        }
-
-        // Comprobar si el bot fue mencionado (oficialmente o por texto)
+        
+        // --- IDENTIFICACIÓN DE MENCIONES ---
         const botId = sock.user?.id.split(':')[0];
         const botLid = sock.authState.creds.me?.lid?.split(':')[0]?.split('@')[0];
-        console.log(`🔍 DEBUG MENCIONES: Bot ID=${botId}, Bot LID=${botLid}, Texto="${text}"`);
         
         const mentionedJids = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-        
-        // Es mencionado si su ID o su LID están en la lista de menciones oficiales
         const isMentionedOfficial = mentionedJids.some(jid => 
           (botId && jid.includes(botId)) || (botLid && jid.includes(botLid))
         );
         
-        // O si el texto contiene @ seguido de cualquiera de sus IDs o palabras clave
         const textLower = text.toLowerCase();
         const isMentionedText = (botId && text.includes('@' + botId)) || 
                                (botLid && text.includes('@' + botLid)) ||
@@ -188,7 +193,20 @@ async function startBot() {
                                textLower.includes('@bot');
         
         const isMentioned = isMentionedOfficial || isMentionedText;
-        if (isMentioned) console.log('✅ ¡Mención detectada!');
+
+        // --- IDENTIFICACIÓN DEL REMITENTE ---
+        const rawSender = msg.key.participantAlt || msg.key.participant || msg.key.remoteJidAlt || msg.key.remoteJid || '';
+        const senderPhone = rawSender.split('@')[0];
+
+        console.log(`📥 Mensaje de ${senderPhone} (Nombre: ${msg.pushName || '?'}): "${text.substring(0, 50)}"`);
+        if (isMentioned) console.log('   ✅ Mención detectada');
+
+        // --- FILTRO DE GRUPO ---
+        // Si hay un grupo configurado, solo responder en ese grupo (si el mensaje viene de un grupo)
+        if (config.bot.groupId && isGroup && chatId !== config.bot.groupId) {
+          console.log(`⏩ Mensaje de otro grupo ignorado (ID: ${chatId})`);
+          continue;
+        }
 
         // Procesar el mensaje
         const response = await processMessage(text, senderPhone, isGroup, isMentioned);
@@ -203,8 +221,8 @@ async function startBot() {
 
           // Enviar respuesta
           await sock.sendMessage(chatId, { text: response });
-        } else {
-          console.log('⏩ El bot decidió no responder (no activado por trigger word).');
+        } else if (isGroup) {
+          console.log('⏩ El bot decidió no responder (no mencionado en grupo).');
         }
       } catch (error) {
         console.error('❌ Error procesando mensaje:', error);
