@@ -9,6 +9,7 @@ import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import express from 'express';
 import qrcode from 'qrcode-terminal';
+import cors from 'cors';
 import { schedule } from 'node-cron';
 import config from './config.js';
 import { processMessage, generateGroupSummary, forceRefresh } from './messageHandler.js';
@@ -20,6 +21,7 @@ const logger = pino({ level: 'warn' });
 // SERVIDOR EXPRESS (Keep-alive para Render)
 // ==========================================
 const app = express();
+app.use(cors()); // Permitir llamadas desde la web
 
 app.get('/', (req, res) => {
   res.json({
@@ -40,6 +42,22 @@ app.get('/trigger-summary', async (req, res) => {
     res.json({ summary });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// NUEVO: API para la web (player_score.html)
+app.get('/api/summary/:player', async (req, res) => {
+  const { player } = req.params;
+  console.log(`🌐 Petición de resumen desde la web para: ${player}`);
+  try {
+    // Forzamos un refresco de datos antes de generar el resumen
+    await forceRefresh();
+    // Reutilizamos la lógica del messageHandler
+    const response = await processMessage(`resumen`, player, false, true);
+    res.json({ summary: response });
+  } catch (error) {
+    console.error('Error en API summary:', error);
+    res.status(500).json({ error: 'Error al generar resumen' });
   }
 });
 

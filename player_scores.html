@@ -959,13 +959,15 @@
       el.style.display = isVisible ? 'none' : 'grid';
     }
 
+    const RENDER_URL = 'https://tu-app-en-render.onrender.com'; // <--- PON TU URL DE RENDER AQUÍ
+
     async function fetchAISummary(playerName, idx) {
       const box = document.getElementById(`ai_summary_${idx}`);
       box.style.display = 'block';
       box.innerHTML = '<i>✨ Generando resumen divertido...</i>';
       
       try {
-        const response = await fetch(`http://localhost:5000/summary/${encodeURIComponent(playerName)}`);
+        const response = await fetch(`${RENDER_URL}/api/summary/${encodeURIComponent(playerName)}`);
         const data = await response.json();
         
         if (data.summary) {
@@ -974,7 +976,7 @@
           box.innerHTML = `<span style="color:var(--accent-red)">⚠️ ${data.error || 'Error al conectar con el servidor'}</span>`;
         }
       } catch (e) {
-        box.innerHTML = `<span style="color:var(--accent-red)">⚠️ Asegúrate de que server.py esté corriendo en el puerto 5000</span>`;
+        box.innerHTML = `<span style="color:var(--accent-red)">⚠️ No se pudo conectar con el bot en Render. Revisa la URL.</span>`;
       }
     }
   </script>
