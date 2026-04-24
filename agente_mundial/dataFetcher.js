@@ -14,8 +14,12 @@ export async function getAllPredictions(groupName) {
   try {
     const url = groupName ? `${SCRIPT_URL}?action=getPredictions&groupName=${encodeURIComponent(groupName)}` : SCRIPT_URL;
     const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
+      return {};
+    }
     const data = await response.json();
-    if (data.status === 'success') {
+    if (data && data.status === 'success') {
       return data.data || {};
     }
     return {};
