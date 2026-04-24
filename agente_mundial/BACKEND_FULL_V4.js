@@ -368,10 +368,6 @@ function logTrace(method, action, params) {
       }
     }
 
-    if (!debugSchema) { // This is a typo in my thought process, I should check if debugMode was found or set. 
-      // Actually let's just use the logic below.
-    }
-
     if (!debugMode) {
       console.log(`[TRACE] Skipping logTrace for ${method} ${action} because DEBUG_MODE is not TRUE in Config.`);
       return;

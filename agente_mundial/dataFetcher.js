@@ -86,20 +86,33 @@ export async function getPlayerList(groupName) {
 /**
  * Guarda un resumen IA.
  */
-export async function saveSummary(playerName, groupName, summaryText) {
+export async function saveSummary(playerName, group_name, summaryText) {
   try {
-    await fetch(SCRIPT_URL, {
+    console.log(`💾 [saveSummary] Guardando resumen de "${playerName}" en grupo "${group_name}" → URL: ${SCRIPT_URL}`);
+    const res = await fetch(SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'saveSummary',
         playerName,
-        groupName,
+        groupName: group_name,
         summary: summaryText,
       }),
     });
+    const responseText = await res.text();
+    console.log(`✅ [saveSummary] Respuesta de Google Sheets (${res.status}): ${responseText.substring(0, 200)}`);
+    let result;
+    try { result = JSON.parse(responseText); } catch { result = null; }
+    if (result && result.status !== 'success') {
+      console.error(`❌ [saveSummary] Google Sheets devolvió error: ${JSON.stringify(result)}`);
+    }
   } catch (error) {
-    console.error('Error saving summary:', error.message);
+    console.error('❌ [CRITICAL] Error saving summary to Google Sheets:', {
+      message: error.message,
+      player: playerName,
+      group: group_name,
+      timestamp: new Date().toISOString()
+    });
   }
 }
 
@@ -110,7 +123,7 @@ export async function getRules(groupName) {
   try {
     const response = await fetch(`${SCRIPT_URL}?action=getRules&groupName=${encodeURIComponent(groupName)}`);
     const data = await response.json();
-    return data.status === 'success' ? data.data : {};
+    return data.status === 'succeed' || data.status === 'success' ? data.data : {};
   } catch (error) {
     console.error('Error fetching rules:', error.message);
     return {};
