@@ -372,7 +372,7 @@
     // SIMULATION CONFIGURATION
     // ==========================================
 
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwSjSh8arY5o1chbEvv3uFL84akRlOIkEBdzsJ4_vZpDPPhnX7PQ8qurjfT1mlYUsa/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpvwxOepP9dsaDmDPM6q-nBGHrKygknl873BLxAaORkkrVmo9uxzMuaxYZisi4HMhI/exec';
 
     let currentUser = null;
 
@@ -384,10 +384,10 @@
       }
       try {
         currentUser = JSON.parse(raw);
-        if (!currentUser.name || !currentUser.pin) throw new Error();
+        if (!currentUser.name || !currentUser.pin || !currentUser.groupName) throw new Error();
         
         document.getElementById('navUserInfo').style.display = 'flex';
-        document.getElementById('displayUserName').textContent = currentUser.name;
+        document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
       } catch (e) {
         localStorage.removeItem('worldcup2026_user');
         window.location.href = 'login.html';
@@ -408,8 +408,8 @@
     let players = [];
 
     function loadLocalData() {
-      const realityStr = localStorage.getItem('worldcup2026_testing_reality');
-      const rulesStr = localStorage.getItem('worldcup2026_scoring');
+      const realityStr = localStorage.getItem(`worldcup2026_testing_reality_${currentUser.groupName}`);
+      const rulesStr = localStorage.getItem(`worldcup2026_scoring_${currentUser.groupName}`);
       reality = realityStr ? JSON.parse(realityStr) : null;
       rules = rulesStr ? JSON.parse(rulesStr) : {};
     }
@@ -418,7 +418,7 @@
 
     // Cross-tab synchronization
     window.addEventListener('storage', (e) => {
-      if (e.key === 'worldcup2026_testing_reality') {
+      if (e.key === `worldcup2026_testing_reality_${currentUser.groupName}`) {
         console.log("Detectado cambio en realidad simulada, actualizando...");
         loadLocalData();
         renderLeaderboard();
@@ -467,7 +467,7 @@
       sim['boot_gold'] = "Mbappe"; sim['boot_silver'] = "Haaland"; sim['boot_bronze'] = "Vinicius Jr";
       sim['ball_gold'] = "Messi"; sim['ball_silver'] = "De Bruyne"; sim['ball_bronze'] = "Musiala";
 
-      localStorage.setItem('worldcup2026_testing_reality', JSON.stringify(sim));
+      localStorage.setItem(`worldcup2026_testing_reality_${currentUser.groupName}`, JSON.stringify(sim));
       return sim;
     }
 
@@ -872,7 +872,7 @@
 
     async function fetchSavedSummaries() {
       try {
-        const res = await fetch(`${SCRIPT_URL}?action=getAllSummaries`);
+        const res = await fetch(`${SCRIPT_URL}?action=getAllSummaries&groupName=${encodeURIComponent(currentUser.groupName)}`);
         const result = await res.json();
         if (result.status === 'success') {
           savedSummaries = result.data || {};
@@ -902,20 +902,21 @@
         if (SCRIPT_URL && SCRIPT_URL !== 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
           // Fetch rules
           try {
-            const rulesResponse = await fetch(`${SCRIPT_URL}?action=getRules`);
+            const rulesResponse = await fetch(`${SCRIPT_URL}?action=getRules&groupName=${encodeURIComponent(currentUser.groupName)}`);
             const rulesResult = await rulesResponse.json();
             if (rulesResult.status === 'success' && rulesResult.data) {
               const rawObj = rulesResult.data;
               rules = typeof rawObj === 'string' ? JSON.parse(rawObj) : rawObj;
+              localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(rules));
             }
           } catch (e) { console.warn("No se pudieron obtener las reglas de la nube.", e); }
 
           // Fetch predictions
-          const response = await fetch(SCRIPT_URL);
+          const response = await fetch(`${SCRIPT_URL}?action=getPredictions&groupName=${encodeURIComponent(currentUser.groupName)}`);
           const result = await response.json();
           if (result.status === 'success' && result.data) {
             Object.keys(result.data).forEach(pName => {
-              const isLocalUser = (localStorage.getItem('worldcup2026_predictions') && JSON.parse(localStorage.getItem('worldcup2026_predictions'))._playerName === pName);
+              const isLocalUser = (localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`) && JSON.parse(localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`))._playerName === pName);
               const rawObj = result.data[pName];
               const preds = typeof rawObj.predictions === 'string' ? JSON.parse(rawObj.predictions) : rawObj.predictions;
               players.push({ _playerName: pName, _isBot: !isLocalUser, ...preds });
@@ -937,7 +938,7 @@
 
         // Add active prediction if we don't have a roster either
         if (players.length === 0) {
-          const localUserStr = localStorage.getItem('worldcup2026_predictions');
+          const localUserStr = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
           if (localUserStr) players.push(JSON.parse(localUserStr));
         }
       }
@@ -967,7 +968,7 @@
       box.innerHTML = '<i>✨ Generando resumen divertido...</i>';
       
       try {
-        const response = await fetch(`${RENDER_URL}/api/summary/${encodeURIComponent(playerName)}`);
+        const response = await fetch(`${RENDER_URL}/api/summary/${encodeURIComponent(playerName)}?groupName=${encodeURIComponent(currentUser.groupName)}`);
         const data = await response.json();
         
         if (data.summary) {

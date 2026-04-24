@@ -1,82 +1,79 @@
 // ============================================
-// MESSAGE HANDLER — Lógica de mensajes
+// MESSAGE HANDLER — Lógica de mensajes (SCALED)
 // ============================================
-// Procesa mensajes entrantes, detecta intenciones,
-// construye contexto y genera respuestas.
-// Este módulo es AGNÓSTICO de la plataforma de mensajería.
 
 import config from './config.js';
-import { getAllPredictions, getAllProfiles, getPlayerProfile } from './dataFetcher.js';
+import * as dataFetcher from './dataFetcher.js';
 import { calculateLeaderboard } from './scoringEngine.js';
 import { generateResponse, generateDailySummary } from './groqEngine.js';
 
-// Cache para evitar llamadas excesivas a Google Sheets
-let cachedLeaderboard = null;
-let cachedProfiles = null;
-let cachedPhoneMapping = null;
-let cachedBotConfigs = null;
-let cacheTimestamp = 0;
+// Cache organizada por GroupName
+const caches = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 /**
- * Obtiene la configuración actual de la cache.
+ * Identifica el nombre legible del grupo a partir del ID de WhatsApp.
  */
-export function getBotConfig() {
-  return cachedBotConfigs || {};
+function resolveGroupName(groupId) {
+  return config.groups[groupId] || null;
 }
 
 /**
- * Refresca la cache de datos si ha expirado.
+ * Refresca la cache de un grupo específico.
  */
-export async function refreshCache() {
+export async function refreshCache(groupName) {
+  if (!groupName) return;
+
   const now = Date.now();
-  if (cachedLeaderboard && (now - cacheTimestamp) < CACHE_TTL) {
+  const cache = caches[groupName] || {};
+  
+  if (cache.leaderboard && (now - (cache.timestamp || 0)) < CACHE_TTL) {
     return; // Cache aún válida
   }
 
-  console.log('📊 Refrescando cache dinámica desde Google Sheets...');
+  console.log(`📊 Refrescando cache para grupo: ${groupName}...`);
   try {
-    const [predictions, profiles, phoneMapping, botConfigs] = await Promise.all([
-      getAllPredictions(),
-      getAllProfiles(),
-      import('./dataFetcher.js').then(m => m.getPhoneMapping()),
-      import('./dataFetcher.js').then(m => m.getDynamicConfig()),
+    const [predictions, profiles, phoneMapping, rules] = await Promise.all([
+      dataFetcher.getAllPredictions(groupName),
+      dataFetcher.getAllProfiles(groupName),
+      dataFetcher.getPhoneMapping(groupName),
+      dataFetcher.getRules(groupName),
     ]);
 
-    cachedProfiles = profiles;
-    cachedPhoneMapping = phoneMapping;
-    cachedBotConfigs = botConfigs;
+    const leaderboard = Object.entries(predictions).map(([name, data]) => ({
+      name,
+      ...data,
+    }));
 
-    if (Object.keys(predictions).length > 0) {
-      cachedLeaderboard = Object.entries(predictions).map(([name, data], idx) => ({
-        name,
-        position: idx + 1,
-        totalPts: 0, // En el futuro se calcularán con la realidad
-        ...data,
-      }));
-    }
+    caches[groupName] = {
+      predictions,
+      profiles,
+      phoneMapping,
+      rules,
+      leaderboard,
+      timestamp: now
+    };
 
-    cacheTimestamp = now;
-    console.log(`✅ Datos sincronizados: ${Object.keys(phoneMapping).length} teléfonos, Grupo: ${botConfigs.WHATSAPP_GROUP_ID || 'No fijado'}`);
+    console.log(`✅ Datos sincronizados para ${groupName}: ${Object.keys(phoneMapping).length} teléfonos.`);
   } catch (error) {
-    console.error('Error refrescando cache dinámica:', error.message);
+    console.error(`Error refrescando cache para ${groupName}:`, error.message);
   }
 }
 
 /**
- * Identifica al jugador por su número de teléfono.
+ * Identifica al jugador por su número de teléfono dentro de un grupo.
  */
-export function identifyPlayer(phoneNumber) {
+export function identifyPlayer(phoneNumber, groupName) {
   const digits = phoneNumber.replace(/[^0-9]/g, '');
+  const cache = caches[groupName];
   
-  // 1. Intentar con la cache dinámica del Excel
-  if (cachedPhoneMapping) {
-    for (const [phone, name] of Object.entries(cachedPhoneMapping)) {
+  if (cache && cache.phoneMapping) {
+    for (const [phone, name] of Object.entries(cache.phoneMapping)) {
       if (digits.includes(phone) || phone.includes(digits)) return name;
     }
   }
 
-  // 2. Fallback al config.js local (por si falla el Excel)
+  // Fallback global
   for (const [phone, name] of Object.entries(config.phoneToPlayer)) {
     if (digits.includes(phone) || phone.includes(digits)) return name;
   }
@@ -85,160 +82,80 @@ export function identifyPlayer(phoneNumber) {
 }
 
 /**
- * Detecta la intención del mensaje.
- * @param {string} text - Texto del mensaje
- * @returns {string} Tipo de intención
+ * Detecta la intención del mensaje (sin cambios).
  */
 export function detectIntent(text) {
   const lower = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  // Ranking / Clasificación
-  if (/ranking|clasificacion|tabla|leaderboard|quien va|como vamos|posicion/.test(lower)) {
-    return 'ranking';
-  }
-
-  // Estado personal
-  if (/como voy|mis puntos|mi posicion|cuantos puntos|mi score|como estoy/.test(lower)) {
-    return 'my_status';
-  }
-
-  // ¿Por qué pocos/muchos puntos?
-  if (/por ?que.*(pocos|muchos|tantos|tan pocos)|que me falta|donde pierdo|donde fallo/.test(lower)) {
-    return 'explain_score';
-  }
-
-  // Resumen
-  if (/resumen|resume|summary|resena/.test(lower)) {
-    return 'summary';
-  }
-
-  // Ayuda
-  if (/ayuda|help|que puedes|comandos|que haces/.test(lower)) {
-    return 'help';
-  }
-
-  // Saludo
-  if (/^(hola|hey|buenas|ey|hello|wenas|que tal)/i.test(lower)) {
-    return 'greeting';
-  }
-
-  // Pregunta general sobre fútbol/porra
+  if (/ranking|clasificacion|tabla|leaderboard|quien va|como vamos|posicion/.test(lower)) return 'ranking';
+  if (/como voy|mis puntos|mi posicion|cuantos puntos|mi score|como estoy/.test(lower)) return 'my_status';
+  if (/por ?que.*(pocos|muchos|tantos|tan pocos)|que me falta|donde pierdo|donde fallo/.test(lower)) return 'explain_score';
+  if (/resumen|resume|summary|resena/.test(lower)) return 'summary';
+  if (/ayuda|help|que puedes|comandos|que haces/.test(lower)) return 'help';
+  if (/^(hola|hey|buenas|ey|hello|wenas|que tal)/i.test(lower)) return 'greeting';
   return 'general';
 }
 
 /**
- * Comprueba si el mensaje va dirigido al bot.
- * En un grupo, solo responde si le mencionan o usan trigger words.
- * @param {string} text - Texto del mensaje
- * @param {boolean} isGroup - Si el mensaje viene de un grupo
- * @param {boolean} isMentioned - Si el bot fue mencionado directamente
- * @returns {boolean}
- */
-export function shouldRespond(text, isGroup, isMentioned) {
-  if (!isGroup) return true; // En chat privado siempre responde
-  return isMentioned; // En grupo SOLO si ha sido mencionado directamente con @
-}
-
-/**
  * Procesa un mensaje y genera una respuesta.
- * Esta es la función principal que orquesta todo el flujo.
- * 
- * @param {string} text - Texto del mensaje del usuario
- * @param {string} senderPhone - Número de teléfono del remitente
- * @param {boolean} isGroup - Si viene de un grupo
- * @param {boolean} isMentioned - Si el bot fue mencionado
- * @returns {string|null} Respuesta del bot, o null si no debe responder
  */
-export async function processMessage(text, senderPhone, isGroup, isMentioned) {
-  // ¿Debe responder?
-  if (!shouldRespond(text, isGroup, isMentioned)) {
-    return null;
-  }
-
-  // Refrescar datos
-  await refreshCache();
-
-  // Identificar al jugador
-  let playerName = identifyPlayer(senderPhone);
+export async function processMessage(text, senderPhone, isGroup, isMentioned, whatsappGroupId) {
+  // 1. Identificar Grupo
+  const groupName = isGroup ? resolveGroupName(whatsappGroupId) : null;
   
-  // Si no se identifica por teléfono, pero senderPhone coincide con un nombre de jugador
-  // (esto ocurre cuando la petición viene de la API de la web)
-  if (!playerName && cachedProfiles && cachedProfiles[senderPhone]) {
-    playerName = senderPhone;
-  }
-  // También mirar en el config local por si acaso
-  if (!playerName && config.playerProfiles[senderPhone]) {
-    playerName = senderPhone;
+  if (isGroup && !isMentioned) return null;
+  if (isGroup && !groupName) {
+    return "⚠️ Este grupo no está registrado en mi configuración. Dile al administrador que añada el ID " + whatsappGroupId + " a config.js";
   }
 
+  // 2. Refrescar datos del grupo
+  await refreshCache(groupName);
+  const cache = caches[groupName] || {};
+
+  // 3. Identificar al jugador
+  let playerName = identifyPlayer(senderPhone, groupName);
+  
   const intent = detectIntent(text);
 
-  // Manejar ayuda directamente (sin LLM)
   if (intent === 'help') {
-    return `🏆 *Agente Mundial* — Tu asistente de la Porra
-
-Puedes preguntarme cosas como:
-• "@Agente ¿Cómo voy?" — Tu posición y puntos
-• "@Agente ¿Quién va primero?" — Ranking general
-• "@Agente ¿Por qué tengo tan pocos puntos?" — Análisis
-• "@Agente Resumen" — Resumen de la jornada
-
-Solo escucho en el grupo cuando me mencionas con @ 👂`;
+    return `🏆 *Agente Mundial* — Asistente del grupo *${groupName || 'Privado'}*
+\nPuedes preguntarme por el ranking, tu posición o un resumen de la jornada.`;
   }
 
-  // Construir contexto para el LLM
-  const profile = playerName
-    ? (cachedProfiles?.[playerName] || config.playerProfiles[playerName] || null)
-    : null;
-
-  const playerStats = playerName && cachedLeaderboard
-    ? cachedLeaderboard.find(p => p.name === playerName) || null
-    : null;
+  // 4. Construir contexto
+  const profile = playerName ? (cache.profiles?.[playerName] || config.playerProfiles[playerName]) : null;
+  const playerStats = playerName ? (cache.leaderboard?.find(p => p.name === playerName)) : null;
 
   const context = {
-    ranking: cachedLeaderboard,
+    groupName,
+    ranking: cache.leaderboard,
     playerStats,
     profile,
-    leaderboard: cachedLeaderboard,
+    rules: cache.rules
   };
 
-  // Ajustar la pregunta si el jugador no está identificado
   const effectiveName = playerName || 'Desconocido';
   let effectiveQuestion = text;
 
-  if (!playerName) {
-    effectiveQuestion = `[Usuario no identificado pregunta]: ${text}. ` +
-      'No sé quién es este usuario, respóndele amablemente pero dile que no sé quién es ' +
-      'y que el admin (Dani Grande) tiene que configurar su número de teléfono.';
+  if (!playerName && isGroup) {
+    effectiveQuestion = `[Usuario no identificado pregunta]: ${text}. Dile que no sé quién es y que debe registrar su número en la web para el grupo ${groupName}.`;
   }
 
-  // Generar respuesta con Groq
-  const response = await generateResponse(effectiveName, effectiveQuestion, context);
-  return response;
+  return await generateResponse(effectiveName, effectiveQuestion, context);
 }
 
 /**
- * Genera y devuelve un resumen completo de la jornada.
- * Para publicar en el grupo de forma programada.
- * @returns {string} Resumen de la jornada
+ * Genera un resumen para un grupo.
  */
-export async function generateGroupSummary() {
-  await refreshCache();
+export async function generateGroupSummary(whatsappGroupId) {
+  const groupName = resolveGroupName(whatsappGroupId);
+  if (!groupName) return "Error: Grupo no reconocido";
 
-  const profiles = { ...config.playerProfiles, ...(cachedProfiles || {}) };
-  const leaderboard = cachedLeaderboard || [];
+  await refreshCache(groupName);
+  const cache = caches[groupName];
 
-  if (leaderboard.length === 0) {
-    return '📊 Aún no hay datos de la porra para generar un resumen. ¡Espera a que se jueguen partidos!';
+  if (!cache || !cache.leaderboard || cache.leaderboard.length === 0) {
+    return '📊 No hay datos suficientes para el grupo ' + groupName;
   }
 
-  return await generateDailySummary(leaderboard, profiles);
-}
-
-/**
- * Fuerza el refresco de la cache.
- */
-export async function forceRefresh() {
-  cacheTimestamp = 0;
-  await refreshCache();
+  return await generateDailySummary(cache.leaderboard, cache.profiles || {}, groupName);
 }

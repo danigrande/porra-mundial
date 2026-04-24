@@ -35,6 +35,27 @@
       color: var(--accent-red);
       box-shadow: 0 4px 24px rgba(239, 68, 68, 0.2);
     }
+
+    .group-info-msg {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .checkbox-group input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body class="login-page">
@@ -49,9 +70,15 @@
     <!-- Login Form -->
     <div id="loginForm">
       <div class="form-group">
+        <label class="form-label" for="loginGroup">Nombre del Grupo</label>
+        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" onblur="fetchPlayers()">
+        <p id="groupStatus" class="group-info-msg"></p>
+      </div>
+
+      <div class="form-group">
         <label class="form-label" for="loginPlayerSelect">Selecciona tu usuario</label>
         <select id="loginPlayerSelect" class="login-input">
-          <option value="">Cargando jugadores...</option>
+          <option value="">Primero introduce el grupo...</option>
         </select>
       </div>
 
@@ -76,6 +103,15 @@
 
     <!-- Register Form -->
     <div id="registerForm" style="display: none;">
+      <div class="form-group">
+        <label class="form-label" for="regGroup">Nombre del Grupo</label>
+        <input type="text" id="regGroup" class="login-input" placeholder="Ej: Los Amigos de Dani">
+        <label class="checkbox-group">
+          <input type="checkbox" id="regNewGroup" onchange="toggleGroupMsg()"> Es un grupo nuevo
+        </label>
+        <p id="regGroupMsg" class="group-info-msg">Te unirás a un grupo existente</p>
+      </div>
+
       <div class="form-group">
         <label class="form-label" for="regName">Nombre del jugador</label>
         <input type="text" id="regName" class="login-input" placeholder="Ej: Dani Grande">
@@ -104,30 +140,54 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwSjSh8arY5o1chbEvv3uFL84akRlOIkEBdzsJ4_vZpDPPhnX7PQ8qurjfT1mlYUsa/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpvwxOepP9dsaDmDPM6q-nBGHrKygknl873BLxAaORkkrVmo9uxzMuaxYZisi4HMhI/exec';
 
     async function fetchPlayers() {
+      const groupName = document.getElementById('loginGroup').value.trim();
       const select = document.getElementById('loginPlayerSelect');
+      const status = document.getElementById('groupStatus');
+      
+      if (!groupName) {
+        select.innerHTML = '<option value="">Primero introduce el grupo...</option>';
+        status.textContent = '';
+        return;
+      }
+
+      status.textContent = '🔍 Buscando jugadores...';
       try {
-        const response = await fetch(`${SCRIPT_URL}?action=getPlayers`);
+        const response = await fetch(`${SCRIPT_URL}?action=getPlayers&groupName=${encodeURIComponent(groupName)}`);
         const result = await response.json();
         if (result.status === 'success') {
-          select.innerHTML = '<option value="">-- Selecciona tu nombre --</option>';
-          result.data.sort().forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name;
-            opt.textContent = name;
-            select.appendChild(opt);
-          });
+          if (result.data.length === 0) {
+            select.innerHTML = '<option value="">No hay jugadores en este grupo</option>';
+            status.textContent = '⚠️ Grupo vacío o no encontrado';
+          } else {
+            select.innerHTML = '<option value="">-- Selecciona tu nombre --</option>';
+            result.data.sort().forEach(name => {
+              const opt = document.createElement('option');
+              opt.value = name;
+              opt.textContent = name;
+              select.appendChild(opt);
+            });
+            status.textContent = `✅ Grupo encontrado (${result.data.length} jugadores)`;
+          }
         }
       } catch (e) {
-        select.innerHTML = '<option value="">Error cargando nuble</option>';
+        select.innerHTML = '<option value="">Error conectando con el servidor</option>';
+        status.textContent = '❌ Error de conexión';
       }
     }
 
     function togglePin(id) {
       const input = document.getElementById(id);
       input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function toggleGroupMsg() {
+      const isNew = document.getElementById('regNewGroup').checked;
+      document.getElementById('regGroupMsg').textContent = isNew 
+        ? '🌟 Crearás el grupo y serás el administrador' 
+        : '🤝 Te unirás a un grupo existente';
     }
 
     function switchForm(type) {
@@ -137,19 +197,24 @@
     }
 
     async function handleLogin() {
+      const groupEl = document.getElementById('loginGroup');
       const nameEl = document.getElementById('loginPlayerSelect');
       const pinEl = document.getElementById('loginPin');
       const pinErrorEl = document.getElementById('loginPinError');
       
+      const groupName = groupEl.value.trim();
       const name = nameEl.value;
       const pin = pinEl.value;
       const isNumeric = /^\d+$/.test(pin);
 
       // Reset errors
+      groupEl.classList.remove('input-error');
+      nameEl.classList.remove('input-error');
       pinEl.classList.remove('input-error');
       pinErrorEl.style.display = 'none';
 
-      if (!name || pin.length !== 4 || !isNumeric) {
+      if (!groupName || !name || pin.length !== 4 || !isNumeric) {
+        if (!groupName) groupEl.classList.add('input-error');
         if (!name) nameEl.classList.add('input-error');
         if (pin.length !== 4 || !isNumeric) {
           pinEl.classList.add('input-error');
@@ -164,19 +229,19 @@
       try {
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'login', playerName: name, playerPin: pin }),
+          body: JSON.stringify({ action: 'login', playerName: name, playerPin: pin, groupName: groupName }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         const result = await response.json();
         if (result.status === 'success') {
-          saveSession(name, pin);
+          saveSession(name, pin, groupName, result.isAdmin);
           showToast('✅ Login correcto. Redirigiendo...');
           setTimeout(() => window.location.href = 'worldcup.html', 1000);
         } else {
           pinEl.classList.add('input-error');
-          pinErrorEl.textContent = 'PIN incorrecto. Inténtalo de nuevo.';
+          pinErrorEl.textContent = 'PIN o Grupo incorrecto. Inténtalo de nuevo.';
           pinErrorEl.style.display = 'flex';
-          showToast('❌ PIN incorrecto', true);
+          showToast('❌ ' + result.message, true);
         }
       } catch (e) {
         showToast('⚠️ Error conectando con el servidor', true);
@@ -186,30 +251,26 @@
     }
 
     async function handleRegister() {
+      const groupEl = document.getElementById('regGroup');
+      const isNewEl = document.getElementById('regNewGroup');
       const nameEl = document.getElementById('regName');
       const pinEl = document.getElementById('regPin');
       const pinErrorEl = document.getElementById('regPinError');
       
+      const groupName = groupEl.value.trim();
+      const isNewGroup = isNewEl.checked;
       const name = nameEl.value.trim();
       const pin = pinEl.value;
       const isNumeric = /^\d+$/.test(pin);
 
       // Reset
+      groupEl.classList.remove('input-error');
       nameEl.classList.remove('input-error');
       pinEl.classList.remove('input-error');
       pinErrorEl.style.display = 'none';
 
-      // Frontend Validation: Check if name already exists
-      const loginSelect = document.getElementById('loginPlayerSelect');
-      const existingNames = Array.from(loginSelect.options).map(opt => opt.value.toLowerCase());
-      
-      if (existingNames.includes(name.toLowerCase())) {
-        nameEl.classList.add('input-error');
-        showToast('❌ El nombre ya está en uso', true);
-        return;
-      }
-
-      if (!name || pin.length !== 4 || !isNumeric) {
+      if (!groupName || !name || pin.length !== 4 || !isNumeric) {
+        if (!groupName) groupEl.classList.add('input-error');
         if (!name) nameEl.classList.add('input-error');
         if (pin.length !== 4 || !isNumeric) {
           pinEl.classList.add('input-error');
@@ -224,19 +285,18 @@
       try {
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'register', playerName: name, playerPin: pin }),
+          body: JSON.stringify({ action: 'register', playerName: name, playerPin: pin, groupName: groupName, isNewGroup: isNewGroup }),
           headers: { 'Content-Type': 'text/plain;charset=utf-8' }
         });
         const result = await response.json();
         if (result.status === 'success') {
-          saveSession(name, pin);
+          saveSession(name, pin, groupName, result.isAdmin);
           showToast('✨ Registro completado con éxito');
           setTimeout(() => window.location.href = 'worldcup.html', 1500);
         } else {
           showToast('❌ ' + result.message, true);
-          if (result.message.includes('ya existe')) {
-            nameEl.classList.add('input-error');
-          }
+          if (result.message.includes('jugador ya existe')) nameEl.classList.add('input-error');
+          if (result.message.includes('grupo ya existe') || result.message.includes('grupo no existe')) groupEl.classList.add('input-error');
         }
       } catch (e) {
         showToast('⚠️ Error en el registro', true);
@@ -245,8 +305,8 @@
       }
     }
 
-    function saveSession(name, pin) {
-      localStorage.setItem('worldcup2026_user', JSON.stringify({ name, pin }));
+    function saveSession(name, pin, groupName, isAdmin) {
+      localStorage.setItem('worldcup2026_user', JSON.stringify({ name, pin, groupName, isAdmin }));
     }
 
     function setLoading(btnId, isLoading) {
@@ -265,8 +325,6 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
-
-    window.onload = fetchPlayers;
   </script>
 </body>
 </html>

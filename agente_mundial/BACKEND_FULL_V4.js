@@ -1,35 +1,36 @@
 // ============================================
-// GOOGLE APPS SCRIPT — BACKEND TOTAL V4
+// GOOGLE APPS SCRIPT — BACKEND TOTAL V4 (SCALED)
 // ============================================
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
 
 function doGet(e) {
   const action = e.parameter.action;
+  const groupName = e.parameter.groupName;
   
   // --- ACCIONES NUEVAS DEL BOT ---
   if (action === "getConfigs") {
     return createResponse({ status: "success", data: getBotConfigs() });
   }
   if (action === "getPhoneMapping") {
-    return createResponse({ status: "success", data: getPhoneMapping() });
+    return createResponse({ status: "success", data: getPhoneMapping(groupName) });
   }
 
   // --- ACCIONES DE LA WEB ---
   if (action === "getPlayers") {
-    return getPlayers();
+    return getPlayers(groupName);
   }
   if (action === "getAllInfo") {
-    return getAllInfo();
+    return getAllInfo(groupName);
   }
   if (action === "getPredictions") {
-    return getPredictions();
+    return getPredictions(groupName);
   }
-  if (action === "getResults") {
-    return getResults();
+  if (action === "getRules") {
+    return getRules(groupName);
   }
   if (action === "getAllSummaries") {
-    return getAllSummaries();
+    return getAllSummaries(groupName);
   }
 
   return createResponse({ status: "error", message: "Acción no válida: " + action });
@@ -38,24 +39,28 @@ function doGet(e) {
 function doPost(e) {
   const params = JSON.parse(e.postData.contents);
   const action = params.action;
+  const groupName = params.groupName;
 
   if (action === "login") {
-    return login(params.playerName, params.playerPin);
+    return login(params.playerName, params.playerPin, groupName);
   }
   if (action === "register") {
-    return register(params.playerName, params.playerPin);
+    return register(params.playerName, params.playerPin, groupName, params.isNewGroup);
   }
   if (action === "savePredictions") {
-    return savePredictions(params.playerName, params.predictions);
+    return savePredictions(params.playerName, groupName, params.predictions);
   }
   if (action === "saveInfo") {
-    return savePlayerInfo(params.playerName, params.data);
+    return savePlayerInfo(params.playerName, groupName, params.data);
   }
   if (action === "updatePhone") {
-    return updatePlayerPhone(params.playerName, params.phone);
+    return updatePlayerPhone(params.playerName, groupName, params.phone);
   }
   if (action === "saveSummary") {
-    return saveSummary(params.playerName, params.summary);
+    return saveSummary(params.playerName, groupName, params.summary);
+  }
+  if (action === "saveRules") {
+    return saveRules(params.playerName, groupName, params.data);
   }
 
   return createResponse({ status: "error", message: "Acción POST no válida" });
@@ -63,69 +68,134 @@ function doPost(e) {
 
 // --- IMPLEMENTACIÓN DE FUNCIONES ---
 
-function getPlayers() {
+function getPlayers(groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
+  if (!sheet) return createResponse({ status: "success", data: [] });
   const data = sheet.getDataRange().getValues();
   const players = [];
   for (let i = 1; i < data.length; i++) {
-    players.push(data[i][0]); // Columna A: Jugador
+    if (!groupName || data[i][3] === groupName) {
+      players.push(data[i][0]); // Columna A: Jugador
+    }
   }
   return createResponse({ status: "success", data: players });
 }
 
-function login(name, pin) {
+function login(name, pin, groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === name && data[i][1].toString() === pin.toString()) {
-      return createResponse({ status: "success" });
+    if (data[i][0] === name && data[i][1].toString() === pin.toString() && data[i][3] === groupName) {
+      const isAdmin = checkIsAdmin(name, groupName);
+      return createResponse({ status: "success", isAdmin: isAdmin });
     }
   }
-  return createResponse({ status: "error", message: "PIN incorrecto" });
+  return createResponse({ status: "error", message: "PIN o Grupo incorrecto" });
 }
 
-function register(name, pin) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
+function register(name, pin, groupName, isNewGroup) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const playerSheet = ss.getSheetByName("playersJSON") || ss.insertSheet("playersJSON");
+  const groupSheet = ss.getSheetByName("groupsJSON") || ss.insertSheet("groupsJSON");
+  
+  const players = playerSheet.getDataRange().getValues();
+  const groups = groupSheet.getDataRange().getValues();
+
+  // 1. Validar grupo
+  let groupExists = false;
+  for (let i = 1; i < groups.length; i++) {
+    if (groups[i][0].toLowerCase() === groupName.toLowerCase()) {
+      groupExists = true;
+      break;
+    }
+  }
+
+  if (isNewGroup) {
+    if (groupExists) return createResponse({ status: "error", message: "El grupo ya existe" });
+    groupSheet.appendRow([groupName, name, "{}"]); // GroupName, AdminName, Rules
+  } else {
+    if (!groupExists) return createResponse({ status: "error", message: "El grupo no existe" });
+  }
+
+  // 2. Validar jugador en ese grupo
+  for (let i = 1; i < players.length; i++) {
+    if (players[i][0].toLowerCase() === name.toLowerCase() && players[i][3] === groupName) {
+      return createResponse({ status: "error", message: "El jugador ya existe en este grupo" });
+    }
+  }
+
+  playerSheet.appendRow([name, pin, "", groupName]); // Nombre, PIN, Teléfono, GroupName
+  return createResponse({ status: "success", isAdmin: isNewGroup });
+}
+
+function checkIsAdmin(name, groupName) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("groupsJSON");
+  if (!sheet) return false;
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toLowerCase() === name.toLowerCase()) {
-      return createResponse({ status: "error", message: "El jugador ya existe" });
-    }
+    if (data[i][0] === groupName && data[i][1] === name) return true;
   }
-  sheet.appendRow([name, pin, ""]); // Nombre, PIN, Teléfono (inicialmente vacío)
-  return createResponse({ status: "success" });
+  return false;
 }
 
-function getPredictions() {
+function getPredictions(groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("predictionsJSON");
+  if (!sheet) return createResponse({ status: "success", data: {} });
   const data = sheet.getDataRange().getValues();
   const result = {};
   for (let i = 1; i < data.length; i++) {
-    result[data[i][0]] = {
-      timestamp: data[i][1],
-      predictions: JSON.parse(data[i][2])
-    };
+    if (!groupName || data[i][0] === groupName) {
+      result[data[i][1]] = { // data[i][1] is Jugador
+        timestamp: data[i][2],
+        predictions: JSON.parse(data[i][3])
+      };
+    }
   }
   return createResponse({ status: "success", data: result });
 }
 
-function savePredictions(name, predictions) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("predictionsJSON");
+function savePredictions(name, groupName, predictions) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("predictionsJSON") || SpreadsheetApp.getActiveSpreadsheet().insertSheet("predictionsJSON");
   const data = sheet.getDataRange().getValues();
   const timestamp = new Date().toISOString();
   const predString = JSON.stringify(predictions);
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === name) {
-      sheet.getRange(i + 1, 2, 1, 2).setValues([[timestamp, predString]]);
+    if (data[i][0] === groupName && data[i][1] === name) {
+      sheet.getRange(i + 1, 3, 1, 2).setValues([[timestamp, predString]]);
       return createResponse({ status: "success" });
     }
   }
-  sheet.appendRow([name, timestamp, predString]);
+  sheet.appendRow([groupName, name, timestamp, predString]);
   return createResponse({ status: "success" });
 }
 
-// --- NUEVAS FUNCIONES DINÁMICAS ---
+function getRules(groupName) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("groupsJSON");
+  if (!sheet) return createResponse({ status: "error", message: "No hay grupos configurados" });
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === groupName) {
+      return createResponse({ status: "success", data: JSON.parse(data[i][2] || "{}") });
+    }
+  }
+  return createResponse({ status: "error", message: "Grupo no encontrado" });
+}
+
+function saveRules(name, groupName, rules) {
+  if (!checkIsAdmin(name, groupName)) {
+    return createResponse({ status: "error", message: "No tienes permisos de administrador" });
+  }
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("groupsJSON");
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === groupName) {
+      sheet.getRange(i + 1, 3).setValue(JSON.stringify(rules));
+      return createResponse({ status: "success" });
+    }
+  }
+  return createResponse({ status: "error", message: "Grupo no encontrado" });
+}
 
 function getBotConfigs() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Config");
@@ -138,85 +208,87 @@ function getBotConfigs() {
   return configs;
 }
 
-function getPhoneMapping() {
+function getPhoneMapping(groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
+  if (!sheet) return {};
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   const nameIdx = headers.indexOf("Jugador");
   const phoneIdx = headers.indexOf("Telefono");
+  const groupIdx = headers.indexOf("GroupName");
   
   const mapping = {};
   for (let i = 1; i < data.length; i++) {
-    if (data[i][phoneIdx]) {
+    if (data[i][phoneIdx] && (!groupName || data[i][groupIdx] === groupName)) {
       mapping[data[i][phoneIdx].toString().replace(/[^0-9]/g, '')] = data[i][nameIdx];
     }
   }
   return mapping;
 }
 
-function updatePlayerPhone(playerName, phone) {
+function updatePlayerPhone(playerName, groupName, phone) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
   const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const nameIdx = headers.indexOf("Jugador");
-  const phoneIdx = headers.indexOf("Telefono");
-
   for (let i = 1; i < data.length; i++) {
-    if (data[i][nameIdx] === playerName) {
-      sheet.getRange(i + 1, phoneIdx + 1).setValue(phone);
+    if (data[i][0] === playerName && data[i][3] === groupName) {
+      sheet.getRange(i + 1, 3).setValue(phone); // Columna C: Telefono
       return createResponse({ status: "success" });
     }
   }
   return createResponse({ status: "error", message: "Jugador no encontrado" });
 }
 
-function getAllInfo() {
+function getAllInfo(groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("profilesJSON");
   if (!sheet) return createResponse({ status: "success", data: {} });
   const data = sheet.getDataRange().getValues();
   const result = {};
   for (let i = 1; i < data.length; i++) {
-    result[data[i][0]] = JSON.parse(data[i][1]);
+    if (!groupName || data[i][0] === groupName) {
+      result[data[i][1]] = JSON.parse(data[i][2]);
+    }
   }
   return createResponse({ status: "success", data: result });
 }
 
-function savePlayerInfo(name, info) {
+function savePlayerInfo(name, groupName, info) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("profilesJSON") || SpreadsheetApp.getActiveSpreadsheet().insertSheet("profilesJSON");
   const data = sheet.getDataRange().getValues();
   const infoString = JSON.stringify(info);
 
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === name) {
-      sheet.getRange(i + 1, 2).setValue(infoString);
+    if (data[i][0] === groupName && data[i][1] === name) {
+      sheet.getRange(i + 1, 3).setValue(infoString);
       return createResponse({ status: "success" });
     }
   }
-  sheet.appendRow([name, infoString]);
+  sheet.appendRow([groupName, name, infoString]);
   return createResponse({ status: "success" });
 }
 
-function getAllSummaries() {
+function getAllSummaries(groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("summariesJSON");
   if (!sheet) return createResponse({ status: "success", data: {} });
   const data = sheet.getDataRange().getValues();
   const result = {};
   for (let i = 1; i < data.length; i++) {
-    result[data[i][0]] = data[i][1];
+    if (!groupName || data[i][0] === groupName) {
+      result[data[i][1]] = data[i][2];
+    }
   }
   return createResponse({ status: "success", data: result });
 }
 
-function saveSummary(name, summary) {
+function saveSummary(name, groupName, summary) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("summariesJSON") || SpreadsheetApp.getActiveSpreadsheet().insertSheet("summariesJSON");
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === name) {
-      sheet.getRange(i + 1, 2).setValue(summary);
+    if (data[i][0] === groupName && data[i][1] === name) {
+      sheet.getRange(i + 1, 3).setValue(summary);
       return createResponse({ status: "success" });
     }
   }
-  sheet.appendRow([name, summary]);
+  sheet.appendRow([groupName, name, summary]);
   return createResponse({ status: "success" });
 }
 

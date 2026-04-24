@@ -15,19 +15,20 @@ const groq = new Groq({
  * System prompt principal del Agente Mundial.
  * Personalidad: Andrés Montes (comentarista legendario).
  */
-const SYSTEM_PROMPT = `Eres el "Agente Mundial" 🏆, un chatbot para un grupo de amigos que participan en una "Porra del Mundial 2026" (apuestas de predicciones de resultados de fútbol).
-
-Tu personalidad es como la del mítico ANDRÉS MONTES: excéntrico, divertido, carismático, con lenguaje callejero y frases épicas.
-
-Reglas:
-- Responde SIEMPRE en español
-- Sé breve (máximo 3-4 frases) a menos que te pidan detalles
-- Usa frases típicas de Andrés Montes: "¡La vida puede ser maravillosa!", "¡Ratatatatata!", "¡Jugón!", "¡Eeeeeso es!"
-- Puedes usar alguna grosería suave si encaja con el tono
-- Cuando hables de un jugador, usa su nickname y ten en cuenta sus gustos y dislikes para hacer bromas
-- Si no tienes datos suficientes, improvisa algo divertido
-- Usa emojis con moderación (2-3 por mensaje)
-- No uses markdown ni formateo especial, solo texto plano para WhatsApp`;
+const SYSTEM_PROMPT = `Eres el "Agente Mundial" 🏆, un chatbot para varios grupos de amigos que participan en una "Porra del Mundial 2026" (apuestas de predicciones de resultados de fútbol).
+ 
+ Tu personalidad es como la del mítico ANDRÉS MONTES: excéntrico, divertido, carismático, con lenguaje callejero y frases épicas.
+ 
+ Reglas:
+ - Responde SIEMPRE en español
+ - Sé breve (máximo 3-4 frases) a menos que te pidan detalles
+ - Usa frases típicas de Andrés Montes: "¡La vida puede ser maravillosa!", "¡Ratatatatata!", "¡Jugón!", "¡Eeeeeso es!"
+ - Puedes usar alguna grosería suave si encaja con el tono
+ - Cuando hables de un jugador, usa su nickname y ten en cuenta sus gustos y dislikes para hacer bromas
+ - Menciona el nombre del grupo cuando sea relevante para crear sentimiento de comunidad
+ - Si no tienes datos suficientes, improvisa algo divertido
+ - Usa emojis con moderación (2-3 por mensaje)
+ - No uses markdown ni formateo especial, solo texto plano para WhatsApp`;
 
 /**
  * Genera una respuesta personalizada para un jugador.
@@ -37,7 +38,7 @@ Reglas:
  * @returns {string} Respuesta del bot
  */
 export async function generateResponse(playerName, question, context) {
-  const { ranking, playerStats, profile, leaderboard } = context;
+  const { groupName, ranking, playerStats, profile, leaderboard } = context;
 
   // Construir el contexto del jugador
   const playerContext = playerStats
@@ -60,8 +61,10 @@ export async function generateResponse(playerName, question, context) {
       ).join('\n')}`
     : 'No hay ranking disponible aún.';
 
-  const userMessage = `DATOS DEL JUGADOR QUE PREGUNTA:
-${playerContext}
+  const userMessage = `DATOS DEL GRUPO: ${groupName || 'Privado'}
+ 
+ DATOS DEL JUGADOR QUE PREGUNTA:
+ ${playerContext}
 
 RANKING GENERAL:
 ${rankingContext}
@@ -99,13 +102,13 @@ Responde como Andrés Montes, personaliza la respuesta para ${profile?.nickname 
  * @param {Object} profiles - Perfiles de todos los jugadores
  * @returns {string} Resumen para publicar en el grupo
  */
-export async function generateDailySummary(leaderboard, profiles) {
+export async function generateDailySummary(leaderboard, profiles, groupName) {
   const rankingText = leaderboard.map((p, i) => {
     const profile = profiles[p.name] || {};
     return `${i + 1}. ${profile.nickname || p.name} (${p.name}): ${p.totalPts} pts - ${p.exactHits} plenos - Grupos: ${p.groupPts}, Eliminatorias: ${p.koPts}, Honor: ${p.honorPts}`;
   }).join('\n');
 
-  const userMessage = `Genera un RESUMEN DE JORNADA de la Porra Mundial 2026 para publicar en el grupo de WhatsApp.
+  const userMessage = `Genera un RESUMEN DE JORNADA para el grupo "${groupName}" de la Porra Mundial 2026 para publicar en WhatsApp.
 
 RANKING ACTUAL:
 ${rankingText}

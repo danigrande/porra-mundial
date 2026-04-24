@@ -90,7 +90,7 @@
     // CONFIGURATION
     // ============================================
     // ¡Pega aquí la URL de tu Google Apps Script cuando la tengas!
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwSjSh8arY5o1chbEvv3uFL84akRlOIkEBdzsJ4_vZpDPPhnX7PQ8qurjfT1mlYUsa/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpvwxOepP9dsaDmDPM6q-nBGHrKygknl873BLxAaORkkrVmo9uxzMuaxYZisi4HMhI/exec';
 
     // ============================================
     // MATCH DATA extracted from Excel
@@ -879,9 +879,9 @@
         
         // Update UI
         document.getElementById('navUserInfo').style.display = 'flex';
-        document.getElementById('displayUserName').textContent = currentUser.name;
+        document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
         document.getElementById('userNotification').style.display = 'block';
-        document.getElementById('userNameHighlight').textContent = currentUser.name;
+        document.getElementById('userNameHighlight').textContent = `${currentUser.name} (Grupo: ${currentUser.groupName})`;
       } catch (e) {
         localStorage.removeItem('worldcup2026_user');
         window.location.href = 'login.html';
@@ -906,9 +906,10 @@
 
       const name = currentUser.name;
       const pin = currentUser.pin;
+      const groupName = currentUser.groupName;
 
       // data object for LOCAL STORAGE (includes name for session safety)
-      const data = { _playerName: name };
+      const data = { _playerName: name, _groupName: groupName };
 
       document.querySelectorAll('.score-input, .award-input, .pen-input').forEach(input => {
         if (input.value !== '') {
@@ -916,7 +917,7 @@
         }
       });
 
-      localStorage.setItem('worldcup2026_predictions', JSON.stringify(data));
+      localStorage.setItem(`worldcup2026_predictions_${groupName}`, JSON.stringify(data));
       document.getElementById('saveStatus').textContent = 'Guardado localmente';
 
       if (!SCRIPT_URL || SCRIPT_URL === 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
@@ -934,8 +935,9 @@
         delete cloudData._playerName;
 
         const payload = {
-          action: 'save',
+          action: 'savePredictions',
           playerName: name,
+          groupName: groupName,
           predictions: cloudData
         };
 
@@ -968,7 +970,7 @@
       if (raw) {
         try {
           const data = JSON.parse(raw);
-          if (data._playerName === currentUser.name) {
+          if (data._playerName === currentUser.name && data._groupName === currentUser.groupName) {
             applyDataToForm(data);
             return; // Local data found and matches user
           }
@@ -988,18 +990,19 @@
       saveStatus.classList.add('show');
 
       try {
-        const response = await fetch(SCRIPT_URL);
+        const response = await fetch(`${SCRIPT_URL}?action=getPredictions&groupName=${encodeURIComponent(currentUser.groupName)}`);
         const result = await response.json();
         
         if (result.status === 'success' && result.data && result.data[currentUser.name]) {
           const cloudEntry = result.data[currentUser.name];
           const cloudData = cloudEntry.predictions;
           
-          // Inject name for local storage consistency
+          // Inject name and group for local storage consistency
           cloudData._playerName = currentUser.name;
+          cloudData._groupName = currentUser.groupName;
           
           applyDataToForm(cloudData);
-          localStorage.setItem('worldcup2026_predictions', JSON.stringify(cloudData));
+          localStorage.setItem(`worldcup2026_predictions_${currentUser.groupName}`, JSON.stringify(cloudData));
           showToast('☁️ Datos recuperados de la nube');
           saveStatus.textContent = '☁️ Sincronizado';
         } else {

@@ -1,24 +1,23 @@
 // ============================================
-// DATA FETCHER — Obtiene datos de Google Sheets
+// DATA FETCHER — Obtiene datos de Google Sheets (SCALED)
 // ============================================
-// Reutiliza tu Google Apps Script existente como fuente de datos.
 
 import config from './config.js';
 
 const SCRIPT_URL = config.googleScript.url;
 
 /**
- * Obtiene todas las predicciones de todos los jugadores.
- * Retorna: { "Dani": { timestamp, predictions: {...} }, ... }
+ * Obtiene todas las predicciones de un grupo.
+ * @param {string} groupName
  */
-export async function getAllPredictions() {
+export async function getAllPredictions(groupName) {
   try {
-    const response = await fetch(SCRIPT_URL);
+    const url = groupName ? `${SCRIPT_URL}?action=getPredictions&groupName=${encodeURIComponent(groupName)}` : SCRIPT_URL;
+    const response = await fetch(url);
     const data = await response.json();
     if (data.status === 'success') {
       return data.data || {};
     }
-    console.error('Error en getAllPredictions:', data.message);
     return {};
   } catch (error) {
     console.error('Error fetching predictions:', error.message);
@@ -27,12 +26,12 @@ export async function getAllPredictions() {
 }
 
 /**
- * Obtiene los perfiles de personalidad de todos los jugadores desde Google Sheets.
- * Retorna: { "Dani": { nickname, likes, dislikes, humor_style }, ... }
+ * Obtiene los perfiles de personalidad de un grupo.
  */
-export async function getAllProfiles() {
+export async function getAllProfiles(groupName) {
   try {
-    const response = await fetch(`${SCRIPT_URL}?action=getAllInfo`);
+    const url = groupName ? `${SCRIPT_URL}?action=getAllInfo&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getAllInfo`;
+    const response = await fetch(url);
     const data = await response.json();
     if (data.status === 'success') {
       return data.data || {};
@@ -45,12 +44,12 @@ export async function getAllProfiles() {
 }
 
 /**
- * Obtiene los resúmenes IA guardados previamente.
- * Retorna: { "Dani": "resumen texto...", ... }
+ * Obtiene los resúmenes IA guardados.
  */
-export async function getAllSummaries() {
+export async function getAllSummaries(groupName) {
   try {
-    const response = await fetch(`${SCRIPT_URL}?action=getAllSummaries`);
+    const url = groupName ? `${SCRIPT_URL}?action=getAllSummaries&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getAllSummaries`;
+    const response = await fetch(url);
     const data = await response.json();
     if (data.status === 'success') {
       return data.data || {};
@@ -63,11 +62,12 @@ export async function getAllSummaries() {
 }
 
 /**
- * Obtiene la lista de nombres de jugadores registrados.
+ * Obtiene la lista de nombres de jugadores.
  */
-export async function getPlayerList() {
+export async function getPlayerList(groupName) {
   try {
-    const response = await fetch(`${SCRIPT_URL}?action=getPlayers`);
+    const url = groupName ? `${SCRIPT_URL}?action=getPlayers&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getPlayers`;
+    const response = await fetch(url);
     const data = await response.json();
     if (data.status === 'success') {
       return data.data || [];
@@ -80,9 +80,9 @@ export async function getPlayerList() {
 }
 
 /**
- * Guarda un resumen IA en Google Sheets.
+ * Guarda un resumen IA.
  */
-export async function saveSummary(playerName, summaryText) {
+export async function saveSummary(playerName, groupName, summaryText) {
   try {
     await fetch(SCRIPT_URL, {
       method: 'POST',
@@ -90,6 +90,7 @@ export async function saveSummary(playerName, summaryText) {
       body: JSON.stringify({
         action: 'saveSummary',
         playerName,
+        groupName,
         summary: summaryText,
       }),
     });
@@ -99,15 +100,27 @@ export async function saveSummary(playerName, summaryText) {
 }
 
 /**
- * Obtiene el perfil de un jugador específico.
- * Primero intenta Google Sheets, luego usa el respaldo local de config.js.
+ * Obtiene las reglas de puntuación de un grupo.
  */
-export async function getPlayerProfile(playerName) {
-  const remoteProfiles = await getAllProfiles();
+export async function getRules(groupName) {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getRules&groupName=${encodeURIComponent(groupName)}`);
+    const data = await response.json();
+    return data.status === 'success' ? data.data : {};
+  } catch (error) {
+    console.error('Error fetching rules:', error.message);
+    return {};
+  }
+}
+
+/**
+ * Obtiene el perfil de un jugador específico.
+ */
+export async function getPlayerProfile(playerName, groupName) {
+  const remoteProfiles = await getAllProfiles(groupName);
   if (remoteProfiles[playerName]) {
     return remoteProfiles[playerName];
   }
-  // Fallback al perfil local
   return config.playerProfiles[playerName] || {
     nickname: playerName,
     likes: ['Fútbol'],
@@ -117,7 +130,7 @@ export async function getPlayerProfile(playerName) {
 }
 
 /**
- * Obtiene la configuración dinámica (como GROUP_ID) desde Google Sheets.
+ * Obtiene la configuración dinámica.
  */
 export async function getDynamicConfig() {
   try {
@@ -125,21 +138,20 @@ export async function getDynamicConfig() {
     const data = await response.json();
     return data.status === 'success' ? data.data : {};
   } catch (error) {
-    console.error('Error fetching dynamic configs:', error.message);
     return {};
   }
 }
 
 /**
- * Obtiene el mapeo de teléfonos a jugadores desde Google Sheets.
+ * Obtiene el mapeo de teléfonos de un grupo.
  */
-export async function getPhoneMapping() {
+export async function getPhoneMapping(groupName) {
   try {
-    const response = await fetch(`${SCRIPT_URL}?action=getPhoneMapping`);
+    const url = groupName ? `${SCRIPT_URL}?action=getPhoneMapping&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getPhoneMapping`;
+    const response = await fetch(url);
     const data = await response.json();
     return data.status === 'success' ? data.data : {};
   } catch (error) {
-    console.error('Error fetching phone mapping:', error.message);
     return {};
   }
 }
