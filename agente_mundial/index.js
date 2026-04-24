@@ -13,7 +13,7 @@ import qrcode from 'qrcode-terminal';
 import cors from 'cors';
 import { schedule } from 'node-cron';
 import config from './config.js';
-import { processMessage, generateGroupSummary, forceRefresh, getBotConfig } from './messageHandler.js';
+import { processMessage, generateGroupSummary, refreshCache } from './messageHandler.js';
 
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });
@@ -39,14 +39,14 @@ app.get('/health', (req, res) => {
 // Endpoint para forzar un resumen (útil para testing)
 app.get('/trigger-summary', async (req, res) => {
   try {
-    const dynamicGroupId = getBotConfig().WHATSAPP_GROUP_ID || config.bot.groupId;
+    const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
+    const groupName = config.groups[dynamicGroupId] || null;
+    if (groupName) await refreshCache(groupName);
     const summary = await generateGroupSummary(dynamicGroupId);
     
-    // Guardar también el resumen global
-    const groupName = config.groups[dynamicGroupId] || null;
     if (groupName && summary) {
       const dataFetcher = await import('./dataFetcher.js');
-      await dataFetcher.saveSummary("Global", groupName, summary);
+      await dataFetcher.saveSummary('Global', groupName, summary);
     }
     
     res.json({ summary });
@@ -267,7 +267,7 @@ async function startBot() {
 
         // --- FILTRO DE GRUPO ---
         // Priorizar el ID de grupo del Excel, si no existe usar el del .env
-        const dynamicGroupId = getBotConfig().WHATSAPP_GROUP_ID || config.bot.groupId;
+        const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
         
         // Si hay un grupo configurado, solo responder en ese grupo (si el mensaje viene de un grupo)
         if (dynamicGroupId && isGroup && chatId !== dynamicGroupId) {
@@ -306,12 +306,13 @@ async function startBot() {
   // NOTA: El timezone depende del servidor. En Render (UTC), sería "0 21 * * *" para España (UTC+2)
   // Resumen diario a las 23:00 (hora España)
   schedule('0 21 * * *', async () => {
-    const dynamicGroupId = getBotConfig().WHATSAPP_GROUP_ID || config.bot.groupId;
+    const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
     if (!dynamicGroupId) return;
 
     console.log(`📢 Generando resumen programado para el grupo: ${dynamicGroupId}`);
     try {
-      await forceRefresh();
+      const groupName = config.groups[dynamicGroupId] || null;
+      if (groupName) await refreshCache(groupName);
       const summary = await generateGroupSummary(dynamicGroupId);
 
       if (summary) {
