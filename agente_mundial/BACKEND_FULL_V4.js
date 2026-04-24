@@ -16,7 +16,10 @@ function doGet(e) {
     return createResponse({ status: "success", data: getPhoneMapping(groupName) });
   }
 
-  // --- ACCIONES DE LA WEB ---
+  if (action === "getGroupsForPlayer") {
+    const playerName = e.parameter.playerName;
+    return getGroupsForPlayer(playerName);
+  }
   if (action === "getPlayers") {
     return getPlayers(groupName);
   }
@@ -83,6 +86,22 @@ function getPlayers(groupName) {
     }
   }
   return createResponse({ status: "success", data: players });
+}
+
+function getGroupsForPlayer(playerName) {
+  if (!playerName) return createResponse({ status: "success", data: [] });
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
+  if (!sheet) return createResponse({ status: "success", data: [] });
+  const data = sheet.getDataRange().getValues();
+  const groups = [];
+  const searchName = playerName.trim().toLowerCase();
+  for (let i = 1; i < data.length; i++) {
+    // Col A: GroupName, Col B: Name
+    if (data[i][1] && data[i][1].toString().trim().toLowerCase() === searchName) {
+      if (data[i][0]) groups.push(data[i][0]); 
+    }
+  }
+  return createResponse({ status: "success", data: [...new Set(groups)] });
 }
 
 function login(name, pin, groupName) {

@@ -70,16 +70,15 @@
     <!-- Login Form -->
     <div id="loginForm">
       <div class="form-group">
-        <label class="form-label" for="loginGroup">Nombre del Grupo</label>
-        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions" oninput="debounceFetchPlayers()">
-        <datalist id="groupSuggestions"></datalist>
-        <p id="groupStatus" class="group-info-msg"></p>
+        <label class="form-label" for="loginPlayerName">Tu Nombre</label>
+        <input type="text" id="loginPlayerName" class="login-input" placeholder="Ej: Dani" autocomplete="off" oninput="debounceFetchUserGroups()">
+        <p id="playerStatus" class="group-info-msg"></p>
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="loginPlayerSelect">Selecciona tu usuario</label>
-        <select id="loginPlayerSelect" class="login-input">
-          <option value="">Primero introduce el grupo...</option>
+        <label class="form-label" for="loginGroupSelect">Selecciona tu grupo</label>
+        <select id="loginGroupSelect" class="login-input">
+          <option value="">Primero introduce tu nombre...</option>
         </select>
       </div>
 
@@ -98,7 +97,7 @@
       </button>
 
       <div class="login-switch">
-        ¿No tienes usuario? <span onclick="switchForm('register')">Regístrate aquí</span>
+        ¿Quieres crear un grupo? <span onclick="switchForm('register')">Hazlo aquí</span>
       </div>
     </div>
 
@@ -144,79 +143,45 @@
   <script>
 
 
-    let fetchPlayersTimeout = null;
+    let fetchUserGroupsTimeout = null;
 
-    async function fetchGroups() {
-      console.log('🔄 Cargando lista de grupos...');
-      try {
-        const response = await fetch(`${SCRIPT_URL}?action=listGroups`);
-        const result = await response.json();
-        console.log('📥 Grupos recibidos:', result);
-        if (result.status === 'success' && result.data) {
-          const datalist = document.getElementById('groupSuggestions');
-          datalist.innerHTML = '';
-          result.data.forEach(group => {
-            const opt = document.createElement('option');
-            opt.value = group;
-            datalist.appendChild(opt);
-          });
-          console.log(`✅ ${result.data.length} grupos añadidos al autocompletado.`);
-        }
-      } catch (e) {
-        console.error('❌ Error al cargar grupos:', e);
-      }
+    function debounceFetchUserGroups() {
+      if (fetchUserGroupsTimeout) clearTimeout(fetchUserGroupsTimeout);
+      fetchUserGroupsTimeout = setTimeout(fetchUserGroups, 500);
     }
 
-    function debounceFetchPlayers() {
-      if (fetchPlayersTimeout) clearTimeout(fetchPlayersTimeout);
-      fetchPlayersTimeout = setTimeout(fetchPlayers, 500);
-    }
-
-    async function fetchPlayers() {
-      const groupName = document.getElementById('loginGroup').value.trim();
-      const select = document.getElementById('loginPlayerSelect');
-      const status = document.getElementById('groupStatus');
+    async function fetchUserGroups() {
+      const playerName = document.getElementById('loginPlayerName').value.trim();
+      const select = document.getElementById('loginGroupSelect');
+      const status = document.getElementById('playerStatus');
       
-      if (!groupName) {
-        select.innerHTML = '<option value="">Introduce el nombre del grupo...</option>';
+      if (!playerName || playerName.length < 2) {
+        select.innerHTML = '<option value="">Primero introduce tu nombre...</option>';
         status.textContent = '';
         return;
       }
 
-      const datalist = document.getElementById('groupSuggestions');
-      const options = Array.from(datalist.options).map(opt => opt.value);
-      
-      // Situación A: El usuario está escribiendo pero aún no es un grupo exacto
-      if (!options.includes(groupName)) {
-        status.innerHTML = '🔍 Buscando grupos similares...';
-        select.innerHTML = '<option value="">Esperando grupo válido...</option>';
-        
-        // Si el nombre es largo y no está en la lista, quizás es que no existe
-        if (groupName.length > 5 && !fetchPlayersTimeout) {
-           status.innerHTML = '⚠️ Ese grupo no me suena, ¡asegúrate de escribirlo bien!';
-        }
-        return;
-      }
-
-      // Situación B: El nombre coincide con un grupo real
-      status.innerHTML = '⏳ Grupo detectado. Cargando lista de jugadores...';
+      status.innerHTML = '🔍 Buscando tus grupos...';
       try {
-        const response = await fetch(`${SCRIPT_URL}?action=getPlayers&groupName=${encodeURIComponent(groupName)}`);
+        const response = await fetch(`${SCRIPT_URL}?action=getGroupsForPlayer&playerName=${encodeURIComponent(playerName)}`);
         const result = await response.json();
         
         if (result.status === 'success') {
           if (result.data.length === 0) {
-            select.innerHTML = '<option value="">Grupo sin jugadores</option>';
-            status.innerHTML = '⚠️ El grupo existe pero no tiene jugadores registrados.';
+            select.innerHTML = '<option value="">Usuario no encontrado</option>';
+            status.innerHTML = '⚠️ No encuentro ningún grupo con ese nombre.';
           } else {
-            select.innerHTML = '<option value="">-- Selecciona tu nombre --</option>';
-            result.data.sort().forEach(name => {
+            select.innerHTML = '';
+            if (result.data.length > 1) {
+              select.innerHTML = '<option value="">-- Selecciona tu grupo --</option>';
+            }
+            result.data.sort().forEach(group => {
               const opt = document.createElement('option');
-              opt.value = name;
-              opt.textContent = name;
+              opt.value = group;
+              opt.textContent = group;
               select.appendChild(opt);
             });
-            status.innerHTML = `✅ ¡Grupo <strong>${groupName}</strong> listo! Selecciona tu nombre abajo.`;
+            status.innerHTML = `✅ ¡Te he encontrado en ${result.data.length} grupo(s)!`;
           }
         }
       } catch (e) {
@@ -244,31 +209,31 @@
     }
 
     async function handleLogin() {
-      const groupEl = document.getElementById('loginGroup');
-      const nameEl = document.getElementById('loginPlayerSelect');
+      const nameEl = document.getElementById('loginPlayerName');
+      const groupEl = document.getElementById('loginGroupSelect');
       const pinEl = document.getElementById('loginPin');
       const pinErrorEl = document.getElementById('loginPinError');
       
-      const groupName = groupEl.value.trim();
-      const name = nameEl.value;
+      const name = nameEl.value.trim();
+      const groupName = groupEl.value;
       const pin = pinEl.value;
       const isNumeric = /^\d+$/.test(pin);
 
       // Reset errors
-      groupEl.classList.remove('input-error');
       nameEl.classList.remove('input-error');
+      groupEl.classList.remove('input-error');
       pinEl.classList.remove('input-error');
       pinErrorEl.style.display = 'none';
 
-      if (!groupName || !name || pin.length !== 4 || !isNumeric) {
-        if (!groupName) groupEl.classList.add('input-error');
+      if (!name || !groupName || pin.length !== 4 || !isNumeric) {
         if (!name) nameEl.classList.add('input-error');
+        if (!groupName) groupEl.classList.add('input-error');
         if (pin.length !== 4 || !isNumeric) {
           pinEl.classList.add('input-error');
           pinErrorEl.textContent = !isNumeric ? 'El PIN solo debe contener números' : 'El PIN debe ser de 4 números';
           pinErrorEl.style.display = 'flex';
         }
-        showToast('⚠️ Datos incorrectos', true);
+        showToast('⚠️ Faltan datos o el PIN es incorrecto', true);
         return;
       }
 
