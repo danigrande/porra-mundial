@@ -71,7 +71,8 @@
     <div id="loginForm">
       <div class="form-group">
         <label class="form-label" for="loginGroup">Nombre del Grupo</label>
-        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" onblur="fetchPlayers()">
+        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions" oninput="debounceFetchPlayers()">
+        <datalist id="groupSuggestions"></datalist>
         <p id="groupStatus" class="group-info-msg"></p>
       </div>
 
@@ -105,7 +106,7 @@
     <div id="registerForm" style="display: none;">
       <div class="form-group">
         <label class="form-label" for="regGroup">Nombre del Grupo</label>
-        <input type="text" id="regGroup" class="login-input" placeholder="Ej: Los Amigos de Dani">
+        <input type="text" id="regGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions">
         <label class="checkbox-group">
           <input type="checkbox" id="regNewGroup" onchange="toggleGroupMsg()"> Es un grupo nuevo
         </label>
@@ -140,7 +141,32 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzpvwxOepP9dsaDmDPM6q-nBGHrKygknl873BLxAaORkkrVmo9uxzMuaxYZisi4HMhI/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXen7t95Qv7aE8UrIggz1KqlHweq3d5IXo8VffTxqhfL49CdlO81S1YknxLRjZaKqj/exec';
+
+    let fetchPlayersTimeout = null;
+
+    async function fetchGroups() {
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=listGroups`);
+        const result = await response.json();
+        if (result.status === 'success') {
+          const datalist = document.getElementById('groupSuggestions');
+          datalist.innerHTML = '';
+          result.data.forEach(group => {
+            const opt = document.createElement('option');
+            opt.value = group;
+            datalist.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.warn('Error fetching group list', e);
+      }
+    }
+
+    function debounceFetchPlayers() {
+      if (fetchPlayersTimeout) clearTimeout(fetchPlayersTimeout);
+      fetchPlayersTimeout = setTimeout(fetchPlayers, 500);
+    }
 
     async function fetchPlayers() {
       const groupName = document.getElementById('loginGroup').value.trim();
@@ -325,6 +351,9 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
+
+    // Load initial data
+    fetchGroups();
   </script>
 </body>
 </html>

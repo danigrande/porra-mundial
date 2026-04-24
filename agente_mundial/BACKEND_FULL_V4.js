@@ -32,6 +32,9 @@ function doGet(e) {
   if (action === "getAllSummaries") {
     return getAllSummaries(groupName);
   }
+  if (action === "listGroups") {
+    return listGroups();
+  }
 
   return createResponse({ status: "error", message: "Acción no válida: " + action });
 }
@@ -74,8 +77,9 @@ function getPlayers(groupName) {
   const data = sheet.getDataRange().getValues();
   const players = [];
   for (let i = 1; i < data.length; i++) {
-    if (!groupName || data[i][3] === groupName) {
-      players.push(data[i][0]); // Columna A: Jugador
+    // Col A: GroupName, Col B: Name
+    if (data[i][0] === groupName) {
+      players.push(data[i][1]); 
     }
   }
   return createResponse({ status: "success", data: players });
@@ -85,7 +89,8 @@ function login(name, pin, groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === name && data[i][1].toString() === pin.toString() && data[i][3] === groupName) {
+    // Col A: GroupName, Col B: Name, Col C: PIN
+    if (data[i][0] === groupName && data[i][1] === name && data[i][2].toString() === pin.toString()) {
       const isAdmin = checkIsAdmin(name, groupName);
       return createResponse({ status: "success", isAdmin: isAdmin });
     }
@@ -119,12 +124,13 @@ function register(name, pin, groupName, isNewGroup) {
 
   // 2. Validar jugador en ese grupo
   for (let i = 1; i < players.length; i++) {
-    if (players[i][0].toLowerCase() === name.toLowerCase() && players[i][3] === groupName) {
+    // Col A: GroupName, Col B: Name
+    if (players[i][0] === groupName && players[i][1].toLowerCase() === name.toLowerCase()) {
       return createResponse({ status: "error", message: "El jugador ya existe en este grupo" });
     }
   }
 
-  playerSheet.appendRow([name, pin, "", groupName]); // Nombre, PIN, Teléfono, GroupName
+  playerSheet.appendRow([groupName, name, pin, ""]); // GroupName, Nombre, PIN, Teléfono
   return createResponse({ status: "success", isAdmin: isNewGroup });
 }
 
@@ -290,6 +296,18 @@ function saveSummary(name, groupName, summary) {
   }
   sheet.appendRow([groupName, name, summary]);
   return createResponse({ status: "success" });
+}
+
+function listGroups() {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName("groupsJSON");
+  if (!sheet) return createResponse({ status: "success", data: [] });
+  
+  const data = sheet.getDataRange().getValues();
+  const groups = [];
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0]) groups.push(data[i][0]);
+  }
+  return createResponse({ status: "success", data: [...new Set(groups)] });
 }
 
 function createResponse(obj) {
