@@ -177,29 +177,37 @@
       const select = document.getElementById('loginPlayerSelect');
       const status = document.getElementById('groupStatus');
       
-      if (!groupName || groupName.length < 3) {
+      if (!groupName) {
         select.innerHTML = '<option value="">Introduce el nombre del grupo...</option>';
         status.textContent = '';
         return;
       }
 
-      // Check if the group name exists in our suggestions list to avoid useless calls
       const datalist = document.getElementById('groupSuggestions');
       const options = Array.from(datalist.options).map(opt => opt.value);
       
-      status.innerHTML = '🔍 Buscando jugadores en el grupo...';
+      // Situación A: El usuario está escribiendo pero aún no es un grupo exacto
+      if (!options.includes(groupName)) {
+        status.innerHTML = '🔍 Buscando grupos similares...';
+        select.innerHTML = '<option value="">Esperando grupo válido...</option>';
+        
+        // Si el nombre es largo y no está en la lista, quizás es que no existe
+        if (groupName.length > 5 && !fetchPlayersTimeout) {
+           status.innerHTML = '⚠️ Ese grupo no me suena, ¡asegúrate de escribirlo bien!';
+        }
+        return;
+      }
+
+      // Situación B: El nombre coincide con un grupo real
+      status.innerHTML = '⏳ Grupo detectado. Cargando lista de jugadores...';
       try {
         const response = await fetch(`${SCRIPT_URL}?action=getPlayers&groupName=${encodeURIComponent(groupName)}`);
         const result = await response.json();
+        
         if (result.status === 'success') {
           if (result.data.length === 0) {
-            select.innerHTML = '<option value="">No hay jugadores en este grupo</option>';
-            // Only show "not found" if the name is not even in the suggestions
-            if (!options.includes(groupName)) {
-              status.innerHTML = '⚠️ El grupo no parece existir todavía';
-            } else {
-              status.innerHTML = '⚠️ Grupo encontrado, pero está vacío';
-            }
+            select.innerHTML = '<option value="">Grupo sin jugadores</option>';
+            status.innerHTML = '⚠️ El grupo existe pero no tiene jugadores registrados.';
           } else {
             select.innerHTML = '<option value="">-- Selecciona tu nombre --</option>';
             result.data.sort().forEach(name => {
@@ -208,7 +216,7 @@
               opt.textContent = name;
               select.appendChild(opt);
             });
-            status.innerHTML = `✅ ¡Grupo encontrado! (${result.data.length} jugadores)`;
+            status.innerHTML = `✅ ¡Grupo <strong>${groupName}</strong> listo! Selecciona tu nombre abajo.`;
           }
         }
       } catch (e) {

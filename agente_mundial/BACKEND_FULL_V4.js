@@ -299,16 +299,29 @@ function saveSummary(name, groupName, summary) {
 }
 
 function listGroups() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName("groupsJSON");
-  if (!sheet) return createResponse({ status: "success", data: [] });
-  
-  const data = sheet.getDataRange().getValues();
-  const groups = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) groups.push(data[i][0]);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("groupsJSON");
+    if (!sheet) {
+      // Si no existe, la creamos con cabeceras para que no falle la próxima vez
+      const newSheet = ss.insertSheet("groupsJSON");
+      newSheet.appendRow(["GroupName", "AdminName", "Rules"]);
+      return createResponse({ status: "success", data: [], message: "Hoja creada" });
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return createResponse({ status: "success", data: [] });
+    
+    const groups = [];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0]) groups.push(data[i][0]);
+    }
+    // Eliminar duplicados y valores vacíos
+    const uniqueGroups = [...new Set(groups)].filter(g => g.trim() !== "");
+    return createResponse({ status: "success", data: uniqueGroups });
+  } catch (e) {
+    return createResponse({ status: "error", message: e.toString() });
   }
-  return createResponse({ status: "success", data: [...new Set(groups)] });
 }
 
 function createResponse(obj) {

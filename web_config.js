@@ -4,7 +4,7 @@
 
 const CONFIG = {
   // URL de Google Apps Script (Backend)
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwI1buAOy3g0tGbU1SYb6xFZt8CzsZBFHUGmvzqNgVaofkxGlBnqTEldi0nWUDSmju6/exec',
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxGkHbH0mvZeiN-0QluVH_sDPqiVUjTX5srbb7iOoy6JQn0dnM5psVNJPysL4mHhBzr/exec',
   
   // URL del bot en Render (Para los resúmenes de IA)
   RENDER_URL: 'https://porra-mundial.onrender.com'
