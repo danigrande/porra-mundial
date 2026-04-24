@@ -173,20 +173,29 @@
       const select = document.getElementById('loginPlayerSelect');
       const status = document.getElementById('groupStatus');
       
-      if (!groupName) {
-        select.innerHTML = '<option value="">Primero introduce el grupo...</option>';
+      if (!groupName || groupName.length < 3) {
+        select.innerHTML = '<option value="">Introduce el nombre del grupo...</option>';
         status.textContent = '';
         return;
       }
 
-      status.textContent = '🔍 Buscando jugadores...';
+      // Check if the group name exists in our suggestions list to avoid useless calls
+      const datalist = document.getElementById('groupSuggestions');
+      const options = Array.from(datalist.options).map(opt => opt.value);
+      
+      status.innerHTML = '🔍 Buscando jugadores en el grupo...';
       try {
         const response = await fetch(`${SCRIPT_URL}?action=getPlayers&groupName=${encodeURIComponent(groupName)}`);
         const result = await response.json();
         if (result.status === 'success') {
           if (result.data.length === 0) {
             select.innerHTML = '<option value="">No hay jugadores en este grupo</option>';
-            status.textContent = '⚠️ Grupo vacío o no encontrado';
+            // Only show "not found" if the name is not even in the suggestions
+            if (!options.includes(groupName)) {
+              status.innerHTML = '⚠️ El grupo no parece existir todavía';
+            } else {
+              status.innerHTML = '⚠️ Grupo encontrado, pero está vacío';
+            }
           } else {
             select.innerHTML = '<option value="">-- Selecciona tu nombre --</option>';
             result.data.sort().forEach(name => {
@@ -195,12 +204,12 @@
               opt.textContent = name;
               select.appendChild(opt);
             });
-            status.textContent = `✅ Grupo encontrado (${result.data.length} jugadores)`;
+            status.innerHTML = `✅ ¡Grupo encontrado! (${result.data.length} jugadores)`;
           }
         }
       } catch (e) {
-        select.innerHTML = '<option value="">Error conectando con el servidor</option>';
-        status.textContent = '❌ Error de conexión';
+        select.innerHTML = '<option value="">Error de conexión</option>';
+        status.innerHTML = '❌ Error al conectar con el servidor';
       }
     }
 
