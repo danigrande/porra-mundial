@@ -112,6 +112,7 @@ function getGroupsForPlayer(playerName) {
 
 function login(name, pin, groupName) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
+  if (!sheet) return createResponse({ status: "error", message: "No hay jugadores registrados aún" });
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     // Col A: GroupName, Col B: Name, Col C: PIN
@@ -210,6 +211,7 @@ function saveRules(name, groupName, rules) {
     return createResponse({ status: "error", message: "No tienes permisos de administrador" });
   }
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("groupsJSON");
+  if (!sheet) return createResponse({ status: "error", message: "No hay grupos configurados" });
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === groupName) {
@@ -251,6 +253,7 @@ function getPhoneMapping(groupName) {
 
 function updatePlayerPhone(playerName, groupName, phone) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
+  if (!sheet) return createResponse({ status: "error", message: "No hay jugadores registrados aún" });
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === playerName && data[i][3] === groupName) {

@@ -58,39 +58,53 @@ app.get('/trigger-summary', async (req, res) => {
 // NUEVO: API para la web (player_score.html)
 app.get('/api/summary/:player', async (req, res) => {
   const { player } = req.params;
-  let groupNameFromUrl = req.query.groupName; 
-  console.log(`🌐 Peticion de resumen desde la web para: ${player} en grupo solicitado: ${groupNameFromUrl}`);
+  const groupNameFromUrl = req.query.groupName;
+  console.log(`🌐 Peticion de resumen desde la web para: ${player} en grupo: ${groupNameFromUrl}`);
 
-  // Helper para normalizar strings (sin acentos, minúsculas, sin espacios extra)
-  const normalize = (s) => s?.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ').trim() || '';
-
-  let effectiveGroupName = groupNameFromUrl;
-
-  if (groupNameFromUrl) {
-    const normalizedInput = normalize(groupNameFromUrl);
-    const match = Object.values(config.groups).find(name => normalize(name) === normalizedInput);
-
-    if (match) {
-      console.log(`✅ Match encontrado: "${groupNameFromUrl}" -> "${match}"`);
-      effectiveGroupName = match;
-    } else {
-      console.warn(`⚠️ No se encontró un grupo exacto para "${groupNameFromUrl}". Intentando usar el nombre tal cual.`);
-    }
+  if (!groupNameFromUrl) {
+    return res.status(400).json({ error: 'groupName es requerido' });
   }
 
   try {
-    await forceRefresh();
-    const response = await processMessage(`resumen`, player, true, true, effectiveGroupName);
-    
-    if (effectiveGroupName && response) {
-      console.log(`💾 Guardando resumen para ${player} en Google Sheets (Grupo: ${effectiveGroupName})...`);
-      const dataFetcher = await import('./dataFetcher.js');
-      await dataFetcher.saveSummary(player, effectiveGroupName, response);
+    // Importar módulos necesarios
+    const dataFetcher = await import('./dataFetcher.js');
+    const { refreshCache } = await import('./messageHandler.js');
+    const { generateResponse } = await import('./groqEngine.js');
+
+    // Refrescar datos del grupo directamente por nombre (no por WhatsApp ID)
+    await refreshCache(groupNameFromUrl);
+
+    // Obtener datos frescos
+    const [predictions, profiles, rules] = await Promise.all([
+      dataFetcher.getAllPredictions(groupNameFromUrl),
+      dataFetcher.getAllProfiles(groupNameFromUrl),
+      dataFetcher.getRules(groupNameFromUrl),
+    ]);
+
+    const leaderboard = Object.entries(predictions).map(([name, data]) => ({ name, ...data }));
+    const profile = profiles[player] || null;
+    const playerStats = leaderboard.find(p => p.name === player) || null;
+
+    const context = {
+      groupName: groupNameFromUrl,
+      ranking: leaderboard,
+      playerStats,
+      profile,
+      rules,
+    };
+
+    console.log(`🤖 Generando resumen IA para ${player} (grupo: ${groupNameFromUrl})...`);
+    const summary = await generateResponse(player, 'resumen', context);
+
+    if (summary) {
+      console.log(`💾 Guardando resumen para ${player} en Google Sheets (Grupo: ${groupNameFromUrl})...`);
+      await dataFetcher.saveSummary(player, groupNameFromUrl, summary);
+      console.log(`✅ Resumen guardado correctamente`);
     }
 
-    res.json({ summary: response });
+    res.json({ summary });
   } catch (error) {
-    console.error('Error en API summary:', error);
+    console.error('❌ Error en API summary:', error);
     res.status(500).json({ error: 'Error al generar resumen' });
   }
 });
