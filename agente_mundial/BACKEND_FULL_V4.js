@@ -134,23 +134,15 @@ function register(name, pin, groupName, isNewGroup) {
     }
   }
 
-  if (isNewGroup) {
-    if (groupExists) return createResponse({ status: "error", message: "El grupo ya existe" });
-    groupSheet.appendRow([groupName, name, "{}"]); // GroupName, AdminName, Rules
-  } else {
-    if (!groupExists) return createResponse({ status: "error", message: "El grupo no existe" });
+  if (groupExists) {
+    return createResponse({ status: "error", message: "El grupo ya existe. Prueba con otro nombre." });
   }
 
-  // 2. Validar jugador en ese grupo
-  for (let i = 1; i < players.length; i++) {
-    // Col A: GroupName, Col B: Name
-    if (players[i][0] === groupName && players[i][1].toLowerCase() === name.toLowerCase()) {
-      return createResponse({ status: "error", message: "El jugador ya existe en este grupo" });
-    }
-  }
-
-  playerSheet.appendRow([groupName, name, pin, ""]); // GroupName, Nombre, PIN, Teléfono
-  return createResponse({ status: "success", isAdmin: isNewGroup });
+  // Crear grupo y añadir primer jugador (Admin)
+  groupSheet.appendRow([groupName, name, "{}"]); // GroupName, AdminName, Rules
+  playerSheet.appendRow([groupName, name, pin, ""]); // Group, Name, PIN, Phone
+  
+  return createResponse({ status: "success", message: "Grupo creado con éxito" });
 }
 
 function checkIsAdmin(name, groupName) {

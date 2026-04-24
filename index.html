@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,20 +17,51 @@
       gap: 6px;
       animation: fadeIn 0.3s ease;
     }
-    .error-msg::before { content: '⚠️'; }
+
+    .error-msg::before {
+      content: '⚠️';
+    }
+
     .input-error {
       border-color: var(--accent-red) !important;
       background-color: rgba(239, 68, 68, 0.05) !important;
-      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+      animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
     }
+
     @keyframes shake {
-      10%, 90% { transform: translate3d(-1px, 0, 0); }
-      20%, 80% { transform: translate3d(2px, 0, 0); }
-      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-      40%, 60% { transform: translate3d(4px, 0, 0); }
+
+      10%,
+      90% {
+        transform: translate3d(-1px, 0, 0);
+      }
+
+      20%,
+      80% {
+        transform: translate3d(2px, 0, 0);
+      }
+
+      30%,
+      50%,
+      70% {
+        transform: translate3d(-4px, 0, 0);
+      }
+
+      40%,
+      60% {
+        transform: translate3d(4px, 0, 0);
+      }
     }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
     .toast.error {
       border-color: var(--accent-red);
       color: var(--accent-red);
@@ -51,6 +83,7 @@
       color: var(--text-secondary);
       cursor: pointer;
     }
+
     .checkbox-group input {
       width: 16px;
       height: 16px;
@@ -58,6 +91,7 @@
     }
   </style>
 </head>
+
 <body class="login-page">
 
   <div class="login-card">
@@ -71,7 +105,8 @@
     <div id="loginForm">
       <div class="form-group">
         <label class="form-label" for="loginPlayerName">Tu Nombre</label>
-        <input type="text" id="loginPlayerName" class="login-input" placeholder="Ej: Dani" autocomplete="off" oninput="debounceFetchUserGroups()">
+        <input type="text" id="loginPlayerName" class="login-input" placeholder="Ej: Pepito Pérez" autocomplete="off"
+          oninput="debounceFetchUserGroups()">
         <p id="playerStatus" class="group-info-msg"></p>
       </div>
 
@@ -85,7 +120,8 @@
       <div class="form-group">
         <label class="form-label" for="loginPin">Tu PIN de 4 dígitos</label>
         <div class="pin-container">
-          <input type="password" id="loginPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+          <input type="password" id="loginPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
           <button type="button" class="pin-toggle" onclick="togglePin('loginPin')">👁️</button>
         </div>
         <p id="loginPinError" class="error-msg" style="display:none;"></p>
@@ -105,22 +141,19 @@
     <div id="registerForm" style="display: none;">
       <div class="form-group">
         <label class="form-label" for="regGroup">Nombre del Grupo</label>
-        <input type="text" id="regGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions">
-        <label class="checkbox-group">
-          <input type="checkbox" id="regNewGroup" onchange="toggleGroupMsg()"> Es un grupo nuevo
-        </label>
-        <p id="regGroupMsg" class="group-info-msg">Te unirás a un grupo existente</p>
+        <input type="text" id="regGroup" class="login-input" placeholder="Ej: Los Sharks">
       </div>
 
       <div class="form-group">
         <label class="form-label" for="regName">Nombre del jugador</label>
-        <input type="text" id="regName" class="login-input" placeholder="Ej: Dani Grande">
+        <input type="text" id="regName" class="login-input" placeholder="Ej: Pepito Pérez">
       </div>
 
       <div class="form-group">
         <label class="form-label" for="regPin">Crea tu PIN de 4 dígitos</label>
         <div class="pin-container">
-          <input type="password" id="regPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+          <input type="password" id="regPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
           <button type="button" class="pin-toggle" onclick="togglePin('regPin')">👁️</button>
         </div>
         <p id="regPinError" class="error-msg" style="display:none;"></p>
@@ -154,7 +187,7 @@
       const playerName = document.getElementById('loginPlayerName').value.trim();
       const select = document.getElementById('loginGroupSelect');
       const status = document.getElementById('playerStatus');
-      
+
       if (!playerName || playerName.length < 2) {
         select.innerHTML = '<option value="">Primero introduce tu nombre...</option>';
         status.textContent = '';
@@ -165,7 +198,7 @@
       try {
         const response = await fetch(`${SCRIPT_URL}?action=getGroupsForPlayer&playerName=${encodeURIComponent(playerName)}`);
         const result = await response.json();
-        
+
         if (result.status === 'success') {
           if (result.data.length === 0) {
             select.innerHTML = '<option value="">Usuario no encontrado</option>';
@@ -195,13 +228,6 @@
       input.type = input.type === 'password' ? 'text' : 'password';
     }
 
-    function toggleGroupMsg() {
-      const isNew = document.getElementById('regNewGroup').checked;
-      document.getElementById('regGroupMsg').textContent = isNew 
-        ? '🌟 Crearás el grupo y serás el administrador' 
-        : '🤝 Te unirás a un grupo existente';
-    }
-
     function switchForm(type) {
       document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
       document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
@@ -213,7 +239,7 @@
       const groupEl = document.getElementById('loginGroupSelect');
       const pinEl = document.getElementById('loginPin');
       const pinErrorEl = document.getElementById('loginPinError');
-      
+
       const name = nameEl.value.trim();
       const groupName = groupEl.value;
       const pin = pinEl.value;
@@ -264,13 +290,12 @@
 
     async function handleRegister() {
       const groupEl = document.getElementById('regGroup');
-      const isNewEl = document.getElementById('regNewGroup');
       const nameEl = document.getElementById('regName');
       const pinEl = document.getElementById('regPin');
       const pinErrorEl = document.getElementById('regPinError');
-      
+
       const groupName = groupEl.value.trim();
-      const isNewGroup = isNewEl.checked;
+      const isNewGroup = true; // Siempre intentamos crear grupo nuevo
       const name = nameEl.value.trim();
       const pin = pinEl.value;
       const isNumeric = /^\d+$/.test(pin);
@@ -330,7 +355,7 @@
     function showToast(msg, isError = false) {
       const toast = document.getElementById('toast');
       toast.textContent = msg;
-      
+
       if (isError) toast.classList.add('error');
       else toast.classList.remove('error');
 
@@ -342,4 +367,5 @@
     fetchGroups();
   </script>
 </body>
+
 </html>
