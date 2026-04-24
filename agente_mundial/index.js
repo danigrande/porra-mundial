@@ -64,7 +64,7 @@ app.get('/api/summary/:player', async (req, res) => {
     // Forzamos un refresco de datos antes de generar el resumen
     await forceRefresh();
     // Reutilizamos la lógica del messageHandler
-    const response = await processMessage(`resumen`, player, false, true);
+    const response = await processMessage(`resumen`, player, true, true, groupName);
     
     // Guardar el resumen en Google Sheets
     if (groupName && response) {
