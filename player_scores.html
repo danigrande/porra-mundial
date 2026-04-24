@@ -367,12 +367,13 @@
 
   <div class="page-footer-spacer" style="height:4rem;"></div>
 
+  <script src="web_config.js"></script>
   <script>
     // ==========================================
     // SIMULATION CONFIGURATION
     // ==========================================
 
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXen7t95Qv7aE8UrIggz1KqlHweq3d5IXo8VffTxqhfL49CdlO81S1YknxLRjZaKqj/exec';
+
 
     let currentUser = null;
 
@@ -960,7 +961,7 @@
       el.style.display = isVisible ? 'none' : 'grid';
     }
 
-    const RENDER_URL = 'https://porra-mundial.onrender.com'; // <--- ACTUALIZADO CON TU URL REAL
+
 
     async function fetchAISummary(playerName, idx) {
       const box = document.getElementById(`ai_summary_${idx}`);

@@ -299,7 +299,8 @@ function saveSummary(name, groupName, summary) {
 }
 
 function listGroups() {
-  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName("groupsJSON");
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("groupsJSON");
   if (!sheet) return createResponse({ status: "success", data: [] });
   
   const data = sheet.getDataRange().getValues();

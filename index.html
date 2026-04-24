@@ -71,7 +71,7 @@
     <div id="loginForm">
       <div class="form-group">
         <label class="form-label" for="loginGroup">Nombre del Grupo</label>
-        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions" oninput="debounceFetchPlayers()">
+        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions" oninput="debounceFetchPlayers()" autocomplete="off">
         <datalist id="groupSuggestions"></datalist>
         <p id="groupStatus" class="group-info-msg"></p>
       </div>
@@ -140,16 +140,19 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="web_config.js"></script>
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXen7t95Qv7aE8UrIggz1KqlHweq3d5IXo8VffTxqhfL49CdlO81S1YknxLRjZaKqj/exec';
+
 
     let fetchPlayersTimeout = null;
 
     async function fetchGroups() {
+      console.log('🔄 Cargando lista de grupos...');
       try {
         const response = await fetch(`${SCRIPT_URL}?action=listGroups`);
         const result = await response.json();
-        if (result.status === 'success') {
+        console.log('📥 Grupos recibidos:', result);
+        if (result.status === 'success' && result.data) {
           const datalist = document.getElementById('groupSuggestions');
           datalist.innerHTML = '';
           result.data.forEach(group => {
@@ -157,9 +160,10 @@
             opt.value = group;
             datalist.appendChild(opt);
           });
+          console.log(`✅ ${result.data.length} grupos añadidos al autocompletado.`);
         }
       } catch (e) {
-        console.warn('Error fetching group list', e);
+        console.error('❌ Error al cargar grupos:', e);
       }
     }
 
@@ -362,7 +366,7 @@
     }
 
     // Load initial data
-    fetchGroups();
+    document.addEventListener('DOMContentLoaded', fetchGroups);
   </script>
 </body>
 </html>

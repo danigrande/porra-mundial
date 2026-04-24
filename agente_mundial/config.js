@@ -16,7 +16,7 @@ const config = {
 
   // --- Google Apps Script ---
   googleScript: {
-    url: process.env.GOOGLE_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzXen7t95Qv7aE8UrIggz1KqlHweq3d5IXo8VffTxqhfL49CdlO81S1YknxLRjZaKqj/exec',
+    url: process.env.GOOGLE_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwI1buAOy3g0tGbU1SYb6xFZt8CzsZBFHUGmvzqNgVaofkxGlBnqTEldi0nWUDSmju6/exec',
   },
 
   // --- Mapeo de Grupos ---
