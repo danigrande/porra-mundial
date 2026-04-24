@@ -71,7 +71,7 @@
     <div id="loginForm">
       <div class="form-group">
         <label class="form-label" for="loginGroup">Nombre del Grupo</label>
-        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions" oninput="debounceFetchPlayers()" autocomplete="off">
+        <input type="text" id="loginGroup" class="login-input" placeholder="Ej: Los Amigos de Dani" list="groupSuggestions" oninput="debounceFetchPlayers()">
         <datalist id="groupSuggestions"></datalist>
         <p id="groupStatus" class="group-info-msg"></p>
       </div>
@@ -374,7 +374,7 @@
     }
 
     // Load initial data
-    document.addEventListener('DOMContentLoaded', fetchGroups);
+    fetchGroups();
   </script>
 </body>
 </html>
