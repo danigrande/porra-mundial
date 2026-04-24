@@ -39,7 +39,16 @@ app.get('/health', (req, res) => {
 // Endpoint para forzar un resumen (útil para testing)
 app.get('/trigger-summary', async (req, res) => {
   try {
-    const summary = await generateGroupSummary();
+    const dynamicGroupId = getBotConfig().WHATSAPP_GROUP_ID || config.bot.groupId;
+    const summary = await generateGroupSummary(dynamicGroupId);
+    
+    // Guardar también el resumen global
+    const groupName = config.groups[dynamicGroupId] || null;
+    if (groupName && summary) {
+      const dataFetcher = await import('./dataFetcher.js');
+      await dataFetcher.saveSummary("Global", groupName, summary);
+    }
+    
     res.json({ summary });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -49,12 +58,22 @@ app.get('/trigger-summary', async (req, res) => {
 // NUEVO: API para la web (player_score.html)
 app.get('/api/summary/:player', async (req, res) => {
   const { player } = req.params;
-  console.log(`🌐 Petición de resumen desde la web para: ${player}`);
+  const groupName = req.query.groupName; // Obtenemos el grupo desde la query url
+  console.log(`🌐 Petición de resumen desde la web para: ${player} en grupo: ${groupName}`);
   try {
     // Forzamos un refresco de datos antes de generar el resumen
     await forceRefresh();
     // Reutilizamos la lógica del messageHandler
     const response = await processMessage(`resumen`, player, false, true);
+    
+    // Guardar el resumen en Google Sheets
+    if (groupName && response) {
+      console.log(`💾 Guardando resumen para ${player} en Google Sheets...`);
+      // Import dynamic dataFetcher to save
+      const dataFetcher = await import('./dataFetcher.js');
+      await dataFetcher.saveSummary(player, groupName, response);
+    }
+
     res.json({ summary: response });
   } catch (error) {
     console.error('Error en API summary:', error);
@@ -265,13 +284,20 @@ async function startBot() {
     console.log(`📢 Generando resumen programado para el grupo: ${dynamicGroupId}`);
     try {
       await forceRefresh();
-      const summary = await generateGroupSummary();
+      const summary = await generateGroupSummary(dynamicGroupId);
 
       if (summary) {
         await sock.sendMessage(dynamicGroupId, {
           text: `📊 *RESUMEN DE LA JORNADA* 📊\n\n${summary}`,
         });
         console.log('✅ Resumen publicado en el grupo');
+        
+        // Guardar el resumen global en la base de datos
+        const groupName = config.groups[dynamicGroupId] || null;
+        if (groupName) {
+          const dataFetcher = await import('./dataFetcher.js');
+          await dataFetcher.saveSummary("Global", groupName, summary);
+        }
       }
     } catch (error) {
       console.error('Error publicando resumen:', error.message);
