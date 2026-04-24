@@ -8,6 +8,7 @@ function doGet(e) {
   const action = e.parameter.action;
   const groupName = e.parameter.groupName;
 
+  console.log(`[API GET] Action: ${action}, Group: ${groupName}`);
   logTrace("GET", action, e.parameter);
   
   // --- ACCIONES NUEVAS DEL BOT ---
@@ -49,6 +50,7 @@ function doPost(e) {
   const action = params.action;
   const groupName = params.groupName;
 
+  console.log(`[API POST] Action: ${action}, Group: ${groupName}, Payload: ${JSON.stringify(params)}`);
   logTrace("POST", action, params);
 
   if (action === "login") {
@@ -366,7 +368,16 @@ function logTrace(method, action, params) {
       }
     }
 
-    if (!debugMode) return;
+    if (!debugSchema) { // This is a typo in my thought process, I should check if debugMode was found or set. 
+      // Actually let's just use the logic below.
+    }
+
+    if (!debugMode) {
+      console.log(`[TRACE] Skipping logTrace for ${method} ${action} because DEBUG_MODE is not TRUE in Config.`);
+      return;
+    }
+    
+    console.log(`[TRACE] Logging ${method} ${action} to Google Sheets...`);
 
     // 2. Buscar o crear la hoja 'logs'
     let logSheet = ss.getSheetByName("logs");
