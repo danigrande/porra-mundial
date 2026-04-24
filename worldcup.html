@@ -868,7 +868,7 @@
     function checkAuth() {
       const raw = localStorage.getItem('worldcup2026_user');
       if (!raw) {
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
         return;
       }
       try {
@@ -884,14 +884,14 @@
         document.getElementById('userNameHighlight').textContent = `${currentUser.name} (Grupo: ${currentUser.groupName})`;
       } catch (e) {
         localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
       }
     }
 
     function handleLogout() {
       if (confirm('¿Quieres cerrar la sesión? Tus datos locales se mantendrán pero no se sincronizarán hasta que vuelvas a entrar.')) {
         localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
       }
     }
 
