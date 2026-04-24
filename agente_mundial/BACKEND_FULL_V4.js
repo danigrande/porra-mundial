@@ -7,6 +7,8 @@ const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
 function doGet(e) {
   const action = e.parameter.action;
   const groupName = e.parameter.groupName;
+
+  logTrace("GET", action, e.parameter);
   
   // --- ACCIONES NUEVAS DEL BOT ---
   if (action === "getConfigs") {
@@ -46,6 +48,8 @@ function doPost(e) {
   const params = JSON.parse(e.postData.contents);
   const action = params.action;
   const groupName = params.groupName;
+
+  logTrace("POST", action, params);
 
   if (action === "login") {
     return login(params.playerName, params.playerPin, groupName);
@@ -338,4 +342,49 @@ function listGroups() {
 function createResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Registra trazas de llamadas a la API en una hoja 'logs' si DEBUG_MODE es true.
+ */
+function logTrace(method, action, params) {
+  try {
+    // 1. Verificar si el modo debug está activo en la hoja 'Config'
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const configSheet = ss.getSheetByName("Config");
+    let debugMode = false;
+
+    if (configSheet) {
+      const data = configSheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        // Col A: Key, Col B: Value
+        if (data[i][0].toString() === "DEBUG_MODE") {
+          debug(data[i][1]);
+          debugMode = data[i][1].toString().toUpperCase() === "TRUE";
+          break;
+        }
+      }
+    }
+
+    if (!debugMode) return;
+
+    // 2. Buscar o crear la hoja 'logs'
+    let logSheet = ss.getSheetByName("logs");
+    if (!logSheet) {
+      logSheet = ss.insertSheet("logs");
+      logSheet.appendRow(["Timestamp", "Method", "Action", "Params"]);
+    }
+
+    // 3. Registrar el evento
+    const timestamp = new Date().toISOString();
+    const paramsString = JSON.stringify(params);
+    logSheet.appendRow([timestamp, method, action, paramsString]);
+  } catch (err) {
+    console.error("Error in logTrace: " + err.toString());
+  }
+}
+
+// Helper para debugging interno si fuera necesario
+function debug(msg) {
+  console.log("[TRACE-INTERNAL] " + msg);
 }
