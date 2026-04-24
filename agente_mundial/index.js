@@ -58,20 +58,34 @@ app.get('/trigger-summary', async (req, res) => {
 // NUEVO: API para la web (player_score.html)
 app.get('/api/summary/:player', async (req, res) => {
   const { player } = req.params;
-  const groupName = req.query.groupName; // Obtenemos el grupo desde la query url
-  console.log(`🌐 Petición de resumen desde la web para: ${player} en grupo: ${groupName}`);
+  let groupNameFromUrl = req.query.groupName; 
+  console.log(`🌐 Peticion de resumen desde la web para: ${player} en grupo solicitado: ${groupNameFromUrl}`);
+
+  // Helper para normalizar strings (sin acentos, minúsculas, sin espacios extra)
+  const normalize = (s) => s?.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, ' ').trim() || '';
+
+  let effectiveGroupName = groupNameFromUrl;
+
+  if (groupNameFromUrl) {
+    const normalizedInput = normalize(groupNameFromUrl);
+    const match = Object.values(config.groups).find(name => normalize(name) === normalizedInput);
+
+    if (match) {
+      console.log(`✅ Match encontrado: "${groupNameFromUrl}" -> "${match}"`);
+      effectiveGroupName = match;
+    } else {
+      console.warn(`⚠️ No se encontró un grupo exacto para "${groupNameFromUrl}". Intentando usar el nombre tal cual.`);
+    }
+  }
+
   try {
-    // Forzamos un refresco de datos antes de generar el resumen
     await forceRefresh();
-    // Reutilizamos la lógica del messageHandler
-    const response = await processMessage(`resumen`, player, true, true, groupName);
+    const response = await processMessage(`resumen`, player, true, true, effectiveGroupName);
     
-    // Guardar el resumen en Google Sheets
-    if (groupName && response) {
-      console.log(`💾 Guardando resumen para ${player} en Google Sheets...`);
-      // Import dynamic dataFetcher to save
+    if (effectiveGroupName && response) {
+      console.log(`💾 Guardando resumen para ${player} en Google Sheets (Grupo: ${effectiveGroupName})...`);
       const dataFetcher = await import('./dataFetcher.js');
-      await dataFetcher.saveSummary(player, groupName, response);
+      await dataFetcher.saveSummary(player, effectiveGroupName, response);
     }
 
     res.json({ summary: response });
