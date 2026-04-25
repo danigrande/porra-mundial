@@ -72,7 +72,10 @@ function doPost(e) {
     return saveSummary(params.playerName, groupName, params.summary);
   }
   if (action === "saveRules") {
-    return saveRules(params.playerName, groupName, params.data);
+    return saveTokens(params.playerName, groupName, params.data);
+  }
+  if (action === "addPlayer") {
+    return addPlayer(params.playerName, groupName);
   }
 
   return createResponse({ status: "error", message: "Acción POST no válida" });
@@ -220,6 +223,23 @@ function saveRules(name, groupName, rules) {
     }
   }
   return createResponse({ status: "error", message: "Grupo no encontrado" });
+}
+
+function addPlayer(name, groupName) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("playersJSON");
+  if (!sheet) return createResponse({ status: "error", message: "No hay jugadores registrados aún" });
+  const data = sheet.getDataRange().getValues();
+  
+  // Check if player already exists in this group
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === groupName && data[i][1].toString().trim() === name.toString().trim()) {
+      return createResponse({ status: "error", message: "El jugador ya pertenece a este grupo" });
+    }
+  }
+
+  // Add new player with empty PIN and Phone
+  sheet.appendRow([groupName, name, "", ""]); 
+  return createResponse({ status: "success", message: "Jugador añadido correctamente" });
 }
 
 function getBotConfigs() {

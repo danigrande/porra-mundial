@@ -62,6 +62,24 @@
   <!-- Main Content -->
   <main class="main-content">
 
+    <!-- Gestión de Miembros (Solo Admin) -->
+    <div id="memberManagement" class="group-card" style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+      <div class="group-header" style="background: var(--gradient-secondary); border-radius: 12px 12px 0 0;">
+        <div class="group-letter">👤</div>
+        <div>
+          <div class="group-name">Gestión de Miembros</div>
+          <div class="group-teams-summary">Añadir nuevos jugadores al grupo</div>
+        </div>
+      </div>
+      <div style="padding: 1.25rem; display: flex; gap: 10px;">
+        <input type="text" id="newPlayerName" placeholder="Nombre del nuevo usuario" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary);">
+        <button onclick="addPlayerToGroup()" class="btn-cloud" style="margin: 0; padding: 0.75rem 1.5rem;">
+          <span class="icon">➕</span>
+          <span>Añadir</span>
+        </button>
+      </div>
+    </div>
+
     <div id="adminNotice" class="admin-notice" style="display:none;">
       <span>⚠️</span>
       <span>Solo el administrador del grupo puede modificar estas reglas.</span>
@@ -261,6 +279,12 @@
       });
     }
 
+    function enableMemberManagement() {
+      if (currentUser && currentUser.isAdmin) {
+        document.getElementById('memberManagement').style.display = 'block';
+      }
+    }
+
     function handleLogout() {
       if (confirm('¿Quieres cerrar sesión?')) {
         localStorage.removeItem('worldcup2026_user');
@@ -284,6 +308,49 @@
         if (el) data[id] = el.value;
       });
       localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(data));
+    }
+
+    async function addPlayerToGroup() {
+      const nameInput = document.getElementById('newPlayerName');
+      const playerName = nameInput.value.trim();
+      
+      if (!playerName) {
+        showToast('❌ Por favor, introduce un nombre');
+        return;
+      }
+
+      const btn = document.querySelector('#memberManagement button');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Añadiendo...</span>';
+
+      try {
+        const payload = {
+          action: 'addPlayer',
+          playerName: playerName,
+          groupName: currentUser.groupName
+        };
+
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          showToast('✅ Jugador añadido correctamente');
+          nameInput.value = '';
+        } else {
+          showToast('❌ ' + result.message);
+        }
+      } catch (e) {
+        console.error("Error añadiendo jugador", e);
+        showToast('❌ Error al conectar con el servidor');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
     }
     
     async function saveCriteriaToCloud() {
@@ -370,6 +437,7 @@
 
     checkAuth();
     loadCriteria();
+    enableMemberManagement();
   </script>
 </body>
 </html>
