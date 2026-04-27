@@ -69,9 +69,10 @@ export async function generateResponse(playerName, question, context) {
 RANKING GENERAL:
 ${rankingContext}
 
+${context.chatContext ? `HISTORIAL DE CHAT RECIENTE SOBRE EL JUGADOR (RAG):\n${context.chatContext}\n` : ''}
 PREGUNTA: "${question}"
 
-Responde como Andrés Montes, personaliza la respuesta para ${profile?.nickname || playerName}.`;
+Responde como Andrés Montes, personaliza la respuesta para ${profile?.nickname || playerName}. Si hay historial de chat, úsalo para hacer una broma o referencia a algo que se haya dicho recientemente.`;
 
   try {
     const completion = await groq.chat.completions.create({
@@ -132,9 +133,53 @@ El resumen debe:
       max_tokens: 800,
     });
 
-    return completion.choices[0]?.message?.content || 'No pude generar el resumen. ¡La tecnología también falla!';
+    return completion.choices[0]?.message?.content || '¡Jugón! No pude generar el resumen. ¡La tecnología también falla!';
   } catch (error) {
     console.error('Error generando resumen:', error.message);
     return '❌ Error generando el resumen de la jornada. El Agente Mundial necesita un descanso.';
+  }
+}
+
+/**
+ * Genera un resumen cómico de la personalidad y rendimiento de un jugador.
+ */
+export async function generatePersonalitySummary(playerName, groupName, context) {
+  const { playerStats, leaderboard } = context;
+
+  const playerContext = playerStats ? `
+- Puntos Totales: ${playerStats.totalPts}
+- Posición: ${playerStats.position}º de ${leaderboard?.length || '?'}
+- Plenos (exactos): ${playerStats.exactHits}
+- Rendimiento en Grupos: ${playerStats.groupPts} pts
+- Rendimiento en Eliminatorias: ${playerStats.koPts} pts
+` : 'No hay datos de rendimiento todavía.';
+
+  const userMessage = `Genera un RESUMEN DE PERSONALIDAD para el jugador "${playerName}" del grupo "${groupName}".
+  
+DATOS DE RENDIMIENTO ACTUAL:
+${playerContext}
+
+El resumen debe ser una descripción cómica y motivacional al estilo ANDRÉS MONTES. 
+- Si va ganando, alábalo como un "jugón".
+- Si va perdiendo, dile que necesita "un café con sacarina" o que está "en el club de los modestos".
+- Usa 3-4 frases máximo.
+- Menciona sus puntos y su posición de forma divertida.
+- No uses markdown, solo texto plano con algún emoji.`;
+
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+      ],
+      model: config.groq.model,
+      temperature: 0.8,
+      max_tokens: 400,
+    });
+
+    return completion.choices[0]?.message?.content || '¡Algo falló en la cabina de retransmisión!';
+  } catch (error) {
+    console.error('Error en resumen personalidad:', error);
+    return '¡Uy! No puedo comentar tu jugada ahora mismo.';
   }
 }

@@ -2,61 +2,137 @@
 // DATA FETCHER — Centralizado y Limpio (SCALED)
 // ============================================
 
-// Función auxiliar para obtener la URL en tiempo real
-function getScriptUrl() {
-  if (typeof window !== 'undefined' && window.SCRIPT_URL) return window.SCRIPT_URL;
-  if (typeof window !== 'undefined' && window.CONFIG && window.CONFIG.SCRIPT_URL) return window.CONFIG.SCRIPT_URL;
-  return '';
+// Función auxiliar para obtener la URL de la nueva API Node.js
+function getApiUrl() {
+  // Si estamos en el navegador y configuro RENDER_URL
+  if (typeof window !== 'undefined' && window.RENDER_URL) return window.RENDER_URL + '/api';
+  // Fallback local
+  return 'http://localhost:3000/api';
 }
 
 /**
- * Función genérica para realizar peticiones a la API de Google Apps Script.
+ * Función genérica para mapear acciones antiguas a la nueva API REST.
  */
 export async function apiCall(params = {}, options = {}) {
-  let url = getScriptUrl();
+  const baseUrl = getApiUrl();
+  let { action, groupName, playerName, ...rest } = params;
   
-  // Si no hay URL, intentamos cargar config.js (Node)
-  if (!url) {
-    try {
-      const config = (await import('./config.js')).default;
-      url = config.googleScript.url;
-    } catch (e) {}
+  // Fallback a localStorage si no se pasan por parámetro
+  if (typeof window !== 'undefined') {
+    const stored = JSON.parse(localStorage.getItem('worldcup2026_user') || '{}');
+    if (!playerName && stored.name) playerName = stored.name;
+    if (!groupName && stored.groupName) groupName = stored.groupName;
   }
+  
+  let endpoint = '';
+  let method = options.method || 'GET';
+  let body = null;
 
-  if (!url) {
-    console.error('[API] Error: SCRIPT_URL no encontrada en window ni en config.js');
-    return { status: 'error', message: 'Configuración de red no encontrada' };
+  console.log(`[API DEBUG] mapping action: ${action}`);
+
+  // Mapeo de Acciones -> Endpoints REST
+  switch (action) {
+    case 'login':
+      endpoint = `/login`;
+      method = 'POST';
+      body = { playerName, playerPin: params.playerPin, groupName };
+      break;
+    case 'register':
+      endpoint = `/register`;
+      method = 'POST';
+      body = { playerName, playerPin: params.playerPin, groupName, isNewGroup: params.isNewGroup };
+      break;
+    case 'listGroups':
+      endpoint = `/groups`;
+      break;
+    case 'getGroupsForPlayer':
+      endpoint = `/groups?playerName=${encodeURIComponent(playerName)}`;
+      break;
+    case 'getRules':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/rules`;
+      break;
+    case 'saveRules':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/rules`;
+      method = 'POST';
+      body = { data: params.data };
+      break;
+    case 'getPredictions':
+      endpoint = `/predictions?groupName=${encodeURIComponent(groupName)}`;
+      break;
+    case 'savePredictions':
+      endpoint = `/predictions`;
+      method = 'POST';
+      body = { playerName, groupName, predictions: params.predictions };
+      break;
+    case 'getAllSummaries':
+      endpoint = `/summaries?groupName=${encodeURIComponent(groupName)}`;
+      break;
+    case 'saveSummary':
+      endpoint = `/summaries`;
+      method = 'POST';
+      body = { playerName, groupName, summary: params.summary };
+      break;
+    case 'getReality':
+      endpoint = `/reality`;
+      break;
+    case 'saveReality':
+      endpoint = `/reality`;
+      method = 'POST';
+      body = { results: params.results };
+      break;
+    case 'saveInfo':
+      endpoint = `/profile`;
+      method = 'POST';
+      body = { playerName, groupName, profile: params.data }; // <-- Cambiado de params.profile a params.data
+      break;
+    case 'getInfo':
+      endpoint = `/profile?playerName=${encodeURIComponent(playerName)}`;
+      break;
+    case 'getSummary':
+      endpoint = `/summary/${encodeURIComponent(playerName)}?groupName=${encodeURIComponent(groupName)}`;
+      break;
+    case 'getPhoneMapping':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/phone-mapping`;
+      break;
+    case 'addPlayer':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/players`;
+      method = 'POST';
+      body = { playerName };
+      break;
+    case 'getPlayers':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/players`;
+      break;
+    case 'getAllInfo':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/profiles`;
+      break;
+    case 'removePlayer':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/players/${encodeURIComponent(playerName)}`;
+      method = 'DELETE';
+      break;
+    default:
+      console.warn(`[API] Acción no implementada en la nueva API: ${action}`);
+      return { status: 'error', message: 'Not implemented' };
   }
-
-  console.log(`[API DEBUG] ${options.method || 'GET'} -> ${params.action}`);
 
   try {
-    const isPost = options.method === 'POST';
-    let finalUrl = url;
-
-    if (!isPost) {
-      const query = new URLSearchParams(params).toString();
-      finalUrl += query ? `?${query}` : '';
-    }
-
     const fetchOptions = {
-      method: options.method || 'GET',
-      headers: isPost ? { 'Content-Type': 'text/plain' } : {},
+      method,
+      headers: { 'Content-Type': 'application/json' },
       ...options
     };
 
-    if (isPost) {
-      fetchOptions.body = JSON.stringify(params);
+    if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+      fetchOptions.body = JSON.stringify(body);
     }
 
-    const response = await fetch(finalUrl, fetchOptions);
+    const response = await fetch(`${baseUrl}${endpoint}`, fetchOptions);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const data = await response.json();
-    console.log(`[API RESULT] ${params.action}:`, data);
-    return data; // Devolvemos el objeto completo { status, data, message, etc. }
+    console.log(`[API RESULT] ${action}:`, data);
+    return data;
   } catch (error) {
-    console.error(`[API ERROR] Fallo en ${params.action || 'request'}:`, error.message);
+    console.error(`[API ERROR] Fallo en ${action || 'request'}:`, error.message);
     return { status: 'error', message: error.message };
   }
 }
@@ -78,6 +154,11 @@ export const getAllSummaries = async (groupName) => {
   return res?.status === 'success' ? res.data : {};
 };
 
+export const getPhoneMapping = async (groupName) => {
+  const res = await apiCall({ action: 'getPhoneMapping', groupName });
+  return res?.status === 'success' ? res.data : {};
+};
+
 export const getPlayerList = async (groupName) => {
   const res = await apiCall({ action: 'getPlayers', groupName });
   return res?.status === 'success' ? res.data : [];
@@ -88,8 +169,8 @@ export const getRules = async (groupName) => {
   return res?.status === 'success' ? res.data : {};
 };
 
-export const getPhoneMapping = async (groupName) => {
-  const res = await apiCall({ action: 'getPhoneMapping', groupName });
+export const getReality = async () => {
+  const res = await apiCall({ action: 'getReality' });
   return res?.status === 'success' ? res.data : {};
 };
 

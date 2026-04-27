@@ -56,18 +56,26 @@
     import { checkAuth, handleLogout } from './shared_ui.js';
     import { TEAM_CODES, FIXTURE_GROUPS, KNOCKOUT_BRACKET, BRACKET_MATCHES } from './agente_mundial/shared_data.js';
     import { getStandings, fullResolve } from './agente_mundial/scoringEngine.js';
+    import { apiCall } from './agente_mundial/dataFetcher.js';
 
     window.handleLogout = handleLogout;
     let currentUser = checkAuth();
-    let reality = JSON.parse(localStorage.getItem(`worldcup2026_testing_reality_${currentUser?.groupName}`)) || {};
 
     function getTeamHtml(name) {
       const code = TEAM_CODES[name];
       return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
     }
 
-    function render() {
+    async function render() {
       if (!currentUser) return;
+
+      let reality = {};
+      try {
+        const res = await apiCall({ action: 'getReality' });
+        if (res.status === 'success' && res.data) reality = res.data;
+      } catch(e) {
+        reality = JSON.parse(localStorage.getItem(`worldcup2026_testing_reality_${currentUser?.groupName}`)) || {};
+      }
       
       // 1. Grupos
       const groupsContainer = document.getElementById('fixtureGroups');

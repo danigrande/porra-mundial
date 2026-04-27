@@ -121,7 +121,12 @@
       }
       const res = await apiCall({ action: 'login', playerName: name, playerPin: pin, groupName: group }, { method: 'POST' });
       if (res?.status === 'success') {
-        localStorage.setItem('worldcup2026_user', JSON.stringify({ name, pin, groupName: group, isAdmin: res.isAdmin }));
+        localStorage.setItem('worldcup2026_user', JSON.stringify({ 
+            name, 
+            pin, 
+            groupName: group, 
+            isAdmin: res.data.isAdmin // <-- Corregido aquí
+        }));
         showToast('✅ Login correcto');
         setTimeout(() => window.location.href = 'worldcup.html', 1000);
       } else {

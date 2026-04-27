@@ -89,11 +89,11 @@
       return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
     }
 
-    function render() {
+    async function render() {
       renderGroups();
       renderKnockout();
       renderAwards();
-      loadStoredData();
+      await loadStoredData();
       updateAll();
     }
 
@@ -209,14 +209,28 @@
       }
     };
 
-    function loadStoredData() {
+    async function loadStoredData() {
+      // 1. Intentar cargar de LocalStorage primero
       const raw = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
-      if (raw) {
-        const data = JSON.parse(raw);
+      let data = raw ? JSON.parse(raw) : null;
+
+      // 2. Si no hay nada en local o falta el nombre, pedir a la nube (MongoDB)
+      if (!data || !data._playerName) {
+        console.log("☁️ Cargando predicciones desde MongoDB...");
+        const res = await apiCall({ action: 'getPredictions', groupName: currentUser.groupName });
+        if (res.status === 'success' && res.data[currentUser.name]) {
+          data = res.data[currentUser.name].predictions;
+          // Guardar en local para la próxima vez
+          localStorage.setItem(`worldcup2026_predictions_${currentUser.groupName}`, JSON.stringify(data));
+        }
+      }
+
+      if (data) {
         Object.entries(data).forEach(([id, val]) => {
           const el = document.getElementById(id);
           if (el) el.value = val;
         });
+        updateAll();
       }
     }
 

@@ -22,7 +22,7 @@ const config = {
   // --- Mapeo de Grupos ---
   // WhatsApp Group ID -> Group Name (human readable in the web app)
   groups: {
-    [process.env.WHATSAPP_GROUP_ID || '120363XXXXXXXXX@g.us']: 'Los Amigos de Dani',
+    [process.env.WHATSAPP_GROUP_ID || '120363XXXXXXXXX@g.us']: 'Los amigos de Dani',
     // 'another_id@g.us': 'Grupo Secundario',
   },
 

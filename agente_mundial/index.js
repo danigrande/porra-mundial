@@ -18,11 +18,21 @@ import { processMessage, generateGroupSummary, refreshCache } from './messageHan
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });
 
+import { connectDB } from './db.js';
+import apiRoutes from './routes/api.js';
+
+// Conectar a MongoDB
+connectDB();
+
 // ==========================================
-// SERVIDOR EXPRESS (Keep-alive para Render)
+// SERVIDOR EXPRESS (Keep-alive para Render y API Frontend)
 // ==========================================
 const app = express();
 app.use(cors()); // Permitir llamadas desde la web
+app.use(express.json()); // Permitir body en JSON para la nueva API
+
+// Usar nuestras nuevas rutas de Node.js
+app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => {
   res.json({
@@ -279,7 +289,14 @@ async function startBot() {
         }
 
         // Procesar el mensaje
-        const response = await processMessage(text, senderPhone, isGroup, isMentioned);
+        const response = await processMessage(text, senderPhone, isGroup, isMentioned, chatId);
+
+        // --- SISTEMA RAG ---
+        // Guardar TODOS los mensajes en la BD para contexto de la IA
+        import('./ragService.js').then(rag => {
+           const senderNameDB = msg.pushName || identifyPlayer(senderPhone, process.env.WHATSAPP_GROUP_ID || config.bot.groupId) || senderPhone;
+           rag.saveChatMessage(chatId, senderPhone, senderNameDB, text);
+        }).catch(e => console.error("Error cargando RAG:", e));
 
         if (response) {
           console.log(`🤖 Respondiendo a ${senderPhone}: "${response.substring(0, 80)}..."`);

@@ -154,7 +154,7 @@
   </main>
 
   <script src="web_config.js"></script>
-  <script>
+  <script type="module">
 
     let currentUser = null;
 
@@ -172,13 +172,14 @@
       document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
     }
 
-    async function loadCurrentInfo() {
+    import { apiCall } from './agente_mundial/dataFetcher.js';
+
+    async function loadProfile() {
       try {
-        // Fetch ALL info and filter for current user (simpler than making a specific API for one user)
-        const res = await fetch(`${SCRIPT_URL}?action=getAllInfo&groupName=${encodeURIComponent(currentUser.groupName)}`);
-        const result = await res.json();
-        if (result.status === 'success' && result.data[currentUser.name]) {
-          const info = result.data[currentUser.name];
+        const res = await apiCall({ action: 'getAllInfo', groupName: currentUser.groupName });
+        
+        if (res.status === 'success' && res.data && res.data[currentUser.name]) {
+          const info = res.data[currentUser.name];
           document.getElementById('nickname').value = info.nickname || '';
           document.getElementById('phone').value = info.phone || '';
           document.getElementById('humor_style').value = info.humor_style || 'Divertido y amigable';
@@ -199,7 +200,7 @@
       saveBtn.textContent = 'Guardando...';
       statusMsg.className = 'status-msg';
 
-      const data = {
+      const profileData = {
         nickname: document.getElementById('nickname').value,
         phone: document.getElementById('phone').value.replace(/[^0-9]/g, ''),
         humor_style: document.getElementById('humor_style').value,
@@ -208,28 +209,12 @@
       };
 
       try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({
+        const result = await apiCall({
             action: 'saveInfo',
             playerName: currentUser.name,
             groupName: currentUser.groupName,
-            data: data
-          })
+            data: profileData
         });
-        
-        // También actualizamos el teléfono en la tabla Pool
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action: 'updatePhone',
-            playerName: currentUser.name,
-            groupName: currentUser.groupName,
-            phone: data.phone
-          })
-        });
-
-        const result = await response.json();
         
         if (result.status === 'success') {
           statusMsg.textContent = '¡Configuración guardada con éxito!';
@@ -246,13 +231,13 @@
       }
     };
 
-    function handleLogout() {
+    window.handleLogout = () => {
       localStorage.removeItem('worldcup2026_user');
       window.location.href = 'index.html';
     }
 
     checkAuth();
-    loadCurrentInfo();
+    loadProfile();
   </script>
 </body>
 </html>

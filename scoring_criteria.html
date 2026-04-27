@@ -352,11 +352,18 @@
     ];
 
     function saveCriteria() {
-      if (!currentUser.isAdmin) return;
       const data = {};
       ids.forEach(id => {
         const el = document.getElementById(id);
-        if (el) data[id] = el.value;
+        if (el) {
+          if (el.type === 'checkbox') {
+            data[id] = el.checked;
+          } else {
+            // Convertir a número si es un campo de puntos, si no dejar como string (pero no vacío)
+            const val = el.value.trim();
+            data[id] = (val === '' && el.placeholder) ? 0 : (isNaN(val) ? val : Number(val));
+          }
+        }
       });
       localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(data));
     }
@@ -436,7 +443,13 @@
       ids.forEach(id => {
         if (data[id] !== undefined) {
           const el = document.getElementById(id);
-          if (el) el.value = data[id];
+          if (el) {
+            if (el.type === 'checkbox') {
+              el.checked = !!data[id];
+            } else {
+              el.value = data[id];
+            }
+          }
         }
       });
     }

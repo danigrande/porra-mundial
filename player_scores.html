@@ -235,24 +235,28 @@
       lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⏳ Cargando datos...</div>';
 
       try {
-        // 1. Obtener reglas y predicciones en paralelo
-        const [rulesRes, predsRes, summariesRes] = await Promise.all([
+        // 1. Obtener reglas, predicciones, resúmenes y REALIDAD en paralelo
+        const [rulesRes, predsRes, summariesRes, realityRes] = await Promise.all([
           apiCall({ action: 'getRules', groupName: currentUser.groupName }),
           apiCall({ action: 'getPredictions', groupName: currentUser.groupName }),
-          apiCall({ action: 'getAllSummaries', groupName: currentUser.groupName })
+          apiCall({ action: 'getAllSummaries', groupName: currentUser.groupName }),
+          apiCall({ action: 'getReality' })
         ]);
 
         const rules = rulesRes?.status === 'success' ? rulesRes.data : {};
         const playersData = predsRes?.status === 'success' ? predsRes.data : {};
         savedSummaries = summariesRes?.status === 'success' ? summariesRes.data : {};
+        const cloudReality = realityRes?.status === 'success' ? realityRes.data : {};
 
-        // 2. Calcular clasificación
-        if (!reality) {
-          lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⚠️ Debes generar una realidad en la pestaña de Resultados primero.</div>';
+        // 2. Calcular clasificación (Priorizando la realidad de la nube)
+        const finalReality = (cloudReality && Object.keys(cloudReality).length > 0) ? cloudReality : reality;
+
+        if (!finalReality || Object.keys(finalReality).length === 0) {
+          lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⚠️ No hay resultados oficiales en la nube. Ve a "Resultados Testing" para generarlos.</div>';
           return;
         }
 
-        const scoreResults = calculateLeaderboard(playersData, reality, rules);
+        const scoreResults = calculateLeaderboard(playersData, finalReality, rules);
         renderLeaderboard(scoreResults);
 
       } catch (e) {
@@ -313,9 +317,12 @@
       box.style.display = 'block';
       box.innerHTML = '<i>✨ Generando resumen...</i>';
       try {
-        const response = await fetch(`${RENDER_URL}/api/summary/${encodeURIComponent(playerName)}?groupName=${encodeURIComponent(currentUser.groupName)}`);
-        const data = await response.json();
-        box.innerHTML = data.summary ? `<strong>IA:</strong> ${data.summary}` : `⚠️ ${data.error}`;
+        const res = await apiCall({ action: 'getSummary', playerName, groupName: currentUser.groupName });
+        if (res.status === 'success') {
+          box.innerHTML = `<strong>IA:</strong> ${res.data}`;
+        } else {
+          box.innerHTML = `⚠️ ${res.message || 'Error'}`;
+        }
       } catch (e) {
         box.innerHTML = '⚠️ No se pudo conectar con el bot.';
       }

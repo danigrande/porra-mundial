@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Results Admin - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .admin-controls {
+      background: var(--bg-card);
+      padding: 1rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      position: sticky;
+      top: 1rem;
+      z-index: 1000;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--accent-gold);
+    }
+    .btn-random {
+      background: linear-gradient(135deg, #8b5cf6, #d946ef);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .match-edit {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .match-edit:last-child { border-bottom: none; }
+    .score-input {
+      width: 45px !important;
+      text-align: center;
+      padding: 4px !important;
+      background: rgba(0,0,0,0.3) !important;
+    }
+  </style>
+</head>
+<body>
+  <nav class="main-nav">
+    <div class="nav-inner">
+      <a href="worldcup.html" class="nav-logo">⚽ Mundial 2026</a>
+      <div class="nav-links">
+        <a href="worldcup.html" class="nav-link">Predictions</a>
+        <a href="fixture.html" class="nav-link">View Results</a>
+        <a href="fixture_testing.html" class="nav-link active">Admin Panel</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient">Admin – Resultados Oficiales</span></h1>
+    <p class="subtitle">Control total del torneo. Lo que pongas aquí afecta a todos los rankings.</p>
+  </header>
+
+  <main class="main-content">
+    <div class="admin-controls">
+      <button class="btn-save" id="btnSave" onclick="saveReality()">💾 Guardar en Nube</button>
+      <button class="btn-random" onclick="fillRandom()">🎲 Rellenar Random (0-5)</button>
+      <button class="btn-reset" onclick="resetAll()">🗑️ Borrar Todo</button>
+    </div>
+
+    <div id="fixtureGroups" class="groups-grid"></div>
+    <div id="fixtureBracket" class="knockout-container"></div>
+    <div id="awardsContainer"></div>
+  </main>
+
+  <script src="web_config.js"></script>
+  <script type="module">
+    import { checkAuth, showToast } from './shared_ui.js';
+    import { TEAM_CODES, FIXTURE_GROUPS, KNOCKOUT_BRACKET, BRACKET_MATCHES } from './agente_mundial/shared_data.js';
+    import { getStandings, fullResolve } from './agente_mundial/scoringEngine.js';
+    import { apiCall } from './agente_mundial/dataFetcher.js';
+
+    let currentUser = checkAuth();
+    let reality = {};
+
+    function getTeamHtml(name) {
+      const code = TEAM_CODES[name];
+      return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
+    }
+
+    window.fillRandom = () => {
+      document.querySelectorAll('.score-input').forEach(input => {
+        input.value = Math.floor(Math.random() * 6);
+      });
+      render();
+    };
+
+    window.resetAll = () => {
+      if(confirm('¿Seguro que quieres borrar todos los resultados reales?')) {
+        document.querySelectorAll('.score-input').forEach(input => input.value = '');
+        render();
+      }
+    };
+
+    window.saveReality = async () => {
+      const results = collectData();
+      const btn = document.getElementById('btnSave');
+      btn.disabled = true;
+      btn.textContent = '⏳ Guardando...';
+
+      const res = await apiCall({ action: 'saveReality', results }, { method: 'POST' });
+      btn.disabled = false;
+      btn.textContent = '💾 Guardar en Nube';
+
+      if (res.status === 'success') {
+        localStorage.setItem(`worldcup2026_testing_reality_${currentUser.groupName}`, JSON.stringify(results));
+        showToast('✅ Resultados oficiales actualizados');
+      }
+    };
+
+    function collectData() {
+      const data = {};
+      document.querySelectorAll('.score-input').forEach(input => {
+        if (input.value !== '') data[input.id] = input.value;
+      });
+      return data;
+    }
+
+    async function init() {
+      const res = await apiCall({ action: 'getReality' });
+      if (res.status === 'success') reality = res.data;
+      render();
+    }
+
+    function render() {
+      const currentData = collectData();
+      
+      // 1. Grupos con edición
+      const groupsContainer = document.getElementById('fixtureGroups');
+      groupsContainer.innerHTML = FIXTURE_GROUPS.map(g => {
+        const standings = getStandings(g.letter, currentData);
+        return `
+          <div class="group-card">
+            <div class="group-header">
+              <div class="group-letter">${g.letter}</div>
+              <div class="group-name">Grupo ${g.letter}</div>
+            </div>
+            <div style="padding:1rem;">
+              <!-- Edición de Partidos -->
+              <div class="match-list" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                ${[0,1,2,3,4,5].map(mIdx => {
+                  const hId = `g${g.letter}_m${mIdx}_h`;
+                  const aId = `g${g.letter}_m${mIdx}_a`;
+                  return `
+                    <div class="match-edit" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <span style="font-size:0.8rem; flex:1; text-align:right;">${g.teams[mIdx % 4]}</span>
+                        <div style="display:flex; gap:5px; margin: 0 10px;">
+                            <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
+                            <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
+                        </div>
+                        <span style="font-size:0.8rem; flex:1;">${g.teams[(mIdx+1) % 4]}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+              <!-- Tabla en tiempo real -->
+              <table class="prediction-standings">
+                <thead><tr><th>Pos</th><th>Selección</th><th>Pts</th></tr></thead>
+                <tbody>
+                  ${standings.map((s, i) => `<tr><td>${i+1}</td><td>${getTeamHtml(s.name)}</td><td>${s.pts}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 2. Bracket con edición
+      const bracketContainer = document.getElementById('fixtureBracket');
+      bracketContainer.innerHTML = KNOCKOUT_BRACKET.map(round => `
+        <div class="knockout-section">
+          <div class="knockout-title">${round.name}</div>
+          <div class="knockout-matches">
+            ${round.matches.map(num => {
+              const pairing = BRACKET_MATCHES[num];
+              const hName = fullResolve(pairing[0], currentData);
+              const aName = fullResolve(pairing[1], currentData);
+              const hId = `ko_${num}_h`;
+              const aId = `ko_${num}_a`;
+              const pHId = `pen_${num}_h`;
+              const pAId = `pen_${num}_a`;
+              
+              const isDraw = currentData[hId] && currentData[aId] && currentData[hId] === currentData[aId];
+
+              return `
+                <div class="knockout-match">
+                  <span class="match-number">#${num}</span>
+                  <div class="km-teams">
+                    <span class="team-name team-home">${getTeamHtml(hName)}</span>
+                    <div class="score-container" style="display:flex; flex-direction:column; gap:5px;">
+                        <div style="display:flex; gap:5px; align-items:center;">
+                            <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
+                            <span>–</span>
+                            <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
+                        </div>
+                        ${isDraw ? `
+                            <div style="display:flex; gap:2px; font-size:0.6rem; color:var(--accent-gold);">
+                                <input type="number" class="score-input" id="${pHId}" placeholder="P" value="${currentData[pHId] || ''}" oninput="render()" style="width:30px !important;">
+                                <span>(pen)</span>
+                                <input type="number" class="score-input" id="${pAId}" placeholder="P" value="${currentData[pAId] || ''}" oninput="render()" style="width:30px !important;">
+                            </div>
+                        ` : ''}
+                    </div>
+                    <span class="team-name team-away">${getTeamHtml(aName)}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      // 3. Honor Roll
+      const awardsContainer = document.getElementById('awardsContainer');
+      const champ = fullResolve('W104', currentData);
+      const runner = fullResolve('L104', currentData);
+      awardsContainer.innerHTML = `
+        <div class="group-card awards-card">
+          <div class="group-header">Cuadro de honor</div>
+          <table class="awards-table">
+            <tr><td>🏆 Campeón</td><td>${getTeamHtml(champ)}</td></tr>
+            <tr><td>🥈 Subcampeón</td><td>${getTeamHtml(runner)}</td></tr>
+          </table>
+        </div>
+      `;
+    }
+
+    window.render = render;
+    init();
+  </script>
+</body>
+</html>

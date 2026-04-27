@@ -15,7 +15,10 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
  * Identifica el nombre legible del grupo a partir del ID de WhatsApp.
  */
 function resolveGroupName(groupId) {
-  return config.groups[groupId] || null;
+  const name = config.groups[groupId];
+  // Si el nombre existe, lo normalizamos a minúsculas o al formato que espera la DB
+  // En este caso, parece que la DB tiene "Los amigos de Dani"
+  return name || null;
 }
 
 /**
@@ -33,17 +36,16 @@ export async function refreshCache(groupName) {
 
   console.log(`📊 Refrescando cache para grupo: ${groupName}...`);
   try {
-    const [predictions, profiles, phoneMapping, rules] = await Promise.all([
+    const [predictions, profiles, phoneMapping, rules, reality] = await Promise.all([
       dataFetcher.getAllPredictions(groupName),
       dataFetcher.getAllProfiles(groupName),
       dataFetcher.getPhoneMapping(groupName),
       dataFetcher.getRules(groupName),
+      dataFetcher.getReality()
     ]);
 
-    const leaderboard = Object.entries(predictions).map(([name, data]) => ({
-      name,
-      ...data,
-    }));
+    // Calcular el Ranking real con puntos
+    const leaderboard = calculateLeaderboard(predictions, reality, rules);
 
     caches[groupName] = {
       predictions,
@@ -51,10 +53,11 @@ export async function refreshCache(groupName) {
       phoneMapping,
       rules,
       leaderboard,
+      reality,
       timestamp: now
     };
 
-    console.log(`✅ Datos sincronizados para ${groupName}: ${Object.keys(phoneMapping).length} teléfonos.`);
+    console.log(`✅ Datos sincronizados para ${groupName}: ${leaderboard.length} jugadores con puntos calculados.`);
   } catch (error) {
     console.error(`Error refrescando cache para ${groupName}:`, error.message);
   }
@@ -121,7 +124,44 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, wh
 \nPuedes preguntarme por el ranking, tu posición o un resumen de la jornada.`;
   }
 
-  // 4. Construir contexto
+  // 4. Si el usuario pide su estado o ranking
+  if (intent === 'my_status' || intent === 'explain_score' || intent === 'summary') {
+    if (!playerName) {
+      return "No tengo tu teléfono registrado, ¡jugón! Dile al administrador que te añada a la porra.";
+    }
+
+    const playerStats = cache.leaderboard?.find(p => 
+        p.name.trim().toLowerCase() === playerName?.trim().toLowerCase()
+    );
+    const profile = cache.profiles ? (cache.profiles[playerName] || Object.values(cache.profiles).find(pr => pr.nickname === playerName)) : null;
+    
+    console.log(`📊 [Ranking] Nombres en tabla: ${cache.leaderboard?.map(p => p.name).join(', ')}`);
+    console.log(`👤 [Buscando] "${playerName}" -> ${playerStats ? 'ENCONTRADO ✅' : 'NO ENCONTRADO ❌'}`);
+    
+    // --- RAG: Buscar contexto de este jugador en WhatsApp ---
+    let chatContext = "";
+    try {
+        const rag = await import('./ragService.js');
+        chatContext = await rag.retrieveContextForPlayer(whatsappGroupId || process.env.WHATSAPP_GROUP_ID, playerName);
+    } catch (e) {
+        console.error("Error recuperando RAG context:", e);
+    }
+
+    const context = {
+      groupName,
+      ranking: cache.leaderboard,
+      playerStats,
+      profile,
+      leaderboard: cache.leaderboard,
+      chatContext // NUEVO
+    };
+
+    console.log(`🤖 Generando respuesta IA para ${playerName} con ${chatContext.length > 50 ? 'contexto RAG' : 'sin RAG'}...`);
+    const response = await generateResponse(playerName, text, context);
+    return response;
+  }
+
+  // 4. Construir contexto (fallback para otros intents)
   const profile = playerName ? (cache.profiles?.[playerName] || config.playerProfiles[playerName]) : null;
   const playerStats = playerName ? (cache.leaderboard?.find(p => p.name === playerName)) : null;
 
