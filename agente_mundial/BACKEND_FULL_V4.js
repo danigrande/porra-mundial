@@ -97,7 +97,7 @@ function getSheetData(sheetName) {
  * Busca el índice de una columna de forma flexible (sinopsis, mayúsculas, espacios).
  */
 function getColIdx(headers, colName) {
-  const cleanHeaders = headers.map(h => h.toString().trim().toLowerCase());
+  const cleanHeaders = headers.map(h => (h || "").toString().trim().toLowerCase());
   const search = colName.toLowerCase().trim();
   
   // Mapa de sinónimos comunes
