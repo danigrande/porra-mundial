@@ -192,10 +192,13 @@ async function startBot() {
         return;
       }
 
-      if (reason === DisconnectReason.loggedOut) {
-        console.log('❌ Sesión cerrada. Elimina la variable WA_SESSION_DATA y el código QR de nuevo.');
+      if (reason === DisconnectReason.loggedOut || reason === 440) {
+        const msg = reason === 440 
+          ? '❌ Conflicto de conexión: Otra instancia del bot ha iniciado sesión. Deteniendo reconexión automática para evitar bucle.'
+          : '❌ Sesión cerrada. Elimina la variable WA_SESSION_DATA y vincula de nuevo.';
+        console.log(msg);
       } else {
-        console.log(`⚠️ Reconectando en 7s...`);
+        console.log(`⚠️ Reconectando en 7s... (Razón: ${reason})`);
         setTimeout(startBot, 7000);
       }
     }
