@@ -11,6 +11,7 @@ try {
   if (process.env.HUGGINGFACEHUB_API_KEY) {
     embeddings = new HuggingFaceInferenceEmbeddings({
         apiKey: process.env.HUGGINGFACEHUB_API_KEY,
+        modelName: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     });
   } else {
     console.warn("⚠️ HUGGINGFACEHUB_API_KEY no encontrada. El sistema RAG se desactivará temporalmente.");
