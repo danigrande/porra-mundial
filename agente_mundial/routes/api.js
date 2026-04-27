@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Group } from '../models/Group.js';
 import { Prediction } from '../models/Prediction.js';
@@ -13,6 +14,15 @@ const router = express.Router();
 const createResponse = (status, data = null, message = null) => {
   return { status, data, message };
 };
+
+// Middleware para verificar conexión a DB
+router.use((req, res, next) => {
+    if (import.meta.env?.DEV) return next(); // Omitir en dev si quieres
+    if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json(createResponse('error', null, 'La base de datos no está conectada. Revisa MONGODB_URI en Render.'));
+    }
+    next();
+});
 
 // ==========================================
 // RUTAS DE REALIDAD (Resultados Oficiales)
