@@ -78,6 +78,12 @@
           <span>Añadir</span>
         </button>
       </div>
+      <div id="memberListContainer" style="padding: 0 1.25rem 1.25rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 0.5rem; display: none;">
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 1rem; padding-top: 1rem;">Miembros actuales</div>
+        <div id="memberList" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Cargado dinámicamente -->
+        </div>
+      </div>
     </div>
 
     <div id="adminNotice" class="admin-notice" style="display:none;">
@@ -242,31 +248,27 @@
   <div class="toast" id="toast"></div>
 
   <script src="web_config.js"></script>
-  <script>
+  <script type="module">
+    import { checkAuth, handleLogout, showToast as sharedToast } from './shared_ui.js';
+    import { apiCall } from './agente_mundial/dataFetcher.js';
 
+    window.handleLogout = handleLogout;
+    window.addPlayerToGroup = addPlayerToGroup;
+    window.removePlayerFromGroup = removePlayerFromGroup;
+    window.saveCriteriaToCloud = saveCriteriaToCloud;
+    window.saveCriteria = saveCriteria;
 
-    let currentUser = null;
+    let currentUser = checkAuth();
 
-    function checkAuth() {
-      const raw = localStorage.getItem('worldcup2026_user');
-      if (!raw) {
-        window.location.href = 'index.html';
-        return;
-      }
-      try {
-        currentUser = JSON.parse(raw);
-        if (!currentUser.name || !currentUser.pin || !currentUser.groupName) throw new Error();
-        
-        document.getElementById('navUserInfo').style.display = 'flex';
-        document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
-        document.getElementById('pageSubtitle').textContent = `Configuración para el grupo: ${currentUser.groupName}`;
+    function showToast(msg) { sharedToast(msg); }
 
-        if (!currentUser.isAdmin) {
-          disableEditing();
-        }
-      } catch (e) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
+    function checkAuthWrapper() {
+      if (!currentUser) return;
+      document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
+      document.getElementById('pageSubtitle').textContent = `Configuración para el grupo: ${currentUser.groupName}`;
+
+      if (!currentUser.isAdmin) {
+        disableEditing();
       }
     }
 
@@ -282,13 +284,62 @@
     function enableMemberManagement() {
       if (currentUser && currentUser.isAdmin) {
         document.getElementById('memberManagement').style.display = 'block';
+        fetchMemberList();
       }
     }
 
-    function handleLogout() {
-      if (confirm('¿Quieres cerrar sesión?')) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
+    async function fetchMemberList() {
+      if (!currentUser || !currentUser.isAdmin) return;
+      const listEl = document.getElementById('memberList');
+      const container = document.getElementById('memberListContainer');
+      
+      try {
+        const result = await apiCall({ action: 'getPlayers', groupName: currentUser.groupName });
+        
+        if (result?.status === 'success' && result.data) {
+          container.style.display = 'block';
+          const players = result.data;
+          if (players.length === 0) {
+            listEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">No hay otros miembros</div>';
+            return;
+          }
+          
+          listEl.innerHTML = players.map(name => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <span style="font-weight: 600; color: var(--text-secondary);">${name} ${name === currentUser.name ? '<small style="color:var(--accent-gold); margin-left:5px;">(Tú)</small>' : ''}</span>
+              ${name !== currentUser.name ? `
+                <button onclick="window.removePlayerFromGroup('${name}')" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; transition: all 0.2s;">
+                  Quitar
+                </button>
+              ` : '<span style="font-size:0.7rem; color:var(--text-muted)">Admin</span>'}
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.error("Error cargando lista de miembros", e);
+      }
+    }
+
+    async function removePlayerFromGroup(name) {
+      if (!confirm(`¿Estás seguro de que quieres quitar a "${name}" del grupo? Se borrarán también sus predicciones.`)) {
+        return;
+      }
+
+      try {
+        const result = await apiCall({
+          action: 'removePlayer',
+          playerName: name,
+          groupName: currentUser.groupName
+        }, { method: 'POST' });
+        
+        if (result?.status === 'success') {
+          showToast(`✅ ${name} eliminado del grupo`);
+          fetchMemberList();
+        } else {
+          showToast('❌ ' + (result?.message || 'Error'));
+        }
+      } catch (e) {
+        showToast('❌ Error al eliminar jugador');
       }
     }
 
@@ -325,24 +376,18 @@
       btn.innerHTML = '<span>⏳ Añadiendo...</span>';
 
       try {
-        const payload = {
+        const result = await apiCall({
           action: 'addPlayer',
           playerName: playerName,
           groupName: currentUser.groupName
-        };
-
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
+        }, { method: 'POST' });
         
-        const result = await response.json();
-        
-        if (result.status === 'success') {
+        if (result?.status === 'success') {
           showToast('✅ Jugador añadido correctamente');
           nameInput.value = '';
+          fetchMemberList();
         } else {
-          showToast('❌ ' + result.message);
+          showToast('❌ ' + (result?.message || 'Error'));
         }
       } catch (e) {
         console.error("Error añadiendo jugador", e);
@@ -355,9 +400,7 @@
     
     async function saveCriteriaToCloud() {
       if (!currentUser.isAdmin) return;
-      
       saveCriteria();
-      
       const raw = localStorage.getItem(`worldcup2026_scoring_${currentUser.groupName}`);
       if (!raw) return;
       const data = JSON.parse(raw);
@@ -368,21 +411,17 @@
       btn.disabled = true;
 
       try {
-        const payload = {
+        const result = await apiCall({
           action: 'saveRules',
           playerName: currentUser.name,
           groupName: currentUser.groupName,
           data: data
-        };
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-          showToast('☁️ Reglas de puntuación sincronizadas a la nube');
+        }, { method: 'POST' });
+
+        if (result?.status === 'success') {
+          showToast('☁️ Reglas de puntuación sincronizadas');
         } else {
-          showToast('❌ ' + result.message);
+          showToast('❌ ' + (result?.message || 'Error'));
         }
       } catch (e) {
         console.error("Error sincronizando reglas", e);
@@ -403,39 +442,27 @@
     }
 
     async function loadCriteria() {
-      // Intentar cargar localmente primero (específico del grupo)
       const raw = localStorage.getItem(`worldcup2026_scoring_${currentUser.groupName}`);
       if (raw) {
-        try {
-          const data = JSON.parse(raw);
-          applyCriteria(data);
-        } catch (e) {}
+        try { applyCriteria(JSON.parse(raw)); } catch (e) {}
       }
 
       try {
-        const response = await fetch(`${SCRIPT_URL}?action=getRules&groupName=${encodeURIComponent(currentUser.groupName)}`);
-        const result = await response.json();
-        if (result.status === 'success' && result.data) {
+        const result = await apiCall({ action: 'getRules', groupName: currentUser.groupName });
+        if (result?.status === 'success' && result.data) {
           const data = result.data;
           if (Object.keys(data).length > 0) {
             applyCriteria(data);
             localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(data));
-            showToast('🤖 Reglas actualizadas desde la nube');
+            showToast('🤖 Reglas actualizadas');
           }
         }
       } catch (e) {
-        console.log("No se pudieron cargar reglas de la nube.", e);
+        console.log("Error cargando reglas de la nube.", e);
       }
     }
 
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
-    }
-
-    checkAuth();
+    checkAuthWrapper();
     loadCriteria();
     enableMemberManagement();
   </script>

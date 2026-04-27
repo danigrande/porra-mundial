@@ -55,7 +55,8 @@ function doPost(e) {
     "updatePhone": () => updatePlayerPhone(name, groupName, params.phone),
     "saveSummary": () => saveSummary(name, groupName, params.summary),
     "saveRules": () => saveRules(name, groupName, params.data),
-    "addPlayer": () => addPlayer(name, groupName)
+    "addPlayer": () => addPlayer(name, groupName),
+    "removePlayer": () => removePlayer(name, groupName)
   };
 
   if (handlers[action]) {
@@ -401,6 +402,42 @@ function listGroups() {
   const groupIdx = getColIdx(data.headers, "GroupName");
   const groups = data.rows.map(row => row[groupIdx]).filter(g => g && g.toString().trim() !== "");
   return [...new Set(groups)];
+}
+
+/**
+ * Elimina un jugador de un grupo.
+ */
+function removePlayer(name, groupName) {
+  // 1. Eliminar de playersJSON
+  const playerSheet = getSheet("playersJSON");
+  if (playerSheet) {
+    const data = playerSheet.getDataRange().getValues();
+    const headers = data[0];
+    const groupIdx = headers.indexOf("GroupName");
+    const nameIdx = headers.indexOf("Jugador");
+    
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][groupIdx] === groupName && data[i][nameIdx].toString().trim() === name.toString().trim()) {
+        playerSheet.deleteRow(i + 1);
+      }
+    }
+  }
+
+  // 2. Eliminar de predictionsJSON (opcional, pero recomendado para limpieza)
+  const predSheet = getSheet("predictionsJSON");
+  if (predSheet) {
+    const data = predSheet.getDataRange().getValues();
+    const headers = data[0];
+    const groupIdx = headers.indexOf("GroupName");
+    const nameIdx = headers.indexOf("Jugador");
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][groupIdx] === groupName && data[i][nameIdx].toString().trim() === name.toString().trim()) {
+        predSheet.deleteRow(i + 1);
+      }
+    }
+  }
+
+  return createResponse({ status: "success" });
 }
 
 function createResponse(obj) {
