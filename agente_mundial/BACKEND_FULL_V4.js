@@ -170,9 +170,9 @@ function login(name, pin, groupName) {
   const pinIdx = getColIdx(data.headers, "PIN");
   
   const user = data.rows.find(row => 
-    row[groupIdx] === groupName && 
-    row[nameIdx] === name && 
-    row[pinIdx].toString() === pin.toString()
+    (row[groupIdx] || "").toString() === groupName.toString() && 
+    (row[nameIdx] || "").toString() === name.toString() && 
+    (row[pinIdx] || "").toString() === pin.toString()
   );
 
   if (user) {
@@ -289,21 +289,25 @@ function saveRules(name, groupName, rules) {
 }
 
 function addPlayer(name, groupName) {
-  const sheet = getSheet("playersJSON", true);
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
+  const data = getSheetData("playersJSON");
+  if (!data) return createResponse({ status: "error", message: "No se pudo cargar la hoja de jugadores" });
   
-  if (headers.length < 2) {
-    sheet.appendRow(["GroupName", "Jugador", "PIN", "Telefono"]);
+  const groupIdx = getColIdx(data.headers, "GroupName");
+  const nameIdx = getColIdx(data.headers, "Jugador");
+
+  const searchName = name.trim().toLowerCase();
+  const searchGroup = groupName.trim().toLowerCase();
+
+  const exists = data.rows.some(row => 
+    (row[groupIdx] || "").toString().trim().toLowerCase() === searchGroup && 
+    (row[nameIdx] || "").toString().trim().toLowerCase() === searchName
+  );
+
+  if (exists) {
+    return createResponse({ status: "error", message: "Este jugador ya está en el grupo" });
   }
 
-  const groupIdx = headers.indexOf("GroupName");
-  const nameIdx = headers.indexOf("Jugador");
-
-  if (data.slice(1).some(row => row[groupIdx] === groupName && row[nameIdx].toString().trim() === name.toString().trim())) {
-    return createResponse({ status: "error", message: "Ya existe" });
-  }
-
+  const sheet = getSheet("playersJSON");
   sheet.appendRow([groupName, name, "", ""]); 
   return createResponse({ status: "success" });
 }
@@ -436,30 +440,37 @@ function listGroups() {
  * Elimina un jugador de un grupo.
  */
 function removePlayer(name, groupName) {
+  const nameToSearch = name.toString().trim().toLowerCase();
+  const groupToSearch = groupName.toString().trim().toLowerCase();
+
   // 1. Eliminar de playersJSON
   const playerSheet = getSheet("playersJSON");
   if (playerSheet) {
     const data = playerSheet.getDataRange().getValues();
     const headers = data[0];
-    const groupIdx = headers.indexOf("GroupName");
-    const nameIdx = headers.indexOf("Jugador");
+    const groupIdx = getColIdx(headers, "GroupName");
+    const nameIdx = getColIdx(headers, "Jugador");
     
     for (let i = data.length - 1; i >= 1; i--) {
-      if (data[i][groupIdx] === groupName && data[i][nameIdx].toString().trim() === name.toString().trim()) {
+      const rowGroup = (data[i][groupIdx] || "").toString().trim().toLowerCase();
+      const rowName = (data[i][nameIdx] || "").toString().trim().toLowerCase();
+      if (rowGroup === groupToSearch && rowName === nameToSearch) {
         playerSheet.deleteRow(i + 1);
       }
     }
   }
 
-  // 2. Eliminar de predictionsJSON (opcional, pero recomendado para limpieza)
+  // 2. Eliminar de predictionsJSON
   const predSheet = getSheet("predictionsJSON");
   if (predSheet) {
     const data = predSheet.getDataRange().getValues();
     const headers = data[0];
-    const groupIdx = headers.indexOf("GroupName");
-    const nameIdx = headers.indexOf("Jugador");
+    const groupIdx = getColIdx(headers, "GroupName");
+    const nameIdx = getColIdx(headers, "Jugador");
     for (let i = data.length - 1; i >= 1; i--) {
-      if (data[i][groupIdx] === groupName && data[i][nameIdx].toString().trim() === name.toString().trim()) {
+      const rowGroup = (data[i][groupIdx] || "").toString().trim().toLowerCase();
+      const rowName = (data[i][nameIdx] || "").toString().trim().toLowerCase();
+      if (rowGroup === groupToSearch && rowName === nameToSearch) {
         predSheet.deleteRow(i + 1);
       }
     }
