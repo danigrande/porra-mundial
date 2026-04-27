@@ -2,7 +2,7 @@
 // CONFIGURACIÓN GLOBAL DE LA WEB
 // ============================================
 
-const CONFIG = {
+window.CONFIG = {
   // URL de Google Apps Script (Backend)
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbx1_NLJukiXGHYzcWv52zjr_F-0g3pfHc1AaP6CyqStT3YUHHSQC5ctdzHx81m4Lsmp/exec',
   
@@ -10,6 +10,6 @@ const CONFIG = {
   RENDER_URL: 'https://porra-mundial.onrender.com'
 };
 
-// Para mantener compatibilidad con el código existente que usa SCRIPT_URL directamente
-const SCRIPT_URL = CONFIG.SCRIPT_URL;
-const RENDER_URL = CONFIG.RENDER_URL;
+// Exponer variables globales explícitamente para los módulos
+window.SCRIPT_URL = window.CONFIG.SCRIPT_URL;
+window.RENDER_URL = window.CONFIG.RENDER_URL;
