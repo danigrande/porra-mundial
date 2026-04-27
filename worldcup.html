@@ -196,7 +196,7 @@
       btn.disabled = true;
       btn.textContent = '⏳ Guardando...';
       
-      const res = await apiCall({ action: 'savePredictions', groupName: currentUser.groupName }, { method: 'POST', body: JSON.stringify(data) });
+      const res = await apiCall({ action: 'savePredictions', groupName: currentUser.groupName, ...data }, { method: 'POST' });
       
       btn.disabled = false;
       btn.textContent = '💾 Guardar predicciones';

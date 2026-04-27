@@ -36,7 +36,7 @@ export async function apiCall(params = {}, options = {}) {
 
     const fetchOptions = {
       method: options.method || 'GET',
-      headers: isPost ? { 'Content-Type': 'application/json' } : {},
+      headers: isPost ? { 'Content-Type': 'text/plain' } : {},
       ...options
     };
 

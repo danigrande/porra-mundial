@@ -119,7 +119,7 @@
         showToast('⚠️ Completa todos los campos', true);
         return;
       }
-      const res = await apiCall({ action: 'login', playerName: name, playerPin: pin, groupName: group }, { method: 'POST', body: JSON.stringify({ action: 'login', playerName: name, playerPin: pin, groupName: group }) });
+      const res = await apiCall({ action: 'login', playerName: name, playerPin: pin, groupName: group }, { method: 'POST' });
       if (res?.status === 'success') {
         localStorage.setItem('worldcup2026_user', JSON.stringify({ name, pin, groupName: group, isAdmin: res.isAdmin }));
         showToast('✅ Login correcto');
@@ -151,7 +151,7 @@
       const n = document.getElementById('regName').value.trim();
       const p = document.getElementById('regPin').value;
       if (!g || !n || p.length !== 4) { showToast('⚠️ Datos incompletos', true); return; }
-      const res = await apiCall({ action: 'register' }, { method: 'POST', body: JSON.stringify({ action: 'register', playerName: n, playerPin: p, groupName: g, isNewGroup: true }) });
+      const res = await apiCall({ action: 'register', playerName: n, playerPin: p, groupName: g, isNewGroup: true }, { method: 'POST' });
       if (res?.status === 'success') {
         localStorage.setItem('worldcup2026_user', JSON.stringify({ name: n, pin: p, groupName: g, isAdmin: true }));
         showToast('✨ Registro completado');
