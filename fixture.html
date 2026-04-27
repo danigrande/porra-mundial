@@ -3,128 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Fixture del Mundial 2026 - Cuadro de grupos, clasificaciones y eliminatorias">
+  <meta name="description" content="Resultados del Mundial 2026 - Cuadro de grupos, clasificaciones y eliminatorias">
   <title>Results - Porra Mundial 2026</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .fixture-pair {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-    }
-    @media (max-width: 900px) {
-      .fixture-pair { grid-template-columns: 1fr; }
-    }
-    .fixture-group-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: var(--shadow-card);
-      transition: all 0.3s ease;
-      animation: fadeInUp 0.5s ease forwards;
-    }
-    .fixture-group-card:hover {
-      border-color: rgba(59, 130, 246, 0.3);
-      box-shadow: var(--shadow-card), var(--shadow-glow);
-    }
-    .fixture-matches {
-      padding: 0.5rem 0.75rem;
-    }
-    .fixture-match {
-      display: grid;
-      grid-template-columns: 32px 1fr 44px 20px 44px 1fr;
-      align-items: center;
-      padding: 0.45rem 0.5rem;
-      gap: 4px;
-      font-size: 0.78rem;
-    }
-    .fixture-match + .fixture-match {
-      border-top: 1px solid rgba(42, 51, 80, 0.3);
-    }
-    .fixture-match .fm-num {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
-    .fixture-match .fm-home {
-      text-align: right;
-      font-weight: 600;
-    }
-    .fixture-match .fm-away {
-      text-align: left;
-      font-weight: 600;
-    }
-    .fixture-match .fm-score {
-      text-align: center;
-      font-weight: 800;
-      color: var(--accent-gold);
-      font-size: 0.85rem;
-    }
-    .fixture-match .fm-vs {
-      text-align: center;
-      font-size: 0.6rem;
-      color: var(--text-muted);
-      font-weight: 700;
-    }
-    .fixture-match .fm-pos {
-      font-size: 0.65rem;
-      color: var(--accent-cyan);
-      font-weight: 600;
-    }
-    
-    /* Knockout bracket cards */
-    .ko-bracket-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    .ko-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 0.8rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: all 0.25s ease;
-    }
-    .ko-card:hover {
-      border-color: rgba(59, 130, 246, 0.3);
-      transform: translateY(-1px);
-    }
-    .ko-card .ko-num {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      font-weight: 600;
-      min-width: 24px;
-    }
-    .ko-card .ko-teams {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .ko-card .ko-team {
-      font-size: 0.8rem;
-      font-weight: 600;
-      flex: 1;
-    }
-    .ko-card .ko-team-home { text-align: right; }
-    .ko-card .ko-team-away { text-align: left; }
-    .ko-card .ko-score {
-      font-weight: 800;
-      font-size: 0.9rem;
-      color: var(--accent-gold);
-      min-width: 50px;
-      text-align: center;
-    }
-    
-  </style>
 </head>
 <body>
-
   <!-- Navigation -->
   <nav class="main-nav">
     <div class="nav-inner">
@@ -136,12 +19,10 @@
         <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
         <a href="pool.html" class="nav-link">Predictions</a>
         <a href="fixture.html" class="nav-link active">Results</a>
-        <a href="fixture_testing.html" class="nav-link">Results Testing</a>
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link">Leaderboard</a>
         <a href="about_user.html" class="nav-link">Mi Perfil</a>
       </div>
-
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
         <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
@@ -149,646 +30,116 @@
     </div>
   </nav>
 
-  <!-- Header -->
   <header class="page-header">
     <h1><span class="header-icon">📊</span> <span class="header-text-gradient">Results – Cuadro del Mundial 2026</span></h1>
-    <p class="subtitle">Grupos, clasificaciones y cuadro de eliminatorias</p>
+    <p class="subtitle">Resultados oficiales y clasificaciones reales del torneo</p>
   </header>
 
-  <!-- Main Content -->
   <main class="main-content">
+    <div class="info-banner" style="margin-bottom:2rem; background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.2);">
+      <span style="font-size:1.2rem;">ℹ️</span>
+      <div style="font-size:0.85rem; color:var(--text-secondary);">
+        Esta sección muestra los resultados cargados desde <strong>fixture_testing.html</strong>. 
+        Si no hay resultados guardados en el navegador, verás el cuadro vacío.
+      </div>
+    </div>
 
-    <!-- Groups Section -->
-    <div id="fixtureGroups"></div>
-
-    <!-- Knockout Bracket -->
-    <div id="fixtureBracket"></div>
-
-    <!-- Awards Section -->
+    <div id="fixtureGroups" class="groups-grid"></div>
+    <div id="fixtureBracket" class="knockout-container"></div>
     <div id="awardsContainer"></div>
-
-
   </main>
 
-  <div class="page-footer-spacer" style="height:2rem;"></div>
-
-<script>
-// Group data for fixture (from Fixture tab)
-const fixtureGroups = [
-  {
-    letter: 'A',
-    teams: [
-      { abbr: 'Méx', full: 'México' }, { abbr: 'Sud', full: 'Sudáfrica' },
-      { abbr: 'Cor', full: 'Corea del Sur' }, { abbr: 'Rep', full: 'República Checa' }
-    ],
-    matches: [
-      { num: 1, home: 'Méx', away: 'Sud', pos: '1A' },
-      { num: 2, home: 'Cor', away: 'Rep', pos: '' },
-      { num: 25, home: 'Rep', away: 'Sud', pos: '2A' },
-      { num: 28, home: 'Méx', away: 'Cor', pos: '' },
-      { num: 53, home: 'Rep', away: 'Méx', pos: '3A' },
-      { num: 54, home: 'Sud', away: 'Cor', pos: '4A' }
-    ],
-    standings: ['México', 'Sudáfrica', 'Corea del Sur', 'República Checa']
-  },
-  {
-    letter: 'B',
-    teams: [
-      { abbr: 'Can', full: 'Canadá' }, { abbr: 'Bos', full: 'Bosnia y Herzegovina' },
-      { abbr: 'Cat', full: 'Catar' }, { abbr: 'Sui', full: 'Suiza' }
-    ],
-    matches: [
-      { num: 3, home: 'Can', away: 'Bos', pos: '1B' },
-      { num: 8, home: 'Cat', away: 'Sui', pos: '' },
-      { num: 26, home: 'Sui', away: 'Bos', pos: '2B' },
-      { num: 27, home: 'Can', away: 'Cat', pos: '' },
-      { num: 51, home: 'Sui', away: 'Can', pos: '3B' },
-      { num: 52, home: 'Bos', away: 'Cat', pos: '4B' }
-    ],
-    standings: ['Canadá', 'Bosnia y Herzegovina', 'Catar', 'Suiza']
-  },
-  {
-    letter: 'C',
-    teams: [
-      { abbr: 'Bra', full: 'Brasil' }, { abbr: 'Mar', full: 'Marruecos' },
-      { abbr: 'Hai', full: 'Haití' }, { abbr: 'Esc', full: 'Escocia' }
-    ],
-    matches: [
-      { num: 5, home: 'Hai', away: 'Esc', pos: '1C' },
-      { num: 7, home: 'Bra', away: 'Mar', pos: '' },
-      { num: 29, home: 'Bra', away: 'Hai', pos: '2C' },
-      { num: 30, home: 'Esc', away: 'Mar', pos: '' },
-      { num: 49, home: 'Esc', away: 'Bra', pos: '3C' },
-      { num: 50, home: 'Mar', away: 'Hai', pos: '4C' }
-    ],
-    standings: ['Brasil', 'Marruecos', 'Haití', 'Escocia']
-  },
-  {
-    letter: 'D',
-    teams: [
-      { abbr: 'Est', full: 'Estados Unidos' }, { abbr: 'Par', full: 'Paraguay' },
-      { abbr: 'Aus', full: 'Australia' }, { abbr: 'Tur', full: 'Turquía' }
-    ],
-    matches: [
-      { num: 4, home: 'Est', away: 'Par', pos: '1D' },
-      { num: 6, home: 'Aus', away: 'Tur', pos: '' },
-      { num: 32, home: 'Est', away: 'Aus', pos: '2D' },
-      { num: 31, home: 'Tur', away: 'Par', pos: '' },
-      { num: 59, home: 'Tur', away: 'Est', pos: '3D' },
-      { num: 60, home: 'Par', away: 'Aus', pos: '4D' }
-    ],
-    standings: ['Estados Unidos', 'Paraguay', 'Australia', 'Turquía']
-  },
-  {
-    letter: 'E',
-    teams: [
-      { abbr: 'Ale', full: 'Alemania' }, { abbr: 'Cur', full: 'Curazao' },
-      { abbr: 'Cos', full: 'Costa de Marfil' }, { abbr: 'Ecu', full: 'Ecuador' }
-    ],
-    matches: [
-      { num: 10, home: 'Ale', away: 'Cur', pos: '1E' },
-      { num: 9, home: 'Cos', away: 'Ecu', pos: '' },
-      { num: 33, home: 'Ale', away: 'Cos', pos: '2E' },
-      { num: 34, home: 'Ecu', away: 'Cur', pos: '' },
-      { num: 55, home: 'Cur', away: 'Cos', pos: '3E' },
-      { num: 56, home: 'Ecu', away: 'Ale', pos: '4E' }
-    ],
-    standings: ['Alemania', 'Curazao', 'Costa de Marfil', 'Ecuador']
-  },
-  {
-    letter: 'F',
-    teams: [
-      { abbr: 'Paí', full: 'Países Bajos' }, { abbr: 'Jap', full: 'Japón' },
-      { abbr: 'Sue', full: 'Suecia' }, { abbr: 'Tún', full: 'Túnez' }
-    ],
-    matches: [
-      { num: 11, home: 'Paí', away: 'Jap', pos: '1F' },
-      { num: 12, home: 'Sue', away: 'Tún', pos: '' },
-      { num: 35, home: 'Paí', away: 'Sue', pos: '2F' },
-      { num: 36, home: 'Tún', away: 'Jap', pos: '' },
-      { num: 57, home: 'Jap', away: 'Sue', pos: '3F' },
-      { num: 58, home: 'Tún', away: 'Paí', pos: '4F' }
-    ],
-    standings: ['Países Bajos', 'Japón', 'Suecia', 'Túnez']
-  },
-  {
-    letter: 'G',
-    teams: [
-      { abbr: 'Bél', full: 'Bélgica' }, { abbr: 'Egi', full: 'Egipto' },
-      { abbr: 'Irá', full: 'Irán' }, { abbr: 'Nue', full: 'Nueva Zelanda' }
-    ],
-    matches: [
-      { num: 16, home: 'Bél', away: 'Egi', pos: '1G' },
-      { num: 15, home: 'Irá', away: 'Nue', pos: '' },
-      { num: 39, home: 'Bél', away: 'Irá', pos: '2G' },
-      { num: 40, home: 'Nue', away: 'Egi', pos: '' },
-      { num: 63, home: 'Egi', away: 'Irá', pos: '3G' },
-      { num: 64, home: 'Nue', away: 'Bél', pos: '4G' }
-    ],
-    standings: ['Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda']
-  },
-  {
-    letter: 'H',
-    teams: [
-      { abbr: 'Esp', full: 'España' }, { abbr: 'Cab', full: 'Cabo Verde' },
-      { abbr: 'Ara', full: 'Arabia Saudita' }, { abbr: 'Uru', full: 'Uruguay' }
-    ],
-    matches: [
-      { num: 14, home: 'Esp', away: 'Cab', pos: '1H' },
-      { num: 13, home: 'Ara', away: 'Uru', pos: '' },
-      { num: 38, home: 'Esp', away: 'Ara', pos: '2H' },
-      { num: 37, home: 'Uru', away: 'Cab', pos: '' },
-      { num: 65, home: 'Cab', away: 'Ara', pos: '3H' },
-      { num: 66, home: 'Uru', away: 'Esp', pos: '4H' }
-    ],
-    standings: ['España', 'Cabo Verde', 'Arabia Saudita', 'Uruguay']
-  },
-  {
-    letter: 'I',
-    teams: [
-      { abbr: 'Fra', full: 'Francia' }, { abbr: 'Sen', full: 'Senegal' },
-      { abbr: 'Ira', full: 'Irak' }, { abbr: 'Nor', full: 'Noruega' }
-    ],
-    matches: [
-      { num: 17, home: 'Fra', away: 'Sen', pos: '1I' },
-      { num: 18, home: 'Ira', away: 'Nor', pos: '' },
-      { num: 41, home: 'Fra', away: 'Ira', pos: '2I' },
-      { num: 42, home: 'Nor', away: 'Sen', pos: '' },
-      { num: 61, home: 'Nor', away: 'Fra', pos: '3I' },
-      { num: 62, home: 'Sen', away: 'Ira', pos: '4I' }
-    ],
-    standings: ['Francia', 'Senegal', 'Irak', 'Noruega']
-  },
-  {
-    letter: 'J',
-    teams: [
-      { abbr: 'Arg', full: 'Argentina' }, { abbr: 'Arg2', full: 'Argelia' },
-      { abbr: 'Aus', full: 'Austria' }, { abbr: 'Jor', full: 'Jordania' }
-    ],
-    matches: [
-      { num: 19, home: 'Arg', away: 'Arg2', pos: '1J' },
-      { num: 20, home: 'Aus', away: 'Jor', pos: '' },
-      { num: 43, home: 'Arg', away: 'Aus', pos: '2J' },
-      { num: 44, home: 'Jor', away: 'Arg2', pos: '' },
-      { num: 69, home: 'Arg2', away: 'Aus', pos: '3J' },
-      { num: 70, home: 'Jor', away: 'Arg', pos: '4J' }
-    ],
-    standings: ['Argentina', 'Argelia', 'Austria', 'Jordania']
-  },
-  {
-    letter: 'K',
-    teams: [
-      { abbr: 'Por', full: 'Portugal' }, { abbr: 'RD', full: 'RD Congo' },
-      { abbr: 'Uzb', full: 'Uzbekistán' }, { abbr: 'Col', full: 'Colombia' }
-    ],
-    matches: [
-      { num: 23, home: 'Por', away: 'RD', pos: '1K' },
-      { num: 24, home: 'Uzb', away: 'Col', pos: '' },
-      { num: 47, home: 'Por', away: 'Uzb', pos: '2K' },
-      { num: 48, home: 'Col', away: 'RD', pos: '' },
-      { num: 71, home: 'Col', away: 'Por', pos: '3K' },
-      { num: 72, home: 'RD', away: 'Uzb', pos: '4K' }
-    ],
-    standings: ['Portugal', 'RD Congo', 'Uzbekistán', 'Colombia']
-  },
-  {
-    letter: 'L',
-    teams: [
-      { abbr: 'Ing', full: 'Inglaterra' }, { abbr: 'Cro', full: 'Croacia' },
-      { abbr: 'Gha', full: 'Ghana' }, { abbr: 'Pan', full: 'Panamá' }
-    ],
-    matches: [
-      { num: 22, home: 'Ing', away: 'Cro', pos: '1L' },
-      { num: 21, home: 'Gha', away: 'Pan', pos: '' },
-      { num: 45, home: 'Ing', away: 'Gha', pos: '2L' },
-      { num: 46, home: 'Pan', away: 'Cro', pos: '' },
-      { num: 67, home: 'Pan', away: 'Ing', pos: '3L' },
-      { num: 68, home: 'Cro', away: 'Gha', pos: '4L' }
-    ],
-    standings: ['Inglaterra', 'Croacia', 'Ghana', 'Panamá']
-  }
-];
-
-const knockoutBracket = [
-  {
-    name: 'Dieciseisavos de Final', badge: 'badge-r32',
-    matches: [
-      { num: 73, home: '2A', away: '2B' },
-      { num: 74, home: '1E', away: '3ABCDF' },
-      { num: 75, home: '1F', away: '2C' },
-      { num: 76, home: '1C', away: '2F' },
-      { num: 77, home: '1I', away: '3CDFGH' },
-      { num: 78, home: '2E', away: '2I' },
-      { num: 79, home: '1A', away: '3CEFHI' },
-      { num: 80, home: '1L', away: '3EHIJK' },
-      { num: 81, home: '1D', away: '3BEFIJ' },
-      { num: 82, home: '1G', away: '3AEHIJ' },
-      { num: 83, home: '2K', away: '2L' },
-      { num: 84, home: '1H', away: '2J' },
-      { num: 85, home: '1B', away: '3EFGIJ' },
-      { num: 86, home: '1J', away: '2H' },
-      { num: 87, home: '1K', away: '3DEIJL' },
-      { num: 88, home: '2D', away: '2G' }
-    ]
-  },
-  {
-    name: 'Octavos de Final', badge: 'badge-r16',
-    matches: [
-      { num: 89, home: 'W74', away: 'W77' },
-      { num: 90, home: 'W73', away: 'W75' },
-      { num: 91, home: 'W76', away: 'W78' },
-      { num: 92, home: 'W79', away: 'W80' },
-      { num: 93, home: 'W83', away: 'W84' },
-      { num: 94, home: 'W81', away: 'W82' },
-      { num: 95, home: 'W86', away: 'W88' },
-      { num: 96, home: 'W85', away: 'W87' }
-    ]
-  },
-  {
-    name: 'Cuartos de Final', badge: 'badge-qf',
-    matches: [
-      { num: 97, home: 'W89', away: 'W90' },
-      { num: 98, home: 'W93', away: 'W94' },
-      { num: 99, home: 'W91', away: 'W92' },
-      { num: 100, home: 'W95', away: 'W96' }
-    ]
-  },
-  {
-    name: 'Semifinales', badge: 'badge-sf',
-    matches: [
-      { num: 101, home: 'W97', away: 'W98' },
-      { num: 102, home: 'W99', away: 'W100' }
-    ]
-  },
-  {
-    name: 'Tercer Puesto', badge: 'badge-3rd',
-    matches: [
-      { num: 103, home: 'L101', away: 'L102' }
-    ]
-  },
-  {
-    name: 'FINAL', badge: 'badge-final',
-    matches: [
-      { num: 104, home: 'W101', away: 'W102' }
-    ]
-  }
-];
+  <div class="page-footer-spacer"></div>
 
   <script src="web_config.js"></script>
-  <script>
-    let currentUser = null;
+  <script type="module">
+    import { checkAuth, handleLogout } from './shared_ui.js';
+    import { TEAM_CODES, FIXTURE_GROUPS, KNOCKOUT_BRACKET, BRACKET_MATCHES } from './agente_mundial/shared_data.js';
+    import { getStandings, fullResolve } from './agente_mundial/scoringEngine.js';
 
-    function checkAuth() {
-      const raw = localStorage.getItem('worldcup2026_user');
-      if (!raw) {
-        window.location.href = 'index.html';
-        return;
-      }
-      try {
-        currentUser = JSON.parse(raw);
-        if (!currentUser.name || !currentUser.pin) throw new Error();
-        
-        document.getElementById('navUserInfo').style.display = 'flex';
-        document.getElementById('displayUserName').textContent = currentUser.name;
-      } catch (e) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
-      }
+    window.handleLogout = handleLogout;
+    let currentUser = checkAuth();
+    let reality = JSON.parse(localStorage.getItem(`worldcup2026_testing_reality_${currentUser?.groupName}`)) || {};
+
+    function getTeamHtml(name) {
+      const code = TEAM_CODES[name];
+      return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
     }
 
-    function handleLogout() {
-      if (confirm('¿Quieres cerrar sesión?')) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
-      }
-    }
-
-    const teamCodes = {
-      'México': 'mx', 'Sudáfrica': 'za', 'Corea del Sur': 'kr', 'República Checa': 'cz',
-      'Canadá': 'ca', 'Bosnia y Herzegovina': 'ba', 'Catar': 'qa', 'Suiza': 'ch',
-      'Brasil': 'br', 'Marruecos': 'ma', 'Haití': 'ht', 'Escocia': 'gb-sct',
-      'Estados Unidos': 'us', 'Paraguay': 'py', 'Australia': 'au', 'Turquía': 'tr',
-      'Alemania': 'de', 'Curazao': 'cw', 'Costa de Marfil': 'ci', 'Ecuador': 'ec',
-      'Países Bajos': 'nl', 'Japón': 'jp', 'Suecia': 'se', 'Túnez': 'tn',
-      'Bélgica': 'be', 'Egipto': 'eg', 'Irán': 'ir', 'Nueva Zelanda': 'nz',
-      'España': 'es', 'Cabo Verde': 'cv', 'Arabia Saudita': 'sa', 'Uruguay': 'uy',
-      'Francia': 'fr', 'Senegal': 'sn', 'Irak': 'iq', 'Noruega': 'no',
-      'Argentina': 'ar', 'Argelia': 'dz', 'Austria': 'at', 'Jordania': 'jo',
-      'Portugal': 'pt', 'RD Congo': 'cd', 'Uzbekistán': 'uz', 'Colombia': 'co',
-      'Inglaterra': 'gb-eng', 'Croacia': 'hr', 'Ghana': 'gh', 'Panamá': 'pa'
-    };
-
-    function getTeam(name) {
-      const code = teamCodes[name];
-      return code 
-        ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img" alt="${name}"> ${name}` 
-        : name;
-    }
-
-
-
-// Store for knockout results (can be populated from a data source later)
-const knockoutResults = {}; 
-
-function getGroupStandings(groupLetter) {
-  const g = fixtureGroups.find(x => x.letter === groupLetter);
-  if (!g) return [];
-
-  // Initialize stats
-  const stats = {};
-  g.teams.forEach(t => {
-    stats[t.full] = { name: t.full, pts: 0, j: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, dg: 0 };
-  });
-
-  // Calculate based on match scores (if present in the data)
-  g.matches.forEach(m => {
-    if (m.scoreH != null && m.scoreA != null) {
-      const gh = parseInt(m.scoreH);
-      const ga = parseInt(m.scoreA);
-      const sHome = stats[m.home_full] || stats[fixtureGroups.find(x => x.letter === groupLetter).teams.find(t => t.abbr === m.home).full];
-      // Note: for simplicity in this template, we'll assume m.home matches t.full or use a mapping. 
-      // In the current fixture.html, m.home is an abbreviation. Let's find full name.
-      const homeFull = g.teams.find(t => t.abbr === m.home)?.full;
-      const awayFull = g.teams.find(t => t.abbr === m.away)?.full;
-
-      if (homeFull && awayFull) {
-        stats[homeFull].j++; stats[awayFull].j++;
-        stats[homeFull].gf += gh; stats[homeFull].gc += ga;
-        stats[awayFull].gf += ga; stats[awayFull].gc += gh;
-        if (gh > ga) { stats[homeFull].g++; stats[homeFull].pts += 3; stats[awayFull].p++; }
-        else if (gh < ga) { stats[awayFull].g++; stats[awayFull].pts += 3; stats[homeFull].p++; }
-        else { stats[homeFull].e++; stats[homeFull].pts += 1; stats[awayFull].e++; stats[awayFull].pts += 1; }
-      }
-    }
-  });
-
-  Object.values(stats).forEach(s => s.dg = s.gf - s.gc);
-
-  return Object.values(stats).sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-    if (b.dg !== a.dg) return b.dg - a.dg;
-    return b.gf - a.gf;
-  });
-}
-
-function resolveTeam(code) {
-  if (!code) return '?';
-  // If it's already a team name (from teamCodes), keep it
-  if (teamCodes[code]) return code;
-
-  // Resolve 1A, 2B, etc.
-  const groupMatch = code.match(/^([1-2])([A-L])$/);
-  if (groupMatch) {
-    const pos = parseInt(groupMatch[1]) - 1;
-    const letter = groupMatch[2];
-    const standings = getGroupStandings(letter);
-    // Check if group is "complete" or has enough data. For now, if standings[pos] exists and has points > 0? 
-    // Actually, user said "until result is known". Let's assume it's known if matches are played.
-    // A simpler condition: if any match in group has a score.
-    const group = fixtureGroups.find(x => x.letter === letter);
-    const hasScores = group && group.matches.some(m => m.scoreH != null);
-    
-    if (hasScores && standings[pos]) return standings[pos].name;
-    return code; 
-  }
-
-  // Resolve best thirds (3ABCDF)
-  if (code.startsWith('3')) {
-    // For now, since calculation of 8 best thirds is complex, keep placeholder unless results are there
-    return code; 
-  }
-
-  // Resolve W73, L101
-  const matchRef = code.match(/^([WL])(\d+)$/);
-  if (matchRef) {
-    const type = matchRef[1];
-    const num = matchRef[2];
-    const res = knockoutResults[num];
-    if (!res) return code;
-
-    let targetMatch = null;
-    for (const round of knockoutBracket) {
-      targetMatch = round.matches.find(m => m.num == num);
-      if (targetMatch) break;
-    }
-    if (!targetMatch) return code;
-
-    if (res.h > res.a) return type === 'W' ? resolveTeam(targetMatch.home) : resolveTeam(targetMatch.away);
-    if (res.a > res.h) return type === 'W' ? resolveTeam(targetMatch.away) : resolveTeam(targetMatch.home);
-    if (res.h === res.a && res.ph != null) {
-      if (res.ph > res.pa) return type === 'W' ? resolveTeam(targetMatch.home) : resolveTeam(targetMatch.away);
-      return type === 'W' ? resolveTeam(targetMatch.away) : resolveTeam(targetMatch.home);
-    }
-    return code;
-  }
-
-  return code;
-}
-
-
-// ============================================
-// RENDER
-// ============================================
-
-function renderFixtureGroups() {
-  const container = document.getElementById('fixtureGroups');
-  
-  // Render groups in pairs (2 per row)
-  let html = '';
-  for (let i = 0; i < fixtureGroups.length; i += 2) {
-    html += '<div class="fixture-pair" style="margin-bottom:1.5rem;">';
-    for (let j = i; j < Math.min(i + 2, fixtureGroups.length); j++) {
-      const g = fixtureGroups[j];
-      html += `
-        <div class="fixture-group-card" style="animation-delay:${j * 0.05}s">
-          <div class="group-header">
-            <div class="group-letter">${g.letter}</div>
-            <div>
+    function render() {
+      if (!currentUser) return;
+      
+      // 1. Grupos
+      const groupsContainer = document.getElementById('fixtureGroups');
+      groupsContainer.innerHTML = FIXTURE_GROUPS.map(g => {
+        const standings = getStandings(g.letter, reality);
+        return `
+          <div class="group-card">
+            <div class="group-header">
+              <div class="group-letter">${g.letter}</div>
               <div class="group-name">Grupo ${g.letter}</div>
-              <div class="group-teams-summary">${g.teams.map(t => {
-                const code = teamCodes[t.full];
-                const flagImg = code ? `<img src="https://flagcdn.com/w40/${code}.png" style="width:14px; height:auto; margin-right:4px; vertical-align:middle; border-radius:1px;">` : '';
-                return flagImg + t.abbr;
-              }).join(' · ')}</div>
+            </div>
+            <div style="padding:1rem;">
+              <table class="prediction-standings">
+                <thead><tr><th>Pos</th><th>Selección</th><th>Pts</th><th>DG</th></tr></thead>
+                <tbody>
+                  ${standings.map((s, i) => `<tr><td>${i+1}</td><td>${getTeamHtml(s.name)}</td><td>${s.pts}</td><td>${s.dg}</td></tr>`).join('')}
+                </tbody>
+              </table>
             </div>
           </div>
-          <div class="fixture-matches">
-            ${g.matches.map(m => {
-              const hScore = m.scoreH != null ? m.scoreH : "–";
-              const aScore = m.scoreA != null ? m.scoreA : "–";
+        `;
+      }).join('');
+
+      // 2. Bracket
+      const bracketContainer = document.getElementById('fixtureBracket');
+      bracketContainer.innerHTML = KNOCKOUT_BRACKET.map(round => `
+        <div class="knockout-section">
+          <div class="knockout-title">${round.name}</div>
+          <div class="knockout-matches">
+            ${round.matches.map(num => {
+              const pairing = BRACKET_MATCHES[num];
+              const hName = fullResolve(pairing[0], reality);
+              const aName = fullResolve(pairing[1], reality);
+              const hScore = reality[`ko_${num}_h`] ?? '–';
+              const aScore = reality[`ko_${num}_a`] ?? '–';
+              const penText = reality[`pen_${num}_h`] !== undefined ? ` <span style="font-size:0.7rem; color:var(--text-muted)">(${reality[`pen_${num}_h`]}-${reality[`pen_${num}_a`]} pen)</span>` : '';
+              
               return `
-              <div class="fixture-match">
-                <span class="fm-num">#${m.num}</span>
-                <span class="fm-home">${m.home}</span>
-                <span class="fm-score">${hScore}</span>
-                <span class="fm-vs">vs</span>
-                <span class="fm-score">${aScore}</span>
-                <span class="fm-away">${m.away}</span>
-              </div>
+                <div class="knockout-match">
+                  <span class="match-number">#${num}</span>
+                  <div class="km-teams">
+                    <span class="team-name team-home">${getTeamHtml(hName)}</span>
+                    <div class="score-container">
+                      <span class="score-input">${hScore}</span>
+                      <span class="score-separator">–</span>
+                      <span class="score-input">${aScore}${penText}</span>
+                    </div>
+                    <span class="team-name team-away">${getTeamHtml(aName)}</span>
+                  </div>
+                </div>
               `;
             }).join('')}
           </div>
-          <!-- Standings -->
-          <div class="group-standings-container">
-            <div class="standings-title">Clasificación</div>
-            <table class="standings-table">
-              <thead>
-                <tr>
-                  <th style="width:25px">#</th>
-                  <th style="text-align:left">Sel</th>
-                  <th>Pts</th>
-                  <th>DG</th>
-                  <th class="hide-mobile">GF-GC</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${g.standings.map((team, idx) => `
-                  <tr>
-                    <td class="pos-cell">${idx + 1}</td>
-                    <td class="team-cell">${getTeam(team)}</td>
-                    <td class="pts-cell">0</td>
-                    <td>0</td>
-                    <td class="hide-mobile" style="color:var(--text-muted)">0-0</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
+        </div>
+      `).join('');
+
+      // 3. Honor Roll
+      const awardsContainer = document.getElementById('awardsContainer');
+      const champ = fullResolve('W104', reality);
+      const runner = fullResolve('L104', reality);
+      awardsContainer.innerHTML = `
+        <div class="group-card awards-card">
+          <div class="group-header">Cuadro de honor</div>
+          <table class="awards-table">
+            <tr><td>🏆 Campeón</td><td>${getTeamHtml(champ)}</td></tr>
+            <tr><td>🥈 Subcampeón</td><td>${getTeamHtml(runner)}</td></tr>
+          </table>
         </div>
       `;
     }
-    html += '</div>';
-  }
-  container.innerHTML = html;
-}
 
-function renderKnockoutBracket() {
-  const container = document.getElementById('fixtureBracket');
-  
-  container.innerHTML = knockoutBracket.map(round => `
-    <div class="knockout-section">
-      <div class="knockout-title">
-        <span class="knockout-badge ${round.badge}">${round.name === 'FINAL' ? '🏆' : ''}</span>
-        ${round.name}
-      </div>
-      <div class="ko-bracket-grid">
-        ${round.matches.map(m => {
-          const homeTeam = resolveTeam(m.home);
-          const awayTeam = resolveTeam(m.away);
-          const res = knockoutResults[m.num];
-          const hScore = res ? res.h : "–";
-          const aScore = res ? res.a : "–";
-          const penText = (res && res.ph != null) ? ` <span style="font-size:0.6rem; color:var(--text-muted)">(${res.ph}-${res.pa})</span>` : "";
-          
-          return `
-          <div class="ko-card">
-            <span class="ko-num">#${m.num}</span>
-            <div class="ko-teams" style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
-              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span class="ko-team" style="text-align: left; display: flex; align-items: center;">${getTeam(homeTeam)}</span>
-                <span class="ko-score" style="min-width: 25px; text-align: right;">${hScore}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <span class="ko-team" style="text-align: left; display: flex; align-items: center;">${getTeam(awayTeam)}</span>
-                <span class="ko-score" style="min-width: 25px; text-align: right;">${aScore}${penText}</span>
-              </div>
-            </div>
-          </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-
-// Actual awards winners (to be populated later)
-const actualAwards = {
-  boot: { gold: "-", silver: "-", bronze: "-" },
-  ball: { gold: "-", silver: "-", bronze: "-" }
-};
-
-function renderAwards() {
-  const container = document.getElementById('awardsContainer');
-  
-  const champ = resolveTeam('WF');
-  const runner = resolveTeam('LF');
-  const third = resolveTeam('W103');
-
-  container.innerHTML = `
-    <div class="group-card awards-card">
-      <div class="group-header" style="background: var(--gradient-header);">
-        <div class="group-letter">🥇</div>
-        <div class="group-name">Cuadro de honor</div>
-      </div>
-      <table class="awards-table">
-        <tr>
-          <td class="awards-label">🏆 Campeón</td>
-          <td class="awards-value" id="honor_champion">${champ !== 'WF' ? `<div class="honor-resolved">${getTeam(champ)}</div>` : '-'}</td>
-        </tr>
-        <tr>
-          <td class="awards-label">🥈 Subcampeón</td>
-          <td class="awards-value" id="honor_runnerup">${runner !== 'LF' ? `<div class="honor-resolved">${getTeam(runner)}</div>` : '-'}</td>
-        </tr>
-        <tr>
-          <td class="awards-label">🥉 3º puesto</td>
-          <td class="awards-value" id="honor_third">${third !== 'W103' ? `<div class="honor-resolved">${getTeam(third)}</div>` : '-'}</td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="group-card awards-card">
-      <div class="group-header" style="background: var(--gradient-gold);">
-        <div class="group-letter">👟</div>
-        <div class="group-name">Bota de Oro (Máximo goleador)</div>
-      </div>
-      <table class="awards-table">
-        <tr>
-          <td class="awards-label">Oro</td>
-          <td class="awards-value">${actualAwards.boot.gold}</td>
-        </tr>
-        <tr>
-          <td class="awards-label">Plata</td>
-          <td class="awards-value">${actualAwards.boot.silver}</td>
-        </tr>
-        <tr>
-          <td class="awards-label">Bronce</td>
-          <td class="awards-value">${actualAwards.boot.bronze}</td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="group-card awards-card">
-      <div class="group-header" style="background: var(--gradient-primary);">
-        <div class="group-letter">⚽</div>
-        <div class="group-name">Balón de Oro (Mejor jugador)</div>
-      </div>
-      <table class="awards-table">
-        <tr>
-          <td class="awards-label">Oro</td>
-          <td class="awards-value">${actualAwards.ball.gold}</td>
-        </tr>
-        <tr>
-          <td class="awards-label">Plata</td>
-          <td class="awards-value">${actualAwards.ball.silver}</td>
-        </tr>
-        <tr>
-          <td class="awards-label">Bronce</td>
-          <td class="awards-value">${actualAwards.ball.bronze}</td>
-        </tr>
-      </table>
-    </div>
-  `;
-}
-
-
-// ============================================
-// INIT
-// ============================================
-checkAuth();
-renderFixtureGroups();
-renderKnockoutBracket();
-renderAwards();
-</script>
+    render();
+  </script>
 </body>
 </html>

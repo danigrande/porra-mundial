@@ -1,52 +1,16 @@
 // ============================================
 // SCORING ENGINE — Motor de Puntuación
 // ============================================
-// Portado de la lógica de player_scores.html
 // Calcula la puntuación de cada jugador comparando
 // sus predicciones con los resultados reales.
 
-// Metadata de grupos del Mundial 2026
-const fixtureGroups = [
-  { letter: 'A', teams: ['México', 'Sudáfrica', 'Corea del Sur', 'República Checa'] },
-  { letter: 'B', teams: ['Canadá', 'Bosnia y Herzegovina', 'Catar', 'Suiza'] },
-  { letter: 'C', teams: ['Brasil', 'Marruecos', 'Haití', 'Escocia'] },
-  { letter: 'D', teams: ['Estados Unidos', 'Paraguay', 'Australia', 'Turquía'] },
-  { letter: 'E', teams: ['Alemania', 'Curazao', 'Costa de Marfil', 'Ecuador'] },
-  { letter: 'F', teams: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'] },
-  { letter: 'G', teams: ['Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda'] },
-  { letter: 'H', teams: ['España', 'Cabo Verde', 'Arabia Saudita', 'Uruguay'] },
-  { letter: 'I', teams: ['Francia', 'Senegal', 'Irak', 'Noruega'] },
-  { letter: 'J', teams: ['Argentina', 'Argelia', 'Austria', 'Jordania'] },
-  { letter: 'K', teams: ['Portugal', 'RD Congo', 'Uzbekistán', 'Colombia'] },
-  { letter: 'L', teams: ['Inglaterra', 'Croacia', 'Ghana', 'Panamá'] },
-];
-
-// Bracket de eliminatorias
-const bracketMatches = {
-  73: ['2A', '2B'], 76: ['1C', '2F'], 74: ['1E', '3ABCDF'], 75: ['1F', '2C'],
-  78: ['2E', '2I'], 77: ['1I', '3CDFGH'], 79: ['1A', '3CEFHI'], 80: ['1L', '3EHIJK'],
-  82: ['1G', '3AEHIJ'], 81: ['1D', '3BEFIJ'], 84: ['1H', '2J'], 83: ['2K', '2L'],
-  85: ['1B', '3EFGIJ'], 88: ['2D', '2G'], 86: ['1J', '2H'], 87: ['1K', '3DEIJL'],
-  90: ['W73', 'W75'], 89: ['W74', 'W77'], 91: ['W76', 'W78'], 92: ['W79', 'W80'],
-  93: ['W83', 'W84'], 94: ['W81', 'W82'], 95: ['W86', 'W88'], 96: ['W85', 'W87'],
-  97: ['W89', 'W90'], 98: ['W93', 'W94'], 99: ['W91', 'W92'], 100: ['W95', 'W96'],
-  101: ['W97', 'W98'], 102: ['W99', 'W100'], 103: ['L101', 'L102'], 104: ['W101', 'W102'],
-};
-
-const knockoutBracket = [
-  { name: '1/16 Final', matches: [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87] },
-  { name: '1/8 Final', matches: [90, 89, 91, 92, 93, 94, 95, 96] },
-  { name: '1/4 Final', matches: [97, 98, 99, 100] },
-  { name: 'Semifinales', matches: [101, 102] },
-  { name: '3er Puesto', matches: [103] },
-  { name: 'FINAL', matches: [104] },
-];
+import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from './shared_data.js';
 
 /**
  * Calcula las clasificaciones de un grupo.
  */
-function getStandings(letter, dataSource) {
-  const groupData = fixtureGroups.find(g => g.letter === letter);
+export function getStandings(letter, dataSource) {
+  const groupData = FIXTURE_GROUPS.find(g => g.letter === letter);
   if (!groupData) return [];
 
   const stats = {};
@@ -78,7 +42,7 @@ function getStandings(letter, dataSource) {
 /**
  * Resuelve un código de equipo (ej: "W104", "1A") a un nombre de equipo.
  */
-function fullResolve(code, dataSource) {
+export function fullResolve(code, dataSource) {
   if (!code || !dataSource) return code;
 
   // Grupo: "1A" → 1º del grupo A
@@ -87,7 +51,7 @@ function fullResolve(code, dataSource) {
     return getStandings(groupMatch[2], dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
   }
 
-  // Mejores terceros: skip por complejidad
+  // Mejores terceros: simplificado
   if (code.startsWith('3')) return code;
 
   // Referencia a partido: "W95" → ganador del partido 95
@@ -99,7 +63,7 @@ function fullResolve(code, dataSource) {
     const ga = parseInt(dataSource[`ko_${num}_a`]);
     if (isNaN(gh) || isNaN(ga)) return code;
 
-    const pairing = bracketMatches[num];
+    const pairing = BRACKET_MATCHES[num];
     if (!pairing) return code;
 
     let winner, loser;
@@ -110,7 +74,6 @@ function fullResolve(code, dataSource) {
       winner = fullResolve(pairing[1], dataSource);
       loser = fullResolve(pairing[0], dataSource);
     } else {
-      // Empate → penaltis
       const ph = parseInt(dataSource[`pen_${num}_h`]);
       const pa = parseInt(dataSource[`pen_${num}_a`]);
       if (ph > pa) {
@@ -130,41 +93,31 @@ function fullResolve(code, dataSource) {
 /**
  * Resuelve el nombre legible de un partido.
  */
-function resolveMatchName(prefix) {
+export function resolveMatchName(prefix) {
   if (prefix.startsWith('g')) {
     const groupMatch = prefix.match(/^g([A-L])_m(\d+)$/);
     if (groupMatch) {
       const letter = groupMatch[1];
       const mIdx = parseInt(groupMatch[2]);
-      const group = fixtureGroups.find(g => g.letter === letter);
+      const group = FIXTURE_GROUPS.find(g => g.letter === letter);
       if (group) {
         const t = group.teams;
-        const pairings = [
-          [t[0], t[1]], [t[2], t[3]],
-          [t[3], t[1]], [t[0], t[2]],
-          [t[3], t[0]], [t[1], t[2]],
-        ];
+        const pairings = [[t[0], t[1]], [t[2], t[3]], [t[3], t[1]], [t[0], t[2]], [t[3], t[0]], [t[1], t[2]]];
         const pair = pairings[mIdx];
         return pair ? `${pair[0]} vs ${pair[1]}` : `Grupo ${letter} #${mIdx + 1}`;
       }
     }
   } else if (prefix.startsWith('ko_')) {
-    const num = prefix.substring(3);
+    const num = parseInt(prefix.substring(3));
     let roundName = '';
-    knockoutBracket.forEach(r => {
-      if (r.matches.includes(parseInt(num))) roundName = r.name;
-    });
+    KNOCKOUT_BRACKET.forEach(r => { if (r.matches.includes(num)) roundName = r.name; });
     return `${roundName} (#${num})`;
   }
   return prefix;
 }
 
 /**
- * Calcula la puntuación de un jugador comparando predicciones vs realidad.
- * @param {Object} prediction - Las predicciones del jugador
- * @param {Object} reality - Los resultados reales
- * @param {Object} rules - Reglas de puntuación (opcionales)
- * @returns {{ totalPts, exactHits, groupPts, koPts, honorPts, history }}
+ * Calcula la puntuación de un jugador.
  */
 export function calculateScore(prediction, reality, rules = {}) {
   let totalPts = 0;
@@ -180,27 +133,15 @@ export function calculateScore(prediction, reality, rules = {}) {
   const opt_diff_adjust = getRule('opt_diff_adjust', 0) / 100;
 
   const ptsRules = {
-    group: {
-      sign: getRule('pts_group_sign', 10),
-      diff: getRule('pts_group_diff', 10),
-      exact: getRule('pts_group_exact', 10),
-    },
-    ko: {
-      sign: getRule('pts_ko_sign', 10),
-      diff: getRule('pts_ko_diff', 10),
-      exact: getRule('pts_ko_exact', 10),
-    },
+    group: { sign: getRule('pts_group_sign', 10), diff: getRule('pts_group_diff', 10), exact: getRule('pts_group_exact', 10) },
+    ko: { sign: getRule('pts_ko_sign', 10), diff: getRule('pts_ko_diff', 10), exact: getRule('pts_ko_exact', 10) },
     honor: {
-      champ: getRule('pts_honor_champ', 50),
-      runner: getRule('pts_honor_runner', 30),
-      third: getRule('pts_honor_third', 20),
-      gold: getRule('pts_award_gold', 25),
-      silver: getRule('pts_award_silver', 15),
-      bronze: getRule('pts_award_bronze', 10),
+      champ: getRule('pts_honor_champ', 50), runner: getRule('pts_honor_runner', 30), third: getRule('pts_honor_third', 20),
+      gold: getRule('pts_award_gold', 25), silver: getRule('pts_award_silver', 15), bronze: getRule('pts_award_bronze', 10),
     },
   };
 
-  function evaluateMatch(matchPrefix, hKey, aKey, isGroup) {
+  function evaluateMatch(hKey, aKey, isGroup) {
     const pRules = isGroup ? ptsRules.group : ptsRules.ko;
     const rH = parseInt(reality[hKey]);
     const rA = parseInt(reality[aKey]);
@@ -211,7 +152,6 @@ export function calculateScore(prediction, reality, rules = {}) {
 
     let mPts = 0;
     const reasons = [];
-
     const rSign = rH > rA ? '1' : rH === rA ? 'X' : '2';
     const pSign = pH > pA ? '1' : pH === pA ? 'X' : '2';
 
@@ -224,58 +164,33 @@ export function calculateScore(prediction, reality, rules = {}) {
         reasons.push(`Exacto (+${pRules.exact + pRules.diff})`);
         exactHits++;
       } else {
-        const rDiff = rH - rA;
-        const pDiff = pH - pA;
-        const desvio = rSign === 'X' ? Math.abs(rH - pH) : Math.abs(rDiff - pDiff);
-
-        let diffPoints = 0;
-        if (opt_diff_adjust === 0) {
-          if (desvio === 0) diffPoints = pRules.diff;
-        } else {
-          diffPoints = pRules.diff - (desvio * opt_diff_adjust * pRules.diff);
-        }
+        const desvio = rSign === 'X' ? Math.abs(rH - pH) : Math.abs((rH - rA) - (pH - pA));
+        let diffPoints = opt_diff_adjust === 0 ? (desvio === 0 ? pRules.diff : 0) : Math.max(0, pRules.diff - (desvio * opt_diff_adjust * pRules.diff));
         if (diffPoints > 0) {
           mPts += diffPoints;
           reasons.push(`Diferencia (+${Math.round(diffPoints)})`);
         }
       }
     }
-
     return { mPts: Math.round(mPts), reasons };
   }
 
-  // Evaluar todos los partidos
   Object.keys(reality).forEach(key => {
-    if (key.endsWith('_h')) {
-      const matchPrefix = key.substring(0, key.length - 2);
-      const hKey = matchPrefix + '_h';
-      const aKey = matchPrefix + '_a';
-
-      if (matchPrefix.startsWith('pen_')) return;
-
-      const isGroup = matchPrefix.startsWith('g');
-      const result = evaluateMatch(matchPrefix, hKey, aKey, isGroup);
-      const pts = result.mPts;
-
-      if (pts > 0) {
-        history.push({
-          match: resolveMatchName(matchPrefix),
-          pts,
-          reason: result.reasons.join(', '),
-        });
+    if (key.endsWith('_h') && !key.startsWith('pen_')) {
+      const prefix = key.substring(0, key.length - 2);
+      const isGroup = prefix.startsWith('g');
+      const result = evaluateMatch(prefix + '_h', prefix + '_a', isGroup);
+      if (result.mPts > 0) {
+        history.push({ match: resolveMatchName(prefix), pts: result.mPts, reason: result.reasons.join(', ') });
+        totalPts += result.mPts;
+        if (isGroup) groupPts += result.mPts; else koPts += result.mPts;
       }
-
-      totalPts += pts;
-      if (isGroup) groupPts += pts;
-      else koPts += pts;
     }
   });
 
-  // Cuadro de Honor
   const checkHonor = (actual, predicted, pts, label) => {
     if (actual && predicted && actual === predicted) {
-      honorPts += pts;
-      totalPts += pts;
+      honorPts += pts; totalPts += pts;
       history.push({ match: `Honor: ${label}`, pts, reason: 'Acierto' });
     }
   };
@@ -284,51 +199,18 @@ export function calculateScore(prediction, reality, rules = {}) {
   checkHonor(fullResolve('L104', reality), fullResolve('L104', prediction), ptsRules.honor.runner, 'Subcampeón');
   checkHonor(fullResolve('W103', reality), fullResolve('W103', prediction), ptsRules.honor.third, '3er Puesto');
 
-  ['boot', 'ball'].forEach(cat => {
-    ['gold', 'silver', 'bronze'].forEach(rank => {
-      const key = `${cat}_${rank}`;
-      const label = (cat === 'boot' ? 'Bota' : 'Balón') + ' ' + rank;
-      checkHonor(reality[key], prediction[key], ptsRules.honor[rank], label);
-    });
-  });
+  ['boot', 'ball'].forEach(cat => ['gold', 'silver', 'bronze'].forEach(rank => {
+    const key = `${cat}_${rank}`;
+    checkHonor(reality[key], prediction[key], ptsRules.honor[rank], (cat === 'boot' ? 'Bota' : 'Balón') + ' ' + rank);
+  }));
 
-  return {
-    totalPts: Math.round(totalPts),
-    exactHits,
-    groupPts: Math.round(groupPts),
-    koPts: Math.round(koPts),
-    honorPts: Math.round(honorPts),
-    history,
-  };
+  return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), honorPts: Math.round(honorPts), history };
 }
 
-/**
- * Calcula el leaderboard completo.
- * @param {Object} allPredictions - { "Dani": { predictions: {...} }, ... }
- * @param {Object} reality - Los resultados reales
- * @param {Object} rules - Reglas de puntuación
- * @returns {Array} Ranking ordenado por puntos
- */
 export function calculateLeaderboard(allPredictions, reality, rules = {}) {
-  const results = [];
-
-  for (const [playerName, playerData] of Object.entries(allPredictions)) {
-    const preds = typeof playerData.predictions === 'string'
-      ? JSON.parse(playerData.predictions)
-      : playerData.predictions;
-
-    const score = calculateScore(preds, reality, rules);
-    results.push({
-      name: playerName,
-      ...score,
-    });
-  }
-
-  // Ordenar por puntos (mayor a menor)
-  results.sort((a, b) => b.totalPts - a.totalPts);
-
-  // Añadir posición
-  results.forEach((r, idx) => { r.position = idx + 1; });
-
-  return results;
+  const results = Object.entries(allPredictions).map(([name, data]) => {
+    const preds = typeof data.predictions === 'string' ? JSON.parse(data.predictions) : data.predictions;
+    return { name, ...calculateScore(preds, reality, rules) };
+  });
+  return results.sort((a, b) => b.totalPts - a.totalPts).map((r, i) => ({ ...r, position: i + 1 }));
 }

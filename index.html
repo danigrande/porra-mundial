@@ -7,93 +7,16 @@
   <title>Entrar - Porra Mundial 2026</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .error-msg {
-      color: var(--accent-red);
-      font-size: 0.75rem;
-      font-weight: 600;
-      margin-top: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .error-msg::before {
-      content: '⚠️';
-    }
-
-    .input-error {
-      border-color: var(--accent-red) !important;
-      background-color: rgba(239, 68, 68, 0.05) !important;
-      animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
-    }
-
-    @keyframes shake {
-
-      10%,
-      90% {
-        transform: translate3d(-1px, 0, 0);
-      }
-
-      20%,
-      80% {
-        transform: translate3d(2px, 0, 0);
-      }
-
-      30%,
-      50%,
-      70% {
-        transform: translate3d(-4px, 0, 0);
-      }
-
-      40%,
-      60% {
-        transform: translate3d(4px, 0, 0);
-      }
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-
-      to {
-        opacity: 1;
-      }
-    }
-
-    .toast.error {
-      border-color: var(--accent-red);
-      color: var(--accent-red);
-      box-shadow: 0 4px 24px rgba(239, 68, 68, 0.2);
-    }
-
-    .group-info-msg {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      cursor: pointer;
-    }
-
-    .checkbox-group input {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-    }
+    .error-msg { color: var(--accent-red); font-size: 0.75rem; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 6px; animation: fadeIn 0.3s ease; }
+    .error-msg::before { content: '⚠️'; }
+    .input-error { border-color: var(--accent-red) !important; background-color: rgba(239, 68, 68, 0.05) !important; animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .group-info-msg { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
   </style>
 </head>
 
 <body class="login-page">
-
   <div class="login-card">
     <div class="login-header">
       <div class="login-logo">⚽</div>
@@ -105,36 +28,25 @@
     <div id="loginForm">
       <div class="form-group">
         <label class="form-label" for="loginPlayerName">Tu Nombre</label>
-        <input type="text" id="loginPlayerName" class="login-input" placeholder="Ej: Pepito Pérez" autocomplete="off"
-          oninput="debounceFetchUserGroups()">
+        <input type="text" id="loginPlayerName" class="login-input" placeholder="Ej: Pepito Pérez" autocomplete="off">
         <p id="playerStatus" class="group-info-msg"></p>
       </div>
-
       <div class="form-group">
         <label class="form-label" for="loginGroupSelect">Selecciona tu grupo</label>
         <select id="loginGroupSelect" class="login-input">
           <option value="">Primero introduce tu nombre...</option>
         </select>
       </div>
-
       <div class="form-group">
         <label class="form-label" for="loginPin">Tu PIN de 4 dígitos</label>
         <div class="pin-container">
-          <input type="password" id="loginPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric"
-            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-          <button type="button" class="pin-toggle" onclick="togglePin('loginPin')">👁️</button>
+          <input type="password" id="loginPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric">
+          <button type="button" class="pin-toggle" id="togglePinLogin">👁️</button>
         </div>
         <p id="loginPinError" class="error-msg" style="display:none;"></p>
       </div>
-
-      <button class="login-btn btn-primary" id="btnLogin" onclick="handleLogin()">
-        <span>Entrar</span>
-        <span class="icon">➜</span>
-      </button>
-
-      <div class="login-switch">
-        ¿Quieres crear un grupo? <span onclick="switchForm('register')">Hazlo aquí</span>
-      </div>
+      <button class="login-btn btn-primary" id="btnLogin"><span>Entrar</span><span class="icon">➜</span></button>
+      <div class="login-switch">¿Quieres crear un grupo? <span id="switchToRegister">Hazlo aquí</span></div>
     </div>
 
     <!-- Register Form -->
@@ -143,229 +55,111 @@
         <label class="form-label" for="regGroup">Nombre del Grupo</label>
         <input type="text" id="regGroup" class="login-input" placeholder="Ej: Los Sharks">
       </div>
-
       <div class="form-group">
         <label class="form-label" for="regName">Nombre del jugador</label>
         <input type="text" id="regName" class="login-input" placeholder="Ej: Pepito Pérez">
       </div>
-
       <div class="form-group">
         <label class="form-label" for="regPin">Crea tu PIN de 4 dígitos</label>
         <div class="pin-container">
-          <input type="password" id="regPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric"
-            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-          <button type="button" class="pin-toggle" onclick="togglePin('regPin')">👁️</button>
+          <input type="password" id="regPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric">
+          <button type="button" class="pin-toggle" id="togglePinReg">👁️</button>
         </div>
         <p id="regPinError" class="error-msg" style="display:none;"></p>
       </div>
-
-      <button class="login-btn btn-primary" id="btnRegister" onclick="handleRegister()">
-        <span>Crear cuenta</span>
-        <span class="icon">✨</span>
-      </button>
-
-      <div class="login-switch">
-        ¿Ya tienes cuenta? <span onclick="switchForm('login')">Inicia sesión</span>
-      </div>
+      <button class="login-btn btn-primary" id="btnRegister"><span>Crear cuenta</span><span class="icon">✨</span></button>
+      <div class="login-switch">¿Ya tienes cuenta? <span id="switchToLogin">Inicia sesión</span></div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script src="web_config.js"></script>
-  <script>
+  <script type="module">
+    import { showToast } from './shared_ui.js';
+    import { apiCall } from './agente_mundial/dataFetcher.js';
 
+    const loginName = document.getElementById('loginPlayerName');
+    const loginGroup = document.getElementById('loginGroupSelect');
+    const loginPin = document.getElementById('loginPin');
+    const playerStatus = document.getElementById('playerStatus');
 
-    let fetchUserGroupsTimeout = null;
+    let debounceTimer;
+    loginName.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        const name = loginName.value.trim();
+        if (name.length < 2) {
+          loginGroup.innerHTML = '<option value="">Primero introduce tu nombre...</option>';
+          playerStatus.textContent = '';
+          return;
+        }
+        playerStatus.textContent = '🔍 Buscando tus grupos...';
+        const res = await apiCall({ action: 'getGroupsForPlayer', playerName: name });
+        if (res?.status === 'success') {
+          if (res.data.length === 0) {
+            loginGroup.innerHTML = '<option value="">Usuario no encontrado</option>';
+            playerStatus.textContent = '⚠️ No encuentro ningún grupo con ese nombre.';
+          } else {
+            loginGroup.innerHTML = res.data.length > 1 ? '<option value="">-- Selecciona tu grupo --</option>' : '';
+            res.data.forEach(g => loginGroup.add(new Option(g, g)));
+            playerStatus.textContent = `✅ ¡Te he encontrado en ${res.data.length} grupo(s)!`;
+          }
+        } else {
+          playerStatus.textContent = '❌ Error de conexión';
+        }
+      }, 500);
+    });
 
-    function debounceFetchUserGroups() {
-      if (fetchUserGroupsTimeout) clearTimeout(fetchUserGroupsTimeout);
-      fetchUserGroupsTimeout = setTimeout(fetchUserGroups, 500);
-    }
-
-    async function fetchUserGroups() {
-      const playerName = document.getElementById('loginPlayerName').value.trim();
-      const select = document.getElementById('loginGroupSelect');
-      const status = document.getElementById('playerStatus');
-
-      if (!playerName || playerName.length < 2) {
-        select.innerHTML = '<option value="">Primero introduce tu nombre...</option>';
-        status.textContent = '';
+    document.getElementById('btnLogin').onclick = async () => {
+      const name = loginName.value.trim();
+      const group = loginGroup.value;
+      const pin = loginPin.value;
+      if (!name || !group || pin.length !== 4) {
+        showToast('⚠️ Completa todos los campos', true);
         return;
       }
-
-      status.innerHTML = '🔍 Buscando tus grupos...';
-      try {
-        const response = await fetch(`${SCRIPT_URL}?action=getGroupsForPlayer&playerName=${encodeURIComponent(playerName)}`);
-        const result = await response.json();
-
-        if (result.status === 'success') {
-          if (result.data.length === 0) {
-            select.innerHTML = '<option value="">Usuario no encontrado</option>';
-            status.innerHTML = '⚠️ No encuentro ningún grupo con ese nombre.';
-          } else {
-            select.innerHTML = '';
-            if (result.data.length > 1) {
-              select.innerHTML = '<option value="">-- Selecciona tu grupo --</option>';
-            }
-            result.data.sort().forEach(group => {
-              const opt = document.createElement('option');
-              opt.value = group;
-              opt.textContent = group;
-              select.appendChild(opt);
-            });
-            status.innerHTML = `✅ ¡Te he encontrado en ${result.data.length} grupo(s)!`;
-          }
-        }
-      } catch (e) {
-        select.innerHTML = '<option value="">Error de conexión</option>';
-        status.innerHTML = '❌ Error al conectar con el servidor';
+      const res = await apiCall({ action: 'login', playerName: name, playerPin: pin, groupName: group }, { method: 'POST', body: JSON.stringify({ action: 'login', playerName: name, playerPin: pin, groupName: group }) });
+      if (res?.status === 'success') {
+        localStorage.setItem('worldcup2026_user', JSON.stringify({ name, pin, groupName: group, isAdmin: res.isAdmin }));
+        showToast('✅ Login correcto');
+        setTimeout(() => window.location.href = 'worldcup.html', 1000);
+      } else {
+        showToast('❌ ' + (res?.message || 'Error'), true);
       }
-    }
+    };
 
-    function togglePin(id) {
-      const input = document.getElementById(id);
-      input.type = input.type === 'password' ? 'text' : 'password';
-    }
+    // Toggle Pin Visibility
+    const toggle = (id) => {
+      const el = document.getElementById(id);
+      el.type = el.type === 'password' ? 'text' : 'password';
+    };
+    document.getElementById('togglePinLogin').onclick = () => toggle('loginPin');
+    document.getElementById('togglePinReg').onclick = () => toggle('regPin');
 
-    function switchForm(type) {
+    // Switch Forms
+    const switchF = (type) => {
       document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
       document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
-      document.getElementById('formSubtitle').textContent = type === 'login' ? 'Inicia sesión para ver tu clasificación' : 'Regístrate para participar en la porra';
-    }
+      document.getElementById('formSubtitle').textContent = type === 'login' ? 'Inicia sesión' : 'Regístrate';
+    };
+    document.getElementById('switchToRegister').onclick = () => switchF('register');
+    document.getElementById('switchToLogin').onclick = () => switchF('login');
 
-    async function handleLogin() {
-      const nameEl = document.getElementById('loginPlayerName');
-      const groupEl = document.getElementById('loginGroupSelect');
-      const pinEl = document.getElementById('loginPin');
-      const pinErrorEl = document.getElementById('loginPinError');
-
-      const name = nameEl.value.trim();
-      const groupName = groupEl.value;
-      const pin = pinEl.value;
-      const isNumeric = /^\d+$/.test(pin);
-
-      // Reset errors
-      nameEl.classList.remove('input-error');
-      groupEl.classList.remove('input-error');
-      pinEl.classList.remove('input-error');
-      pinErrorEl.style.display = 'none';
-
-      if (!name || !groupName || pin.length !== 4 || !isNumeric) {
-        if (!name) nameEl.classList.add('input-error');
-        if (!groupName) groupEl.classList.add('input-error');
-        if (pin.length !== 4 || !isNumeric) {
-          pinEl.classList.add('input-error');
-          pinErrorEl.textContent = !isNumeric ? 'El PIN solo debe contener números' : 'El PIN debe ser de 4 números';
-          pinErrorEl.style.display = 'flex';
-        }
-        showToast('⚠️ Faltan datos o el PIN es incorrecto', true);
-        return;
+    document.getElementById('btnRegister').onclick = async () => {
+      const g = document.getElementById('regGroup').value.trim();
+      const n = document.getElementById('regName').value.trim();
+      const p = document.getElementById('regPin').value;
+      if (!g || !n || p.length !== 4) { showToast('⚠️ Datos incompletos', true); return; }
+      const res = await apiCall({ action: 'register' }, { method: 'POST', body: JSON.stringify({ action: 'register', playerName: n, playerPin: p, groupName: g, isNewGroup: true }) });
+      if (res?.status === 'success') {
+        localStorage.setItem('worldcup2026_user', JSON.stringify({ name: n, pin: p, groupName: g, isAdmin: true }));
+        showToast('✨ Registro completado');
+        setTimeout(() => window.location.href = 'worldcup.html', 1500);
+      } else {
+        showToast('❌ ' + (res?.message || 'Error'), true);
       }
-
-      setLoading('btnLogin', true);
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'login', playerName: name, playerPin: pin, groupName: groupName }),
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-          saveSession(name, pin, groupName, result.isAdmin);
-          showToast('✅ Login correcto. Redirigiendo...');
-          setTimeout(() => window.location.href = 'worldcup.html', 1000);
-        } else {
-          pinEl.classList.add('input-error');
-          pinErrorEl.textContent = 'PIN o Grupo incorrecto. Inténtalo de nuevo.';
-          pinErrorEl.style.display = 'flex';
-          showToast('❌ ' + result.message, true);
-        }
-      } catch (e) {
-        showToast('⚠️ Error conectando con el servidor', true);
-      } finally {
-        setLoading('btnLogin', false);
-      }
-    }
-
-    async function handleRegister() {
-      const groupEl = document.getElementById('regGroup');
-      const nameEl = document.getElementById('regName');
-      const pinEl = document.getElementById('regPin');
-      const pinErrorEl = document.getElementById('regPinError');
-
-      const groupName = groupEl.value.trim();
-      const isNewGroup = true; // Siempre intentamos crear grupo nuevo
-      const name = nameEl.value.trim();
-      const pin = pinEl.value;
-      const isNumeric = /^\d+$/.test(pin);
-
-      // Reset
-      groupEl.classList.remove('input-error');
-      nameEl.classList.remove('input-error');
-      pinEl.classList.remove('input-error');
-      pinErrorEl.style.display = 'none';
-
-      if (!groupName || !name || pin.length !== 4 || !isNumeric) {
-        if (!groupName) groupEl.classList.add('input-error');
-        if (!name) nameEl.classList.add('input-error');
-        if (pin.length !== 4 || !isNumeric) {
-          pinEl.classList.add('input-error');
-          pinErrorEl.textContent = !isNumeric ? 'El PIN solo debe contener números' : 'Introduce un PIN de 4 números';
-          pinErrorEl.style.display = 'flex';
-        }
-        showToast('⚠️ Datos incorrectos', true);
-        return;
-      }
-
-      setLoading('btnRegister', true);
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'register', playerName: name, playerPin: pin, groupName: groupName, isNewGroup: isNewGroup }),
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        });
-        const result = await response.json();
-        if (result.status === 'success') {
-          saveSession(name, pin, groupName, result.isAdmin);
-          showToast('✨ Registro completado con éxito');
-          setTimeout(() => window.location.href = 'worldcup.html', 1500);
-        } else {
-          showToast('❌ ' + result.message, true);
-          if (result.message.includes('jugador ya existe')) nameEl.classList.add('input-error');
-          if (result.message.includes('grupo ya existe') || result.message.includes('grupo no existe')) groupEl.classList.add('input-error');
-        }
-      } catch (e) {
-        showToast('⚠️ Error en el registro', true);
-      } finally {
-        setLoading('btnRegister', false);
-      }
-    }
-
-    function saveSession(name, pin, groupName, isAdmin) {
-      localStorage.setItem('worldcup2026_user', JSON.stringify({ name, pin, groupName, isAdmin }));
-    }
-
-    function setLoading(btnId, isLoading) {
-      const btn = document.getElementById(btnId);
-      btn.classList.toggle('loading', isLoading);
-      btn.disabled = isLoading;
-    }
-
-    function showToast(msg, isError = false) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-
-      if (isError) toast.classList.add('error');
-      else toast.classList.remove('error');
-
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
-    // Load initial data
-    fetchGroups();
+    };
   </script>
 </body>
-
 </html>

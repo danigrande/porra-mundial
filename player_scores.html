@@ -25,6 +25,7 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       cursor: pointer;
       transition: background 0.2s ease;
+      position: relative;
     }
 
     .lb-row:hover {
@@ -41,10 +42,6 @@
       cursor: default;
     }
 
-    .lb-header-row:hover {
-      background: rgba(0, 0, 0, 0.2);
-    }
-
     .lb-rank {
       font-size: 1.5rem;
       font-weight: 800;
@@ -52,19 +49,9 @@
       text-align: center;
     }
 
-    .lb-top1 .lb-rank {
-      color: var(--accent-gold);
-    }
-
-    .lb-top2 .lb-rank {
-      color: #d1d5db;
-      /* silver */
-    }
-
-    .lb-top3 .lb-rank {
-      color: #b45309;
-      /* bronze */
-    }
+    .lb-top1 .lb-rank { color: var(--accent-gold); }
+    .lb-top2 .lb-rank { color: #d1d5db; }
+    .lb-top3 .lb-rank { color: #b45309; }
 
     .lb-name {
       font-size: 1.1rem;
@@ -72,16 +59,6 @@
       display: flex;
       align-items: center;
       gap: 10px;
-    }
-
-
-    .lb-plenos {
-      font-size: 0.9rem;
-      color: var(--accent-cyan);
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 5px;
     }
 
     .lb-points {
@@ -98,24 +75,11 @@
       margin-left: 4px;
     }
 
-    .lb-trend {
-      text-align: center;
-      font-size: 1.1rem;
-    }
+    .lb-trend { text-align: center; font-size: 1.1rem; }
+    .trend-up { color: var(--accent-green); }
+    .trend-dn { color: var(--accent-red); }
+    .trend-eq { color: var(--text-muted); }
 
-    .trend-up {
-      color: var(--accent-green);
-    }
-
-    .trend-dn {
-      color: var(--accent-red);
-    }
-
-    .trend-eq {
-      color: var(--text-muted);
-    }
-
-    /* Expandable Breakdown */
     .lb-breakdown {
       grid-column: 1 / -1;
       background: rgba(0, 0, 0, 0.15);
@@ -126,28 +90,10 @@
       gap: 1.5rem;
     }
 
-    .lb-b-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .lb-b-label {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    .lb-b-value {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text-secondary);
-    }
-
-    .lb-b-value span {
-      color: var(--text-primary);
-    }
+    .lb-b-item { display: flex; flex-direction: column; gap: 4px; }
+    .lb-b-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .lb-b-value { font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); }
+    .lb-b-value span { color: var(--text-primary); }
 
     .lb-history-container {
       grid-column: 1 / -1;
@@ -175,129 +121,50 @@
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .lb-history-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-    }
-
+    .lb-history-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     .lb-history-table th {
-      text-align: left;
-      padding: 8px 12px;
+      text-align: left; padding: 8px 12px;
       background: rgba(255, 255, 255, 0.03);
       color: var(--text-secondary);
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      position: sticky;
-      top: 0;
+      font-size: 0.65rem; text-transform: uppercase;
+      position: sticky; top: 0;
     }
+    .lb-history-table td { padding: 8px 12px; border-top: 1px solid rgba(255, 255, 255, 0.03); }
 
-    .lb-history-table td {
-      padding: 8px 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.03);
-    }
+    .hist-match { font-weight: 600; color: var(--text-primary); }
+    .hist-pts { font-weight: 800; color: var(--accent-gold); text-align: right; }
+    .hist-reason { color: var(--text-muted); font-size: 0.75rem; }
 
-    .hist-match {
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .hist-pts {
-      font-weight: 800;
-      color: var(--accent-gold);
-      text-align: right;
-    }
-
-    .hist-reason {
-      color: var(--text-muted);
-      font-size: 0.75rem;
-    }
-
-    .lb-history-scroll::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .lb-history-scroll::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .lb-history-scroll::-webkit-scrollbar-thumb {
-      background: rgba(59, 130, 246, 0.3);
-      border-radius: 10px;
-    }
-
-    .info-banner {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      margin-bottom: 2rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    @media (max-width: 768px) {
-      .lb-row {
-        grid-template-columns: 40px 1fr 80px 40px;
-        padding: 0.6rem 0.8rem;
-        font-size: 0.85rem;
-      }
-
-      .lb-rank {
-        font-size: 1.2rem;
-      }
-
-      .lb-name {
-        font-size: 0.95rem;
-      }
-
-      .lb-points {
-        font-size: 1.1rem;
-      }
-    }
     .ai-summary-box {
-      margin-top: 1rem;
-      padding: 1rem;
+      margin-top: 1rem; padding: 1rem;
       background: rgba(139, 92, 246, 0.1);
       border: 1px solid rgba(139, 92, 246, 0.3);
       border-radius: var(--radius-md);
-      font-size: 0.9rem;
-      line-height: 1.5;
-      color: var(--text-primary);
-      display: none;
-      animation: fadeIn 0.3s ease;
+      font-size: 0.9rem; line-height: 1.5; color: var(--text-primary);
+      display: none; animation: fadeIn 0.3s ease;
+      grid-column: 1 / -1;
     }
 
     .ai-btn {
+      position: absolute; right: 10px; top: 10px;
       background: linear-gradient(135deg, #8b5cf6, #6366f1);
-      color: white;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      cursor: pointer;
-      margin-left: 10px;
-      font-weight: 700;
-      transition: transform 0.2s;
+      color: white; border: none; padding: 4px 8px; border-radius: 4px;
+      font-size: 0.7rem; cursor: pointer; font-weight: 700; transition: transform 0.2s;
     }
 
-    .ai-btn:hover {
-      transform: scale(1.05);
-      filter: brightness(1.1);
-    }
+    .ai-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-5px); }
-      to { opacity: 1; transform: translateY(0); }
+    @media (max-width: 768px) {
+      .lb-row { grid-template-columns: 40px 1fr 80px 40px; padding: 0.6rem 0.8rem; font-size: 0.85rem; }
+      .lb-rank { font-size: 1.2rem; }
+      .lb-name { font-size: 0.95rem; }
+      .lb-points { font-size: 1.1rem; }
+      .ai-btn { position: relative; right: 0; top: 0; grid-column: span 4; margin-top: 8px; }
     }
   </style>
-
 </head>
 
 <body>
-
-  <!-- Navigation -->
   <nav class="main-nav">
     <div class="nav-inner">
       <a href="worldcup.html" class="nav-logo">
@@ -308,12 +175,10 @@
         <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
         <a href="pool.html" class="nav-link">Predictions</a>
         <a href="fixture.html" class="nav-link">Results</a>
-        <a href="fixture_testing.html" class="nav-link">Results Testing</a>
         <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
         <a href="player_scores.html" class="nav-link active">Leaderboard</a>
         <a href="about_user.html" class="nav-link">Mi Perfil</a>
       </div>
-
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
         <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
@@ -321,31 +186,12 @@
     </div>
   </nav>
 
-  <!-- Header -->
   <header class="page-header">
     <h1><span class="header-icon">📈</span> <span class="header-text-gradient">Clasificación General</span></h1>
     <p class="subtitle">Descubre cómo van tus predicciones comparado con la realidad</p>
   </header>
 
-  <!-- Main Content -->
   <main class="main-content">
-
-    <div class="info-banner">
-      <span style="font-size: 1.5rem;">ℹ️</span>
-      <div style="flex:1">
-        <div style="font-weight: 600; color: var(--accent-green); display: flex; align-items: center; justify-content: space-between;">
-          <span>Simulación activada</span>
-          <button onclick="handleRegenerate()" class="nav-link" style="font-size: 0.7rem; padding: 4px 8px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 4px; cursor: pointer; color: var(--accent-green); font-weight: 700;">
-            🔄 Regenerar realidad
-          </button>
-        </div>
-        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
-          Esta tabla toma tus predicciones y las evalúa contra resultados simulados aleatoriamente. 
-          Si no se detectan resultados de <strong>fixture_testing.html</strong>, se generarán otros nuevos automáticamente.
-        </div>
-      </div>
-    </div>
-
     <div class="leaderboard-card" id="leaderboardContainer">
       <div class="lb-row lb-header-row">
         <div style="text-align:center;">Pos</div>
@@ -357,506 +203,101 @@
         <div style="text-align:right;">Puntos Totales</div>
         <div style="text-align:center;">Trend</div>
       </div>
-
       <div id="lbBody">
         <!-- Rendered by JS -->
       </div>
     </div>
-
   </main>
 
-  <div class="page-footer-spacer" style="height:4rem;"></div>
+  <div class="toast" id="toast"></div>
 
   <script src="web_config.js"></script>
-  <script>
-    // ==========================================
-    // SIMULATION CONFIGURATION
-    // ==========================================
+  <script type="module">
+    import { checkAuth, handleLogout, showToast } from './shared_ui.js';
+    import { calculateScore, calculateLeaderboard } from './agente_mundial/scoringEngine.js';
+    import { apiCall } from './agente_mundial/dataFetcher.js';
 
-
-
-    let currentUser = null;
-
-    function checkAuth() {
-      const raw = localStorage.getItem('worldcup2026_user');
-      if (!raw) {
-        window.location.href = 'index.html';
-        return;
-      }
-      try {
-        currentUser = JSON.parse(raw);
-        if (!currentUser.name || !currentUser.pin || !currentUser.groupName) throw new Error();
-        
-        document.getElementById('navUserInfo').style.display = 'flex';
-        document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
-      } catch (e) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
-      }
-    }
-
-    function handleLogout() {
-      if (confirm('¿Quieres cerrar sesión?')) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
-      }
-    }
-
-
-    // Load external data
-    let reality = null;
-    let rules = {};
-    let players = [];
-
-    function loadLocalData() {
-      if (!currentUser) return;
-      const realityStr = localStorage.getItem(`worldcup2026_testing_reality_${currentUser.groupName}`);
-      const rulesStr = localStorage.getItem(`worldcup2026_scoring_${currentUser.groupName}`);
-      reality = realityStr ? JSON.parse(realityStr) : null;
-      rules = rulesStr ? JSON.parse(rulesStr) : {};
-    }
-
-    // Cross-tab synchronization
-    window.addEventListener('storage', (e) => {
-      if (e.key === `worldcup2026_testing_reality_${currentUser.groupName}`) {
-        console.log("Detectado cambio en realidad simulada, actualizando...");
-        loadLocalData();
-        renderLeaderboard();
-      }
-    });
-
-    function handleRegenerate() {
-      generateSimulatedReality();
-      loadLocalData();
-      renderLeaderboard();
-      // Show toast if available (styles.css might have it)
-      const toast = document.getElementById('toast');
-      if (toast) {
-        toast.textContent = "¡Realidad regenerada!";
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
-      } else {
-        alert("¡Realidad regenerada con éxito!");
-      }
-    }
-
-    function generateSimulatedReality() {
-      const sim = {};
-      // Groups A-L, matches 0-5
-      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-      letters.forEach(l => {
-        for (let i = 0; i < 6; i++) {
-          sim[`g${l}_m${i}_h`] = Math.floor(Math.random() * 4).toString();
-          sim[`g${l}_m${i}_a`] = Math.floor(Math.random() * 4).toString();
-        }
-      });
-      // Knockout 73-104
-      for (let i = 73; i <= 104; i++) {
-        const h = Math.floor(Math.random() * 4);
-        const a = Math.floor(Math.random() * 4);
-        sim[`ko_${i}_h`] = h.toString();
-        sim[`ko_${i}_a`] = a.toString();
-        if (h === a) {
-          const ph = Math.floor(Math.random() * 5) + 1;
-          const pa = Math.floor(Math.random() * 5);
-          sim[`pen_${i}_h`] = ph.toString();
-          sim[`pen_${i}_a`] = (ph === pa ? pa + 1 : pa).toString();
-        }
-      }
-      // Awards
-      sim['boot_gold'] = "Mbappe"; sim['boot_silver'] = "Haaland"; sim['boot_bronze'] = "Vinicius Jr";
-      sim['ball_gold'] = "Messi"; sim['ball_silver'] = "De Bruyne"; sim['ball_bronze'] = "Musiala";
-
-      localStorage.setItem(`worldcup2026_testing_reality_${currentUser.groupName}`, JSON.stringify(sim));
-      return sim;
-    }
-
-    // Metadata for resolving match names
-    const fixtureGroups = [
-      { letter: 'A', teams: ['México', 'Sudáfrica', 'Corea del Sur', 'República Checa'] },
-      { letter: 'B', teams: ['Canadá', 'Bosnia y Herzegovina', 'Catar', 'Suiza'] },
-      { letter: 'C', teams: ['Brasil', 'Marruecos', 'Haití', 'Escocia'] },
-      { letter: 'D', teams: ['Estados Unidos', 'Paraguay', 'Australia', 'Turquía'] },
-      { letter: 'E', teams: ['Alemania', 'Curazao', 'Costa de Marfil', 'Ecuador'] },
-      { letter: 'F', teams: ['Países Bajos', 'Japón', 'Suecia', 'Túnez'] },
-      { letter: 'G', teams: ['Bélgica', 'Egipto', 'Irán', 'Nueva Zelanda'] },
-      { letter: 'H', teams: ['España', 'Cabo Verde', 'Arabia Saudita', 'Uruguay'] },
-      { letter: 'I', teams: ['Francia', 'Senegal', 'Irak', 'Noruega'] },
-      { letter: 'J', teams: ['Argentina', 'Argelia', 'Austria', 'Jordania'] },
-      { letter: 'K', teams: ['Portugal', 'RD Congo', 'Uzbekistán', 'Colombia'] },
-      { letter: 'L', teams: ['Inglaterra', 'Croacia', 'Ghana', 'Panamá'] }
-    ];
-
-    const knockoutBracket = [
-      { name: '1/16 Final', matches: [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87] },
-      { name: '1/8 Final', matches: [90, 89, 91, 92, 93, 94, 95, 96] },
-      { name: '1/4 Final', matches: [97, 98, 99, 100] },
-      { name: 'Semifinales', matches: [101, 102] },
-      { name: '3er Puesto', matches: [103] },
-      { name: 'FINAL', matches: [104] }
-    ];
-
-    function resolveMatchName(prefix) {
-      if (prefix.startsWith('g')) {
-        const groupMatch = prefix.match(/^g([A-L])_m(\d+)$/);
-        if (groupMatch) {
-          const letter = groupMatch[1];
-          const mIdx = parseInt(groupMatch[2]);
-          const group = fixtureGroups.find(g => g.letter === letter);
-          if (group) {
-            const t = group.teams;
-            const pairings = [
-              [t[0], t[1]], [t[2], t[3]],
-              [t[3], t[1]], [t[0], t[2]],
-              [t[3], t[0]], [t[1], t[2]]
-            ];
-            const pair = pairings[mIdx];
-            return pair ? `${pair[0]} vs ${pair[1]}` : `Grupo ${letter} #${mIdx + 1}`;
-          }
-        }
-      } else if (prefix.startsWith('ko_')) {
-        const num = prefix.substring(3);
-        let roundName = "";
-        knockoutBracket.forEach(r => { if (r.matches.includes(parseInt(num))) roundName = r.name; });
-        return `${roundName} (#${num})`;
-      }
-      return prefix;
-    }
-
-    // Logic for resolving standings and bracket from scores
-    function getStandings(letter, dataSource) {
-      const groupData = fixtureGroups.find(g => g.letter === letter);
-      if (!groupData) return [];
-      const stats = {};
-      groupData.teams.forEach(t => stats[t] = { name: t, pts: 0, gf: 0, ga: 0, dg: 0 });
-      for (let i = 0; i < 6; i++) {
-        const hKey = `g${letter}_m${i}_h`;
-        const aKey = `g${letter}_m${i}_a`;
-        const gh = parseInt(dataSource[hKey]);
-        const ga = parseInt(dataSource[aKey]);
-        if (isNaN(gh) || isNaN(ga)) continue;
-        const pairings = [[0, 1], [2, 3], [3, 1], [0, 2], [3, 0], [1, 2]];
-        const p = pairings[i];
-        const hName = groupData.teams[p[0]];
-        const aName = groupData.teams[p[1]];
-        stats[hName].gf += gh; stats[hName].ga += ga;
-        stats[aName].gf += ga; stats[aName].ga += gh;
-        if (gh > ga) stats[hName].pts += 3;
-        else if (ga > gh) stats[aName].pts += 3;
-        else { stats[hName].pts += 1; stats[aName].pts += 1; }
-      }
-      Object.values(stats).forEach(s => s.dg = s.gf - s.ga);
-      return Object.values(stats).sort((a, b) => (b.pts - a.pts) || (b.dg - a.dg) || (b.gf - a.gf));
-    }
-
-    function resolveTeam(code, dataSource) {
-      if (!code) return "";
-      const groupMatch = code.match(/^([1-2])([A-L])$/);
-      if (groupMatch) {
-        const rank = parseInt(groupMatch[1]);
-        const letter = groupMatch[2];
-        const std = getStandings(letter, dataSource);
-        return std[rank - 1] ? std[rank - 1].name : code;
-      }
-      const matchRef = code.match(/^([WL])(\d+)$/);
-      if (matchRef) {
-        const type = matchRef[1];
-        const num = matchRef[2];
-        const gh = parseInt(dataSource[`ko_${num}_h`]);
-        const ga = parseInt(dataSource[`ko_${num}_a`]);
-        if (isNaN(gh) || isNaN(ga)) return code;
-        let homeCode = "", awayCode = "";
-        knockoutBracket.forEach(r => {
-          const m = r.matches.indexOf(parseInt(num));
-          // Simplified lookup: for testing, we'd need the full match tree. 
-          // Since we can't easily traverse back without full match definitions, 
-          // we'll rely on the fact that for scoring, we just need to compare resolved reality vs resolved prediction.
-        });
-        // Real resolve requires full knockoutMatches definition with home/away codes.
-        // Let's assume the codes are provided in the data or we use the ones from worldcup.html
-      }
-      return code;
-    }
-
-    // Better resolve for bracket: we need the match tree
-    const bracketMatches = {
-      73: ['2A', '2B'], 76: ['1C', '2F'], 74: ['1E', '3ABCDF'], 75: ['1F', '2C'], 78: ['2E', '2I'], 77: ['1I', '3CDFGH'], 79: ['1A', '3CEFHI'], 80: ['1L', '3EHIJK'],
-      82: ['1G', '3AEHIJ'], 81: ['1D', '3BEFIJ'], 84: ['1H', '2J'], 83: ['2K', '2L'], 85: ['1B', '3EFGIJ'], 88: ['2D', '2G'], 86: ['1J', '2H'], 87: ['1K', '3DEIJL'],
-      90: ['W73', 'W75'], 89: ['W74', 'W77'], 91: ['W76', 'W78'], 92: ['W79', 'W80'], 93: ['W83', 'W84'], 94: ['W81', 'W82'], 95: ['W86', 'W88'], 96: ['W85', 'W87'],
-      97: ['W89', 'W90'], 98: ['W93', 'W94'], 99: ['W91', 'W92'], 100: ['W95', 'W96'],
-      101: ['W97', 'W98'], 102: ['W99', 'W100'], 103: ['L101', 'L102'], 104: ['W101', 'W102']
+    window.handleLogout = handleLogout;
+    window.toggleBreakdown = (idx) => {
+      const el = document.getElementById(`breakdown_${idx}`);
+      const isVisible = el.style.display === 'grid';
+      document.querySelectorAll('.lb-breakdown').forEach(d => d.style.display = 'none');
+      el.style.display = isVisible ? 'none' : 'grid';
     };
 
-    function fullResolve(code, dataSource) {
-      if (!code || !dataSource) return code;
-      const groupMatch = code.match(/^([1-2])([A-L])$/);
-      if (groupMatch) return getStandings(groupMatch[2], dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
+    let currentUser = checkAuth();
+    let reality = JSON.parse(localStorage.getItem(`worldcup2026_testing_reality_${currentUser?.groupName}`)) || null;
+    let savedSummaries = {};
 
-      if (code.startsWith('3')) return code; // Skip best thirds for now as it's too complex for this baseline
+    async function init() {
+      if (!currentUser) return;
+      const lbBody = document.getElementById('lbBody');
+      lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⏳ Cargando datos...</div>';
 
-      const matchRef = code.match(/^([WL])(\d+)$/);
-      if (matchRef) {
-        const type = matchRef[1];
-        const num = matchRef[2];
-        const gh = parseInt(dataSource[`ko_${num}_h`]);
-        const ga = parseInt(dataSource[`ko_${num}_a`]);
-        if (isNaN(gh) || isNaN(ga)) return code;
-        const pairing = bracketMatches[num];
-        if (!pairing) return code;
+      try {
+        // 1. Obtener reglas y predicciones en paralelo
+        const [rulesRes, predsRes, summariesRes] = await Promise.all([
+          apiCall({ action: 'getRules', groupName: currentUser.groupName }),
+          apiCall({ action: 'getPredictions', groupName: currentUser.groupName }),
+          apiCall({ action: 'getAllSummaries', groupName: currentUser.groupName })
+        ]);
 
-        let winner, loser;
-        if (gh > ga) { winner = fullResolve(pairing[0], dataSource); loser = fullResolve(pairing[1], dataSource); }
-        else if (ga > gh) { winner = fullResolve(pairing[1], dataSource); loser = fullResolve(pairing[0], dataSource); }
-        else {
-          // Draw -> check penalties
-          const ph = parseInt(dataSource[`pen_${num}_h`]);
-          const pa = parseInt(dataSource[`pen_${num}_a`]);
-          if (ph > pa) { winner = fullResolve(pairing[0], dataSource); loser = fullResolve(pairing[1], dataSource); }
-          else { winner = fullResolve(pairing[1], dataSource); loser = fullResolve(pairing[0], dataSource); }
+        const rules = rulesRes?.status === 'success' ? rulesRes.data : {};
+        const playersData = predsRes?.status === 'success' ? predsRes.data : {};
+        savedSummaries = summariesRes?.status === 'success' ? summariesRes.data : {};
+
+        // 2. Calcular clasificación
+        if (!reality) {
+          lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⚠️ Debes generar una realidad en la pestaña de Resultados primero.</div>';
+          return;
         }
-        return type === 'W' ? winner : loser;
+
+        const scoreResults = calculateLeaderboard(playersData, reality, rules);
+        renderLeaderboard(scoreResults);
+
+      } catch (e) {
+        console.error(e);
+        lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--accent-red);">❌ Error al cargar la clasificación.</div>';
       }
-      return code;
     }
 
-    // ==========================================
-    // SCORING ENGINE
-    // ==========================================
-
-    function getRule(id, fallback) {
-      return rules[id] !== undefined ? parseFloat(rules[id]) : fallback;
-    }
-
-    function calculateScore(prediction) {
-      let totalPts = 0;
-      let exactHits = 0;
-      let groupPts = 0;
-      let koPts = 0;
-      let honorPts = 0;
-      const history = [];
-
-      if (!reality) return { totalPts, exactHits, groupPts, koPts, honorPts, history };
-
-      const opt_diff_adjust = getRule('opt_diff_adjust', 0) / 100;
-
-      // Points distribution lists
-      const ptsRules = {
-        group: {
-          sign: getRule('pts_group_sign', 10),
-          diff: getRule('pts_group_diff', 10),
-          exact: getRule('pts_group_exact', 10)
-        },
-        ko: {
-          sign: getRule('pts_ko_sign', 10),
-          diff: getRule('pts_ko_diff', 10),
-          exact: getRule('pts_ko_exact', 10)
-        },
-        honor: {
-          champ: getRule('pts_honor_champ', 50),
-          runner: getRule('pts_honor_runner', 30),
-          third: getRule('pts_honor_third', 20),
-          gold: getRule('pts_award_gold', 25),
-          silver: getRule('pts_award_silver', 15),
-          bronze: getRule('pts_award_bronze', 10)
-        }
-      };
-
-      function evaluateMatch(mKey, hKey, aKey, isGroup) {
-        const pRules = isGroup ? ptsRules.group : ptsRules.ko;
-
-        const rH = parseInt(reality[hKey]);
-        const rA = parseInt(reality[aKey]);
-        const pH = parseInt(prediction[hKey]);
-        const pA = parseInt(prediction[aKey]);
-
-        if (isNaN(rH) || isNaN(rA) || isNaN(pH) || isNaN(pA)) return { mPts: 0, reasons: [] };
-
-        let mPts = 0;
-        let reasons = [];
-
-        const rSign = rH > rA ? '1' : rH === rA ? 'X' : '2';
-        const pSign = pH > pA ? '1' : pH === pA ? 'X' : '2';
-
-        if (rSign === pSign) {
-          mPts += pRules.sign;
-          reasons.push(`Signo (${pRules.sign})`);
-
-          if (rH === pH && rA === pA) {
-            mPts += (pRules.exact + pRules.diff);
-            reasons.push(`Exacto (+${pRules.exact + pRules.diff})`);
-            exactHits++;
-          } else {
-            let rDiff = rH - rA;
-            let pDiff = pH - pA;
-            let desvio = rSign === 'X' ? Math.abs(rH - pH) : Math.abs(rDiff - pDiff);
-
-            let diffPoints = 0;
-            if (opt_diff_adjust === 0) {
-              if (desvio === 0) diffPoints = pRules.diff;
-            } else {
-              diffPoints = pRules.diff - (desvio * opt_diff_adjust * pRules.diff);
-            }
-            if (diffPoints > 0) {
-              mPts += diffPoints;
-              reasons.push(`Diferencia (+${Math.round(diffPoints)})`);
-            }
-          }
-        }
-
-        return { mPts: Math.round(mPts), reasons };
-      }
-
-
-      // Loop through all keys looking for 'ko_X_h' and 'gX_mY_h'
-      Object.keys(reality).forEach(key => {
-        if (key.endsWith('_h')) {
-          const matchPrefix = key.substring(0, key.length - 2); // 'ko_95' or 'gA_m1'
-          const hKey = matchPrefix + '_h';
-          const aKey = matchPrefix + '_a';
-
-          if (matchPrefix.startsWith('pen_')) return; // Penalties don't score directly like normal matches
-
-          const isGroup = matchPrefix.startsWith('g');
-          const result = evaluateMatch(matchPrefix, hKey, aKey, isGroup);
-          const pts = result.mPts;
-
-          if (pts > 0) {
-            history.push({
-              match: resolveMatchName(matchPrefix),
-              pts: pts,
-              reason: result.reasons.join(', ')
-            });
-          }
-
-          totalPts += pts;
-          if (isGroup) groupPts += pts;
-          else koPts += pts;
-        }
-      });
-
-      // --- Honor Roll Scoring ---
-      const checkHonor = (actual, predicted, pts, label) => {
-        if (actual && predicted && actual === predicted) {
-          honorPts += pts;
-          totalPts += pts;
-          history.push({ match: "Honor: " + label, pts: pts, reason: "Acierto" });
-        }
-      };
-
-      const realChamp = fullResolve('W104', reality);
-      const predChamp = fullResolve('W104', prediction);
-      checkHonor(realChamp, predChamp, ptsRules.honor.champ, "Campeón");
-
-      const realRunner = fullResolve('L104', reality);
-      const predRunner = fullResolve('L104', prediction);
-      checkHonor(realRunner, predRunner, ptsRules.honor.runner, "Subcampeón");
-
-      const realThird = fullResolve('W103', reality);
-      const predThird = fullResolve('W103', prediction);
-      checkHonor(realThird, predThird, ptsRules.honor.third, "3er Puesto");
-
-      // Awards
-      ['boot', 'ball'].forEach(cat => {
-        ['gold', 'silver', 'bronze'].forEach(rank => {
-          const key = `${cat}_${rank}`;
-          checkHonor(reality[key], prediction[key], ptsRules.honor[rank], (cat === 'boot' ? 'Bota' : 'Balón') + " " + rank);
-        });
-      });
-
-      return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), honorPts: Math.round(honorPts), history };
-    }
-
-    // ==========================================
-    // RENDER LEADERBOARD
-    // ==========================================
-
-    function renderLeaderboard() {
+    function renderLeaderboard(results) {
       const container = document.getElementById('lbBody');
-
-      if (!reality) {
-        container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-muted);">
-          Debes abrir la pestaña <strong>Results</strong> que usa <em>fixture_testing.html</em> primero para generar una realidad simulada.
-        </div>`;
-        return;
-      }
-
-      const scoreResults = players.map(p => {
-        const s = calculateScore(p);
-        return {
-          name: p._playerName || 'Unknown',
-          isYou: !p._isBot,
-          ...s,
-          trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.5 ? 'dn' : 'eq' // Fancy simulated trend
-        };
-      });
-
-      scoreResults.sort((a, b) => b.totalPts - a.totalPts);
-
-      let html = '';
-      scoreResults.forEach((r, idx) => {
+      container.innerHTML = results.map((r, idx) => {
         const topClass = idx === 0 ? 'lb-top1' : idx === 1 ? 'lb-top2' : idx === 2 ? 'lb-top3' : '';
-        const trendIcon = r.trend === 'up' ? '▲' : r.trend === 'dn' ? '▼' : '–';
+        const trend = Math.random() > 0.5 ? 'up' : 'eq'; // Placeholder trend
+        const trendIcon = trend === 'up' ? '▲' : '–';
 
-        html += `
+        return `
           <div class="lb-row ${topClass}" onclick="toggleBreakdown(${idx})">
             <div class="lb-rank">${idx + 1}</div>
-            <div class="lb-name">
-              ${r.name}
-            </div>
-            <div class="lb-plenos hide-mobile" style="justify-content: center;">
-              <span>${r.exactHits}</span> 
-            </div>
-            <div class="hide-mobile" style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.groupPts}</div>
-            <div class="hide-mobile" style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.koPts}</div>
-            <div class="hide-mobile" style="text-align:center; font-size: 0.9rem; color: var(--text-secondary);">${r.honorPts}</div>
-            <div class="lb-points">
-              ${r.totalPts}<span class="lb-pts-label">pts</span>
-            </div>
-            <div class="lb-trend trend-${r.trend}">${trendIcon}</div>
-            <button class="ai-btn" onclick="event.stopPropagation(); fetchAISummary('${r.name}', ${idx})">✨ Resumen IA</button>
+            <div class="lb-name">${r.name}</div>
+            <div class="lb-plenos hide-mobile" style="justify-content: center;"><span>${r.exactHits}</span></div>
+            <div class="hide-mobile" style="text-align:center; color: var(--text-secondary);">${r.groupPts}</div>
+            <div class="hide-mobile" style="text-align:center; color: var(--text-secondary);">${r.koPts}</div>
+            <div class="hide-mobile" style="text-align:center; color: var(--text-secondary);">${r.honorPts}</div>
+            <div class="lb-points">${r.totalPts}<span class="lb-pts-label">pts</span></div>
+            <div class="lb-trend trend-${trend}">${trendIcon}</div>
+            
+            <button class="ai-btn" onclick="event.stopPropagation(); window.fetchAISummary('${r.name}', ${idx})">✨ Resumen IA</button>
             
             <div class="ai-summary-box" id="ai_summary_${idx}" style="${savedSummaries[r.name] ? 'display:block' : ''}">
               ${savedSummaries[r.name] ? `<strong>IA:</strong> ${savedSummaries[r.name]}` : ''}
             </div>
 
             <div class="lb-breakdown" id="breakdown_${idx}">
-
-              <div class="lb-b-item">
-                <span class="lb-b-label">Puntos de Grupos</span>
-                <span class="lb-b-value"><span>${r.groupPts}</span> pts</span>
-              </div>
-              <div class="lb-b-item">
-                <span class="lb-b-label">Puntos Eliminatorias</span>
-                <span class="lb-b-value"><span>${r.koPts}</span> pts</span>
-              </div>
-              <div class="lb-b-item">
-                <span class="lb-b-label">Cuadro de Honor</span>
-                <span class="lb-b-value"><span>${r.honorPts}</span> pts</span>
-              </div>
-              <div class="lb-b-item">
-                <span class="lb-b-label">Aciertos Exactos</span>
-                <span class="lb-b-value"><span>${r.exactHits}</span> <span style="font-size:0.8rem; font-weight:normal; color:var(--text-muted)">(${Math.round((r.exactHits / 104) * 100)}%)</span></span>
-              </div>
-
+              <div class="lb-b-item"><span class="lb-b-label">Grupos</span><span class="lb-b-value"><span>${r.groupPts}</span> pts</span></div>
+              <div class="lb-b-item"><span class="lb-b-label">Eliminatorias</span><span class="lb-b-value"><span>${r.koPts}</span> pts</span></div>
+              <div class="lb-b-item"><span class="lb-b-label">Honor</span><span class="lb-b-value"><span>${r.honorPts}</span> pts</span></div>
+              <div class="lb-b-item"><span class="lb-b-label">Exactos</span><span class="lb-b-value"><span>${r.exactHits}</span></span></div>
+              
               <div class="lb-history-container">
-                <div class="lb-history-title"><span>📝</span> Desglose detallado de puntos</div>
+                <div class="lb-history-title">📝 Desglose de puntos</div>
                 <div class="lb-history-scroll">
                   <table class="lb-history-table">
-                    <thead>
-                      <tr>
-                        <th>Partido</th>
-                        <th style="text-align:right">Pts</th>
-                        <th>Motivo</th>
-                      </tr>
-                    </thead>
+                    <thead><tr><th>Partido</th><th style="text-align:right">Pts</th><th>Motivo</th></tr></thead>
                     <tbody>
-                      ${r.history.length > 0 ? r.history.map(h => `
-                        <tr>
-                          <td class="hist-match">${h.match}</td>
-                          <td class="hist-pts">+${h.pts}</td>
-                          <td class="hist-reason">${h.reason}</td>
-                        </tr>
-                      `).join('') : '<tr><td colspan="3" style="text-align:center; padding:2rem; color:var(--text-muted)">No hay puntos registrados aún</td></tr>'}
+                      ${r.history.map(h => `<tr><td class="hist-match">${h.match}</td><td class="hist-pts">+${h.pts}</td><td class="hist-reason">${h.reason}</td></tr>`).join('')}
                     </tbody>
                   </table>
                 </div>
@@ -864,124 +305,23 @@
             </div>
           </div>
         `;
-      });
-      container.innerHTML = html;
+      }).join('');
     }
 
-    let savedSummaries = {};
-
-    async function fetchSavedSummaries() {
-      try {
-        const res = await fetch(`${SCRIPT_URL}?action=getAllSummaries&groupName=${encodeURIComponent(currentUser.groupName)}`);
-        const result = await res.json();
-        if (result.status === 'success') {
-          savedSummaries = result.data || {};
-        }
-      } catch (e) {
-        console.error("Error fetching summaries:", e);
-      }
-    }
-
-    async function initLeaderboard() {
-      const container = document.getElementById('lbBody');
-
-      if (!reality) {
-        console.log("No se detectó realidad simulada. Generando una nueva...");
-        generateSimulatedReality();
-        loadLocalData();
-      }
-
-      if (!reality) {
-        renderLeaderboard();
-        return;
-      }
-
-      container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⏳ Obteniendo predicciones de la nube...</div>`;
-
-      try {
-        if (SCRIPT_URL && SCRIPT_URL !== 'TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI') {
-          // Fetch rules
-          try {
-            const rulesResponse = await fetch(`${SCRIPT_URL}?action=getRules&groupName=${encodeURIComponent(currentUser.groupName)}`);
-            const rulesResult = await rulesResponse.json();
-            if (rulesResult.status === 'success' && rulesResult.data) {
-              const rawObj = rulesResult.data;
-              rules = typeof rawObj === 'string' ? JSON.parse(rawObj) : rawObj;
-              localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(rules));
-            }
-          } catch (e) { console.warn("No se pudieron obtener las reglas de la nube.", e); }
-
-          // Fetch predictions
-          const response = await fetch(`${SCRIPT_URL}?action=getPredictions&groupName=${encodeURIComponent(currentUser.groupName)}`);
-          const result = await response.json();
-          if (result.status === 'success' && result.data) {
-            Object.keys(result.data).forEach(pName => {
-              const isLocalUser = (localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`) && JSON.parse(localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`))._playerName === pName);
-              const rawObj = result.data[pName];
-              const preds = typeof rawObj.predictions === 'string' ? JSON.parse(rawObj.predictions) : rawObj.predictions;
-              players.push({ _playerName: pName, _isBot: !isLocalUser, ...preds });
-            });
-          }
-          
-          // Fetch summaries
-          await fetchSavedSummaries();
-        }
-      } catch (err) {
-        console.warn("Error cargando nube, usamos local.", err);
-      }
-
-      // Fallback
-      if (players.length === 0) {
-        const rosterStr = localStorage.getItem('worldcup2026_roster');
-        const roster = rosterStr ? JSON.parse(rosterStr) : [];
-        players = [...roster];
-
-        // Add active prediction if we don't have a roster either
-        if (players.length === 0) {
-          const localUserStr = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
-          if (localUserStr) players.push(JSON.parse(localUserStr));
-        }
-      }
-      if (players.length === 0) {
-        players.push({ _playerName: "Nadie ha guardado aún", _isBot: false });
-      }
-
-      renderLeaderboard();
-    }
-
-    checkAuth();
-    loadLocalData();
-    initLeaderboard();
-
-    function toggleBreakdown(idx) {
-      const el = document.getElementById(`breakdown_${idx}`);
-      const isVisible = el.style.display === 'grid';
-      // Close all others
-      document.querySelectorAll('.lb-breakdown').forEach(d => d.style.display = 'none');
-      el.style.display = isVisible ? 'none' : 'grid';
-    }
-
-
-
-    async function fetchAISummary(playerName, idx) {
+    window.fetchAISummary = async (playerName, idx) => {
       const box = document.getElementById(`ai_summary_${idx}`);
       box.style.display = 'block';
-      box.innerHTML = '<i>✨ Generando resumen divertido...</i>';
-      
+      box.innerHTML = '<i>✨ Generando resumen...</i>';
       try {
         const response = await fetch(`${RENDER_URL}/api/summary/${encodeURIComponent(playerName)}?groupName=${encodeURIComponent(currentUser.groupName)}`);
         const data = await response.json();
-        
-        if (data.summary) {
-          box.innerHTML = `<strong>IA:</strong> ${data.summary}`;
-        } else {
-          box.innerHTML = `<span style="color:var(--accent-red)">⚠️ ${data.error || 'Error al conectar con el servidor'}</span>`;
-        }
+        box.innerHTML = data.summary ? `<strong>IA:</strong> ${data.summary}` : `⚠️ ${data.error}`;
       } catch (e) {
-        box.innerHTML = `<span style="color:var(--accent-red)">⚠️ No se pudo conectar con el bot en Render. Revisa la URL.</span>`;
+        box.innerHTML = '⚠️ No se pudo conectar con el bot.';
       }
-    }
+    };
+
+    init();
   </script>
 </body>
-
 </html>

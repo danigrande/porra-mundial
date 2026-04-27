@@ -1,133 +1,96 @@
 // ============================================
-// DATA FETCHER — Obtiene datos de Google Sheets (SCALED)
+// DATA FETCHER — Centralizado y Limpio (SCALED)
 // ============================================
 
-import config from './config.js';
-
-const SCRIPT_URL = config.googleScript.url;
+// Intenta obtener la URL de config.js (Node) o de la variable global (Navegador)
+let SCRIPT_URL = '';
+try {
+  // @ts-ignore
+  if (typeof window !== 'undefined' && window.SCRIPT_URL) {
+    SCRIPT_URL = window.SCRIPT_URL;
+  } else {
+    const config = (await import('./config.js')).default;
+    SCRIPT_URL = config.googleScript.url;
+  }
+} catch (e) {
+  // Fallback si nada funciona
+}
 
 /**
- * Obtiene todas las predicciones de un grupo.
- * @param {string} groupName
+ * Función genérica para realizar peticiones a la API de Google Apps Script.
  */
-export async function getAllPredictions(groupName) {
+async function apiCall(params = {}, options = {}) {
+  if (!SCRIPT_URL) {
+    console.error('SCRIPT_URL no definida. Asegúrate de que web_config.js o config.js estén cargados.');
+    return null;
+  }
+
   try {
-    const url = groupName ? `${SCRIPT_URL}?action=getPredictions&groupName=${encodeURIComponent(groupName)}` : SCRIPT_URL;
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status} for URL: ${url}`);
-      return {};
+    const isPost = options.method === 'POST';
+    let url = SCRIPT_URL;
+
+    if (!isPost) {
+      const query = new URLSearchParams(params).toString();
+      url += query ? `?${query}` : '';
     }
+
+    const fetchOptions = {
+      method: options.method || 'GET',
+      headers: isPost ? { 'Content-Type': 'application/json' } : {},
+      ...options
+    };
+
+    if (isPost) {
+      fetchOptions.body = JSON.stringify(params);
+    }
+
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
     const data = await response.json();
     if (data && data.status === 'success') {
-      return data.data || {};
+      return data.data !== undefined ? data.data : data;
     }
-    return {};
+    
+    console.warn(`[API] Respuesta no exitosa para ${params.action}:`, data?.message);
+    return null;
   } catch (error) {
-    console.error('Error fetching predictions:', error.message);
-    return {};
+    console.error(`[API ERROR] Fallo en ${params.action || 'request'}:`, error.message);
+    return null;
   }
 }
 
-/**
- * Obtiene los perfiles de personalidad de un grupo.
- */
-export async function getAllProfiles(groupName) {
-  try {
-    const url = groupName ? `${SCRIPT_URL}?action=getAllInfo&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getAllInfo`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.status === 'success') {
-      return data.data || {};
-    }
-    return {};
-  } catch (error) {
-    console.error('Error fetching profiles:', error.message);
-    return {};
-  }
-}
+// --- FUNCIONES EXPORTADAS ---
 
-/**
- * Obtiene los resúmenes IA guardados.
- */
-export async function getAllSummaries(groupName) {
-  try {
-    const url = groupName ? `${SCRIPT_URL}?action=getAllSummaries&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getAllSummaries`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.status === 'success') {
-      return data.data || {};
-    }
-    return {};
-  } catch (error) {
-    console.error('Error fetching summaries:', error.message);
-    return {};
-  }
-}
+export const getAllPredictions = (groupName) => 
+  apiCall({ action: 'getPredictions', groupName }) || {};
 
-/**
- * Obtiene la lista de nombres de jugadores.
- */
-export async function getPlayerList(groupName) {
-  try {
-    const url = groupName ? `${SCRIPT_URL}?action=getPlayers&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getPlayers`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.status === 'success') {
-      return data.data || [];
-    }
-    return [];
-  } catch (error) {
-    console.error('Error fetching players:', error.message);
-    return [];
-  }
-}
+export const getAllProfiles = (groupName) => 
+  apiCall({ action: 'getAllInfo', groupName }) || {};
+
+export const getAllSummaries = (groupName) => 
+  apiCall({ action: 'getAllSummaries', groupName }) || {};
+
+export const getPlayerList = (groupName) => 
+  apiCall({ action: 'getPlayers', groupName }) || [];
+
+export const getRules = (groupName) => 
+  apiCall({ action: 'getRules', groupName }) || {};
+
+export const getPhoneMapping = (groupName) => 
+  apiCall({ action: 'getPhoneMapping', groupName }) || {};
 
 /**
  * Guarda un resumen IA.
  */
-export async function saveSummary(playerName, group_name, summaryText) {
-  try {
-    console.log(`💾 [saveSummary] Guardando resumen de "${playerName}" en grupo "${group_name}" → URL: ${SCRIPT_URL}`);
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'saveSummary',
-        playerName,
-        groupName: group_name,
-        summary: summaryText,
-      }),
-    });
-    const responseText = await res.text();
-    console.log(`✅ [saveSummary] Respuesta de Google Sheets (${res.status}): ${responseText.substring(0, 200)}`);
-    let result;
-    try { result = JSON.parse(responseText); } catch { result = null; }
-    if (result && result.status !== 'success') {
-      console.error(`❌ [saveSummary] Google Sheets devolvió error: ${JSON.stringify(result)}`);
-    }
-  } catch (error) {
-    console.error('❌ [CRITICAL] Error saving summary to Google Sheets:', {
-      message: error.message,
-      player: playerName,
-      group: group_name,
-      timestamp: new Date().toISOString()
-    });
-  }
-}
-
-/**
- * Obtiene las reglas de puntuación de un grupo.
- */
-export async function getRules(groupName) {
-  try {
-    const response = await fetch(`${SCRIPT_URL}?action=getRules&groupName=${encodeURIComponent(groupName)}`);
-    const data = await response.json();
-    return data.status === 'succeed' || data.status === 'success' ? data.data : {};
-  } catch (error) {
-    console.error('Error fetching rules:', error.message);
-    return {};
-  }
+export async function saveSummary(playerName, groupName, summaryText) {
+  console.log(`💾 [saveSummary] Guardando resumen de "${playerName}" en grupo "${groupName}"`);
+  return await apiCall({
+    action: 'saveSummary',
+    playerName,
+    groupName,
+    summary: summaryText,
+  }, { method: 'POST' });
 }
 
 /**
@@ -135,40 +98,15 @@ export async function getRules(groupName) {
  */
 export async function getPlayerProfile(playerName, groupName) {
   const remoteProfiles = await getAllProfiles(groupName);
-  if (remoteProfiles[playerName]) {
+  if (remoteProfiles && remoteProfiles[playerName]) {
     return remoteProfiles[playerName];
   }
+  
+  // Fallback local desde config.js
   return config.playerProfiles[playerName] || {
     nickname: playerName,
     likes: ['Fútbol'],
     dislikes: ['Perder'],
     humor_style: 'Divertido y amigable',
   };
-}
-
-/**
- * Obtiene la configuración dinámica.
- */
-export async function getDynamicConfig() {
-  try {
-    const response = await fetch(`${SCRIPT_URL}?action=getConfigs`);
-    const data = await response.json();
-    return data.status === 'success' ? data.data : {};
-  } catch (error) {
-    return {};
-  }
-}
-
-/**
- * Obtiene el mapeo de teléfonos de un grupo.
- */
-export async function getPhoneMapping(groupName) {
-  try {
-    const url = groupName ? `${SCRIPT_URL}?action=getPhoneMapping&groupName=${encodeURIComponent(groupName)}` : `${SCRIPT_URL}?action=getPhoneMapping`;
-    const response = await fetch(url);
-    const data = await response.json();
-    return data.status === 'success' ? data.data : {};
-  } catch (error) {
-    return {};
-  }
 }
