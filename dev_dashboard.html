@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛠️ Agente Mundial — DevOps Panel</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="dev_dashboard.css">
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h1>🛠️ DevOps Panel</h1>
+    <p class="subtitle">Agente Mundial — Developer Dashboard</p>
+    <input type="password" id="dev-key-input" placeholder="Developer Key..." autofocus>
+    <button onclick="authenticate()">Acceder</button>
+    <p class="auth-error" id="auth-error">Clave incorrecta</p>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <header>
+    <h1>🛠️ Agente Mundial <span>// DevOps</span></h1>
+    <div class="header-status" id="header-status"></div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('health')">📡 Health</div>
+    <div class="tab" onclick="switchTab('logs')">📋 AI Logs</div>
+    <div class="tab" onclick="switchTab('rag')">🧠 RAG Explorer</div>
+    <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
+  </div>
+
+  <div class="content">
+    <!-- HEALTH PANEL -->
+    <div class="panel active" id="panel-health">
+      <div class="cards" id="health-cards"></div>
+      <div class="cards" id="db-stats-cards"></div>
+    </div>
+
+    <!-- AI LOGS PANEL -->
+    <div class="panel" id="panel-logs">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>📋 Interacciones con IA</h3>
+          <div class="table-filters">
+            <select id="filter-type" onchange="loadLogs()">
+              <option value="">Todos los tipos</option>
+              <option value="response">Response</option>
+              <option value="summary">Summary</option>
+              <option value="personality">Personality</option>
+            </select>
+            <select id="filter-source" onchange="loadLogs()">
+              <option value="">Todas las fuentes</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="web">Web</option>
+              <option value="cron">Cron</option>
+            </select>
+            <input type="text" id="filter-player" placeholder="Jugador..." onkeyup="debounceLoadLogs()">
+          </div>
+        </div>
+        <div id="logs-table-body"><div class="loading"><span class="spinner"></span> Cargando logs...</div></div>
+        <div class="pagination" id="logs-pagination"></div>
+      </div>
+    </div>
+
+    <!-- RAG PANEL -->
+    <div class="panel" id="panel-rag">
+      <div class="cards" id="rag-stats-cards"></div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>🧠 Mensajes almacenados en RAG</h3>
+        </div>
+        <div style="padding: 1rem;">
+          <div class="search-bar">
+            <input type="text" id="rag-search" placeholder="Buscar por nombre o texto..." onkeyup="debounceLoadRag()">
+            <button onclick="loadRagMessages()">Buscar</button>
+          </div>
+        </div>
+        <div id="rag-messages-body"><div class="loading"><span class="spinner"></span> Cargando mensajes...</div></div>
+        <div class="pagination" id="rag-pagination"></div>
+      </div>
+    </div>
+
+    <!-- USAGE PANEL -->
+    <div class="panel" id="panel-usage">
+      <div class="cards" id="usage-cards"></div>
+      <div class="chart-placeholder" id="usage-chart">
+        <h3>📈 Tokens por día (últimos 7 días)</h3>
+        <div class="bar-chart" id="tokens-chart"></div>
+      </div>
+      <div class="cards" id="usage-breakdown"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for log detail -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Detalle de Interacción</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="web_config.js"></script>
+<script src="dev_dashboard.js"></script>
+</body>
+</html>

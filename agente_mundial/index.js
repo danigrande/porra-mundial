@@ -20,6 +20,7 @@ const logger = pino({ level: 'warn' });
 
 import { connectDB } from './db.js';
 import apiRoutes from './routes/api.js';
+import devDashboardRoutes from './routes/devDashboard.js';
 
 // Conectar a MongoDB
 connectDB();
@@ -33,6 +34,7 @@ app.use(express.json()); // Permitir body en JSON para la nueva API
 
 // Usar nuestras nuevas rutas de Node.js
 app.use('/api', apiRoutes);
+app.use('/dev', devDashboardRoutes);
 
 app.get('/', (req, res) => {
   res.json({
