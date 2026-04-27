@@ -180,6 +180,7 @@ router.post('/login', async (req, res) => {
 
     res.json(createResponse('success', { isAdmin }));
   } catch (error) {
+    console.error('❌ Error en POST /login:', error);
     res.status(500).json(createResponse('error', null, error.message));
   }
 });
@@ -217,6 +218,7 @@ router.post('/register', async (req, res) => {
 
     res.json(createResponse('success', null, 'Usuario registrado con éxito'));
   } catch (error) {
+    console.error('❌ Error en POST /register:', error);
     res.status(500).json(createResponse('error', null, error.message));
   }
 });
@@ -287,11 +289,12 @@ router.get('/groups', async (req, res) => {
         const { playerName } = req.query;
         if (playerName) {
             const user = await User.findOne({ name: playerName });
-            return res.json(createResponse('success', user ? user.groups : []));
+            return res.json(createResponse('success', (user && user.groups) ? user.groups : []));
         }
         const groups = await Group.find({}, 'name');
         res.json(createResponse('success', groups.map(g => g.name)));
     } catch (error) {
+        console.error('❌ Error en GET /groups:', error);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
