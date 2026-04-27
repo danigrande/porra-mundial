@@ -53,6 +53,7 @@ export async function apiCall(params = {}, options = {}) {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const data = await response.json();
+    console.log(`[API RESULT] ${params.action}:`, data);
     return data; // Devolvemos el objeto completo { status, data, message, etc. }
   } catch (error) {
     console.error(`[API ERROR] Fallo en ${params.action || 'request'}:`, error.message);
