@@ -135,9 +135,6 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, wh
     );
     const profile = cache.profiles ? (cache.profiles[playerName] || Object.values(cache.profiles).find(pr => pr.nickname === playerName)) : null;
     
-    console.log(`📊 [Ranking] Nombres en tabla: ${cache.leaderboard?.map(p => p.name).join(', ')}`);
-    console.log(`👤 [Buscando] "${playerName}" -> ${playerStats ? 'ENCONTRADO ✅' : 'NO ENCONTRADO ❌'}`);
-    
     // --- RAG: Buscar contexto de este jugador en WhatsApp ---
     let chatContext = "";
     try {

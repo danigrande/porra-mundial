@@ -104,10 +104,26 @@ router.get('/summary/:player', async (req, res) => {
         const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules);
         const playerStats = leaderboard.find(p => p.name === player);
 
+        // Recuperar contexto RAG del chat de WhatsApp
+        let chatContext = "";
+        try {
+            const rag = await import('../ragService.js');
+            const config = await import('../config.js');
+            const chatId = process.env.WHATSAPP_GROUP_ID || config.default.bot.groupId;
+            chatContext = await rag.retrieveContextForPlayer(chatId, player);
+            
+            console.log(`\n🧠 [AUDITORÍA RAG] Lo que el bot recuerda sobre "${player}":`);
+            console.log(chatContext || "No hay nada en memoria.");
+            console.log("--------------------------------------------------\n");
+        } catch (e) {
+            console.error("❌ Error recuperando RAG Web:", e);
+        }
+
         // Generar resumen con IA
         const summaryText = await groqEngine.generatePersonalitySummary(player, groupName, {
             playerStats,
-            leaderboard
+            leaderboard,
+            chatContext
         });
 
         // Guardar/Actualizar en DB

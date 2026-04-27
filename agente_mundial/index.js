@@ -13,7 +13,7 @@ import qrcode from 'qrcode-terminal';
 import cors from 'cors';
 import { schedule } from 'node-cron';
 import config from './config.js';
-import { processMessage, generateGroupSummary, refreshCache } from './messageHandler.js';
+import { processMessage, generateGroupSummary, refreshCache, identifyPlayer } from './messageHandler.js';
 
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });

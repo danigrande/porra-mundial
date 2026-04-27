@@ -144,7 +144,7 @@ El resumen debe:
  * Genera un resumen cómico de la personalidad y rendimiento de un jugador.
  */
 export async function generatePersonalitySummary(playerName, groupName, context) {
-  const { playerStats, leaderboard } = context;
+  const { playerStats, leaderboard, chatContext } = context;
 
   const playerContext = playerStats ? `
 - Puntos Totales: ${playerStats.totalPts}
@@ -159,9 +159,12 @@ export async function generatePersonalitySummary(playerName, groupName, context)
 DATOS DE RENDIMIENTO ACTUAL:
 ${playerContext}
 
+${chatContext ? `HISTORIAL DE CHAT RECIENTE SOBRE ÉL/ELLA:\n${chatContext}\n` : ''}
+
 El resumen debe ser una descripción cómica y motivacional al estilo ANDRÉS MONTES. 
 - Si va ganando, alábalo como un "jugón".
 - Si va perdiendo, dile que necesita "un café con sacarina" o que está "en el club de los modestos".
+- REGLA DE ORO: Si en el historial de chat se revelan gustos o comentarios suyos, MENCIONALOS con gracia.
 - Usa 3-4 frases máximo.
 - Menciona sus puntos y su posición de forma divertida.
 - No uses markdown, solo texto plano con algún emoji.`;
