@@ -49,13 +49,15 @@ export async function saveChatMessage(chatId, senderId, senderName, text) {
  * Busca mensajes relevantes sobre un jugador en el historial
  */
 export async function retrieveContextForPlayer(chatId, playerName, limit = 30) {
-  if (!embeddings) return "";
-
   try {
-    // 1. Generar embedding para la consulta de búsqueda
-    const query = `Información, chistes o menciones sobre ${playerName}`;
-    const queryVector = await embeddings.embedQuery(query);
-
+    let queryVector = null;
+    
+    // Si hay embeddings configurados, lo usamos (para el futuro)
+    if (embeddings) {
+        const query = `Información, chistes o menciones sobre ${playerName}`;
+        queryVector = await embeddings.embedQuery(query);
+    }
+    
     // 2. Búsqueda vectorial en MongoDB (requiere Atlas Vector Search configurado en la colección)
     // Si no está configurado, hacemos un fallback a búsqueda de texto simple
     
