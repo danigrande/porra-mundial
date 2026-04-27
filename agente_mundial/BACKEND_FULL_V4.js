@@ -94,11 +94,39 @@ function getSheetData(sheetName) {
 }
 
 /**
- * Busca el índice de una columna por su nombre.
+ * Busca el índice de una columna de forma flexible (sinopsis, mayúsculas, espacios).
  */
 function getColIdx(headers, colName) {
-  const idx = headers.indexOf(colName);
-  if (idx === -1) throw new Error(`Columna '${colName}' no encontrada`);
+  const cleanHeaders = headers.map(h => h.toString().trim().toLowerCase());
+  const search = colName.toLowerCase().trim();
+  
+  // Mapa de sinónimos comunes
+  const synonyms = {
+    "jugador": ["playername", "player", "nombre", "user", "usuario", "jugadores", "name"],
+    "groupname": ["group", "grupo", "nombre grupo", "comunidad", "nombre comunidad"],
+    "pin": ["password", "clave", "código", "pass"],
+    "telefono": ["phone", "teléfono", "celular", "whatsapp", "móvil"]
+  };
+
+  // 1. Búsqueda exacta (tras limpiar)
+  let idx = cleanHeaders.indexOf(search);
+  
+  // 2. Búsqueda por sinónimos
+  if (idx === -1 && synonyms[search]) {
+    for (const syn of synonyms[search]) {
+      idx = cleanHeaders.indexOf(syn);
+      if (idx !== -1) break;
+    }
+  }
+
+  // 3. Búsqueda parcial (contiene la palabra)
+  if (idx === -1) {
+    idx = cleanHeaders.findIndex(h => h.includes(search));
+  }
+
+  if (idx === -1) {
+    throw new Error(`Columna '${colName}' no encontrada. Cabeceras detectadas: [${headers.join(", ")}]`);
+  }
   return idx;
 }
 
