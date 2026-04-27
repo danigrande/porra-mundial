@@ -2,38 +2,41 @@
 // DATA FETCHER — Centralizado y Limpio (SCALED)
 // ============================================
 
-// Intenta obtener la URL de la variable global (Navegador) o config.js (Node)
-let SCRIPT_URL = typeof window !== 'undefined' ? window.SCRIPT_URL : '';
+// Función auxiliar para obtener la URL en tiempo real
+function getScriptUrl() {
+  if (typeof window !== 'undefined' && window.SCRIPT_URL) return window.SCRIPT_URL;
+  if (typeof window !== 'undefined' && window.CONFIG && window.CONFIG.SCRIPT_URL) return window.CONFIG.SCRIPT_URL;
+  return '';
+}
 
 /**
  * Función genérica para realizar peticiones a la API de Google Apps Script.
  */
 export async function apiCall(params = {}, options = {}) {
-  // Resolución dinámica de URL si no se detectó al inicio
-  if (!SCRIPT_URL) {
-    if (typeof window !== 'undefined' && window.SCRIPT_URL) {
-      SCRIPT_URL = window.SCRIPT_URL;
-    } else {
-      try {
-        const config = (await import('./config.js')).default;
-        SCRIPT_URL = config.googleScript.url;
-      } catch (e) {
-        console.error('No se pudo cargar la configuración de SCRIPT_URL');
-      }
-    }
+  let url = getScriptUrl();
+  
+  // Si no hay URL, intentamos cargar config.js (Node)
+  if (!url) {
+    try {
+      const config = (await import('./config.js')).default;
+      url = config.googleScript.url;
+    } catch (e) {}
   }
 
-  if (!SCRIPT_URL) {
+  if (!url) {
+    console.error('[API] Error: SCRIPT_URL no encontrada en window ni en config.js');
     return { status: 'error', message: 'Configuración de red no encontrada' };
   }
 
+  console.log(`[API DEBUG] ${options.method || 'GET'} -> ${params.action}`);
+
   try {
     const isPost = options.method === 'POST';
-    let url = SCRIPT_URL;
+    let finalUrl = url;
 
     if (!isPost) {
       const query = new URLSearchParams(params).toString();
-      url += query ? `?${query}` : '';
+      finalUrl += query ? `?${query}` : '';
     }
 
     const fetchOptions = {
@@ -46,7 +49,7 @@ export async function apiCall(params = {}, options = {}) {
       fetchOptions.body = JSON.stringify(params);
     }
 
-    const response = await fetch(url, fetchOptions);
+    const response = await fetch(finalUrl, fetchOptions);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const data = await response.json();
