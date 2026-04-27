@@ -2,26 +2,28 @@
 // DATA FETCHER — Centralizado y Limpio (SCALED)
 // ============================================
 
-// Intenta obtener la URL de config.js (Node) o de la variable global (Navegador)
-let SCRIPT_URL = '';
-try {
-  // @ts-ignore
-  if (typeof window !== 'undefined' && window.SCRIPT_URL) {
-    SCRIPT_URL = window.SCRIPT_URL;
-  } else {
-    const config = (await import('./config.js')).default;
-    SCRIPT_URL = config.googleScript.url;
-  }
-} catch (e) {
-  // Fallback si nada funciona
-}
+// Intenta obtener la URL de la variable global (Navegador) o config.js (Node)
+let SCRIPT_URL = typeof window !== 'undefined' ? window.SCRIPT_URL : '';
 
 /**
  * Función genérica para realizar peticiones a la API de Google Apps Script.
  */
 export async function apiCall(params = {}, options = {}) {
+  // Resolución dinámica de URL si no se detectó al inicio
   if (!SCRIPT_URL) {
-    console.error('SCRIPT_URL no definida. Asegúrate de que web_config.js o config.js estén cargados.');
+    if (typeof window !== 'undefined' && window.SCRIPT_URL) {
+      SCRIPT_URL = window.SCRIPT_URL;
+    } else {
+      try {
+        const config = (await import('./config.js')).default;
+        SCRIPT_URL = config.googleScript.url;
+      } catch (e) {
+        console.error('No se pudo cargar la configuración de SCRIPT_URL');
+      }
+    }
+  }
+
+  if (!SCRIPT_URL) {
     return { status: 'error', message: 'Configuración de red no encontrada' };
   }
 
