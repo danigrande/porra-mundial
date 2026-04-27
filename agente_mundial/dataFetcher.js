@@ -19,10 +19,10 @@ try {
 /**
  * Función genérica para realizar peticiones a la API de Google Apps Script.
  */
-async function apiCall(params = {}, options = {}) {
+export async function apiCall(params = {}, options = {}) {
   if (!SCRIPT_URL) {
     console.error('SCRIPT_URL no definida. Asegúrate de que web_config.js o config.js estén cargados.');
-    return null;
+    return { status: 'error', message: 'Configuración de red no encontrada' };
   }
 
   try {
@@ -48,37 +48,44 @@ async function apiCall(params = {}, options = {}) {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const data = await response.json();
-    if (data && data.status === 'success') {
-      return data.data !== undefined ? data.data : data;
-    }
-    
-    console.warn(`[API] Respuesta no exitosa para ${params.action}:`, data?.message);
-    return null;
+    return data; // Devolvemos el objeto completo { status, data, message, etc. }
   } catch (error) {
     console.error(`[API ERROR] Fallo en ${params.action || 'request'}:`, error.message);
-    return null;
+    return { status: 'error', message: error.message };
   }
 }
 
 // --- FUNCIONES EXPORTADAS ---
 
-export const getAllPredictions = (groupName) => 
-  apiCall({ action: 'getPredictions', groupName }) || {};
+export const getAllPredictions = async (groupName) => {
+  const res = await apiCall({ action: 'getPredictions', groupName });
+  return res?.status === 'success' ? res.data : {};
+};
 
-export const getAllProfiles = (groupName) => 
-  apiCall({ action: 'getAllInfo', groupName }) || {};
+export const getAllProfiles = async (groupName) => {
+  const res = await apiCall({ action: 'getAllInfo', groupName });
+  return res?.status === 'success' ? res.data : {};
+};
 
-export const getAllSummaries = (groupName) => 
-  apiCall({ action: 'getAllSummaries', groupName }) || {};
+export const getAllSummaries = async (groupName) => {
+  const res = await apiCall({ action: 'getAllSummaries', groupName });
+  return res?.status === 'success' ? res.data : {};
+};
 
-export const getPlayerList = (groupName) => 
-  apiCall({ action: 'getPlayers', groupName }) || [];
+export const getPlayerList = async (groupName) => {
+  const res = await apiCall({ action: 'getPlayers', groupName });
+  return res?.status === 'success' ? res.data : [];
+};
 
-export const getRules = (groupName) => 
-  apiCall({ action: 'getRules', groupName }) || {};
+export const getRules = async (groupName) => {
+  const res = await apiCall({ action: 'getRules', groupName });
+  return res?.status === 'success' ? res.data : {};
+};
 
-export const getPhoneMapping = (groupName) => 
-  apiCall({ action: 'getPhoneMapping', groupName }) || {};
+export const getPhoneMapping = async (groupName) => {
+  const res = await apiCall({ action: 'getPhoneMapping', groupName });
+  return res?.status === 'success' ? res.data : {};
+};
 
 /**
  * Guarda un resumen IA.
