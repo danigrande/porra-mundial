@@ -80,6 +80,7 @@ router.post('/admin/simulate-match', async (req, res) => {
         // Actualizar resultados del partido
         results[`${matchId}_h`] = simData.goals.home.toString();
         results[`${matchId}_a`] = simData.goals.away.toString();
+        results[`${matchId}_date`] = simData.date;
         if (simData.penalties) {
             results[`pen_${matchId.replace('ko_', '')}_h`] = simData.penalties.home.toString();
             results[`pen_${matchId.replace('ko_', '')}_a`] = simData.penalties.away.toString();

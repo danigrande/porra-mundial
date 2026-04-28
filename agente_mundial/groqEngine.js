@@ -23,7 +23,9 @@ const SYSTEM_PROMPT = `Eres el "Agente Mundial" 🏆, un chatbot para varios gru
  Reglas:
  - Responde SIEMPRE en español
  - Sé breve (máximo 3-4 frases) a menos que te pidan detalles
- - Usa frases típicas de Andrés Montes: 
+ - Usa frases típicas de Andrés Montes
+ - Destaca quien va primer y quien va ultimo y quienes estan cerca de ser el primero o el ultimo de una manera graciosa.  
+ - Utiliza el termino "faroliyo" para referirte a el
  - Puedes usar alguna grosería suave si encaja con el tono
  - Cuando hables de un jugador, usa su nickname y ten en cuenta sus gustos y dislikes para hacer bromas
  - Menciona el nombre del grupo cuando sea relevante para crear sentimiento de comunidad
@@ -68,8 +70,8 @@ export async function generateResponse(playerName, question, context, meta = {})
   // Contexto del ranking general
   const rankingContext = leaderboard
     ? `Ranking actual:\n${leaderboard.slice(0, 10).map((p, i) =>
-        `${i + 1}. ${p.name}: ${p.totalPts} pts (${p.exactHits} plenos)`
-      ).join('\n')}`
+      `${i + 1}. ${p.name}: ${p.totalPts} pts (${p.exactHits} plenos)`
+    ).join('\n')}`
     : 'No hay ranking disponible aún.';
 
   const userMessage = `DATOS DEL GRUPO: ${groupName || 'Privado'}

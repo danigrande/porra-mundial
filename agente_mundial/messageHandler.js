@@ -182,8 +182,10 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, wh
 
 /**
  * Genera un resumen para un grupo.
+ * @param {string} whatsappGroupId - ID del grupo en WhatsApp
+ * @param {boolean} force - Si es true, ignora la comprobación de si hubo partidos hoy
  */
-export async function generateGroupSummary(whatsappGroupId) {
+export async function generateGroupSummary(whatsappGroupId, force = false) {
   const groupName = resolveGroupName(whatsappGroupId);
   if (!groupName) return "Error: Grupo no reconocido";
 
@@ -192,6 +194,20 @@ export async function generateGroupSummary(whatsappGroupId) {
 
   if (!cache || !cache.leaderboard || cache.leaderboard.length === 0) {
     return '📊 No hay datos suficientes para el grupo ' + groupName;
+  }
+
+  // Comprobar si hubo partidos hoy (a menos que se force el resumen)
+  if (!force) {
+    const today = new Date().toISOString().split('T')[0];
+    const reality = cache.reality || {};
+    const hasMatchesToday = Object.entries(reality).some(([key, val]) => 
+      key.endsWith('_date') && typeof val === 'string' && val.startsWith(today)
+    );
+    
+    if (!hasMatchesToday) {
+      console.log(`📭 No hubo partidos hoy (${today}) para el grupo ${groupName}. Saltando resumen.`);
+      return null; 
+    }
   }
 
   return await generateDailySummary(cache.leaderboard, cache.profiles || {}, groupName);

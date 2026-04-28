@@ -54,7 +54,7 @@ app.get('/trigger-summary', async (req, res) => {
     const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
     const groupName = config.groups[dynamicGroupId] || null;
     if (groupName) await refreshCache(groupName);
-    const summary = await generateGroupSummary(dynamicGroupId);
+    const summary = await generateGroupSummary(dynamicGroupId, true); // Forzar resumen manual
     
     if (groupName && summary) {
       const dataFetcher = await import('./dataFetcher.js');
