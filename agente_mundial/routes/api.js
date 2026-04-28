@@ -8,6 +8,7 @@ import { Reality } from '../models/Reality.js';
 import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
 import * as apiFootballService from '../apiFootballService.js';
+import { FIXTURE_GROUPS, BRACKET_MATCHES } from '../shared_data.js';
 
 const router = express.Router();
 
@@ -41,10 +42,15 @@ router.get('/reality', async (req, res) => {
 router.post('/reality', async (req, res) => {
     try {
         const { results } = req.body;
-        // Mantenemos los eventos existentes si los hay, o los recibidos
+        // Si results.events es undefined, mantenemos los existentes. 
+        // Pero si es un objeto vacío {}, significa que queremos borrarlos.
         const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
         const existingResults = realityDoc ? realityDoc.results : {};
-        const events = results.events || existingResults.events || {};
+        
+        let events = results.events;
+        if (events === undefined) {
+            events = existingResults.events || {};
+        }
         
         const mergedResults = { ...results, events };
 
@@ -92,6 +98,23 @@ router.post('/admin/simulate-match', async (req, res) => {
         res.json(createResponse('success', { results }));
     } catch (error) {
         console.error("Error simulando partido:", error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/admin/simulate-all', async (req, res) => {
+    try {
+        const results = apiFootballService.simulateAllMatches(FIXTURE_GROUPS, BRACKET_MATCHES);
+        
+        await Reality.findOneAndUpdate(
+            { tournament: 'worldcup2026' },
+            { results, updatedAt: new Date() },
+            { upsert: true }
+        );
+
+        res.json(createResponse('success', { results }));
+    } catch (error) {
+        console.error("Error simulando todo:", error);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });

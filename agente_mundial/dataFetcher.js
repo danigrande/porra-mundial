@@ -114,6 +114,10 @@ export async function apiCall(params = {}, options = {}) {
       method = 'POST';
       body = { matchId: params.matchId, homeTeam: params.homeTeam, awayTeam: params.awayTeam };
       break;
+    case 'simulateAll':
+      endpoint = `/admin/simulate-all`;
+      method = 'POST';
+      break;
     default:
       console.warn(`[API] Acción no implementada en la nueva API: ${action}`);
       return { status: 'error', message: 'Not implemented' };

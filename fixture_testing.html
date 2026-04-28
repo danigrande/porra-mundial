@@ -62,7 +62,7 @@
   <main class="main-content">
     <div class="admin-controls">
       <button class="btn-save" id="btnSave" onclick="saveReality()">💾 Guardar en Nube</button>
-      <button class="btn-random" onclick="fillRandom()">🎲 Rellenar Random (0-5)</button>
+      <button class="btn-random" onclick="fillAll()">🎲 Rellenar Todo (Simulación API)</button>
       <button class="btn-reset" onclick="resetAll()">🗑️ Borrar Todo</button>
     </div>
 
@@ -86,26 +86,46 @@
       return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
     }
 
-    window.fillRandom = () => {
-      document.querySelectorAll('.score-input').forEach(input => {
-        input.value = Math.floor(Math.random() * 6);
-      });
-      render();
+    window.fillAll = async () => {
+      if(!confirm('Esto simulará resultados, goles y tarjetas para TODO el torneo. ¿Continuar?')) return;
+      const res = await apiCall({ action: 'simulateAll' });
+      if (res.status === 'success') {
+        reality = res.data.results;
+        render(reality);
+        showToast('✅ Todo el torneo simulado y guardado');
+      }
     };
 
-    window.resetAll = () => {
-      if(confirm('¿Seguro que quieres borrar todos los resultados reales?')) {
-        document.querySelectorAll('.score-input').forEach(input => input.value = '');
-        render();
+    window.resetAll = async () => {
+      if(confirm('¿Seguro que quieres borrar todos los resultados y eventos (goles/tarjetas) de la nube?')) {
+        const btn = document.getElementById('btnSave');
+        btn.disabled = true;
+        // Enviamos objeto de eventos vacío para forzar el borrado en el backend
+        // Y resultados vacíos
+        const res = await apiCall({ action: 'saveReality', results: { events: {} } }, { method: 'POST' });
+        btn.disabled = false;
+        
+        if (res.status === 'success') {
+          reality = { events: {} };
+          // Forzamos que los inputs se vacíen visualmente
+          document.querySelectorAll('.score-input').forEach(input => input.value = '');
+          render(reality);
+          showToast('🗑️ Todo borrado (resultados y eventos)');
+        }
       }
     };
 
     window.simulateMatch = async (matchId, homeTeam, awayTeam) => {
+      // Capturamos el estado actual del UI por si hay cambios manuales sin guardar
+      const currentUI = collectData();
+      
       const res = await apiCall({ action: 'simulateMatch', matchId, homeTeam, awayTeam });
       if (res.status === 'success') {
+        // La DB ya tiene el nuevo partido simulado. 
+        // Actualizamos nuestro objeto local 'reality' con la respuesta completa
         reality = res.data.results;
         render(reality);
-        showToast('✅ Partido simulado y guardado');
+        showToast('✅ Partido simulado individualmente');
       }
     };
 

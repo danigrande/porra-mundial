@@ -108,3 +108,48 @@ export function simulateMatchEvents(matchId, homeTeam, awayTeam) {
         events
     };
 }
+
+/**
+ * Simula todos los partidos del torneo (Grupos y Knockout)
+ * @param {Array} groups Datos de los grupos de shared_data
+ * @param {Object} bracket Datos del bracket de shared_data
+ * @returns {Object} Un objeto reality completo con resultados y eventos
+ */
+export function simulateAllMatches(groups, bracket) {
+    const results = { events: {} };
+
+    // 1. Grupos
+    groups.forEach(g => {
+        for (let mIdx = 0; mIdx < 6; mIdx++) {
+            const matchId = `g${g.letter}_m${mIdx}`;
+            const hName = g.teams[mIdx % 4];
+            const aName = g.teams[(mIdx + 1) % 4];
+            const sim = simulateMatchEvents(matchId, hName, aName);
+            
+            results[`${matchId}_h`] = sim.goals.home.toString();
+            results[`${matchId}_a`] = sim.goals.away.toString();
+            results.events[matchId] = sim.events;
+        }
+    });
+
+    // 2. Knockout (Necesitamos resolver nombres, pero para simulación rápida usaremos placeholders o lógica simplificada)
+    // En una simulación real de "rellenar todo", los nombres de los equipos dependen de los resultados previos.
+    // Para simplificar el "Rellenar Todo" inicial, podemos simular solo los que tienen IDs definidos.
+    Object.keys(bracket).forEach(matchNum => {
+        const matchId = `ko_${matchNum}`;
+        // Para simular nombres en knockout "rellenar todo", es complejo sin el scoringEngine.
+        // Simularemos resultados 0-0 y sin eventos para que al menos existan las llaves, 
+        // o mejor, dejamos que el usuario los simule uno a uno o los rellene manualmente.
+        // O simplemente simulamos "Team A" vs "Team B" genérico.
+        const sim = simulateMatchEvents(matchId, "Local", "Visitante");
+        results[`${matchId}_h`] = sim.goals.home.toString();
+        results[`${matchId}_a`] = sim.goals.away.toString();
+        if (sim.penalties) {
+            results[`pen_${matchNum}_h`] = sim.penalties.home.toString();
+            results[`pen_${matchNum}_a`] = sim.penalties.away.toString();
+        }
+        results.events[matchId] = sim.events;
+    });
+
+    return results;
+}
