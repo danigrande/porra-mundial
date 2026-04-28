@@ -59,6 +59,14 @@ app.get('/trigger-summary', async (req, res) => {
     if (groupName && summary) {
       const dataFetcher = await import('./dataFetcher.js');
       await dataFetcher.saveSummary('Global', groupName, summary);
+      
+      // Intentar enviar a WhatsApp si el bot está conectado
+      if (global.whatsappSock) {
+        await global.whatsappSock.sendMessage(dynamicGroupId, {
+          text: `📊 *RESUMEN FORZADO* 📊\n\n${summary}`,
+        });
+        console.log(`✅ Resumen forzado enviado a WhatsApp (${dynamicGroupId})`);
+      }
     }
     
     res.json({ summary });
@@ -188,6 +196,9 @@ async function startBot() {
 
   // Guardar credenciales cuando se actualicen
   sock.ev.on('creds.update', saveCreds);
+
+  // Guardar el socket globalmente para el endpoint trigger-summary
+  global.whatsappSock = sock;
 
   // Manejar estado de conexión
   sock.ev.on('connection.update', async (update) => {
