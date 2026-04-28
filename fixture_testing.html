@@ -100,6 +100,15 @@
       }
     };
 
+    window.simulateMatch = async (matchId, homeTeam, awayTeam) => {
+      const res = await apiCall({ action: 'simulateMatch', matchId, homeTeam, awayTeam });
+      if (res.status === 'success') {
+        reality = res.data.results;
+        render(reality);
+        showToast('✅ Partido simulado y guardado');
+      }
+    };
+
     window.saveReality = async () => {
       const results = collectData();
       const btn = document.getElementById('btnSave');
@@ -117,7 +126,7 @@
     };
 
     function collectData() {
-      const data = {};
+      const data = { events: reality.events || {} };
       document.querySelectorAll('.score-input').forEach(input => {
         if (input.value !== '') data[input.id] = input.value;
       });
@@ -127,11 +136,12 @@
     async function init() {
       const res = await apiCall({ action: 'getReality' });
       if (res.status === 'success') reality = res.data;
-      render();
+      render(reality);
     }
 
-    function render() {
-      const currentData = collectData();
+    function render(overrideData = null) {
+      const currentData = overrideData || collectData();
+      reality = currentData;
       
       // 1. Grupos con edición
       const groupsContainer = document.getElementById('fixtureGroups');
@@ -147,16 +157,31 @@
               <!-- Edición de Partidos -->
               <div class="match-list" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
                 ${[0,1,2,3,4,5].map(mIdx => {
-                  const hId = `g${g.letter}_m${mIdx}_h`;
-                  const aId = `g${g.letter}_m${mIdx}_a`;
+                  const matchId = `g${g.letter}_m${mIdx}`;
+                  const hId = `${matchId}_h`;
+                  const aId = `${matchId}_a`;
+                  const hName = g.teams[mIdx % 4];
+                  const aName = g.teams[(mIdx+1) % 4];
+                  const matchEvents = (currentData.events && currentData.events[matchId]) || [];
+                  
                   return `
-                    <div class="match-edit" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <span style="font-size:0.8rem; flex:1; text-align:right;">${g.teams[mIdx % 4]}</span>
-                        <div style="display:flex; gap:5px; margin: 0 10px;">
-                            <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
-                            <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
+                    <div class="match-edit" style="display:flex; flex-direction:column; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="Simular partido" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem;">🎲</button>
+                            <span style="font-size:0.8rem; flex:1; text-align:right;">${hName}</span>
+                            <div style="display:flex; gap:5px; margin: 0 10px;">
+                                <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
+                                <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
+                            </div>
+                            <span style="font-size:0.8rem; flex:1;">${aName}</span>
                         </div>
-                        <span style="font-size:0.8rem; flex:1;">${g.teams[(mIdx+1) % 4]}</span>
+                        ${matchEvents.length > 0 ? `
+                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.6); text-align:center; margin-top:5px;">
+                            ${matchEvents.map(e => `
+                                <span>${e.time.elapsed}' ${e.player.name} (${e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨')})</span>
+                            `).join(' | ')}
+                        </div>
+                        ` : ''}
                     </div>
                   `;
                 }).join('')}
@@ -179,20 +204,25 @@
         <div class="knockout-section">
           <div class="knockout-title">${round.name}</div>
           <div class="knockout-matches">
-            ${round.matches.map(num => {
+              ${round.matches.map(num => {
               const pairing = BRACKET_MATCHES[num];
               const hName = fullResolve(pairing[0], currentData);
               const aName = fullResolve(pairing[1], currentData);
-              const hId = `ko_${num}_h`;
-              const aId = `ko_${num}_a`;
+              const matchId = `ko_${num}`;
+              const hId = `${matchId}_h`;
+              const aId = `${matchId}_a`;
               const pHId = `pen_${num}_h`;
               const pAId = `pen_${num}_a`;
               
               const isDraw = currentData[hId] && currentData[aId] && currentData[hId] === currentData[aId];
+              const matchEvents = (currentData.events && currentData.events[matchId]) || [];
 
               return `
                 <div class="knockout-match">
-                  <span class="match-number">#${num}</span>
+                  <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                      <span class="match-number">#${num}</span>
+                      <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="Simular partido" style="background:transparent; border:none; cursor:pointer; font-size:1rem;">🎲</button>
+                  </div>
                   <div class="km-teams">
                     <span class="team-name team-home">${getTeamHtml(hName)}</span>
                     <div class="score-container" style="display:flex; flex-direction:column; gap:5px;">
@@ -211,6 +241,13 @@
                     </div>
                     <span class="team-name team-away">${getTeamHtml(aName)}</span>
                   </div>
+                  ${matchEvents.length > 0 ? `
+                  <div style="font-size:0.65rem; color:rgba(255,255,255,0.6); text-align:center; margin-top:8px;">
+                      ${matchEvents.map(e => `
+                          <div>${e.time.elapsed}' ${e.player.name} (${e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨')})</div>
+                      `).join('')}
+                  </div>
+                  ` : ''}
                 </div>
               `;
             }).join('')}

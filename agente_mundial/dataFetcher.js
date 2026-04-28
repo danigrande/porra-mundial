@@ -109,6 +109,11 @@ export async function apiCall(params = {}, options = {}) {
       endpoint = `/groups/${encodeURIComponent(groupName)}/players/${encodeURIComponent(playerName)}`;
       method = 'DELETE';
       break;
+    case 'simulateMatch':
+      endpoint = `/admin/simulate-match`;
+      method = 'POST';
+      body = { matchId: params.matchId, homeTeam: params.homeTeam, awayTeam: params.awayTeam };
+      break;
     default:
       console.warn(`[API] Acción no implementada en la nueva API: ${action}`);
       return { status: 'error', message: 'Not implemented' };

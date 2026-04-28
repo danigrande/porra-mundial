@@ -7,6 +7,7 @@ import { Summary } from '../models/Summary.js';
 import { Reality } from '../models/Reality.js';
 import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
+import * as apiFootballService from '../apiFootballService.js';
 
 const router = express.Router();
 
@@ -40,13 +41,57 @@ router.get('/reality', async (req, res) => {
 router.post('/reality', async (req, res) => {
     try {
         const { results } = req.body;
+        // Mantenemos los eventos existentes si los hay, o los recibidos
+        const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+        const existingResults = realityDoc ? realityDoc.results : {};
+        const events = results.events || existingResults.events || {};
+        
+        const mergedResults = { ...results, events };
+
+        await Reality.findOneAndUpdate(
+            { tournament: 'worldcup2026' },
+            { results: mergedResults, updatedAt: new Date() },
+            { upsert: true }
+        );
+        res.json(createResponse('success'));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/admin/simulate-match', async (req, res) => {
+    try {
+        const { matchId, homeTeam, awayTeam } = req.body;
+        if (!matchId || !homeTeam || !awayTeam) {
+            return res.status(400).json(createResponse('error', null, 'Faltan parámetros'));
+        }
+
+        const simData = apiFootballService.simulateMatchEvents(matchId, homeTeam, awayTeam);
+
+        const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+        const results = realityDoc ? realityDoc.results : {};
+        
+        // Actualizar resultados del partido
+        results[`${matchId}_h`] = simData.goals.home.toString();
+        results[`${matchId}_a`] = simData.goals.away.toString();
+        if (simData.penalties) {
+            results[`pen_${matchId.replace('ko_', '')}_h`] = simData.penalties.home.toString();
+            results[`pen_${matchId.replace('ko_', '')}_a`] = simData.penalties.away.toString();
+        }
+
+        // Actualizar eventos
+        if (!results.events) results.events = {};
+        results.events[matchId] = simData.events;
+
         await Reality.findOneAndUpdate(
             { tournament: 'worldcup2026' },
             { results, updatedAt: new Date() },
             { upsert: true }
         );
-        res.json(createResponse('success'));
+
+        res.json(createResponse('success', { results }));
     } catch (error) {
+        console.error("Error simulando partido:", error);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
