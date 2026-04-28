@@ -6,8 +6,9 @@
 function getApiUrl() {
   // Si estamos en el navegador y configuro RENDER_URL
   if (typeof window !== 'undefined' && window.RENDER_URL) return window.RENDER_URL + '/api';
-  // Fallback local
-  return 'http://localhost:3000/api';
+  // Fallback local con puerto dinámico
+  const port = (typeof process !== 'undefined' && process.env.PORT) ? process.env.PORT : '3000';
+  return `http://localhost:${port}/api`;
 }
 
 /**

@@ -324,31 +324,31 @@ async function startBot() {
   // ==========================================
 
   // Resumen diario a las 23:00 (hora España)
-  // Cron: "0 23 * * *" = a las 23:00 cada día
-  // NOTA: El timezone depende del servidor. En Render (UTC), sería "0 21 * * *" para España (UTC+2)
-  // Resumen diario a las 23:00 (hora España)
-  schedule('0 21 * * *', async () => {
+  schedule('0 23 * * *', async () => {
     const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
     if (!dynamicGroupId) return;
-
+ 
     console.log(`📢 Generando resumen programado para el grupo: ${dynamicGroupId}`);
     try {
-      const groupName = config.groups[dynamicGroupId] || null;
-      if (groupName) await refreshCache(groupName);
+      const gName = config.groups[dynamicGroupId] || null;
+      if (gName) await refreshCache(gName);
+      
       const summary = await generateGroupSummary(dynamicGroupId);
-
-      if (summary) {
+      console.log(`📝 Resumen generado (longitud: ${summary?.length || 0}): "${summary?.substring(0, 50)}..."`);
+ 
+      if (summary && summary.length > 50) {
         await sock.sendMessage(dynamicGroupId, {
           text: `📊 *RESUMEN DE LA JORNADA* 📊\n\n${summary}`,
         });
         console.log('✅ Resumen publicado en el grupo');
         
         // Guardar el resumen global en la base de datos
-        const groupName = config.groups[dynamicGroupId] || null;
-        if (groupName) {
+        if (gName) {
           const dataFetcher = await import('./dataFetcher.js');
-          await dataFetcher.saveSummary("Global", groupName, summary);
+          await dataFetcher.saveSummary("Global", gName, summary);
         }
+      } else {
+        console.warn('⚠️ El resumen generado es demasiado corto o está vacío, no se enviará.');
       }
     } catch (error) {
       console.error('Error publicando resumen:', error.message);
