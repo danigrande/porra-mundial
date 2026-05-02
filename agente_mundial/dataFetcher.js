@@ -136,9 +136,18 @@ export async function apiCall(params = {}, options = {}) {
     }
 
     const response = await fetch(`${baseUrl}${endpoint}`, fetchOptions);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        data = null;
+    }
+
+    if (!response.ok) {
+        const errorMsg = data?.message || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMsg);
+    }
     
-    const data = await response.json();
     console.log(`[API RESULT] ${action}:`, data);
     return data;
   } catch (error) {

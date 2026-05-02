@@ -301,7 +301,7 @@
           action: 'removePlayer',
           playerName: name,
           groupName: currentUser.groupName
-        }, { method: 'POST' });
+        }, { method: 'DELETE' });
         
         if (result?.status === 'success') {
           showToast(`✅ ${name} eliminado del grupo`);

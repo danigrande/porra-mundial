@@ -449,21 +449,37 @@ router.post('/groups/:groupName/players', async (req, res) => {
         const { groupName } = req.params;
         const { playerName } = req.body;
         
+        console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" al grupo: "${groupName}"`);
+
+        if (!playerName) return res.status(400).json(createResponse('error', null, 'El nombre del jugador es requerido'));
+
         let user = await User.findOne({ name: playerName });
         if (!user) {
+            console.log(`✨ Creando nuevo usuario: ${playerName}`);
             user = await User.create({ name: playerName, pin: '1234', phone: '000000', groups: [groupName] });
         } else if (!user.groups.includes(groupName)) {
+            console.log(`📝 Actualizando grupos del usuario: ${playerName}`);
             user.groups.push(groupName);
             await user.save();
         }
 
         const group = await Group.findOne({ name: groupName });
-        if (group && !group.members.includes(user._id)) {
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+
+        // Evitar duplicados de forma robusta comparando strings de IDs
+        const isAlreadyMember = group.members.some(mId => mId.toString() === user._id.toString());
+        
+        if (!isAlreadyMember) {
+            console.log(`🔗 Vinculando usuario ${user._id} al grupo ${group._id}`);
             group.members.push(user._id);
             await group.save();
+        } else {
+            console.log(`ℹ️ El usuario ya es miembro del grupo`);
         }
+
         res.json(createResponse('success'));
     } catch (error) {
+        console.error('❌ Error en POST /groups/:groupName/players:', error);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
@@ -471,18 +487,31 @@ router.post('/groups/:groupName/players', async (req, res) => {
 router.delete('/groups/:groupName/players/:playerName', async (req, res) => {
     try {
         const { groupName, playerName } = req.params;
+        console.log(`🗑️ [ADMIN] Eliminando jugador: "${playerName}" del grupo: "${groupName}"`);
+
         const user = await User.findOne({ name: playerName });
         const group = await Group.findOne({ name: groupName });
         
         if (user && group) {
-            user.groups = user.groups.filter(g => g !== groupName);
-            await user.save();
+            // Eliminar de la lista de grupos del usuario
+            if (user.groups) {
+                user.groups = user.groups.filter(g => g !== groupName);
+                await user.save();
+            }
             
-            group.members = group.members.filter(id => id.toString() !== user._id.toString());
-            await group.save();
+            // Eliminar de los miembros del grupo
+            if (group.members) {
+                group.members = group.members.filter(id => id.toString() !== user._id.toString());
+                await group.save();
+            }
+            
+            // Opcional: Podríamos borrar sus predicciones aquí si quisiéramos ser estrictos
+            // await Prediction.deleteMany({ user: user._id, group: group._id });
+            console.log(`✅ Jugador "${playerName}" desvinculado correctamente`);
         }
         res.json(createResponse('success'));
     } catch (error) {
+        console.error('❌ Error en DELETE /groups/:groupName/players:', error);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
