@@ -54,7 +54,7 @@ export function renderNavigation(currentPage) {
 
   const links = [
     { href: 'player_scores.html', text: 'Clasificación', adminOnly: false },
-    { href: 'fixture_testing.html', text: 'Resultados', adminOnly: true },
+    { href: 'fixture_testing.html', text: 'Resultados', adminOnly: false },
     { href: 'pool.html', text: 'Predicciones', adminOnly: false },
     { href: 'worldcup.html', text: 'Mi predicción', adminOnly: false },
     { href: 'about_user.html', text: 'Mi Perfil', adminOnly: false },

@@ -88,6 +88,13 @@
     let currentUser = checkAuth();
     let reality = {};
 
+    // Restricciones para no-admins
+    if (!currentUser.isAdmin) {
+      document.querySelector('.admin-controls').style.display = 'none';
+      document.querySelector('.page-header h1 .header-text-gradient').textContent = 'Resultados del Torneo';
+      document.querySelector('.page-header .subtitle').textContent = 'Consulta los marcadores oficiales y el estado del torneo.';
+    }
+
     function getTeamHtml(name) {
       const code = TEAM_CODES[name];
       return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
@@ -295,6 +302,12 @@
           </table>
         </div>
       `;
+
+      // Restricciones para no-admins
+      if (!currentUser.isAdmin) {
+        document.querySelectorAll('.score-input').forEach(input => input.disabled = true);
+        document.querySelectorAll('button[title="Simular partido"]').forEach(btn => btn.style.display = 'none');
+      }
     }
 
     window.render = render;
