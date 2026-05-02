@@ -128,7 +128,7 @@
             isAdmin: res.data.isAdmin // <-- Corregido aquí
         }));
         showToast('✅ Login correcto');
-        setTimeout(() => window.location.href = 'worldcup.html', 1000);
+        setTimeout(() => window.location.href = 'player_scores.html', 1000);
       } else {
         showToast('❌ ' + (res?.message || 'Error'), true);
       }
@@ -160,7 +160,7 @@
       if (res?.status === 'success') {
         localStorage.setItem('worldcup2026_user', JSON.stringify({ name: n, pin: p, groupName: g, isAdmin: true }));
         showToast('✨ Registro completado');
-        setTimeout(() => window.location.href = 'worldcup.html', 1500);
+        setTimeout(() => window.location.href = 'player_scores.html', 1500);
       } else {
         showToast('❌ ' + (res?.message || 'Error'), true);
       }

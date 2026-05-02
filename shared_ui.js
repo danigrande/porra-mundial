@@ -53,11 +53,11 @@ export function renderNavigation(currentPage) {
   if (!navLinks) return;
 
   const links = [
-    { href: 'worldcup.html', text: 'Mi predicción', adminOnly: false },
-    { href: 'pool.html', text: 'Predicciones', adminOnly: false },
     { href: 'player_scores.html', text: 'Clasificación', adminOnly: false },
-    { href: 'about_user.html', text: 'Mi Perfil', adminOnly: false },
     { href: 'fixture_testing.html', text: 'Resultados', adminOnly: true },
+    { href: 'pool.html', text: 'Predicciones', adminOnly: false },
+    { href: 'worldcup.html', text: 'Mi predicción', adminOnly: false },
+    { href: 'about_user.html', text: 'Mi Perfil', adminOnly: false },
     { href: 'scoring_criteria.html', text: 'Configuración', adminOnly: true }
   ];
 
