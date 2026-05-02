@@ -364,19 +364,18 @@
       
       const players = Object.keys(cloudData).sort();
       
-      // Special case: include local if cloud is empty or for testing
-      if (players.length === 0) {
-          const localRaw = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
-          if (localRaw) {
-              try {
-                  const data = JSON.parse(localRaw);
-                  if (data._playerName) {
-                    // Temporarily add to local display
-                    cloudData[data._playerName] = { predictions: data };
-                    players.push(data._playerName);
-                  }
-              } catch(e) {}
+      // Incluir siempre los datos locales si el usuario actual no está ya en la lista de la nube
+      const localRaw = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
+      if (localRaw) {
+        try {
+          const data = JSON.parse(localRaw);
+          if (data._playerName && !players.includes(data._playerName)) {
+            // Añadir temporalmente para visualización
+            cloudData[data._playerName] = { predictions: data };
+            players.push(data._playerName);
+            players.sort();
           }
+        } catch (e) { }
       }
 
       // Update Header: ID, Match, and then each Player

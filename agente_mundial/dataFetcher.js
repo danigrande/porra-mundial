@@ -63,7 +63,7 @@ export async function apiCall(params = {}, options = {}) {
     case 'savePredictions':
       endpoint = `/predictions`;
       method = 'POST';
-      body = { playerName, groupName, predictions: params.predictions };
+      body = { playerName, groupName, predictions: params.predictions || rest };
       break;
     case 'getAllSummaries':
       endpoint = `/summaries?groupName=${encodeURIComponent(groupName)}`;
