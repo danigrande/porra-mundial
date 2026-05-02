@@ -290,7 +290,13 @@ router.post('/register', async (req, res) => {
     // Verificaciones y creación (simplificado por ahora)
     let user = await User.findOne({ name: playerName });
     if (!user) {
-       user = await User.create({ name: playerName, pin: playerPin, phone: '000000', groups: [groupName] });
+       console.log(`✨ Creando nuevo usuario: ${playerName}`);
+       user = await User.create({ 
+         name: playerName, 
+         pin: playerPin, 
+         phone: `AUTO_${Date.now()}_${Math.floor(Math.random() * 1000)}`, 
+         groups: [groupName] 
+       });
     } else {
        if (!user.groups.includes(groupName)) {
            user.groups.push(groupName);
@@ -456,7 +462,12 @@ router.post('/groups/:groupName/players', async (req, res) => {
         let user = await User.findOne({ name: playerName });
         if (!user) {
             console.log(`✨ Creando nuevo usuario: ${playerName}`);
-            user = await User.create({ name: playerName, pin: '1234', phone: '000000', groups: [groupName] });
+            user = await User.create({ 
+                name: playerName, 
+                pin: '1234', 
+                phone: `AUTO_${Date.now()}_${Math.floor(Math.random() * 1000)}`, 
+                groups: [groupName] 
+            });
         } else if (!user.groups.includes(groupName)) {
             console.log(`📝 Actualizando grupos del usuario: ${playerName}`);
             user.groups.push(groupName);

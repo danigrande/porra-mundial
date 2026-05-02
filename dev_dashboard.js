@@ -63,6 +63,7 @@ function switchTab(name) {
   // Lazy load
   if (name === 'logs') loadLogs();
   if (name === 'rag') { loadRagStats(); loadRagMessages(); }
+  if (name === 'groups') loadGroups();
   if (name === 'usage') loadUsage();
 }
 
@@ -323,6 +324,154 @@ async function loadRagMessages() {
     `;
   } catch (e) {
     container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+// ==========================================
+// GROUPS MANAGEMENT
+// ==========================================
+
+async function loadGroups() {
+  const container = document.getElementById('groups-table-body');
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando grupos...</div>';
+
+  try {
+    const groups = await devFetch('/groups');
+    
+    if (!groups.length) {
+      container.innerHTML = '<div class="loading">No hay grupos creados.</div>';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Nombre</th><th>Admin</th><th>Miembros</th><th>Predicciones</th><th>Resúmenes</th><th>Acciones</th></tr></thead><tbody>';
+    
+    groups.forEach(g => {
+      html += `<tr>
+        <td><strong>${g.name}</strong></td>
+        <td>${g.adminName}</td>
+        <td>${g.memberCount}</td>
+        <td>${g.predictionCount}</td>
+        <td>${g.summaryCount}</td>
+        <td>
+          <button class="btn-sm" onclick="openGroupDetails('${g.name}')" style="background:var(--accent-blue)">Detalle</button>
+          <button class="btn-sm" onclick="deleteGroup('${g.name}')" style="background:var(--accent-red)">Borrar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function openGroupDetails(name) {
+  const modal = document.getElementById('log-modal');
+  const body = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  
+  modal.classList.add('show');
+  title.textContent = `Gestión de Grupo: ${name}`;
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando detalles...</div>';
+
+  try {
+    const data = await devFetch(`/groups/${encodeURIComponent(name)}/details`);
+    const { group, predictions, summaries } = data;
+
+    let html = `
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem;">
+        <div>
+          <h4 style="margin-bottom:0.5rem; color:var(--accent-blue)">👥 Miembros (${group.members.length})</h4>
+          <div style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:8px;">
+            ${group.members.map(m => `
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
+                <span>${m.name} <small style="color:var(--text-muted)">(${m.phone})</small></span>
+                <button class="btn-sm" onclick="removeMember('${name}', '${m.name}')" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Quitar</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div>
+          <h4 style="margin-bottom:0.5rem; color:var(--accent-gold)">📊 Predicciones (${predictions.length})</h4>
+          <div style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:8px;">
+            ${predictions.map(p => `
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
+                <span>${p.userName}</span>
+                <div>
+                  <button class="btn-sm" onclick="alert(JSON.stringify(${JSON.stringify(p.data)}, null, 2))" style="background:var(--accent-cyan); padding:2px 6px">JSON</button>
+                  <button class="btn-sm" onclick="deletePrediction('${p._id}', '${name}')" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">🗑️</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:1.5rem;">
+        <h4 style="margin-bottom:0.5rem; color:var(--accent-green)">🤖 Resúmenes IA (${summaries.length})</h4>
+        <div style="max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:8px;">
+          ${summaries.map(s => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
+              <span>${s.playerName} <small style="color:var(--text-muted)">(${new Date(s.updatedAt).toLocaleDateString()})</small></span>
+              <button class="btn-sm" onclick="deleteSummary('${s._id}', '${name}')" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Borrar</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function deleteGroup(name) {
+  const cascade = confirm(`⚠️ ¿ESTÁS SEGURO? Estás a punto de borrar el grupo "${name}".\n\n¿Quieres borrar también todas las PREDICCIONES y RESÚMENES asociados? (Acepta para borrar todo, Cancela para borrar solo el grupo)`);
+  
+  if (confirm(`Última confirmación: ¿Borrar el grupo "${name}"${cascade ? ' y todos sus datos' : ''}?`)) {
+    try {
+      await fetch(`${API_BASE}/groups/${encodeURIComponent(name)}?cascade=${cascade}`, {
+        method: 'DELETE',
+        headers: { 'x-dev-key': DEV_KEY }
+      });
+      loadGroups();
+    } catch (e) { alert(e.message); }
+  }
+}
+
+async function removeMember(groupName, userName) {
+  if (confirm(`¿Quitar a ${userName} del grupo ${groupName}?`)) {
+    try {
+      await fetch(`${API_BASE}/groups/${encodeURIComponent(groupName)}/members/${encodeURIComponent(userName)}`, {
+        method: 'DELETE',
+        headers: { 'x-dev-key': DEV_KEY }
+      });
+      openGroupDetails(groupName);
+    } catch (e) { alert(e.message); }
+  }
+}
+
+async function deletePrediction(id, groupName) {
+  if (confirm('¿Borrar esta predicción?')) {
+    try {
+      await fetch(`${API_BASE}/predictions/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-dev-key': DEV_KEY }
+      });
+      openGroupDetails(groupName);
+    } catch (e) { alert(e.message); }
+  }
+}
+
+async function deleteSummary(id, groupName) {
+  if (confirm('¿Borrar este resumen?')) {
+    try {
+      await fetch(`${API_BASE}/summaries/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-dev-key': DEV_KEY }
+      });
+      openGroupDetails(groupName);
+    } catch (e) { alert(e.message); }
   }
 }
 

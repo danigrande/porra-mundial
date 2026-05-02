@@ -9,6 +9,7 @@ import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
 import { Group } from '../models/Group.js';
 import { Summary } from '../models/Summary.js';
+import { Prediction } from '../models/Prediction.js';
 import config from '../config.js';
 
 const router = express.Router();
@@ -306,6 +307,144 @@ router.get('/usage', async (req, res) => {
         note: 'Límites del tier gratuito de Groq (llama-3.3-70b)'
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// GROUPS — Listar todos los grupos con estadísticas
+// ==========================================
+router.get('/groups', async (req, res) => {
+  try {
+    const groups = await Group.find().populate('admin', 'name');
+    
+    const groupsWithStats = await Promise.all(groups.map(async (g) => {
+      const [predictionCount, summaryCount] = await Promise.all([
+        Prediction.countDocuments({ group: g._id }),
+        Summary.countDocuments({ groupName: g.name })
+      ]);
+      
+      return {
+        _id: g._id,
+        name: g.name,
+        adminName: g.admin?.name || 'Unknown',
+        memberCount: g.members?.length || 0,
+        predictionCount,
+        summaryCount,
+        createdAt: g.createdAt
+      };
+    }));
+    
+    res.json(groupsWithStats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// GROUP DETAILS — Detalle completo de un grupo
+// ==========================================
+router.get('/groups/:name/details', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const group = await Group.findOne({ name }).populate('members', 'name phone');
+    if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+    const [predictions, summaries] = await Promise.all([
+      Prediction.find({ group: group._id }).populate('user', 'name'),
+      Summary.find({ groupName: name })
+    ]);
+
+    res.json({
+      group,
+      predictions: predictions.map(p => ({
+        _id: p._id,
+        userName: p.user?.name || 'Unknown',
+        updatedAt: p.updatedAt,
+        data: p.predictions
+      })),
+      summaries: summaries.map(s => ({
+        _id: s._id,
+        playerName: s.playerName,
+        updatedAt: s.updatedAt,
+        text: s.text
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// DELETE ACTIONS
+// ==========================================
+
+// Borrar una predicción específica
+router.delete('/predictions/:id', async (req, res) => {
+  try {
+    await Prediction.findByIdAndDelete(req.params.id);
+    res.json({ status: 'ok' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Borrar un resumen específico
+router.delete('/summaries/:id', async (req, res) => {
+  try {
+    await Summary.findByIdAndDelete(req.params.id);
+    res.json({ status: 'ok' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Quitar un usuario de un grupo
+router.delete('/groups/:groupName/members/:userName', async (req, res) => {
+  try {
+    const { groupName, userName } = req.params;
+    const user = await User.findOne({ name: userName });
+    const group = await Group.findOne({ name: groupName });
+
+    if (user && group) {
+      // Quitar del grupo
+      group.members = group.members.filter(id => id.toString() !== user._id.toString());
+      await group.save();
+      
+      // Quitar de los grupos del usuario
+      user.groups = user.groups.filter(g => g !== groupName);
+      await user.save();
+    }
+    res.json({ status: 'ok' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Borrar grupo entero (Destructivo)
+router.delete('/groups/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { cascade } = req.query; // 'true' para borrar todo lo relacionado
+
+    const group = await Group.findOne({ name });
+    if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
+
+    if (cascade === 'true') {
+      // Borrar predicciones
+      await Prediction.deleteMany({ group: group._id });
+      // Borrar resúmenes
+      await Summary.deleteMany({ groupName: name });
+      // Quitar el grupo de todos los usuarios
+      await User.updateMany(
+        { groups: name },
+        { $pull: { groups: name, isAdminOf: name } }
+      );
+    }
+
+    await Group.findByIdAndDelete(group._id);
+    res.json({ status: 'ok' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
