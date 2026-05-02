@@ -436,6 +436,8 @@ router.delete('/groups/:name', async (req, res) => {
       await Prediction.deleteMany({ group: group._id });
       // Borrar resúmenes
       await Summary.deleteMany({ groupName: name });
+      // Borrar logs de IA
+      await AILog.deleteMany({ groupName: name });
       // Quitar el grupo de todos los usuarios
       await User.updateMany(
         { groups: name },
