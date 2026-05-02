@@ -450,6 +450,23 @@ router.delete('/groups/:name', async (req, res) => {
   }
 });
 
+// Resetear PIN de un usuario (Forzar a 1234)
+router.post('/users/:userName/reset-pin', async (req, res) => {
+  try {
+    const { userName } = req.params;
+    const user = await User.findOne({ name: userName });
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    user.pin = '1234';
+    await user.save();
+    
+    console.log(`🔧 PIN reseteado a 1234 para ${userName}`);
+    res.json({ status: 'ok' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ==========================================
 // HELPERS
 // ==========================================

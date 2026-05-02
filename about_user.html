@@ -148,6 +148,34 @@
 
         <button type="submit" id="saveBtn" class="btn-save">Guardar Configuración</button>
       </form>
+
+      <!-- SECCIÓN CAMBIO PIN -->
+      <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+        <h3 style="margin-bottom: 1.5rem; color: var(--accent-gold); display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.2rem;">🔐</span> Seguridad - Cambiar PIN
+        </h3>
+        <div id="pinStatusMsg" class="status-msg"></div>
+        
+        <div class="form-group">
+          <label for="oldPin">PIN Actual</label>
+          <input type="password" id="oldPin" class="form-control" maxlength="4" placeholder="••••">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="newPin">Nuevo PIN (4 dígitos)</label>
+            <input type="password" id="newPin" class="form-control" maxlength="4" placeholder="••••">
+          </div>
+          <div class="form-group">
+            <label for="confirmPin">Confirmar Nuevo PIN</label>
+            <input type="password" id="confirmPin" class="form-control" maxlength="4" placeholder="••••">
+          </div>
+        </div>
+        
+        <button type="button" id="changePinBtn" class="btn-save" style="background: var(--bg-card); border: 1px solid var(--accent-gold); color: var(--accent-gold);">
+          Actualizar PIN
+        </button>
+      </div>
     </div>
   </main>
 
@@ -218,8 +246,62 @@
       }
     };
 
+    // Lógica Cambio PIN
+    document.getElementById('changePinBtn').onclick = async () => {
+      const oldPin = document.getElementById('oldPin').value;
+      const newPin = document.getElementById('newPin').value;
+      const confirmPin = document.getElementById('confirmPin').value;
+      const btn = document.getElementById('changePinBtn');
+      const status = document.getElementById('pinStatusMsg');
 
+      if (newPin.length !== 4 || isNaN(newPin)) {
+        status.textContent = '⚠️ El nuevo PIN debe ser de 4 números';
+        status.className = 'status-msg status-error';
+        return;
+      }
 
+      if (newPin !== confirmPin) {
+        status.textContent = '⚠️ Los nuevos PINs no coinciden';
+        status.className = 'status-msg status-error';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Cambiando...';
+      status.className = 'status-msg';
+
+      try {
+        const res = await apiCall({
+          action: 'changePin',
+          playerName: currentUser.name,
+          groupName: currentUser.groupName,
+          oldPin,
+          newPin
+        });
+
+        if (res.status === 'success') {
+          status.textContent = '✅ PIN actualizado con éxito';
+          status.className = 'status-msg status-success';
+          
+          // Actualizar localStorage para no perder la sesión
+          currentUser.pin = newPin;
+          localStorage.setItem('worldcup2026_user', JSON.stringify(currentUser));
+          
+          // Limpiar campos
+          document.getElementById('oldPin').value = '';
+          document.getElementById('newPin').value = '';
+          document.getElementById('confirmPin').value = '';
+        } else {
+          throw new Error(res.message);
+        }
+      } catch (e) {
+        status.textContent = '❌ ' + e.message;
+        status.className = 'status-msg status-error';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Actualizar PIN';
+      }
+    };
 
     loadProfile();
   </script>

@@ -89,6 +89,11 @@ export async function apiCall(params = {}, options = {}) {
     case 'getInfo':
       endpoint = `/profile?playerName=${encodeURIComponent(playerName)}`;
       break;
+    case 'changePin':
+      endpoint = `/profile/change-pin`;
+      method = 'POST';
+      body = { playerName, groupName, oldPin: params.oldPin, newPin: params.newPin };
+      break;
     case 'getSummary':
       endpoint = `/summary/${encodeURIComponent(playerName)}?groupName=${encodeURIComponent(groupName)}`;
       break;

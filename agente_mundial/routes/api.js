@@ -551,4 +551,31 @@ router.post('/groups/:groupName/rules', async (req, res) => {
     }
 });
 
+// Cambiar PIN
+router.post('/profile/change-pin', async (req, res) => {
+    try {
+        const { playerName, groupName, oldPin, newPin } = req.body;
+        
+        if (!newPin || newPin.length !== 4) {
+            return res.status(400).json(createResponse('error', null, 'El nuevo PIN debe tener 4 dígitos'));
+        }
+
+        const user = await User.findOne({ name: playerName, groups: groupName });
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+        
+        if (user.pin !== oldPin) {
+            return res.status(401).json(createResponse('error', null, 'El PIN actual es incorrecto'));
+        }
+        
+        user.pin = newPin;
+        await user.save();
+        
+        console.log(`🔐 PIN actualizado para ${playerName} en ${groupName}`);
+        res.json(createResponse('success'));
+    } catch (error) {
+        console.error('❌ Error en POST /profile/change-pin:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 export default router;

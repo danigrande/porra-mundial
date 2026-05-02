@@ -387,7 +387,10 @@ async function openGroupDetails(name) {
             ${group.members.map(m => `
               <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
                 <span>${m.name} <small style="color:var(--text-muted)">(${m.phone})</small></span>
-                <button class="btn-sm" onclick="removeMember('${name}', '${m.name}')" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Quitar</button>
+                <div style="display:flex; gap:5px;">
+                  <button class="btn-sm" onclick="resetUserPin('${m.name}', '${name}')" title="Reset PIN a 1234" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-gold); padding:2px 6px">🔑</button>
+                  <button class="btn-sm" onclick="removeMember('${name}', '${m.name}')" title="Quitar del grupo" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Quitar</button>
+                </div>
               </div>
             `).join('')}
           </div>
@@ -398,8 +401,8 @@ async function openGroupDetails(name) {
             ${predictions.map(p => `
               <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
                 <span>${p.userName}</span>
-                <div>
-                  <button class="btn-sm" onclick="alert(JSON.stringify(${JSON.stringify(p.data)}, null, 2))" style="background:var(--accent-cyan); padding:2px 6px">JSON</button>
+                <div style="display:flex; gap:4px;">
+                  <button class="btn-sm" onclick='viewContent("Predicción: ${p.userName}", ${JSON.stringify(JSON.stringify(p.data))})' style="background:var(--accent-cyan); padding:2px 6px">👁️ Ver</button>
                   <button class="btn-sm" onclick="deletePrediction('${p._id}', '${name}')" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">🗑️</button>
                 </div>
               </div>
@@ -413,7 +416,10 @@ async function openGroupDetails(name) {
           ${summaries.map(s => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
               <span>${s.playerName} <small style="color:var(--text-muted)">(${new Date(s.updatedAt).toLocaleDateString()})</small></span>
-              <button class="btn-sm" onclick="deleteSummary('${s._id}', '${name}')" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Borrar</button>
+              <div style="display:flex; gap:4px;">
+                <button class="btn-sm" onclick='viewContent("Resumen: ${s.playerName}", ${JSON.stringify(JSON.stringify(s.text))})' style="background:var(--accent-green); padding:2px 6px">👁️ Leer</button>
+                <button class="btn-sm" onclick="deleteSummary('${s._id}', '${name}')" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Borrar</button>
+              </div>
             </div>
           `).join('')}
         </div>
@@ -435,6 +441,24 @@ async function deleteGroup(name) {
         headers: { 'x-dev-key': DEV_KEY }
       });
       loadGroups();
+    } catch (e) { alert(e.message); }
+  }
+}
+
+async function resetUserPin(userName, groupName) {
+  if (confirm(`¿Seguro que quieres resetear el PIN de ${userName} a "1234"?`)) {
+    try {
+      const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userName)}/reset-pin`, {
+        method: 'POST',
+        headers: { 'x-dev-key': DEV_KEY }
+      });
+      if (res.ok) {
+        alert(`✅ PIN de ${userName} reseteado a "1234"`);
+        openGroupDetails(groupName);
+      } else {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
     } catch (e) { alert(e.message); }
   }
 }
@@ -567,3 +591,46 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+function viewContent(title, content) {
+  // Crear overlay temporal si no existe
+  let overlay = document.getElementById('content-viewer-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'content-viewer-overlay';
+    overlay.style = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); z-index: 10001;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem; box-sizing: border-box;
+    `;
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
+    document.body.appendChild(overlay);
+  }
+
+  // Formatear JSON si parece serlo
+  let displayContent = content;
+  try {
+    const parsed = JSON.parse(content);
+    displayContent = JSON.stringify(parsed, null, 2);
+  } catch(e) {}
+
+  overlay.innerHTML = `
+    <div style="background: var(--bg-card); border: 1px solid var(--accent-blue); border-radius: 12px; width: 100%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+      <div style="padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin:0; color: var(--accent-blue)">${title}</h3>
+        <button onclick="document.getElementById('content-viewer-overlay').style.display='none'" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+      <div style="padding: 1.5rem; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; color: var(--text-primary);">
+        ${escapeHtml(displayContent)}
+      </div>
+      <div style="padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: right;">
+        <button class="btn-sm" onclick="document.getElementById('content-viewer-overlay').style.display='none'" style="background:var(--accent-blue)">Cerrar</button>
+      </div>
+    </div>
+  `;
+  overlay.style.display = 'flex';
+}
+
+loadHealth();
+loadLogs();
