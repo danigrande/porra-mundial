@@ -225,6 +225,7 @@
     window.handleLogout = handleLogout;
     window.addPlayerToGroup = addPlayerToGroup;
     window.removePlayerFromGroup = removePlayerFromGroup;
+    window.transferAdminRole = transferAdminRole;
     window.saveCriteriaToCloud = saveCriteriaToCloud;
     window.saveCriteria = saveCriteria;
 
@@ -278,11 +279,16 @@
           listEl.innerHTML = players.map(name => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
               <span style="font-weight: 600; color: var(--text-secondary);">${name} ${name === currentUser.name ? '<small style="color:var(--accent-gold); margin-left:5px;">(Tú)</small>' : ''}</span>
-              ${name !== currentUser.name ? `
-                <button onclick="window.removePlayerFromGroup('${name}')" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; transition: all 0.2s;">
-                  Quitar
-                </button>
-              ` : '<span style="font-size:0.7rem; color:var(--text-muted)">Admin</span>'}
+              <div style="display:flex; gap:8px;">
+                ${name !== currentUser.name ? `
+                  <button onclick="window.transferAdminRole('${name}')" style="background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; transition: all 0.2s;">
+                    👑 Traspasar
+                  </button>
+                  <button onclick="window.removePlayerFromGroup('${name}')" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; transition: all 0.2s;">
+                    Quitar
+                  </button>
+                ` : '<span style="font-size:0.7rem; color:var(--text-muted)">Admin</span>'}
+              </div>
             </div>
           `).join('');
         }
@@ -311,6 +317,37 @@
         }
       } catch (e) {
         showToast('❌ Error al eliminar jugador');
+      }
+    }
+
+    async function transferAdminRole(targetName) {
+      if (!confirm(`⚠️ ATENCIÓN: Estás a punto de traspasar el mando del grupo a "${targetName}".\n\nSi aceptas, PERDERÁS inmediatamente todos tus privilegios de administrador y ya no podrás modificar la configuración ni gestionar miembros.\n\n¿Quieres continuar?`)) {
+        return;
+      }
+
+      try {
+        const result = await apiCall({
+          action: 'transferAdmin',
+          targetName,
+          groupName: currentUser.groupName
+        });
+        
+        if (result?.status === 'success') {
+          showToast(`👑 Traspaso completado. ${targetName} es el nuevo admin.`);
+          
+          // Actualizar sesión local
+          currentUser.isAdmin = false;
+          localStorage.setItem('worldcup2026_user', JSON.stringify(currentUser));
+          
+          // Redirigir ya que no tiene permisos aquí
+          setTimeout(() => {
+            window.location.href = 'player_scores.html';
+          }, 2000);
+        } else {
+          showToast('❌ ' + (result?.message || 'Error'));
+        }
+      } catch (e) {
+        showToast('❌ Error en el traspaso');
       }
     }
 

@@ -578,4 +578,42 @@ router.post('/profile/change-pin', async (req, res) => {
     }
 });
 
+// Traspasar admin del grupo (Desde el admin actual)
+router.post('/groups/:groupName/transfer-admin', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const { requesterName, targetName } = req.body;
+        
+        const group = await Group.findOne({ name: groupName });
+        const requester = await User.findOne({ name: requesterName });
+        const target = await User.findOne({ name: targetName });
+        
+        if (!group || !requester || !target) {
+            return res.status(404).json(createResponse('error', null, 'Grupo o usuario no encontrado'));
+        }
+        
+        // Verificar que el solicitante sea el admin actual
+        if (group.admin.toString() !== requester._id.toString()) {
+            return res.status(403).json(createResponse('error', null, 'Solo el administrador actual puede traspasar el mando'));
+        }
+        
+        // Traspaso
+        // 1. Quitar al antiguo
+        await User.findByIdAndUpdate(requester._id, { $pull: { isAdminOf: groupName } });
+        
+        // 2. Cambiar grupo
+        group.admin = target._id;
+        await group.save();
+        
+        // 3. Añadir al nuevo
+        await User.findByIdAndUpdate(target._id, { $addToSet: { isAdminOf: groupName } });
+        
+        console.log(`👑 Traspaso de mando en ${groupName}: de ${requesterName} a ${targetName}`);
+        res.json(createResponse('success'));
+    } catch (error) {
+        console.error('❌ Error en POST /groups/transfer-admin:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 export default router;

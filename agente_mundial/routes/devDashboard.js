@@ -450,6 +450,36 @@ router.delete('/groups/:name', async (req, res) => {
   }
 });
 
+// Cambiar admin del grupo
+router.post('/groups/:groupName/admin', async (req, res) => {
+  try {
+    const { groupName } = req.params;
+    const { newAdminName } = req.body;
+    
+    const group = await Group.findOne({ name: groupName });
+    const newAdmin = await User.findOne({ name: newAdminName });
+    
+    if (!group || !newAdmin) return res.status(404).json({ error: 'Grupo o Usuario no encontrado' });
+
+    // Quitar de los antiguos admins (si los hubiera)
+    if (group.admin) {
+      await User.findByIdAndUpdate(group.admin, { $pull: { isAdminOf: groupName } });
+    }
+
+    // Actualizar grupo
+    group.admin = newAdmin._id;
+    await group.save();
+    
+    // Actualizar nuevo admin
+    await User.findByIdAndUpdate(newAdmin._id, { $addToSet: { isAdminOf: groupName } });
+
+    console.log(`👑 Nuevo admin para ${groupName}: ${newAdminName}`);
+    res.json({ status: 'ok' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Resetear PIN de un usuario (Forzar a 1234)
 router.post('/users/:userName/reset-pin', async (req, res) => {
   try {

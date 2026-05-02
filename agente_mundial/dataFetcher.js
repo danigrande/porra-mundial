@@ -115,6 +115,11 @@ export async function apiCall(params = {}, options = {}) {
       endpoint = `/groups/${encodeURIComponent(groupName)}/players/${encodeURIComponent(playerName)}`;
       method = 'DELETE';
       break;
+    case 'transferAdmin':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/transfer-admin`;
+      method = 'POST';
+      body = { requesterName: playerName, targetName: params.targetName };
+      break;
     case 'simulateMatch':
       endpoint = `/admin/simulate-match`;
       method = 'POST';

@@ -388,6 +388,7 @@ async function openGroupDetails(name) {
               <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
                 <span>${m.name} <small style="color:var(--text-muted)">(${m.phone})</small></span>
                 <div style="display:flex; gap:5px;">
+                  <button class="btn-sm" onclick="setGroupAdmin('${m.name}', '${name}')" title="Hacer Administrador" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-gold); padding:2px 6px">👑</button>
                   <button class="btn-sm" onclick="resetUserPin('${m.name}', '${name}')" title="Reset PIN a 1234" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-gold); padding:2px 6px">🔑</button>
                   <button class="btn-sm" onclick="removeMember('${name}', '${m.name}')" title="Quitar del grupo" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Quitar</button>
                 </div>
@@ -428,6 +429,29 @@ async function openGroupDetails(name) {
     body.innerHTML = html;
   } catch (e) {
     body.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function setGroupAdmin(userName, groupName) {
+  if (confirm(`¿Seguro que quieres hacer a ${userName} el NUEVO ADMINISTRADOR de ${groupName}?\n\nEl administrador actual perderá sus privilegios.`)) {
+    try {
+      const res = await fetch(`${API_BASE}/groups/${encodeURIComponent(groupName)}/admin`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-dev-key': DEV_KEY 
+        },
+        body: JSON.stringify({ newAdminName: userName })
+      });
+      if (res.ok) {
+        alert(`👑 ${userName} es ahora el administrador de ${groupName}`);
+        loadGroups(); // Refrescar tabla principal para ver el cambio de admin
+        openGroupDetails(groupName); // Refrescar detalle
+      } else {
+        const err = await res.json();
+        throw new Error(err.error);
+      }
+    } catch (e) { alert(e.message); }
   }
 }
 
