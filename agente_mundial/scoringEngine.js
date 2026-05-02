@@ -130,7 +130,7 @@ export function calculateScore(prediction, reality, rules = {}) {
   if (!reality || !prediction) return { totalPts, exactHits, groupPts, koPts, honorPts, history };
 
   const getRule = (id, fallback) => rules[id] !== undefined ? parseFloat(rules[id]) : fallback;
-  const opt_diff_adjust = getRule('opt_diff_adjust', 0) / 100;
+
 
   const ptsRules = {
     group: { sign: getRule('pts_group_sign', 10), diff: getRule('pts_group_diff', 10), exact: getRule('pts_group_exact', 10) },
@@ -165,7 +165,7 @@ export function calculateScore(prediction, reality, rules = {}) {
         exactHits++;
       } else {
         const desvio = rSign === 'X' ? Math.abs(rH - pH) : Math.abs((rH - rA) - (pH - pA));
-        let diffPoints = opt_diff_adjust === 0 ? (desvio === 0 ? pRules.diff : 0) : Math.max(0, pRules.diff - (desvio * opt_diff_adjust * pRules.diff));
+        let diffPoints = (desvio === 0) ? pRules.diff : 0;
         if (diffPoints > 0) {
           mPts += diffPoints;
           reasons.push(`Diferencia (+${Math.round(diffPoints)})`);

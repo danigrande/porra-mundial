@@ -217,9 +217,10 @@ router.get('/profile', async (req, res) => {
         
         res.json(createResponse('success', {
             phone: user.phone,
-            likes: user.likes,
-            dislikes: user.dislikes,
-            humor_style: user.humor_style
+            likes: user.likes || [],
+            dislikes: user.dislikes || [],
+            humor_style: user.humor_style || 'Divertido y amigable',
+            nickname: user.nickname || user.name
         }));
     } catch (error) {
         console.error('❌ Error en GET /profile:', error);
@@ -237,9 +238,10 @@ router.post('/profile', async (req, res) => {
             { 
                 $set: { 
                     phone: profile.phone || '000000',
+                    nickname: profile.nickname || playerName,
                     likes: profile.likes || [],
                     dislikes: profile.dislikes || [],
-                    humor_style: profile.humor_style || 'Normal'
+                    humor_style: profile.humor_style || 'Divertido y amigable'
                 }
             },
             { new: true }
@@ -405,7 +407,24 @@ router.get('/groups/:groupName/players', async (req, res) => {
 });
 
 router.get('/groups/:groupName/profiles', async (req, res) => {
-    res.json(createResponse('success', {}));
+    try {
+        const group = await Group.findOne({ name: req.params.groupName }).populate('members');
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        const profiles = {};
+        group.members.forEach(user => {
+            profiles[user.name] = {
+                phone: user.phone,
+                likes: user.likes || [],
+                dislikes: user.dislikes || [],
+                humor_style: user.humor_style || 'Divertido y amigable',
+                nickname: user.nickname || user.name
+            };
+        });
+        res.json(createResponse('success', profiles));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
 });
 
 router.get('/groups/:groupName/phone-mapping', async (req, res) => {

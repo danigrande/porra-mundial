@@ -121,7 +121,7 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, wh
 
   if (intent === 'help') {
     return `🏆 *Agente Mundial* — Asistente del grupo *${groupName || 'Privado'}*
-\nPuedes preguntarme por el ranking, tu posición o un resumen de la jornada.`;
+\nPuedes preguntarme por la clasificación, tu posición o un resumen de la jornada.`;
   }
 
   // 4. Si el usuario pide su estado o ranking

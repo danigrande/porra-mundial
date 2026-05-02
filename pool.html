@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description"
     content="Pool de la Porra del Mundial 2026 - Listado de todos los partidos con resultados de las predicciones">
-  <title>Predictions - Porra Mundial 2026</title>
+  <title>Predicciones - Porra Mundial 2026</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     /* Sticky header for the multi-column pool table */
@@ -57,14 +57,8 @@
         <span class="nav-logo-icon">⚽</span>
         <span class="nav-logo-text">Mundial 2026</span>
       </a>
-      <div class="nav-links">
-        <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
-        <a href="pool.html" class="nav-link active">Predictions</a>
-        <a href="fixture.html" class="nav-link">Results</a>
-        <a href="fixture_testing.html" class="nav-link">Results Testing</a>
-        <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
-        <a href="player_scores.html" class="nav-link">Leaderboard</a>
-        <a href="about_user.html" class="nav-link">Mi Perfil</a>
+      <div class="nav-links" id="navLinks">
+        <!-- Generado dinámicamente -->
       </div>
 
       <div id="navUserInfo" class="nav-user" style="display:none;">
@@ -76,7 +70,7 @@
 
   <!-- Header -->
   <header class="page-header">
-    <h1><span class="header-icon">📋</span> <span class="header-text-gradient">Predictions – Predicciones de los jugadores</span></h1>
+    <h1><span class="header-icon">📋</span> <span class="header-text-gradient">Predicciones – El Muro de la Porra</span></h1>
     <p class="subtitle">Listado completo de partidos con las predicciones de cada jugador</p>
   </header>
 
@@ -126,32 +120,12 @@
     // ¡Pega aquí la URL de tu Google Apps Script cuando la tengas!
 
 
-    let currentUser = null;
+    import { checkAuth, handleLogout, renderNavigation } from './shared_ui.js';
+    import { apiCall } from './agente_mundial/dataFetcher.js';
 
-    function checkAuth() {
-      const raw = localStorage.getItem('worldcup2026_user');
-      if (!raw) {
-        window.location.href = 'index.html';
-        return;
-      }
-      try {
-        currentUser = JSON.parse(raw);
-        if (!currentUser.name || !currentUser.pin || !currentUser.groupName) throw new Error();
-        
-        document.getElementById('navUserInfo').style.display = 'flex';
-        document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
-      } catch (e) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
-      }
-    }
-
-    window.handleLogout = () => {
-      if (confirm('¿Quieres cerrar sesión?')) {
-        localStorage.removeItem('worldcup2026_user');
-        window.location.href = 'index.html';
-      }
-    }
+    window.handleLogout = handleLogout;
+    renderNavigation('pool.html');
+    let currentUser = checkAuth();
 
     let cloudData = {};
 
@@ -335,7 +309,7 @@
       } catch (e) { return '–'; }
     }
 
-    import { apiCall } from './agente_mundial/dataFetcher.js';
+
 
     async function fetchCloudData() {
       if (!RENDER_URL) return;

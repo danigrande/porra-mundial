@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Porra del Mundial 2026 - Introduce tus predicciones de goles">
-  <title>World Cup Predictions - Porra Mundial 2026</title>
+  <title>Mi predicción - Porra Mundial 2026</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -17,13 +17,8 @@
         <span class="nav-logo-icon">⚽</span>
         <span class="nav-logo-text">Mundial 2026</span>
       </a>
-      <div class="nav-links">
-        <a href="worldcup.html" class="nav-link active">World Cup Predictions</a>
-        <a href="pool.html" class="nav-link">Predictions</a>
-        <a href="fixture.html" class="nav-link">Results</a>
-        <a href="scoring_criteria.html" class="nav-link">Scoring Rules</a>
-        <a href="player_scores.html" class="nav-link">Leaderboard</a>
-        <a href="about_user.html" class="nav-link">Mi Perfil</a>
+      <div class="nav-links" id="navLinks">
+        <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
@@ -33,7 +28,7 @@
   </nav>
 
   <header class="page-header">
-    <h1><span class="header-icon">🏆</span> <span class="header-text-gradient">XXIII Mundial USA/MEX/CAN 2026</span></h1>
+    <h1><span class="header-icon">🏆</span> <span class="header-text-gradient">Mi predicción – Mundial 2026</span></h1>
     <p class="subtitle">Introduce tus predicciones de goles para cada partido</p>
   </header>
 
@@ -65,12 +60,13 @@
 
   <script src="web_config.js"></script>
   <script type="module">
-    import { checkAuth, handleLogout, showToast } from './shared_ui.js';
+    import { checkAuth, handleLogout, showToast, renderNavigation } from './shared_ui.js';
     import { TEAM_CODES, FIXTURE_GROUPS, KNOCKOUT_BRACKET, BRACKET_MATCHES } from './agente_mundial/shared_data.js';
     import { getStandings, fullResolve } from './agente_mundial/scoringEngine.js';
     import { apiCall } from './agente_mundial/dataFetcher.js';
 
     window.handleLogout = handleLogout;
+    renderNavigation('worldcup.html');
     let currentUser = checkAuth();
     let predictions = {};
 

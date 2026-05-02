@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description"
     content="Configuración de Puntuaciones - Porra Mundial 2026">
-  <title>Scoring Rules - Porra Mundial 2026</title>
+  <title>Configuración - Porra Mundial 2026</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     .admin-notice {
@@ -39,12 +39,7 @@
         <span class="nav-logo-text">Mundial 2026</span>
       </a>
       <div class="nav-links" id="navLinks">
-        <a href="worldcup.html" class="nav-link">World Cup Predictions</a>
-        <a href="pool.html" class="nav-link">Predictions</a>
-        <a href="fixture.html" class="nav-link">Results</a>
-        <a href="fixture_testing.html" class="nav-link">Results Testing</a>
-        <a href="scoring_criteria.html" class="nav-link active">Scoring Rules</a>
-        <a href="player_scores.html" class="nav-link">Leaderboard</a>
+        <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
@@ -55,7 +50,7 @@
 
   <!-- Header -->
   <header class="page-header">
-    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient">Criterios de Puntuación</span></h1>
+    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient">Configuración de la Porra</span></h1>
     <p class="subtitle" id="pageSubtitle">Configura los puntos otorgados por cada acierto en la porra</p>
   </header>
 
@@ -204,32 +199,7 @@
         </div>
       </div>
 
-      <!-- Ajustes Avanzados -->
-      <div class="group-card">
-        <div class="group-header">
-          <div class="group-letter" style="background: var(--bg-card); border: 1px solid var(--border-color);">⚙️</div>
-          <div>
-            <div class="group-name">Ajuste por desvío de goles</div>
-            <div class="group-teams-summary">Ajuste porcentual restado por cada gol de fallo en Diferencia/Distancia de goles</div>
-          </div>
-        </div>
-        <div style="padding: 1.25rem;">
-          <table class="prediction-standings" style="text-align: left;">
-            <tbody>
-              <tr>
-                <td style="padding-left:1rem;">
-                  <strong>Porcentaje de Ajuste</strong><br>
-                  <small style="color:var(--text-muted)">Si pones "0", la diferencia de goles se evalúa como exacta (o la aciertas o 0 ptos).</small>
-                </td>
-                <td style="width: 150px; display: flex; align-items: center; gap: 8px;">
-                  <input type="number" id="opt_diff_adjust" class="score-input" value="0" min="0" max="95" step="5" onchange="saveCriteria()">
-                  <span style="font-weight: bold; color: var(--text-secondary);">%</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+
 
       <div style="text-align: center; margin-top: 2rem;">
         <button id="btnSaveCloud" onclick="saveCriteriaToCloud()" class="btn-cloud">
@@ -249,7 +219,7 @@
 
   <script src="web_config.js"></script>
   <script type="module">
-    import { checkAuth, handleLogout, showToast as sharedToast } from './shared_ui.js';
+    import { checkAuth, handleLogout, showToast as sharedToast, renderNavigation } from './shared_ui.js';
     import { apiCall } from './agente_mundial/dataFetcher.js';
 
     window.handleLogout = handleLogout;
@@ -258,6 +228,7 @@
     window.saveCriteriaToCloud = saveCriteriaToCloud;
     window.saveCriteria = saveCriteria;
 
+    renderNavigation('scoring_criteria.html');
     let currentUser = checkAuth();
 
     function showToast(msg) { sharedToast(msg); }
@@ -347,8 +318,7 @@
       'pts_group_sign', 'pts_group_diff', 'pts_group_exact', 'pts_group_pos', 'pts_group_qualify',
       'pts_ko_sign', 'pts_ko_diff', 'pts_ko_exact', 'pts_ko_qualify',
       'pts_honor_champ', 'pts_honor_runner', 'pts_honor_third',
-      'pts_award_gold', 'pts_award_silver', 'pts_award_bronze',
-      'opt_diff_adjust'
+      'pts_award_gold', 'pts_award_silver', 'pts_award_bronze'
     ];
 
     function saveCriteria() {

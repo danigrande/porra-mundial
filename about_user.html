@@ -92,10 +92,8 @@
         <span class="nav-logo-icon">⚽</span>
         <span class="nav-logo-text">Mundial 2026</span>
       </a>
-      <div class="nav-links">
-        <a href="worldcup.html" class="nav-link">Predictions</a>
-        <a href="player_scores.html" class="nav-link">Leaderboard</a>
-        <a href="about_user.html" class="nav-link active">Mi Perfil</a>
+      <div class="nav-links" id="navLinks">
+        <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user">
         <span class="nav-user-name" id="displayUserName"></span>
@@ -156,23 +154,12 @@
   <script src="web_config.js"></script>
   <script type="module">
 
-    let currentUser = null;
-
-    function checkAuth() {
-      const raw = localStorage.getItem('worldcup2026_user');
-      if (!raw) {
-        window.location.href = 'index.html';
-        return;
-      }
-      currentUser = JSON.parse(raw);
-      if (!currentUser.groupName) {
-        window.location.href = 'index.html';
-        return;
-      }
-      document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
-    }
-
+    import { checkAuth, handleLogout, renderNavigation } from './shared_ui.js';
     import { apiCall } from './agente_mundial/dataFetcher.js';
+
+    window.handleLogout = handleLogout;
+    renderNavigation('about_user.html');
+    let currentUser = checkAuth();
 
     async function loadProfile() {
       try {
@@ -231,12 +218,9 @@
       }
     };
 
-    window.handleLogout = () => {
-      localStorage.removeItem('worldcup2026_user');
-      window.location.href = 'index.html';
-    }
 
-    checkAuth();
+
+
     loadProfile();
   </script>
 </body>

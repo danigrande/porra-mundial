@@ -69,17 +69,16 @@ export async function generateResponse(playerName, question, context, meta = {})
 
   // Contexto del ranking general
   const rankingContext = leaderboard
-    ? `Ranking actual:\n${leaderboard.slice(0, 10).map((p, i) =>
-      `${i + 1}. ${p.name}: ${p.totalPts} pts (${p.exactHits} plenos)`
-    ).join('\n')}`
-    : 'No hay ranking disponible aún.';
+    ? `Clasificación actual:\n${leaderboard.slice(0, 10).map((p, i) => 
+        `${i + 1}. ${p.name}: ${p.totalPts} pts`).join('\n')}`
+    : 'No hay datos de clasificación disponibles todavía.';
 
   const userMessage = `DATOS DEL GRUPO: ${groupName || 'Privado'}
  
  DATOS DEL JUGADOR QUE PREGUNTA:
  ${playerContext}
 
-RANKING GENERAL:
+CLASIFICACIÓN GENERAL:
 ${rankingContext}
 
 ${context.chatContext ? `HISTORIAL DE CHAT RECIENTE SOBRE EL JUGADOR (RAG):\n${context.chatContext}\n` : ''}
@@ -171,7 +170,7 @@ export async function generateDailySummary(leaderboard, profiles, groupName) {
 
   const userMessage = `Genera un RESUMEN DE JORNADA para el grupo "${groupName}" de la Porra Mundial 2026 para publicar en WhatsApp.
 
-RANKING ACTUAL:
+CLASIFICACIÓN ACTUAL:
 ${rankingText}
 
 El resumen debe:

@@ -40,3 +40,30 @@ export function showToast(msg, isError = false) {
   toast.className = isError ? 'toast show error' : 'toast show';
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
+
+/**
+ * Centralized navigation rendering
+ * @param {string} currentPage - The filename of the current page (e.g. 'worldcup.html')
+ */
+export function renderNavigation(currentPage) {
+  const user = checkAuth();
+  if (!user) return;
+
+  const navLinks = document.getElementById('navLinks');
+  if (!navLinks) return;
+
+  const links = [
+    { href: 'worldcup.html', text: 'Mi predicción', adminOnly: false },
+    { href: 'pool.html', text: 'Predicciones', adminOnly: false },
+    { href: 'player_scores.html', text: 'Clasificación', adminOnly: false },
+    { href: 'about_user.html', text: 'Mi Perfil', adminOnly: false },
+    { href: 'fixture_testing.html', text: 'Resultados', adminOnly: true },
+    { href: 'scoring_criteria.html', text: 'Configuración', adminOnly: true }
+  ];
+
+  navLinks.innerHTML = links
+    .filter(link => !link.adminOnly || user.isAdmin)
+    .map(link => `
+      <a href="${link.href}" class="nav-link ${currentPage === link.href ? 'active' : ''}">${link.text}</a>
+    `).join('');
+}

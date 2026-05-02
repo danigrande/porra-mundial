@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Results Admin - Porra Mundial 2026</title>
+  <title>Resultados - Porra Mundial 2026</title>
   <link rel="stylesheet" href="styles.css">
   <style>
     .admin-controls {
@@ -46,16 +46,14 @@
   <nav class="main-nav">
     <div class="nav-inner">
       <a href="worldcup.html" class="nav-logo">⚽ Mundial 2026</a>
-      <div class="nav-links">
-        <a href="worldcup.html" class="nav-link">Predictions</a>
-        <a href="fixture.html" class="nav-link">View Results</a>
-        <a href="fixture_testing.html" class="nav-link active">Admin Panel</a>
+      <div class="nav-links" id="navLinks">
+        <!-- Generado dinámicamente -->
       </div>
     </div>
   </nav>
 
   <header class="page-header">
-    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient">Admin – Resultados Oficiales</span></h1>
+    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient">Resultados – Control Oficial</span></h1>
     <p class="subtitle">Control total del torneo. Lo que pongas aquí afecta a todos los rankings.</p>
   </header>
 
@@ -73,11 +71,12 @@
 
   <script src="web_config.js"></script>
   <script type="module">
-    import { checkAuth, showToast } from './shared_ui.js';
+    import { checkAuth, showToast, renderNavigation } from './shared_ui.js';
     import { TEAM_CODES, FIXTURE_GROUPS, KNOCKOUT_BRACKET, BRACKET_MATCHES } from './agente_mundial/shared_data.js';
     import { getStandings, fullResolve } from './agente_mundial/scoringEngine.js';
     import { apiCall } from './agente_mundial/dataFetcher.js';
 
+    renderNavigation('fixture_testing.html');
     let currentUser = checkAuth();
     let reality = {};
 
