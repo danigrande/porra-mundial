@@ -50,8 +50,8 @@
 
   <!-- Header -->
   <header class="page-header">
-    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient">Configuración de la Porra</span></h1>
-    <p class="subtitle" id="pageSubtitle">Configura los puntos otorgados por cada acierto en la porra</p>
+    <h1><span class="header-icon">👥</span> <span class="header-text-gradient">Configuración del Grupo</span></h1>
+    <p class="subtitle" id="pageSubtitle">Gestiona los miembros de tu grupo y la administración</p>
   </header>
 
   <!-- Main Content -->
@@ -62,8 +62,8 @@
       <div class="group-header" style="background: var(--gradient-secondary); border-radius: 12px 12px 0 0;">
         <div class="group-letter">👤</div>
         <div>
-          <div class="group-name">Gestión de Miembros</div>
-          <div class="group-teams-summary">Añadir nuevos jugadores al grupo</div>
+          <div class="group-name">Miembros del Grupo</div>
+          <div class="group-teams-summary">Añadir o quitar jugadores y traspasar mando</div>
         </div>
       </div>
       <div style="padding: 1.25rem; display: flex; gap: 10px;">
@@ -79,135 +79,6 @@
           <!-- Cargado dinámicamente -->
         </div>
       </div>
-    </div>
-
-    <div id="adminNotice" class="admin-notice" style="display:none;">
-      <span>⚠️</span>
-      <span>Solo el administrador del grupo puede modificar estas reglas.</span>
-    </div>
-
-    <div class="groups-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
-
-      <!-- Fase de Grupos -->
-      <div class="group-card">
-        <div class="group-header">
-          <div class="group-letter" style="background: var(--gradient-primary);">1</div>
-          <div>
-            <div class="group-name">Fase de Grupos</div>
-            <div class="group-teams-summary">Puntos otorgados en los partidos de la fase inicial</div>
-          </div>
-        </div>
-        <div style="padding: 1.25rem;">
-          <table class="prediction-standings" style="text-align: left;">
-            <tbody>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Signo 1X2</strong> <br><small style="color:var(--text-muted)">Acertar ganador o empate</small></td>
-                <td style="width: 100px;"><input type="number" id="pts_group_sign" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Diferencia de goles</strong> <br><small style="color:var(--text-muted)">Con el signo acertado</small></td>
-                <td><input type="number" id="pts_group_diff" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Resultado exacto</strong></td>
-                <td><input type="number" id="pts_group_exact" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Posición exacta en el grupo</strong> <br><small style="color:var(--text-muted)">1º, 2º, 3º o 4º</small></td>
-                <td><input type="number" id="pts_group_pos" class="score-input" value="5" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Equipo clasificado para Dieciseisavos</strong></td>
-                <td><input type="number" id="pts_group_qualify" class="score-input" value="5" min="0" onchange="saveCriteria()"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Eliminatorias -->
-      <div class="group-card">
-        <div class="group-header">
-          <div class="group-letter" style="background: var(--gradient-secondary);">2</div>
-          <div>
-            <div class="group-name">Rondas Eliminatorias</div>
-            <div class="group-teams-summary">Desde Dieciseisavos hasta la Final</div>
-          </div>
-        </div>
-        <div style="padding: 1.25rem;">
-          <table class="prediction-standings" style="text-align: left;">
-            <tbody>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Signo 1X2</strong></td>
-                <td style="width: 100px;"><input type="number" id="pts_ko_sign" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Diferencia de goles</strong></td>
-                <td><input type="number" id="pts_ko_diff" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Resultado exacto</strong></td>
-                <td><input type="number" id="pts_ko_exact" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Equipo clasificado para la siguiente ronda</strong></td>
-                <td><input type="number" id="pts_ko_qualify" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Cuadro de Honor -->
-      <div class="group-card">
-        <div class="group-header">
-          <div class="group-letter" style="background: var(--gradient-gold);">3</div>
-          <div>
-            <div class="group-name">Cuadro de Honor y Premios</div>
-            <div class="group-teams-summary">Aciertos a largo plazo al final del mundial</div>
-          </div>
-        </div>
-        <div style="padding: 1.25rem;">
-          <table class="prediction-standings" style="text-align: left;">
-            <tbody>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Campeón del Mundo</strong></td>
-                <td style="width: 100px;"><input type="number" id="pts_honor_champ" class="score-input" value="50" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Subcampeón</strong></td>
-                <td><input type="number" id="pts_honor_runner" class="score-input" value="30" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>3º Puesto</strong></td>
-                <td><input type="number" id="pts_honor_third" class="score-input" value="20" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Bota / Balón de Oro</strong></td>
-                <td><input type="number" id="pts_award_gold" class="score-input" value="25" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Bota / Balón de Plata</strong></td>
-                <td><input type="number" id="pts_award_silver" class="score-input" value="15" min="0" onchange="saveCriteria()"></td>
-              </tr>
-              <tr>
-                <td style="padding-left:1rem;"><strong>Bota / Balón de Bronce</strong></td>
-                <td><input type="number" id="pts_award_bronze" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-
-
-      <div style="text-align: center; margin-top: 2rem;">
-        <button id="btnSaveCloud" onclick="saveCriteriaToCloud()" class="btn-cloud">
-          <span class="icon">☁️</span>
-          <span>Guardar Configuración en la Nube</span>
-        </button>
-      </div>
-      
     </div>
 
   </main>
@@ -226,8 +97,6 @@
     window.addPlayerToGroup = addPlayerToGroup;
     window.removePlayerFromGroup = removePlayerFromGroup;
     window.transferAdminRole = transferAdminRole;
-    window.saveCriteriaToCloud = saveCriteriaToCloud;
-    window.saveCriteria = saveCriteria;
 
     renderNavigation('scoring_criteria.html');
     let currentUser = checkAuth();
@@ -237,20 +106,11 @@
     function checkAuthWrapper() {
       if (!currentUser) return;
       document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
-      document.getElementById('pageSubtitle').textContent = `Configuración para el grupo: ${currentUser.groupName}`;
-
+      
       if (!currentUser.isAdmin) {
-        disableEditing();
+        // Esta página es solo para admins, si llegase un usuario normal le mandamos fuera
+        window.location.href = 'player_scores.html';
       }
-    }
-
-    function disableEditing() {
-      document.getElementById('adminNotice').style.display = 'flex';
-      document.getElementById('btnSaveCloud').style.display = 'none';
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = true;
-      });
     }
 
     function enableMemberManagement() {
@@ -351,30 +211,6 @@
       }
     }
 
-    const ids = [
-      'pts_group_sign', 'pts_group_diff', 'pts_group_exact', 'pts_group_pos', 'pts_group_qualify',
-      'pts_ko_sign', 'pts_ko_diff', 'pts_ko_exact', 'pts_ko_qualify',
-      'pts_honor_champ', 'pts_honor_runner', 'pts_honor_third',
-      'pts_award_gold', 'pts_award_silver', 'pts_award_bronze'
-    ];
-
-    function saveCriteria() {
-      const data = {};
-      ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          if (el.type === 'checkbox') {
-            data[id] = el.checked;
-          } else {
-            // Convertir a número si es un campo de puntos, si no dejar como string (pero no vacío)
-            const val = el.value.trim();
-            data[id] = (val === '' && el.placeholder) ? 0 : (isNaN(val) ? val : Number(val));
-          }
-        }
-      });
-      localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(data));
-    }
-
     async function addPlayerToGroup() {
       const nameInput = document.getElementById('newPlayerName');
       const playerName = nameInput.value.trim();
@@ -411,79 +247,8 @@
         btn.innerHTML = originalText;
       }
     }
-    
-    async function saveCriteriaToCloud() {
-      if (!currentUser.isAdmin) return;
-      saveCriteria();
-      const raw = localStorage.getItem(`worldcup2026_scoring_${currentUser.groupName}`);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      
-      const btn = document.getElementById('btnSaveCloud');
-      const btnSpan = btn.querySelector('span:last-child');
-      btnSpan.textContent = '⏳ Subiendo a la nube...';
-      btn.disabled = true;
-
-      try {
-        const result = await apiCall({
-          action: 'saveRules',
-          playerName: currentUser.name,
-          groupName: currentUser.groupName,
-          data: data
-        }, { method: 'POST' });
-
-        if (result?.status === 'success') {
-          showToast('☁️ Reglas de puntuación sincronizadas');
-        } else {
-          showToast('❌ ' + (result?.message || 'Error'));
-        }
-      } catch (e) {
-        console.error("Error sincronizando reglas", e);
-        showToast('❌ Error al subir la configuración');
-      } finally {
-        btnSpan.textContent = 'Guardar Configuración en la Nube';
-        btn.disabled = false;
-      }
-    }
-
-    function applyCriteria(data) {
-      ids.forEach(id => {
-        if (data[id] !== undefined) {
-          const el = document.getElementById(id);
-          if (el) {
-            if (el.type === 'checkbox') {
-              el.checked = !!data[id];
-            } else {
-              el.value = data[id];
-            }
-          }
-        }
-      });
-    }
-
-    async function loadCriteria() {
-      const raw = localStorage.getItem(`worldcup2026_scoring_${currentUser.groupName}`);
-      if (raw) {
-        try { applyCriteria(JSON.parse(raw)); } catch (e) {}
-      }
-
-      try {
-        const result = await apiCall({ action: 'getRules', groupName: currentUser.groupName });
-        if (result?.status === 'success' && result.data) {
-          const data = result.data;
-          if (Object.keys(data).length > 0) {
-            applyCriteria(data);
-            localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(data));
-            showToast('🤖 Reglas actualizadas');
-          }
-        }
-      } catch (e) {
-        console.log("Error cargando reglas de la nube.", e);
-      }
-    }
 
     checkAuthWrapper();
-    loadCriteria();
     enableMemberManagement();
   </script>
 </body>

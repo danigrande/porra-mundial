@@ -58,6 +58,7 @@ export function renderNavigation(currentPage) {
     { href: 'pool.html', text: 'Predicciones', adminOnly: false },
     { href: 'worldcup.html', text: 'Mi predicción', adminOnly: false },
     { href: 'about_user.html', text: 'Mi Perfil', adminOnly: false },
+    { href: 'points_system.html', text: 'Sistema de puntuación', adminOnly: false },
     { href: 'scoring_criteria.html', text: 'Configuración', adminOnly: true }
   ];
 
