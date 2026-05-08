@@ -643,4 +643,126 @@ router.post('/groups/:groupName/transfer-admin', async (req, res) => {
     }
 });
 
+// ==========================================
+// RUTAS DE WHATSAPP — Vincular bot a grupo
+// ==========================================
+
+// Estado de WhatsApp para un grupo
+router.get('/groups/:groupName/whatsapp-status', async (req, res) => {
+    try {
+        const group = await Group.findOne({ name: req.params.groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        const botConnected = !!(global.whatsappSock?.user);
+        
+        res.json(createResponse('success', {
+            linked: !!group.whatsappGroupId,
+            whatsappGroupId: group.whatsappGroupId || null,
+            botConnected
+        }));
+    } catch (error) {
+        console.error('❌ Error en GET /whatsapp-status:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// Vincular bot a un grupo de WhatsApp mediante enlace de invitación
+router.post('/groups/:groupName/join-whatsapp', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const { inviteLink } = req.body;
+        
+        if (!inviteLink) {
+            return res.status(400).json(createResponse('error', null, 'El enlace de invitación es requerido'));
+        }
+
+        // Extraer código de invitación del enlace
+        // Formatos: https://chat.whatsapp.com/CODE o solo CODE
+        const match = inviteLink.match(/chat\.whatsapp\.com\/([A-Za-z0-9]+)/);
+        const inviteCode = match ? match[1] : inviteLink.trim();
+        
+        if (!inviteCode || inviteCode.length < 10) {
+            return res.status(400).json(createResponse('error', null, 'Enlace de invitación inválido'));
+        }
+
+        const group = await Group.findOne({ name: groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+
+        // Verificar que el bot está conectado
+        if (!global.whatsappSock?.user) {
+            return res.status(503).json(createResponse('error', null, 'El bot de WhatsApp no está conectado. Inténtalo más tarde.'));
+        }
+
+        console.log(`🔗 [WhatsApp] Intentando unir bot al grupo "${groupName}" con código: ${inviteCode}`);
+
+        try {
+            // Intentar unirse al grupo
+            const groupJid = await global.whatsappSock.groupAcceptInvite(inviteCode);
+            console.log(`✅ [WhatsApp] Bot unido al grupo. JID: ${groupJid}`);
+            
+            // Guardar el JID en el grupo
+            group.whatsappGroupId = groupJid;
+            await group.save();
+            
+            res.json(createResponse('success', { whatsappGroupId: groupJid }));
+        } catch (waError) {
+            console.error('❌ [WhatsApp] Error al unirse:', waError.message);
+            
+            // Si el error es que ya está en el grupo, intentar obtener el JID
+            if (waError.message?.includes('already') || waError.message?.includes('conflict')) {
+                // Intentar obtener info del grupo con el código de invitación
+                try {
+                    const groupInfo = await global.whatsappSock.groupGetInviteInfo(inviteCode);
+                    if (groupInfo?.id) {
+                        group.whatsappGroupId = groupInfo.id;
+                        await group.save();
+                        console.log(`✅ [WhatsApp] Bot ya estaba en el grupo. JID: ${groupInfo.id}`);
+                        return res.json(createResponse('success', { whatsappGroupId: groupInfo.id, alreadyMember: true }));
+                    }
+                } catch (infoError) {
+                    console.error('❌ [WhatsApp] Error obteniendo info del grupo:', infoError.message);
+                }
+            }
+            
+            return res.status(400).json(createResponse('error', null, `No se pudo unir al grupo: ${waError.message}`));
+        }
+    } catch (error) {
+        console.error('❌ Error en POST /join-whatsapp:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// Desvincular bot de un grupo de WhatsApp
+router.post('/groups/:groupName/leave-whatsapp', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const group = await Group.findOne({ name: groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        if (!group.whatsappGroupId) {
+            return res.status(400).json(createResponse('error', null, 'El grupo no tiene WhatsApp vinculado'));
+        }
+
+        // Intentar salir del grupo de WhatsApp
+        if (global.whatsappSock?.user) {
+            try {
+                await global.whatsappSock.groupLeave(group.whatsappGroupId);
+                console.log(`👋 [WhatsApp] Bot salió del grupo "${groupName}" (${group.whatsappGroupId})`);
+            } catch (waError) {
+                console.warn(`⚠️ [WhatsApp] Error al salir del grupo (puede que ya no estemos): ${waError.message}`);
+            }
+        }
+        
+        // Limpiar el campo en la BD
+        group.whatsappGroupId = null;
+        await group.save();
+        
+        res.json(createResponse('success'));
+    } catch (error) {
+        console.error('❌ Error en POST /leave-whatsapp:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 export default router;
+

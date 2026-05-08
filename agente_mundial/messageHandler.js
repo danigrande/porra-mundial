@@ -7,18 +7,43 @@ import * as dataFetcher from './dataFetcher.js';
 import { calculateLeaderboard } from './scoringEngine.js';
 import { generateResponse, generateDailySummary } from './groqEngine.js';
 
+import { Group } from './models/Group.js';
+
 // Cache organizada por GroupName
 const caches = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
+// Cache de mapeo WhatsApp GroupId -> GroupName (para no hacer query cada mensaje)
+const whatsappGroupCache = new Map();
+const WA_CACHE_TTL = 2 * 60 * 1000; // 2 minutos
+
 /**
  * Identifica el nombre legible del grupo a partir del ID de WhatsApp.
+ * Busca primero en config.js (compatibilidad), luego en MongoDB.
  */
-function resolveGroupName(groupId) {
-  const name = config.groups[groupId];
-  // Si el nombre existe, lo normalizamos a minúsculas o al formato que espera la DB
-  // En este caso, parece que la DB tiene "Los amigos de Dani"
-  return name || null;
+async function resolveGroupName(groupId) {
+  // 1. Buscar en config.js (compatibilidad con mapeo estático)
+  const configName = config.groups[groupId];
+  if (configName) return configName;
+  
+  // 2. Buscar en cache local
+  const cached = whatsappGroupCache.get(groupId);
+  if (cached && (Date.now() - cached.timestamp) < WA_CACHE_TTL) {
+    return cached.name;
+  }
+  
+  // 3. Buscar en MongoDB
+  try {
+    const group = await Group.findOne({ whatsappGroupId: groupId });
+    if (group) {
+      whatsappGroupCache.set(groupId, { name: group.name, timestamp: Date.now() });
+      return group.name;
+    }
+  } catch (e) {
+    console.error('Error buscando grupo en BD:', e.message);
+  }
+  
+  return null;
 }
 
 /**
@@ -103,11 +128,11 @@ export function detectIntent(text) {
  */
 export async function processMessage(text, senderPhone, isGroup, isMentioned, whatsappGroupId) {
   // 1. Identificar Grupo
-  const groupName = isGroup ? resolveGroupName(whatsappGroupId) : null;
+  const groupName = isGroup ? await resolveGroupName(whatsappGroupId) : null;
   
   if (isGroup && !isMentioned) return null;
   if (isGroup && !groupName) {
-    return "⚠️ Este grupo no está registrado en mi configuración. Dile al administrador que añada el ID " + whatsappGroupId + " a config.js";
+    return "⚠️ Este grupo no está registrado. Pide al administrador que vincule el bot desde la web.";
   }
 
   // 2. Refrescar datos del grupo
@@ -186,7 +211,7 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, wh
  * @param {boolean} force - Si es true, ignora la comprobación de si hubo partidos hoy
  */
 export async function generateGroupSummary(whatsappGroupId, force = false) {
-  const groupName = resolveGroupName(whatsappGroupId);
+  const groupName = await resolveGroupName(whatsappGroupId);
   if (!groupName) return "Error: Grupo no reconocido";
 
   await refreshCache(groupName);

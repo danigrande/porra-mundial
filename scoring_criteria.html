@@ -101,6 +101,52 @@
   <!-- Main Content -->
   <main class="main-content">
 
+    <!-- Agente Mundial — WhatsApp (Solo Admin) -->
+    <div id="whatsappSection" class="group-card" style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+      <div class="group-header" style="background: linear-gradient(135deg, #128C7E 0%, #075E54 100%); border-radius: 12px 12px 0 0;">
+        <div class="group-letter">🤖</div>
+        <div>
+          <div class="group-name">Agente Mundial — WhatsApp</div>
+          <div class="group-teams-summary">Conecta el bot a tu grupo de WhatsApp</div>
+        </div>
+      </div>
+      <!-- Status -->
+      <div id="waStatus" style="padding: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="waStatusIcon" style="font-size: 1.5rem;">⏳</span>
+          <div>
+            <div id="waStatusText" style="font-weight: 600; color: var(--text-secondary);">Comprobando estado...</div>
+            <div id="waStatusDetail" style="font-size: 0.75rem; color: var(--text-muted);"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Vincular -->
+      <div id="waLinkSection" style="padding: 1.25rem; display: none;">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+          📋 <strong>Instrucciones:</strong> Abre tu grupo de WhatsApp → Configuración del grupo → Invitar al grupo → Copiar enlace. Pégalo aquí abajo.
+        </p>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="waInviteLink" placeholder="https://chat.whatsapp.com/LQFpzmM..." style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.9rem;">
+          <button onclick="joinWhatsApp()" id="btnJoinWA" class="btn-cloud" style="margin: 0; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #128C7E 0%, #25D366 100%); border: none;">
+            <span class="icon">🔗</span>
+            <span>Vincular</span>
+          </button>
+        </div>
+      </div>
+      <!-- Ya vinculado -->
+      <div id="waLinkedSection" style="padding: 1.25rem; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">ID del grupo vinculado:</div>
+            <code id="waGroupId" style="font-size: 0.8rem; color: var(--accent-blue); word-break: break-all;"></code>
+          </div>
+          <button onclick="leaveWhatsApp()" class="btn-cloud" style="margin: 0; padding: 0.6rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 0.8rem;">
+            <span>🔌 Desvincular</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Gestión de Miembros (Solo Admin) -->
     <div id="memberManagement" class="group-card" style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
       <div class="group-header" style="background: var(--gradient-secondary); border-radius: 12px 12px 0 0;">
@@ -149,6 +195,8 @@
     window.addPlayerToGroup = addPlayerToGroup;
     window.removePlayerFromGroup = removePlayerFromGroup;
     window.transferAdminRole = transferAdminRole;
+    window.joinWhatsApp = joinWhatsApp;
+    window.leaveWhatsApp = leaveWhatsApp;
 
     renderNavigation('scoring_criteria.html');
     let currentUser = checkAuth();
@@ -168,7 +216,98 @@
     function enableMemberManagement() {
       if (currentUser && currentUser.isAdmin) {
         document.getElementById('memberManagement').style.display = 'block';
+        document.getElementById('whatsappSection').style.display = 'block';
         fetchMemberList();
+        loadWhatsAppStatus();
+      }
+    }
+
+    // ==========================================
+    // WHATSAPP — Estado, vincular, desvincular
+    // ==========================================
+
+    async function loadWhatsAppStatus() {
+      try {
+        const res = await apiCall({ action: 'getWhatsAppStatus', groupName: currentUser.groupName });
+        const icon = document.getElementById('waStatusIcon');
+        const text = document.getElementById('waStatusText');
+        const detail = document.getElementById('waStatusDetail');
+        const linkSection = document.getElementById('waLinkSection');
+        const linkedSection = document.getElementById('waLinkedSection');
+
+        if (res?.status === 'success') {
+          const { linked, whatsappGroupId, botConnected } = res.data;
+          
+          if (!botConnected) {
+            icon.textContent = '⚠️';
+            text.textContent = 'Bot desconectado';
+            detail.textContent = 'El servidor de WhatsApp no está activo. Contacta con soporte.';
+            linkSection.style.display = 'none';
+            linkedSection.style.display = 'none';
+          } else if (linked) {
+            icon.textContent = '✅';
+            text.textContent = 'WhatsApp vinculado';
+            detail.textContent = 'El bot está activo en tu grupo de WhatsApp';
+            linkSection.style.display = 'none';
+            linkedSection.style.display = 'block';
+            document.getElementById('waGroupId').textContent = whatsappGroupId;
+          } else {
+            icon.textContent = '📱';
+            text.textContent = 'Sin vincular';
+            detail.textContent = 'Pega el enlace de invitación de tu grupo para conectar el bot';
+            linkSection.style.display = 'block';
+            linkedSection.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.error('Error cargando estado WhatsApp:', e);
+      }
+    }
+
+    async function joinWhatsApp() {
+      const linkInput = document.getElementById('waInviteLink');
+      const inviteLink = linkInput.value.trim();
+      if (!inviteLink) {
+        showToast('❌ Pega un enlace de invitación');
+        return;
+      }
+
+      const btn = document.getElementById('btnJoinWA');
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Vinculando...</span>';
+
+      try {
+        const res = await apiCall({ action: 'joinWhatsApp', groupName: currentUser.groupName, inviteLink });
+        if (res?.status === 'success') {
+          const msg = res.data?.alreadyMember ? '✅ Bot ya estaba en el grupo. ¡Vinculado!' : '✅ ¡Bot unido al grupo de WhatsApp!';
+          showToast(msg);
+          linkInput.value = '';
+          loadWhatsAppStatus();
+        } else {
+          showToast('❌ ' + (res?.message || 'Error al vincular'));
+        }
+      } catch (e) {
+        showToast('❌ Error de conexión');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    }
+
+    async function leaveWhatsApp() {
+      if (!confirm('¿Seguro que quieres desvincular el bot de tu grupo de WhatsApp? El bot dejará de responder en ese grupo.')) return;
+
+      try {
+        const res = await apiCall({ action: 'leaveWhatsApp', groupName: currentUser.groupName });
+        if (res?.status === 'success') {
+          showToast('👋 Bot desvinculado del grupo');
+          loadWhatsAppStatus();
+        } else {
+          showToast('❌ ' + (res?.message || 'Error'));
+        }
+      } catch (e) {
+        showToast('❌ Error de conexión');
       }
     }
 

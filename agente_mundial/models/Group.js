@@ -22,6 +22,7 @@ const groupSchema = new mongoose.Schema({
     opt_diff_adjust: { type: Boolean, default: false }
   },
   members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  whatsappGroupId: { type: String, default: null }, // WhatsApp Group JID (ej: "120363xxxxx@g.us")
   createdAt: { type: Date, default: Date.now }
 });
 

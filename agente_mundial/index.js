@@ -14,6 +14,7 @@ import cors from 'cors';
 import { schedule } from 'node-cron';
 import config from './config.js';
 import { processMessage, generateGroupSummary, refreshCache, identifyPlayer } from './messageHandler.js';
+import { Group } from './models/Group.js';
 
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });
@@ -51,22 +52,36 @@ app.get('/health', (req, res) => {
 // Endpoint para forzar un resumen (útil para testing)
 app.get('/trigger-summary', async (req, res) => {
   try {
+    const requestedGroup = req.query.groupName;
+    
+    // Si se pide un grupo específico, buscar su WhatsApp ID
+    if (requestedGroup) {
+      const dbGroup = await Group.findOne({ name: requestedGroup });
+      const waId = dbGroup?.whatsappGroupId || (config.groups && Object.entries(config.groups).find(([id, name]) => name === requestedGroup)?.[0]);
+      
+      if (!waId) return res.json({ error: 'Grupo sin WhatsApp vinculado' });
+      
+      await refreshCache(requestedGroup);
+      const summary = await generateGroupSummary(waId, true);
+      
+      if (summary && global.whatsappSock) {
+        await global.whatsappSock.sendMessage(waId, { text: `📊 *RESUMEN FORZADO* 📊\n\n${summary}` });
+        const dataFetcher = await import('./dataFetcher.js');
+        await dataFetcher.saveSummary('Global', requestedGroup, summary);
+      }
+      return res.json({ summary });
+    }
+    
+    // Sin grupo específico: procesar el de config.js (compatibilidad)
     const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
     const groupName = config.groups[dynamicGroupId] || null;
     if (groupName) await refreshCache(groupName);
-    const summary = await generateGroupSummary(dynamicGroupId, true); // Forzar resumen manual
+    const summary = await generateGroupSummary(dynamicGroupId, true);
     
-    if (groupName && summary) {
+    if (groupName && summary && global.whatsappSock) {
+      await global.whatsappSock.sendMessage(dynamicGroupId, { text: `📊 *RESUMEN FORZADO* 📊\n\n${summary}` });
       const dataFetcher = await import('./dataFetcher.js');
       await dataFetcher.saveSummary('Global', groupName, summary);
-      
-      // Intentar enviar a WhatsApp si el bot está conectado
-      if (global.whatsappSock) {
-        await global.whatsappSock.sendMessage(dynamicGroupId, {
-          text: `📊 *RESUMEN FORZADO* 📊\n\n${summary}`,
-        });
-        console.log(`✅ Resumen forzado enviado a WhatsApp (${dynamicGroupId})`);
-      }
     }
     
     res.json({ summary });
@@ -292,14 +307,9 @@ async function startBot() {
         if (isMentioned) console.log('   ✅ Mención detectada');
 
         // --- FILTRO DE GRUPO ---
-        // Priorizar el ID de grupo del Excel, si no existe usar el del .env
-        const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
-        
-        // Si hay un grupo configurado, solo responder en ese grupo (si el mensaje viene de un grupo)
-        if (dynamicGroupId && isGroup && chatId !== dynamicGroupId) {
-          console.log(`⏩ Mensaje de otro grupo ignorado (ID: ${chatId})`);
-          continue;
-        }
+        // Aceptar mensajes de cualquier grupo registrado (config.js o MongoDB)
+        // Los grupos no registrados se manejan en processMessage (devuelve mensaje de error)
+        // No filtramos aquí para que processMessage pueda informar al usuario
 
         // Procesar el mensaje
         const response = await processMessage(text, senderPhone, isGroup, isMentioned, chatId);
@@ -307,7 +317,7 @@ async function startBot() {
         // --- SISTEMA RAG ---
         // Guardar TODOS los mensajes en la BD para contexto de la IA
         import('./ragService.js').then(rag => {
-           const senderNameDB = msg.pushName || identifyPlayer(senderPhone, process.env.WHATSAPP_GROUP_ID || config.bot.groupId) || senderPhone;
+           const senderNameDB = msg.pushName || identifyPlayer(senderPhone, chatId) || senderPhone;
            rag.saveChatMessage(chatId, senderPhone, senderNameDB, text);
         }).catch(e => console.error("Error cargando RAG:", e));
 
@@ -334,35 +344,60 @@ async function startBot() {
   // RESÚMENES PROGRAMADOS
   // ==========================================
 
-  // Resumen diario a las 23:00 (hora España)
+  // Resumen diario a las 23:00 (hora España) — Multi-grupo
   schedule('0 23 * * *', async () => {
-    const dynamicGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
-    if (!dynamicGroupId) return;
- 
-    console.log(`📢 Generando resumen programado para el grupo: ${dynamicGroupId}`);
+    console.log(`📢 Generando resúmenes programados para TODOS los grupos...`);
     try {
-      const gName = config.groups[dynamicGroupId] || null;
-      if (gName) await refreshCache(gName);
+      // 1. Obtener todos los grupos con WhatsApp vinculado desde MongoDB
+      const dbGroups = await Group.find({ whatsappGroupId: { $ne: null } });
       
-      const summary = await generateGroupSummary(dynamicGroupId);
-      console.log(`📝 Resumen generado (longitud: ${summary?.length || 0}): "${summary?.substring(0, 50)}..."`);
- 
-      if (summary && summary.length > 50) {
-        await sock.sendMessage(dynamicGroupId, {
-          text: `📊 *RESUMEN DE LA JORNADA* 📊\n\n${summary}`,
-        });
-        console.log('✅ Resumen publicado en el grupo');
-        
-        // Guardar el resumen global en la base de datos
-        if (gName) {
-          const dataFetcher = await import('./dataFetcher.js');
-          await dataFetcher.saveSummary("Global", gName, summary);
-        }
-      } else {
-        console.warn('⚠️ El resumen generado es demasiado corto o está vacío, no se enviará.');
+      // 2. Añadir también el grupo de config.js (compatibilidad)
+      const configGroupId = process.env.WHATSAPP_GROUP_ID || config.bot.groupId;
+      const allGroups = [];
+      
+      if (configGroupId && config.groups[configGroupId]) {
+        allGroups.push({ whatsappGroupId: configGroupId, name: config.groups[configGroupId] });
       }
+      dbGroups.forEach(g => {
+        // Evitar duplicados si el grupo de config también está en la BD
+        if (!allGroups.find(ag => ag.whatsappGroupId === g.whatsappGroupId)) {
+          allGroups.push({ whatsappGroupId: g.whatsappGroupId, name: g.name });
+        }
+      });
+
+      if (allGroups.length === 0) {
+        console.log('⚠️ No hay grupos con WhatsApp vinculado. Saltando resúmenes.');
+        return;
+      }
+
+      console.log(`📋 Grupos a procesar: ${allGroups.map(g => g.name).join(', ')}`);
+
+      for (const group of allGroups) {
+        try {
+          console.log(`\n📢 Procesando grupo: ${group.name} (${group.whatsappGroupId})`);
+          await refreshCache(group.name);
+          
+          const summary = await generateGroupSummary(group.whatsappGroupId);
+          console.log(`📝 Resumen generado (longitud: ${summary?.length || 0})`);
+     
+          if (summary && summary.length > 50) {
+            await sock.sendMessage(group.whatsappGroupId, {
+              text: `📊 *RESUMEN DE LA JORNADA* 📊\n\n${summary}`,
+            });
+            console.log(`✅ Resumen publicado en ${group.name}`);
+            
+            const dataFetcher = await import('./dataFetcher.js');
+            await dataFetcher.saveSummary("Global", group.name, summary);
+          } else {
+            console.warn(`⚠️ Resumen vacío/corto para ${group.name}, no se envía.`);
+          }
+        } catch (groupError) {
+          console.error(`❌ Error en resumen de ${group.name}:`, groupError.message);
+        }
+      }
+      console.log('\n✅ Resúmenes programados completados.');
     } catch (error) {
-      console.error('Error publicando resumen:', error.message);
+      console.error('Error en resúmenes programados:', error.message);
     }
   }, {
     timezone: 'Europe/Madrid',

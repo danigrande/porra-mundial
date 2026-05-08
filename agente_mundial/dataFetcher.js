@@ -134,6 +134,18 @@ export async function apiCall(params = {}, options = {}) {
       endpoint = `/admin/simulate-all`;
       method = 'POST';
       break;
+    case 'getWhatsAppStatus':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/whatsapp-status`;
+      break;
+    case 'joinWhatsApp':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/join-whatsapp`;
+      method = 'POST';
+      body = { inviteLink: params.inviteLink };
+      break;
+    case 'leaveWhatsApp':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/leave-whatsapp`;
+      method = 'POST';
+      break;
     default:
       console.warn(`[API] Acción no implementada en la nueva API: ${action}`);
       return { status: 'error', message: 'Not implemented' };
