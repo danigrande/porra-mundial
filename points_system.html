@@ -282,16 +282,16 @@
         </div>
       </div>
 
-      <div style="text-align: center; margin-top: 2rem;">
-        <button id="btnSaveCloud" onclick="saveCriteriaToCloud()" class="btn-cloud" style="display:none;">
-          <span class="icon">☁️</span>
-          <span>Guardar Configuración en la Nube</span>
-        </button>
-      </div>
-      
     </div>
 
+
   </main>
+
+  <!-- Barra flotante de guardado para admin -->
+  <div class="save-bar" id="adminSaveBar" style="display:none;">
+    <button class="btn-save" id="btnSaveCloud" onclick="saveCriteriaToCloud()">☁️ Guardar Configuración</button>
+    <span class="save-status" id="saveStatus" style="display:none;">✓ Guardado</span>
+  </div>
 
   <div class="page-footer-spacer" style="height:4rem;"></div>
 
@@ -340,13 +340,13 @@
       if (!currentUser.isAdmin) {
         disableEditing();
       } else {
-        document.getElementById('btnSaveCloud').style.display = 'inline-flex';
+        document.getElementById('adminSaveBar').style.display = 'flex';
       }
     }
 
     function disableEditing() {
       document.getElementById('adminNotice').style.display = 'flex';
-      document.getElementById('btnSaveCloud').style.display = 'none';
+      document.getElementById('adminSaveBar').style.display = 'none';
       
       document.getElementById('mode_a').disabled = true;
       document.getElementById('mode_b').disabled = true;
@@ -420,35 +420,35 @@
 
     async function saveCriteriaToCloud() {
       if (!currentUser.isAdmin) return;
-      saveCriteria();
-      const raw = localStorage.getItem(`worldcup2026_scoring_${currentUser.groupName}`);
-      if (!raw) return;
-      const data = JSON.parse(raw);
       
       const btn = document.getElementById('btnSaveCloud');
-      const btnSpan = btn.querySelector('span:last-child');
-      btnSpan.textContent = '⏳ Subiendo a la nube...';
+      const status = document.getElementById('saveStatus');
+      
       btn.disabled = true;
+      btn.textContent = '⏳ Guardando...';
+      status.style.display = 'none';
+
+      const data = {};
+      data.prediction_mode = document.getElementById('mode_b').checked ? 'B' : 'A';
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) data[id] = el.type === 'checkbox' ? el.checked : Number(el.value);
+      });
 
       try {
-        const result = await apiCall({
-          action: 'saveRules',
-          playerName: currentUser.name,
-          groupName: currentUser.groupName,
-          data: data
-        }, { method: 'POST' });
-
-        if (result?.status === 'success') {
-          showToast('☁️ Reglas de puntuación sincronizadas');
+        const res = await apiCall({ action: 'saveRules', groupName: currentUser.groupName, data: data }, { method: 'POST' });
+        if (res?.status === 'success') {
+          showToast('✅ Reglas actualizadas en MongoDB');
+          status.style.display = 'inline-flex';
+          setTimeout(() => status.style.display = 'none', 3000);
         } else {
-          showToast('❌ ' + (result?.message || 'Error'));
+          showToast('❌ Error al guardar', true);
         }
-      } catch (e) {
-        console.error("Error sincronizando reglas", e);
-        showToast('❌ Error al subir la configuración');
+      } catch (err) {
+        showToast('❌ Error de conexión', true);
       } finally {
-        btnSpan.textContent = 'Guardar Configuración en la Nube';
         btn.disabled = false;
+        btn.textContent = '☁️ Guardar Configuración';
       }
     }
 

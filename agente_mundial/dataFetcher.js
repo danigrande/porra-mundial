@@ -56,9 +56,10 @@ export async function apiCall(params = {}, options = {}) {
       endpoint = `/groups/${encodeURIComponent(groupName)}/rules`;
       break;
     case 'saveRules':
+    case 'setRules':
       endpoint = `/groups/${encodeURIComponent(groupName)}/rules`;
       method = 'POST';
-      body = { data: params.data };
+      body = { data: params.data || params.rules };
       break;
     case 'getPredictions':
       endpoint = `/predictions?groupName=${encodeURIComponent(groupName)}`;
@@ -213,6 +214,11 @@ export const getPlayerList = async (groupName) => {
 export const getRules = async (groupName) => {
   const res = await apiCall({ action: 'getRules', groupName });
   return res?.status === 'success' ? res.data : {};
+};
+
+export const setRules = async (groupName, data) => {
+  const res = await apiCall({ action: 'setRules', groupName, data }, { method: 'POST' });
+  return res?.status === 'success';
 };
 
 export const getReality = async () => {

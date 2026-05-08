@@ -571,10 +571,42 @@ router.get('/groups/:groupName/rules', async (req, res) => {
 
 router.post('/groups/:groupName/rules', async (req, res) => {
     try {
-        const group = await Group.findOne({ name: req.params.groupName });
+        const { groupName } = req.params;
+        const newRules = req.body.data || {};
+        const group = await Group.findOne({ name: groupName });
+        
         if (group) {
-            group.rules = { ...group.rules, ...req.body.data };
-            group.markModified('rules'); // Forzar a Mongoose a detectar el cambio en el objeto Mixed
+            const oldMode = group.rules?.prediction_mode || 'A';
+            const newMode = newRules.prediction_mode || 'A';
+
+            // Si cambiamos de A -> B, borramos predicciones de eliminatorias de todos los miembros
+            if (oldMode === 'A' && newMode === 'B') {
+                console.log(`🧹 [MODO B] Limpiando predicciones eliminatorias para el grupo: ${groupName}`);
+                
+                // Buscar todas las predicciones de este grupo
+                const predictions = await Prediction.find({ group: group._id });
+                
+                for (const pred of predictions) {
+                    const keys = Object.keys(pred.predictions || {});
+                    let hasChanged = false;
+                    
+                    keys.forEach(key => {
+                        if (key.startsWith('ko_') || key.startsWith('pen_') || key.startsWith('honor_')) {
+                            delete pred.predictions[key];
+                            hasChanged = true;
+                        }
+                    });
+
+                    if (hasChanged) {
+                        pred.markModified('predictions');
+                        await pred.save();
+                    }
+                }
+                console.log(`✅ Limpieza completada para ${predictions.length} jugadores.`);
+            }
+
+            group.rules = { ...group.rules, ...newRules };
+            group.markModified('rules');
             await group.save();
         }
         res.json(createResponse('success'));
