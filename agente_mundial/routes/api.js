@@ -655,9 +655,28 @@ router.get('/groups/:groupName/whatsapp-status', async (req, res) => {
         
         const botConnected = !!(global.whatsappSock?.user);
         
+        // Verificar si está vinculado en la BD
+        let linked = !!group.whatsappGroupId;
+        let whatsappGroupId = group.whatsappGroupId || null;
+        
+        // Si no está en la BD, verificar si está en config.js (compatibilidad)
+        if (!linked) {
+            const config = (await import('../config.js')).default;
+            if (config.groups) {
+                const configEntry = Object.entries(config.groups).find(([jid, name]) => name === req.params.groupName);
+                if (configEntry) {
+                    linked = true;
+                    whatsappGroupId = configEntry[0];
+                    // Guardar en la BD para futuras consultas
+                    group.whatsappGroupId = whatsappGroupId;
+                    await group.save();
+                }
+            }
+        }
+        
         res.json(createResponse('success', {
-            linked: !!group.whatsappGroupId,
-            whatsappGroupId: group.whatsappGroupId || null,
+            linked,
+            whatsappGroupId,
             botConnected
         }));
     } catch (error) {
@@ -709,7 +728,7 @@ router.post('/groups/:groupName/join-whatsapp', async (req, res) => {
             console.error('❌ [WhatsApp] Error al unirse:', waError.message);
             
             // Si el error es que ya está en el grupo, intentar obtener el JID
-            if (waError.message?.includes('already') || waError.message?.includes('conflict')) {
+            if (waError.message?.includes('already') || waError.message?.includes('conflict') || waError.message?.includes('bad-request')) {
                 // Intentar obtener info del grupo con el código de invitación
                 try {
                     const groupInfo = await global.whatsappSock.groupGetInviteInfo(inviteCode);
