@@ -208,12 +208,13 @@
 
   <script src="web_config.js"></script>
   <script type="module">
-    import { checkAuth, handleLogout, showToast, renderNavigation } from './shared_ui.js';
+    import { checkAuth, handleLogout, showToast, renderNavigation, initOnboarding } from './shared_ui.js';
     import { calculateScore, calculateLeaderboard } from './agente_mundial/scoringEngine.js';
     import { apiCall } from './agente_mundial/dataFetcher.js';
 
     window.handleLogout = handleLogout;
     renderNavigation('player_scores.html');
+    initOnboarding('player_scores.html');
     window.toggleBreakdown = (idx) => {
       const el = document.getElementById(`breakdown_${idx}`);
       const isVisible = el.style.display === 'grid';

@@ -4,8 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description"
-    content="Configuración de Puntuaciones - Porra Mundial 2026">
+  <meta name="description" content="Configuración de Puntuaciones - Porra Mundial 2026">
   <title>Configuración - Porra Mundial 2026</title>
   <link rel="stylesheet" href="styles.css">
   <style>
@@ -21,11 +20,13 @@
       gap: 12px;
       font-size: 0.9rem;
     }
+
     input:disabled {
       opacity: 0.7;
       cursor: not-allowed;
       background-color: var(--bg-body);
     }
+
     /* Phone input with country selector (admin) */
     .phone-input-group-admin {
       display: flex;
@@ -35,6 +36,7 @@
       border: 1px solid var(--border-color);
       flex: 1;
     }
+
     .country-select-admin {
       background: rgba(255, 255, 255, 0.08);
       color: var(--text-primary);
@@ -52,10 +54,12 @@
       background-position: right 6px center;
       padding-right: 20px;
     }
+
     .country-select-admin option {
       background: #1a1a2e;
       color: #fff;
     }
+
     .phone-input-admin {
       flex: 1;
       background: transparent;
@@ -66,14 +70,20 @@
       outline: none;
       min-width: 0;
     }
+
     .phone-input-admin::placeholder {
       color: var(--text-muted);
       opacity: 0.6;
     }
 
     /* ===== SETUP MODE ===== */
-    body.setup-mode .main-nav { display: none !important; }
-    body.setup-mode .page-header { display: none !important; }
+    body.setup-mode .main-nav {
+      display: none !important;
+    }
+
+    body.setup-mode .page-header {
+      display: none !important;
+    }
 
     .setup-banner {
       display: none;
@@ -82,7 +92,11 @@
       background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
       border-bottom: 1px solid rgba(99, 102, 241, 0.2);
     }
-    body.setup-mode .setup-banner { display: block; }
+
+    body.setup-mode .setup-banner {
+      display: block;
+    }
+
     .setup-banner h1 {
       font-size: 1.8rem;
       margin: 0 0 0.5rem;
@@ -90,12 +104,14 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+
     .setup-banner p {
       color: var(--text-muted);
       font-size: 0.95rem;
       margin: 0;
       line-height: 1.6;
     }
+
     .setup-banner .setup-group-name {
       color: var(--accent-blue);
       font-weight: 700;
@@ -112,7 +128,11 @@
       text-align: center;
       z-index: 100;
     }
-    body.setup-mode .setup-finish-bar { display: block; }
+
+    body.setup-mode .setup-finish-bar {
+      display: block;
+    }
+
     .setup-finish-bar .btn-finish {
       background: linear-gradient(135deg, #6366f1 0%, #10b981 100%);
       color: #fff;
@@ -124,10 +144,12 @@
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
     }
+
     .setup-finish-bar .btn-finish:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
     }
+
     .setup-finish-bar .skip-hint {
       display: block;
       margin-top: 8px;
@@ -160,7 +182,7 @@
   <div class="setup-banner" id="setupBanner">
     <h1>🎉 ¡Grupo creado!</h1>
     <p>Configura <span class="setup-group-name" id="setupGroupName"></span> antes de empezar.<br>
-    Todos los pasos son opcionales — puedes volver a esta pantalla en cualquier momento.</p>
+      Todos los pasos son opcionales — puedes volver a esta pantalla en cualquier momento.</p>
   </div>
 
   <!-- Header -->
@@ -173,8 +195,10 @@
   <main class="main-content">
 
     <!-- Agente Mundial — WhatsApp (Solo Admin) -->
-    <div id="whatsappSection" class="group-card" style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
-      <div class="group-header" style="background: linear-gradient(135deg, #128C7E 0%, #075E54 100%); border-radius: 12px 12px 0 0;">
+    <div id="whatsappSection" class="group-card"
+      style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+      <div class="group-header"
+        style="background: linear-gradient(135deg, #128C7E 0%, #075E54 100%); border-radius: 12px 12px 0 0;">
         <div class="group-letter">🤖</div>
         <div>
           <div class="group-name">Agente Mundial — WhatsApp</div>
@@ -194,11 +218,14 @@
       <!-- Vincular -->
       <div id="waLinkSection" style="padding: 1.25rem; display: none;">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
-          📋 <strong>Instrucciones:</strong> Abre tu grupo de WhatsApp → Configuración del grupo → Invitar al grupo → Copiar enlace. Pégalo aquí abajo.
+          📋 <strong>Instrucciones:</strong> Abre tu grupo de WhatsApp → Configuración del grupo → Invitar al grupo →
+          Copiar enlace. Pégalo aquí abajo.
         </p>
         <div style="display: flex; gap: 10px;">
-          <input type="text" id="waInviteLink" placeholder="https://chat.whatsapp.com/LQFpzmM..." style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.9rem;">
-          <button onclick="joinWhatsApp()" id="btnJoinWA" class="btn-cloud" style="margin: 0; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #128C7E 0%, #25D366 100%); border: none;">
+          <input type="text" id="waInviteLink" placeholder="https://chat.whatsapp.com/LQFpzmM..."
+            style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.9rem;">
+          <button onclick="joinWhatsApp()" id="btnJoinWA" class="btn-cloud"
+            style="margin: 0; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #128C7E 0%, #25D366 100%); border: none;">
             <span class="icon">🔗</span>
             <span>Vincular</span>
           </button>
@@ -209,12 +236,14 @@
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
           <div style="flex: 1;">
             <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Grupo vinculado:</div>
-            <div id="waGroupNameDisplay" style="font-weight: 600; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 4px;"></div>
+            <div id="waGroupNameDisplay"
+              style="font-weight: 600; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 4px;"></div>
             <div style="font-size: 0.7rem; color: var(--text-muted);">
               ID: <code id="waGroupId" style="color: var(--accent-blue); opacity: 0.8;"></code>
             </div>
           </div>
-          <button onclick="leaveWhatsApp()" class="btn-cloud" style="margin: 0; padding: 0.6rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 0.8rem; white-space: nowrap;">
+          <button onclick="leaveWhatsApp()" class="btn-cloud"
+            style="margin: 0; padding: 0.6rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 0.8rem; white-space: nowrap;">
             <span>🔌 Desvincular</span>
           </button>
         </div>
@@ -222,7 +251,8 @@
     </div>
 
     <!-- Gestión de Miembros (Solo Admin) -->
-    <div id="memberManagement" class="group-card" style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+    <div id="memberManagement" class="group-card"
+      style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
       <div class="group-header" style="background: var(--gradient-secondary); border-radius: 12px 12px 0 0;">
         <div class="group-letter">👤</div>
         <div>
@@ -232,7 +262,8 @@
       </div>
       <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 10px;">
         <div style="display: flex; gap: 10px;">
-          <input type="text" id="newPlayerName" placeholder="Nombre del jugador" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary);">
+          <input type="text" id="newPlayerName" placeholder="Nombre del jugador"
+            style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary);">
         </div>
         <div style="display: flex; gap: 10px;">
           <div class="phone-input-group-admin">
@@ -245,8 +276,11 @@
           </button>
         </div>
       </div>
-      <div id="memberListContainer" style="padding: 0 1.25rem 1.25rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 0.5rem; display: none;">
-        <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 1rem; padding-top: 1rem;">Miembros actuales</div>
+      <div id="memberListContainer"
+        style="padding: 0 1.25rem 1.25rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 0.5rem; display: none;">
+        <div
+          style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 1rem; padding-top: 1rem;">
+          Miembros actuales</div>
         <div id="memberList" style="display: flex; flex-direction: column; gap: 8px;">
           <!-- Cargado dinámicamente -->
         </div>
@@ -280,7 +314,7 @@
     function checkAuthWrapper() {
       if (!currentUser) return;
       document.getElementById('displayUserName').textContent = `${currentUser.name} (${currentUser.groupName})`;
-      
+
       if (!currentUser.isAdmin) {
         // Esta página es solo para admins, si llegase un usuario normal le mandamos fuera
         window.location.href = 'player_scores.html';
@@ -311,7 +345,7 @@
 
         if (res?.status === 'success') {
           const { linked, whatsappGroupId, whatsappGroupName, botConnected } = res.data;
-          
+
           if (!botConnected) {
             icon.textContent = '⚠️';
             text.textContent = 'Bot desconectado';
@@ -390,28 +424,28 @@
       if (!currentUser || !currentUser.isAdmin) return;
       const listEl = document.getElementById('memberList');
       const container = document.getElementById('memberListContainer');
-      
+
       try {
         // Obtener miembros con sus datos (phone mapping)
         const [playersResult, phoneMappingResult] = await Promise.all([
           apiCall({ action: 'getPlayers', groupName: currentUser.groupName }),
           apiCall({ action: 'getPhoneMapping', groupName: currentUser.groupName })
         ]);
-        
+
         if (playersResult?.status === 'success' && playersResult.data) {
           container.style.display = 'block';
           const players = playersResult.data;
           const phoneMap = phoneMappingResult?.status === 'success' ? phoneMappingResult.data : {};
-          
+
           // Invertir phone mapping: phone -> name => name -> phone
           const nameToPhone = {};
           Object.entries(phoneMap).forEach(([phone, name]) => { nameToPhone[name] = phone; });
-          
+
           if (players.length === 0) {
             listEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">No hay otros miembros</div>';
             return;
           }
-          
+
           listEl.innerHTML = players.map(name => {
             const phone = nameToPhone[name] || '';
             const phoneDisplay = phone ? `📱 +${phone}` : '📱 Sin teléfono';
@@ -450,7 +484,7 @@
           playerName: name,
           groupName: currentUser.groupName
         }, { method: 'DELETE' });
-        
+
         if (result?.status === 'success') {
           showToast(`✅ ${name} eliminado del grupo`);
           fetchMemberList();
@@ -473,14 +507,14 @@
           targetName,
           groupName: currentUser.groupName
         });
-        
+
         if (result?.status === 'success') {
           showToast(`👑 Traspaso completado. ${targetName} es el nuevo admin.`);
-          
+
           // Actualizar sesión local
           currentUser.isAdmin = false;
           localStorage.setItem('worldcup2026_user', JSON.stringify(currentUser));
-          
+
           // Redirigir ya que no tiene permisos aquí
           setTimeout(() => {
             window.location.href = 'player_scores.html';
@@ -530,7 +564,7 @@
       const playerName = nameInput.value.trim();
       const rawPhone = phoneInput.value.replace(/[^0-9]/g, '');
       const fullPhone = countryCode + rawPhone;
-      
+
       if (!playerName) {
         showToast('❌ Por favor, introduce un nombre');
         return;
@@ -552,7 +586,7 @@
           phone: fullPhone,
           groupName: currentUser.groupName
         }, { method: 'POST' });
-        
+
         if (result?.status === 'success') {
           showToast('✅ Jugador añadido correctamente');
           nameInput.value = '';
@@ -580,7 +614,9 @@
 
     function finishSetup() {
       localStorage.removeItem('worldcup2026_setupMode');
-      window.location.href = 'player_scores.html';
+      // Encadenar con el onboarding de usuario (perfil → predicción → clasificación)
+      localStorage.setItem('worldcup2026_onboarding', '1');
+      window.location.href = 'about_user.html';
     }
 
     (function initSetupMode() {
@@ -599,4 +635,5 @@
     <span class="skip-hint">Puedes volver a esta pantalla desde el menú de Configuración</span>
   </div>
 </body>
+
 </html>

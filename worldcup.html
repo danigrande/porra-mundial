@@ -60,7 +60,7 @@
 
   <script src="web_config.js"></script>
   <script type="module">
-    import { checkAuth, handleLogout, showToast, renderNavigation } from './shared_ui.js';
+    import { checkAuth, handleLogout, showToast, renderNavigation, initOnboarding } from './shared_ui.js';
     import { TEAM_CODES, FIXTURE_GROUPS, KNOCKOUT_BRACKET, BRACKET_MATCHES } from './agente_mundial/shared_data.js';
     import { getStandings, fullResolve } from './agente_mundial/scoringEngine.js';
     import { apiCall } from './agente_mundial/dataFetcher.js';
@@ -68,6 +68,7 @@
     window.handleLogout = handleLogout;
     renderNavigation('worldcup.html');
     let currentUser = checkAuth();
+    initOnboarding('worldcup.html');
     let predictions = {};
 
     // Mapeo extendido para visualización (se podría mover a shared_data si se usa en más sitios)

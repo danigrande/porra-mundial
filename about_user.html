@@ -182,12 +182,13 @@
   <script src="web_config.js"></script>
   <script type="module">
 
-    import { checkAuth, handleLogout, renderNavigation } from './shared_ui.js';
+    import { checkAuth, handleLogout, renderNavigation, initOnboarding } from './shared_ui.js';
     import { apiCall } from './agente_mundial/dataFetcher.js';
 
     window.handleLogout = handleLogout;
     renderNavigation('about_user.html');
     let currentUser = checkAuth();
+    initOnboarding('about_user.html');
 
     async function loadProfile() {
       try {
