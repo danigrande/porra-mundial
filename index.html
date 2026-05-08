@@ -324,8 +324,9 @@
       if (res?.status === 'success') {
         const userName = res.data?.name || n;
         localStorage.setItem('worldcup2026_user', JSON.stringify({ phone: fullPhone, name: userName, pin: p, groupName: g, isAdmin: true }));
+        localStorage.setItem('worldcup2026_setupMode', 'true');
         showToast('✨ Registro completado');
-        setTimeout(() => window.location.href = 'player_scores.html', 1500);
+        setTimeout(() => window.location.href = 'scoring_criteria.html', 1500);
       } else {
         showToast('❌ ' + (res?.message || 'Error'), true);
       }

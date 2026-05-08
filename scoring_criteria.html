@@ -70,6 +70,70 @@
       color: var(--text-muted);
       opacity: 0.6;
     }
+
+    /* ===== SETUP MODE ===== */
+    body.setup-mode .main-nav { display: none !important; }
+    body.setup-mode .page-header { display: none !important; }
+
+    .setup-banner {
+      display: none;
+      text-align: center;
+      padding: 2.5rem 1.5rem 1.5rem;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    body.setup-mode .setup-banner { display: block; }
+    .setup-banner h1 {
+      font-size: 1.8rem;
+      margin: 0 0 0.5rem;
+      background: linear-gradient(135deg, #6366f1, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .setup-banner p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0;
+      line-height: 1.6;
+    }
+    .setup-banner .setup-group-name {
+      color: var(--accent-blue);
+      font-weight: 700;
+    }
+
+    .setup-finish-bar {
+      display: none;
+      position: sticky;
+      bottom: 0;
+      background: rgba(15, 15, 30, 0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+      text-align: center;
+      z-index: 100;
+    }
+    body.setup-mode .setup-finish-bar { display: block; }
+    .setup-finish-bar .btn-finish {
+      background: linear-gradient(135deg, #6366f1 0%, #10b981 100%);
+      color: #fff;
+      border: none;
+      padding: 0.9rem 2.5rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .setup-finish-bar .btn-finish:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    }
+    .setup-finish-bar .skip-hint {
+      display: block;
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 
@@ -91,6 +155,13 @@
       </div>
     </div>
   </nav>
+
+  <!-- Setup Banner (solo visible en modo setup) -->
+  <div class="setup-banner" id="setupBanner">
+    <h1>🎉 ¡Grupo creado!</h1>
+    <p>Configura <span class="setup-group-name" id="setupGroupName"></span> antes de empezar.<br>
+    Todos los pasos son opcionales — puedes volver a esta pantalla en cualquier momento.</p>
+  </div>
 
   <!-- Header -->
   <header class="page-header">
@@ -501,6 +572,31 @@
 
     checkAuthWrapper();
     enableMemberManagement();
+
+    // ==========================================
+    // SETUP MODE — Wizard post-creación de grupo
+    // ==========================================
+    window.finishSetup = finishSetup;
+
+    function finishSetup() {
+      localStorage.removeItem('worldcup2026_setupMode');
+      window.location.href = 'player_scores.html';
+    }
+
+    (function initSetupMode() {
+      const isSetup = localStorage.getItem('worldcup2026_setupMode') === 'true';
+      if (!isSetup) return;
+
+      document.body.classList.add('setup-mode');
+      const groupName = currentUser?.groupName || 'tu grupo';
+      document.getElementById('setupGroupName').textContent = groupName;
+    })();
   </script>
+
+  <!-- Finish setup bar (solo visible en modo setup) -->
+  <div class="setup-finish-bar" id="setupFinishBar">
+    <button class="btn-finish" onclick="finishSetup()">✅ Finalizar configuración</button>
+    <span class="skip-hint">Puedes volver a esta pantalla desde el menú de Configuración</span>
+  </div>
 </body>
 </html>
