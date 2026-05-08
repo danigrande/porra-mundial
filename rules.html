@@ -145,24 +145,52 @@
       <p style="color: #94a3b8;">Todo lo que necesitas saber para convertirte en el Rey de la Porra</p>
     </header>
 
-    <!-- Sección 1: Cómo participar -->
+    <!-- Sección 1: Modos de Juego -->
     <section class="rule-section">
       <div class="rule-title">
         <div class="step-badge">1</div>
-        ¿Cómo participar?
+        ¿Cómo jugar? (Modos de Juego)
       </div>
-      <p>La porra se divide en dos fases principales que debes completar antes de que empiece el Mundial:</p>
-      <ul style="padding-left: 1.2rem; margin-top: 1rem;">
-        <li><strong>Fase de Grupos:</strong> Introduce tus predicciones de goles para todos los partidos de la liguilla inicial.</li>
-        <li><strong>Cuadro Eliminatorio:</strong> Según tus resultados de grupos, se generará automáticamente tu cuadro de eliminatorias (Dieciseisavos, Octavos, etc.). Deberás rellenar quién pasa en cada ronda hasta llegar al Campeón.</li>
-        <li><strong>Cuadro de Honor:</strong> Elige a tus favoritos para los premios individuales (Bota de Oro, Balón de Oro).</li>
+      <p>Dependiendo de la configuración de tu administrador, la porra se puede jugar de dos formas:</p>
+      
+      <div style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div style="background: rgba(59, 130, 246, 0.1); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2);">
+          <strong style="color: var(--accent-blue);">Opción A: Clásico</strong>
+          <p style="font-size: 0.85rem; margin-top: 5px; color: #94a3b8;">
+            Debes rellenar <strong>toda la porra</strong> (Grupos + Cuadro Completo) antes de que empiece el primer partido del Mundial. 
+          </p>
+        </div>
+        <div style="background: rgba(16, 185, 129, 0.1); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">
+          <strong style="color: var(--accent-rules);">Opción B: Por Fases</strong>
+          <p style="font-size: 0.85rem; margin-top: 5px; color: #94a3b8;">
+            Las fases se abren ronda a ronda. Cuando termina una fase, tienes 24-48h para predecir la siguiente con los clasificados reales.
+          </p>
+        </div>
+      </div>
+      
+      <p style="margin-top: 1.5rem; font-size: 0.9rem;">
+        📍 <strong>Nota:</strong> En ambos modos, el "Cuadro de Honor" (Campeón, Bota de Oro, etc.) debe completarse siempre antes del inicio del torneo.
+      </p>
+    </section>
+
+    <!-- Sección 2: El Agente Mundial -->
+    <section class="rule-section" style="border-left-color: #25D366;">
+      <div class="rule-title">
+        <span>🤖</span> Notificaciones del Bot
+      </div>
+      <p>Nuestro <strong>Agente Mundial</strong> en WhatsApp te mantendrá al tanto de todo:</p>
+      <ul style="padding-left: 1.2rem; margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">
+        <li>Avisos cuando se abre una nueva ronda (Modo B).</li>
+        <li>Alertas cuando falten 2 horas para el cierre de predicciones.</li>
+        <li>Resúmenes diarios de la jornada y memes personalizados.</li>
       </ul>
     </section>
 
-    <!-- Sección 2: Sistema de Puntuación -->
+    <!-- Sección 3: Sistema de Puntuación -->
     <section class="rule-section">
       <div class="rule-title">
-        <span>📊</span> Sistema de Puntuación
+        <div class="step-badge">2</div>
+        Sistema de Puntuación
       </div>
       <p>Los puntos se calculan de forma acumulativa por cada partido. Si aciertas el resultado exacto, ¡te llevas el premio máximo!</p>
       
@@ -191,12 +219,16 @@
       <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 1rem;">
         💡 <em>Ejemplo: Si dices 2-1 y quedan 2-1, sumas 30 puntos (10 de signo + 10 de diferencia + 10 de bono exacto).</em>
       </p>
+      <p style="font-size: 0.75rem; color: var(--accent-rules); opacity: 0.8; margin-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem;">
+        ⚠️ <strong>Nota:</strong> Estas puntuaciones son orientativas. El administrador de tu grupo puede modificarlas en cualquier momento.
+      </p>
     </section>
 
-    <!-- Sección 3: Eliminatorias y Penaltis -->
+    <!-- Sección 4: Eliminatorias y Penaltis -->
     <section class="rule-section" style="border-left-color: #3b82f6;">
       <div class="rule-title">
-        <span>⚔️</span> Rondas Eliminatorias
+        <div class="step-badge">3</div>
+        Rondas Eliminatorias
       </div>
       <p>En las rondas de K.O., los puntos por partido suelen ser más altos (según la configuración de tu administrador). Pero hay una regla vital:</p>
       
@@ -208,10 +240,11 @@
       </div>
     </section>
 
-    <!-- Sección 4: Cuadro de Honor -->
+    <!-- Sección 5: Cuadro de Honor -->
     <section class="rule-section">
       <div class="rule-title">
-        <span class="highlight-gold">🏆</span> Premios Especiales
+        <div class="step-badge">4</div>
+        Premios Especiales
       </div>
       <p>Al final del Mundial, se reparten los puntos "gordos" por tus predicciones a largo plazo:</p>
       <table class="pts-table">
@@ -224,16 +257,28 @@
           <td>+30 pts</td>
         </tr>
         <tr>
-          <td>Bota / Balón de Oro</td>
+          <td>Bota / Balón de <strong class="highlight-gold">Oro</strong></td>
           <td>+25 pts</td>
         </tr>
+        <tr>
+          <td>Bota / Balón de <strong style="color: #94a3b8;">Plata</strong></td>
+          <td>+15 pts</td>
+        </tr>
+        <tr>
+          <td>Bota / Balón de <strong style="color: #b45309;">Bronce</strong></td>
+          <td>+10 pts</td>
+        </tr>
       </table>
+      <p style="font-size: 0.75rem; color: var(--accent-rules); opacity: 0.8; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem;">
+        ⚠️ <strong>Nota:</strong> Estas puntuaciones son orientativas. El administrador de tu grupo puede modificarlas en cualquier momento.
+      </p>
     </section>
 
-    <!-- Sección 5: Restricciones -->
+    <!-- Sección 6: Restricciones -->
     <section class="rule-section">
       <div class="rule-title">
-        <span>🔒</span> Restricciones y Bloqueos
+        <div class="step-badge">5</div>
+        Restricciones y Bloqueos
       </div>
       <ul style="padding-left: 1.2rem;">
         <li><strong>Cierre de Predicciones:</strong> No podrás modificar tus predicciones una vez que comience el primer partido del Mundial (o según la hora de corte establecida).</li>
