@@ -44,10 +44,10 @@ export const BRACKET_MATCHES = {
 };
 
 export const KNOCKOUT_BRACKET = [
-  { name: '1/16 Final', matches: [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87] },
-  { name: '1/8 Final', matches: [90, 89, 91, 92, 93, 94, 95, 96] },
-  { name: '1/4 Final', matches: [97, 98, 99, 100] },
-  { name: 'Semifinales', matches: [101, 102] },
-  { name: '3er Puesto', matches: [103] },
-  { name: 'FINAL', matches: [104] },
+  { id: 'r32', name: '1/16 Final', matches: [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87] },
+  { id: 'r16', name: '1/8 Final', matches: [90, 89, 91, 92, 93, 94, 95, 96] },
+  { id: 'qf', name: '1/4 Final', matches: [97, 98, 99, 100] },
+  { id: 'sf', name: 'Semifinales', matches: [101, 102] },
+  { id: '3rd', name: '3er Puesto', matches: [103] },
+  { id: 'final', name: 'FINAL', matches: [104] },
 ];
