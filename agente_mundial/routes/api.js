@@ -658,6 +658,7 @@ router.get('/groups/:groupName/whatsapp-status', async (req, res) => {
         // Verificar si está vinculado en la BD
         let linked = !!group.whatsappGroupId;
         let whatsappGroupId = group.whatsappGroupId || null;
+        let whatsappGroupName = null;
         
         // Si no está en la BD, verificar si está en config.js (compatibilidad)
         if (!linked) {
@@ -673,10 +674,21 @@ router.get('/groups/:groupName/whatsapp-status', async (req, res) => {
                 }
             }
         }
+
+        // Si está vinculado y el bot conectado, intentar sacar el NOMBRE real del grupo de WhatsApp
+        if (linked && botConnected && global.whatsappSock) {
+            try {
+                const metadata = await global.whatsappSock.groupMetadata(whatsappGroupId);
+                whatsappGroupName = metadata.subject;
+            } catch (e) {
+                console.warn(`[WhatsApp] No se pudo obtener metadata del grupo ${whatsappGroupId}:`, e.message);
+            }
+        }
         
         res.json(createResponse('success', {
             linked,
             whatsappGroupId,
+            whatsappGroupName,
             botConnected
         }));
     } catch (error) {

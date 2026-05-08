@@ -135,12 +135,15 @@
       </div>
       <!-- Ya vinculado -->
       <div id="waLinkedSection" style="padding: 1.25rem; display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <div style="font-size: 0.85rem; color: var(--text-muted);">ID del grupo vinculado:</div>
-            <code id="waGroupId" style="font-size: 0.8rem; color: var(--accent-blue); word-break: break-all;"></code>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+          <div style="flex: 1;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Grupo vinculado:</div>
+            <div id="waGroupNameDisplay" style="font-weight: 600; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 4px;"></div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">
+              ID: <code id="waGroupId" style="color: var(--accent-blue); opacity: 0.8;"></code>
+            </div>
           </div>
-          <button onclick="leaveWhatsApp()" class="btn-cloud" style="margin: 0; padding: 0.6rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 0.8rem;">
+          <button onclick="leaveWhatsApp()" class="btn-cloud" style="margin: 0; padding: 0.6rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 0.8rem; white-space: nowrap;">
             <span>🔌 Desvincular</span>
           </button>
         </div>
@@ -236,7 +239,7 @@
         const linkedSection = document.getElementById('waLinkedSection');
 
         if (res?.status === 'success') {
-          const { linked, whatsappGroupId, botConnected } = res.data;
+          const { linked, whatsappGroupId, whatsappGroupName, botConnected } = res.data;
           
           if (!botConnected) {
             icon.textContent = '⚠️';
@@ -250,6 +253,7 @@
             detail.textContent = 'El bot está activo en tu grupo de WhatsApp';
             linkSection.style.display = 'none';
             linkedSection.style.display = 'block';
+            document.getElementById('waGroupNameDisplay').textContent = whatsappGroupName || 'Grupo de WhatsApp';
             document.getElementById('waGroupId').textContent = whatsappGroupId;
           } else {
             icon.textContent = '📱';
