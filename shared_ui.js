@@ -10,7 +10,7 @@ export function checkAuth() {
   }
   try {
     const user = JSON.parse(raw);
-    if (!user.name || !user.groupName) throw new Error();
+    if (!user.phone || !user.groupName) throw new Error();
     
     const navUserInfo = document.getElementById('navUserInfo');
     const displayUserName = document.getElementById('displayUserName');

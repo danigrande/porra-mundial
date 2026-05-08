@@ -118,9 +118,9 @@
         </div>
 
         <div class="form-group">
-          <label for="phone">Tu Número de WhatsApp (Formato: 34600112233)</label>
-          <input type="text" id="phone" class="form-control" placeholder="Ej: 34600112233" required>
-          <p class="info-note">Importante: Sin el '+' y con el prefijo del país (34 para España).</p>
+          <label for="phone">Tu Teléfono Móvil</label>
+          <input type="text" id="phone" class="form-control" readonly style="opacity: 0.7; cursor: not-allowed;">
+          <p class="info-note">Tu teléfono es tu identificador único y no se puede cambiar desde aquí.</p>
         </div>
 
         <div class="form-group">
@@ -191,12 +191,19 @@
 
     async function loadProfile() {
       try {
-        const res = await apiCall({ action: 'getAllInfo', groupName: currentUser.groupName });
+        // Mostrar el teléfono del localStorage (readonly)
+        const phoneDisplay = currentUser.phone || '';
+        if (phoneDisplay) {
+          // Formatear: +34 612 345 678
+          const formatted = '+' + phoneDisplay;
+          document.getElementById('phone').value = formatted;
+        }
+
+        const res = await apiCall({ action: 'getInfo', phone: currentUser.phone });
         
-        if (res.status === 'success' && res.data && res.data[currentUser.name]) {
-          const info = res.data[currentUser.name];
+        if (res.status === 'success' && res.data) {
+          const info = res.data;
           document.getElementById('nickname').value = info.nickname || '';
-          document.getElementById('phone').value = info.phone || '';
           document.getElementById('humor_style').value = info.humor_style || 'Divertido y amigable';
           document.getElementById('likes').value = (info.likes || []).join(', ');
           document.getElementById('dislikes').value = (info.dislikes || []).join(', ');
@@ -217,7 +224,6 @@
 
       const profileData = {
         nickname: document.getElementById('nickname').value,
-        phone: document.getElementById('phone').value.replace(/[^0-9]/g, ''),
         humor_style: document.getElementById('humor_style').value,
         likes: document.getElementById('likes').value.split(',').map(s => s.trim()).filter(s => s),
         dislikes: document.getElementById('dislikes').value.split(',').map(s => s.trim()).filter(s => s)
@@ -227,6 +233,7 @@
         const result = await apiCall({
             action: 'saveInfo',
             playerName: currentUser.name,
+            phone: currentUser.phone,
             groupName: currentUser.groupName,
             data: profileData
         });
@@ -274,6 +281,7 @@
         const res = await apiCall({
           action: 'changePin',
           playerName: currentUser.name,
+          phone: currentUser.phone,
           groupName: currentUser.groupName,
           oldPin,
           newPin

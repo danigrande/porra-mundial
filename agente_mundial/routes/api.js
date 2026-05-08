@@ -211,11 +211,15 @@ router.get('/summary/:player', async (req, res) => {
 
 router.get('/profile', async (req, res) => {
     try {
-        const { playerName } = req.query;
-        const user = await User.findOne({ name: playerName });
+        const { playerName, phone } = req.query;
+        // Buscar por phone primero, fallback a name
+        const user = phone 
+            ? await User.findOne({ phone }) 
+            : await User.findOne({ name: playerName });
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
         
         res.json(createResponse('success', {
+            name: user.name,
             phone: user.phone,
             likes: user.likes || [],
             dislikes: user.dislikes || [],
@@ -230,14 +234,15 @@ router.get('/profile', async (req, res) => {
 
 router.post('/profile', async (req, res) => {
     try {
-        const { playerName, groupName, profile } = req.body;
+        const { playerName, phone, groupName, profile } = req.body;
         if (!profile) throw new Error('El perfil es requerido');
 
+        // Buscar por phone primero, fallback a name
+        const query = phone ? { phone } : { name: playerName };
         const user = await User.findOneAndUpdate(
-            { name: playerName },
+            query,
             { 
                 $set: { 
-                    phone: profile.phone || '000000',
                     nickname: profile.nickname || playerName,
                     likes: profile.likes || [],
                     dislikes: profile.dislikes || [],
@@ -257,47 +262,52 @@ router.post('/profile', async (req, res) => {
 // RUTAS DE AUTENTICACIÓN Y JUGADORES
 // ==========================================
 
-// Login
+// Login — ahora por teléfono + PIN
 router.post('/login', async (req, res) => {
   try {
-    const { playerName, playerPin, groupName } = req.body;
+    const { phone, playerPin, groupName } = req.body;
     
     const group = await Group.findOne({ name: groupName });
     if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
 
-    const user = await User.findOne({ name: playerName, pin: playerPin, groups: groupName });
-    if (!user) return res.status(401).json(createResponse('error', null, 'PIN o Grupo incorrecto'));
+    const user = await User.findOne({ phone, pin: playerPin, groups: groupName });
+    if (!user) return res.status(401).json(createResponse('error', null, 'Teléfono, PIN o Grupo incorrecto'));
 
     const isAdmin = group.admin && group.admin.toString() === user._id.toString();
     
-    console.log(`🔐 Login: ${playerName} en ${groupName}`);
+    console.log(`🔐 Login: ${user.name} (📱${phone}) en ${groupName}`);
     console.log(`👑 Admin del grupo ID: ${group.admin}`);
     console.log(`👤 Usuario logueado ID: ${user._id}`);
     console.log(`❓ ¿Es Admin?: ${isAdmin}`);
 
-    res.json(createResponse('success', { isAdmin }));
+    res.json(createResponse('success', { isAdmin, name: user.name }));
   } catch (error) {
     console.error('❌ Error en POST /login:', error);
     res.status(500).json(createResponse('error', null, error.message));
   }
 });
 
-// Registro
+// Registro — ahora con teléfono como identificador único
 router.post('/register', async (req, res) => {
   try {
-    const { playerName, playerPin, groupName, isNewGroup } = req.body;
+    const { playerName, phone, playerPin, groupName, isNewGroup } = req.body;
     
-    // Verificaciones y creación (simplificado por ahora)
-    let user = await User.findOne({ name: playerName });
+    if (!phone || phone.length < 7) {
+      return res.status(400).json(createResponse('error', null, 'El número de teléfono es obligatorio'));
+    }
+
+    // Buscar por teléfono (identificador único)
+    let user = await User.findOne({ phone });
     if (!user) {
-       console.log(`✨ Creando nuevo usuario: ${playerName}`);
+       console.log(`✨ Creando nuevo usuario: ${playerName} (📱${phone})`);
        user = await User.create({ 
          name: playerName, 
          pin: playerPin, 
-         phone: `AUTO_${Date.now()}_${Math.floor(Math.random() * 1000)}`, 
+         phone, 
          groups: [groupName] 
        });
     } else {
+       // El teléfono ya existe — añadir al nuevo grupo si no está
        if (!user.groups.includes(groupName)) {
            user.groups.push(groupName);
            await user.save();
@@ -319,9 +329,12 @@ router.post('/register', async (req, res) => {
        }
     }
 
-    res.json(createResponse('success', null, 'Usuario registrado con éxito'));
+    res.json(createResponse('success', { name: user.name }, 'Usuario registrado con éxito'));
   } catch (error) {
     console.error('❌ Error en POST /register:', error);
+    if (error.code === 11000) {
+      return res.status(400).json(createResponse('error', null, 'Este número de teléfono ya está registrado'));
+    }
     res.status(500).json(createResponse('error', null, error.message));
   }
 });
@@ -389,9 +402,11 @@ router.post('/predictions', async (req, res) => {
 
 router.get('/groups', async (req, res) => {
     try {
-        const { playerName } = req.query;
-        if (playerName) {
-            const user = await User.findOne({ name: playerName });
+        const { playerName, phone } = req.query;
+        // Buscar por phone primero, fallback a name
+        if (phone || playerName) {
+            const query = phone ? { phone } : { name: playerName };
+            const user = await User.findOne(query);
             return res.json(createResponse('success', (user && user.groups) ? user.groups : []));
         }
         const groups = await Group.find({}, 'name');
@@ -453,24 +468,31 @@ router.get('/groups/:groupName/phone-mapping', async (req, res) => {
 router.post('/groups/:groupName/players', async (req, res) => {
     try {
         const { groupName } = req.params;
-        const { playerName } = req.body;
+        const { playerName, phone } = req.body;
         
-        console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" al grupo: "${groupName}"`);
+        console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" (📱${phone}) al grupo: "${groupName}"`);
 
-        if (!playerName) return res.status(400).json(createResponse('error', null, 'El nombre del jugador es requerido'));
+        if (!playerName || !phone) return res.status(400).json(createResponse('error', null, 'El nombre y teléfono del jugador son requeridos'));
 
-        let user = await User.findOne({ name: playerName });
+        // Buscar por teléfono (identificador único)
+        let user = await User.findOne({ phone });
         if (!user) {
-            console.log(`✨ Creando nuevo usuario: ${playerName}`);
+            console.log(`✨ Creando nuevo usuario: ${playerName} (📱${phone})`);
             user = await User.create({ 
                 name: playerName, 
                 pin: '1234', 
-                phone: `AUTO_${Date.now()}_${Math.floor(Math.random() * 1000)}`, 
+                phone, 
                 groups: [groupName] 
             });
-        } else if (!user.groups.includes(groupName)) {
-            console.log(`📝 Actualizando grupos del usuario: ${playerName}`);
-            user.groups.push(groupName);
+        } else {
+            // Si el usuario ya existe, actualizar nombre si se proporcionó uno diferente
+            if (playerName && user.name !== playerName) {
+                user.name = playerName;
+            }
+            if (!user.groups.includes(groupName)) {
+                console.log(`📝 Actualizando grupos del usuario: ${playerName}`);
+                user.groups.push(groupName);
+            }
             await user.save();
         }
 
@@ -491,6 +513,9 @@ router.post('/groups/:groupName/players', async (req, res) => {
         res.json(createResponse('success'));
     } catch (error) {
         console.error('❌ Error en POST /groups/:groupName/players:', error);
+        if (error.code === 11000) {
+            return res.status(400).json(createResponse('error', null, 'Este número de teléfono ya está registrado con otro nombre'));
+        }
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
@@ -551,16 +576,18 @@ router.post('/groups/:groupName/rules', async (req, res) => {
     }
 });
 
-// Cambiar PIN
+// Cambiar PIN — ahora busca por teléfono
 router.post('/profile/change-pin', async (req, res) => {
     try {
-        const { playerName, groupName, oldPin, newPin } = req.body;
+        const { playerName, phone, groupName, oldPin, newPin } = req.body;
         
         if (!newPin || newPin.length !== 4) {
             return res.status(400).json(createResponse('error', null, 'El nuevo PIN debe tener 4 dígitos'));
         }
 
-        const user = await User.findOne({ name: playerName, groups: groupName });
+        // Buscar por phone primero, fallback a name
+        const query = phone ? { phone, groups: groupName } : { name: playerName, groups: groupName };
+        const user = await User.findOne(query);
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
         
         if (user.pin !== oldPin) {
@@ -570,7 +597,7 @@ router.post('/profile/change-pin', async (req, res) => {
         user.pin = newPin;
         await user.save();
         
-        console.log(`🔐 PIN actualizado para ${playerName} en ${groupName}`);
+        console.log(`🔐 PIN actualizado para ${user.name} (📱${user.phone}) en ${groupName}`);
         res.json(createResponse('success'));
     } catch (error) {
         console.error('❌ Error en POST /profile/change-pin:', error);

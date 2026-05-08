@@ -23,6 +23,7 @@ export async function apiCall(params = {}, options = {}) {
     const stored = JSON.parse(localStorage.getItem('worldcup2026_user') || '{}');
     if (!playerName && stored.name) playerName = stored.name;
     if (!groupName && stored.groupName) groupName = stored.groupName;
+    if (!params.phone && stored.phone) params.phone = stored.phone;
   }
   
   let endpoint = '';
@@ -36,18 +37,20 @@ export async function apiCall(params = {}, options = {}) {
     case 'login':
       endpoint = `/login`;
       method = 'POST';
-      body = { playerName, playerPin: params.playerPin, groupName };
+      body = { phone: params.phone, playerPin: params.playerPin, groupName };
       break;
     case 'register':
       endpoint = `/register`;
       method = 'POST';
-      body = { playerName, playerPin: params.playerPin, groupName, isNewGroup: params.isNewGroup };
+      body = { playerName, phone: params.phone, playerPin: params.playerPin, groupName, isNewGroup: params.isNewGroup };
       break;
     case 'listGroups':
       endpoint = `/groups`;
       break;
     case 'getGroupsForPlayer':
-      endpoint = `/groups?playerName=${encodeURIComponent(playerName)}`;
+      endpoint = params.phone 
+        ? `/groups?phone=${encodeURIComponent(params.phone)}` 
+        : `/groups?playerName=${encodeURIComponent(playerName)}`;
       break;
     case 'getRules':
       endpoint = `/groups/${encodeURIComponent(groupName)}/rules`;
@@ -84,15 +87,17 @@ export async function apiCall(params = {}, options = {}) {
     case 'saveInfo':
       endpoint = `/profile`;
       method = 'POST';
-      body = { playerName, groupName, profile: params.data }; // <-- Cambiado de params.profile a params.data
+      body = { playerName, phone: params.phone, groupName, profile: params.data }; // <-- Cambiado de params.profile a params.data
       break;
     case 'getInfo':
-      endpoint = `/profile?playerName=${encodeURIComponent(playerName)}`;
+      endpoint = params.phone 
+        ? `/profile?phone=${encodeURIComponent(params.phone)}` 
+        : `/profile?playerName=${encodeURIComponent(playerName)}`;
       break;
     case 'changePin':
       endpoint = `/profile/change-pin`;
       method = 'POST';
-      body = { playerName, groupName, oldPin: params.oldPin, newPin: params.newPin };
+      body = { playerName, phone: params.phone, groupName, oldPin: params.oldPin, newPin: params.newPin };
       break;
     case 'getSummary':
       endpoint = `/summary/${encodeURIComponent(playerName)}?groupName=${encodeURIComponent(groupName)}`;
@@ -103,7 +108,7 @@ export async function apiCall(params = {}, options = {}) {
     case 'addPlayer':
       endpoint = `/groups/${encodeURIComponent(groupName)}/players`;
       method = 'POST';
-      body = { playerName };
+      body = { playerName, phone: params.phone };
       break;
     case 'getPlayers':
       endpoint = `/groups/${encodeURIComponent(groupName)}/players`;

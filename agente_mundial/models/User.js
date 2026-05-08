@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  phone: { type: String, required: true }, // Removed unique: true to avoid conflicts with defaults
+  phone: { type: String, required: true, unique: true }, // Identificador único del usuario
   pin: { type: String, required: true },
   nickname: { type: String },
   likes: [{ type: String }],

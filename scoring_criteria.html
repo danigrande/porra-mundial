@@ -26,6 +26,50 @@
       cursor: not-allowed;
       background-color: var(--bg-body);
     }
+    /* Phone input with country selector (admin) */
+    .phone-input-group-admin {
+      display: flex;
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      flex: 1;
+    }
+    .country-select-admin {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+      border: none;
+      padding: 0.75rem 0.4rem 0.75rem 0.6rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      min-width: 95px;
+      max-width: 110px;
+      border-right: 1px solid var(--border-color);
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      padding-right: 20px;
+    }
+    .country-select-admin option {
+      background: #1a1a2e;
+      color: #fff;
+    }
+    .phone-input-admin {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 0.75rem 0.6rem;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      outline: none;
+      min-width: 0;
+    }
+    .phone-input-admin::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
   </style>
 </head>
 
@@ -66,12 +110,20 @@
           <div class="group-teams-summary">Añadir o quitar jugadores y traspasar mando</div>
         </div>
       </div>
-      <div style="padding: 1.25rem; display: flex; gap: 10px;">
-        <input type="text" id="newPlayerName" placeholder="Nombre del nuevo usuario" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary);">
-        <button onclick="addPlayerToGroup()" class="btn-cloud" style="margin: 0; padding: 0.75rem 1.5rem;">
-          <span class="icon">➕</span>
-          <span>Añadir</span>
-        </button>
+      <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="newPlayerName" placeholder="Nombre del jugador" style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary);">
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div class="phone-input-group-admin">
+            <select id="adminCountryCode" class="country-select-admin"></select>
+            <input type="tel" id="newPlayerPhone" class="phone-input-admin" placeholder="612 345 678" inputmode="tel">
+          </div>
+          <button onclick="addPlayerToGroup()" class="btn-cloud" style="margin: 0; padding: 0.75rem 1.5rem;">
+            <span class="icon">➕</span>
+            <span>Añadir</span>
+          </button>
+        </div>
       </div>
       <div id="memberListContainer" style="padding: 0 1.25rem 1.25rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 0.5rem; display: none;">
         <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 1rem; padding-top: 1rem;">Miembros actuales</div>
@@ -126,19 +178,35 @@
       const container = document.getElementById('memberListContainer');
       
       try {
-        const result = await apiCall({ action: 'getPlayers', groupName: currentUser.groupName });
+        // Obtener miembros con sus datos (phone mapping)
+        const [playersResult, phoneMappingResult] = await Promise.all([
+          apiCall({ action: 'getPlayers', groupName: currentUser.groupName }),
+          apiCall({ action: 'getPhoneMapping', groupName: currentUser.groupName })
+        ]);
         
-        if (result?.status === 'success' && result.data) {
+        if (playersResult?.status === 'success' && playersResult.data) {
           container.style.display = 'block';
-          const players = result.data;
+          const players = playersResult.data;
+          const phoneMap = phoneMappingResult?.status === 'success' ? phoneMappingResult.data : {};
+          
+          // Invertir phone mapping: phone -> name => name -> phone
+          const nameToPhone = {};
+          Object.entries(phoneMap).forEach(([phone, name]) => { nameToPhone[name] = phone; });
+          
           if (players.length === 0) {
             listEl.innerHTML = '<div style="color:var(--text-muted); font-size:0.9rem;">No hay otros miembros</div>';
             return;
           }
           
-          listEl.innerHTML = players.map(name => `
+          listEl.innerHTML = players.map(name => {
+            const phone = nameToPhone[name] || '';
+            const phoneDisplay = phone ? `📱 +${phone}` : '📱 Sin teléfono';
+            return `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-              <span style="font-weight: 600; color: var(--text-secondary);">${name} ${name === currentUser.name ? '<small style="color:var(--accent-gold); margin-left:5px;">(Tú)</small>' : ''}</span>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-weight: 600; color: var(--text-secondary);">${name} ${name === currentUser.name ? '<small style="color:var(--accent-gold); margin-left:5px;">(Tú)</small>' : ''}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">${phoneDisplay}</span>
+              </div>
               <div style="display:flex; gap:8px;">
                 ${name !== currentUser.name ? `
                   <button onclick="window.transferAdminRole('${name}')" style="background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; font-weight: 700; transition: all 0.2s;">
@@ -150,7 +218,7 @@
                 ` : '<span style="font-size:0.7rem; color:var(--text-muted)">Admin</span>'}
               </div>
             </div>
-          `).join('');
+          `}).join('');
         }
       } catch (e) {
         console.error("Error cargando lista de miembros", e);
@@ -211,16 +279,54 @@
       }
     }
 
+    // Datos de países para el selector admin
+    const COUNTRIES = [
+      { code: '34', flag: '🇪🇸', name: 'España' },
+      { code: '44', flag: '🇬🇧', name: 'Reino Unido' },
+      { code: '1', flag: '🇺🇸', name: 'EE.UU.' },
+      { code: '52', flag: '🇲🇽', name: 'México' },
+      { code: '54', flag: '🇦🇷', name: 'Argentina' },
+      { code: '55', flag: '🇧🇷', name: 'Brasil' },
+      { code: '56', flag: '🇨🇱', name: 'Chile' },
+      { code: '57', flag: '🇨🇴', name: 'Colombia' },
+      { code: '51', flag: '🇵🇪', name: 'Perú' },
+      { code: '58', flag: '🇻🇪', name: 'Venezuela' },
+      { code: '593', flag: '🇪🇨', name: 'Ecuador' },
+      { code: '598', flag: '🇺🇾', name: 'Uruguay' },
+      { code: '33', flag: '🇫🇷', name: 'Francia' },
+      { code: '49', flag: '🇩🇪', name: 'Alemania' },
+      { code: '39', flag: '🇮🇹', name: 'Italia' },
+      { code: '351', flag: '🇵🇹', name: 'Portugal' },
+      { code: '31', flag: '🇳🇱', name: 'Países Bajos' },
+      { code: '212', flag: '🇲🇦', name: 'Marruecos' },
+    ];
+
+    // Llenar selector de país del admin
+    const adminCountrySel = document.getElementById('adminCountryCode');
+    if (adminCountrySel) {
+      adminCountrySel.innerHTML = COUNTRIES.map(c =>
+        `<option value="${c.code}" ${c.code === '34' ? 'selected' : ''}>${c.flag} +${c.code}</option>`
+      ).join('');
+    }
+
     async function addPlayerToGroup() {
       const nameInput = document.getElementById('newPlayerName');
+      const phoneInput = document.getElementById('newPlayerPhone');
+      const countryCode = document.getElementById('adminCountryCode').value;
       const playerName = nameInput.value.trim();
+      const rawPhone = phoneInput.value.replace(/[^0-9]/g, '');
+      const fullPhone = countryCode + rawPhone;
       
       if (!playerName) {
         showToast('❌ Por favor, introduce un nombre');
         return;
       }
+      if (rawPhone.length < 6) {
+        showToast('❌ Por favor, introduce un teléfono válido');
+        return;
+      }
 
-      const btn = document.querySelector('#memberManagement button');
+      const btn = document.querySelector('#memberManagement button[onclick]');
       const originalText = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<span>⏳ Añadiendo...</span>';
@@ -229,12 +335,14 @@
         const result = await apiCall({
           action: 'addPlayer',
           playerName: playerName,
+          phone: fullPhone,
           groupName: currentUser.groupName
         }, { method: 'POST' });
         
         if (result?.status === 'success') {
           showToast('✅ Jugador añadido correctamente');
           nameInput.value = '';
+          phoneInput.value = '';
           fetchMemberList();
         } else {
           showToast('❌ ' + (result?.message || 'Error'));
