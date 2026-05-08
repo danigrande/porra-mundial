@@ -9,6 +9,7 @@ import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
 import * as apiFootballService from '../apiFootballService.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES } from '../shared_data.js';
+import { getTournamentState } from '../tournamentState.js';
 
 const router = express.Router();
 
@@ -16,6 +17,13 @@ const router = express.Router();
 const createResponse = (status, data = null, message = null) => {
   return { status, data, message };
 };
+
+// ==========================================
+// ESTADO DEL TORNEO
+// ==========================================
+router.get('/tournament-state', (req, res) => {
+  res.json(createResponse('success', getTournamentState()));
+});
 
 // Middleware para verificar conexión a DB
 router.use((req, res, next) => {

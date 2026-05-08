@@ -500,6 +500,27 @@ router.post('/users/:userName/reset-pin', async (req, res) => {
 });
 
 // ==========================================
+// SIMULATE TIME (Para Testing Opción B)
+// ==========================================
+import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
+
+router.post('/simulate-time', (req, res) => {
+  try {
+    const { timeStr } = req.body;
+    // Si timeStr está vacío, false o null, desactiva la simulación
+    setSimulatedTime(timeStr);
+    
+    res.json({ 
+      status: 'ok', 
+      message: timeStr ? `Tiempo simulado a ${timeStr}` : 'Simulación de tiempo desactivada',
+      newState: getTournamentState()
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
 // HELPERS
 // ==========================================
 

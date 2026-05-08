@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentación Técnica - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root {
+      --bg-docs: #0f172a;
+      --card-docs: #1e293b;
+      --accent-tech: #38bdf8;
+      --accent-ai: #a855f7;
+      --accent-db: #10b981;
+      --accent-front: #fbbf24;
+    }
+
+    body {
+      background-color: var(--bg-docs);
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+    }
+
+    .docs-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    .docs-header {
+      text-align: center;
+      margin-bottom: 4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 2rem;
+    }
+
+    .docs-header h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(to right, var(--accent-tech), var(--accent-ai));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.5rem;
+      margin: 3rem 0 1.5rem;
+      color: var(--accent-tech);
+    }
+
+    .section-title span {
+      background: rgba(56, 189, 248, 0.1);
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .tech-card {
+      background: var(--card-docs);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .tech-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent-tech);
+    }
+
+    /* Tarjeta destacada con borde inferior especial */
+    .tech-card.featured {
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tech-card.featured:hover {
+      border-bottom-color: var(--accent-tech);
+    }
+
+    .tech-badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .badge-core { background: rgba(56, 189, 248, 0.15); color: var(--accent-tech); }
+    .badge-ai { background: rgba(168, 85, 247, 0.15); color: var(--accent-ai); }
+    .badge-db { background: rgba(16, 185, 129, 0.15); color: var(--accent-db); }
+    .badge-front { background: rgba(251, 191, 36, 0.15); color: var(--accent-front); }
+
+    .tech-card h3 { margin: 0.5rem 0; font-size: 1.2rem; }
+    .tech-card p { font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem; }
+    
+    .tech-details {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.85rem;
+    }
+
+    .tech-details > strong { color: #f1f5f9; display: block; margin-bottom: 4px; }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      z-index: 100;
+    }
+
+    ul.check-list { list-style: none; padding: 0; }
+    ul.check-list li::before { content: '✓'; color: var(--accent-db); margin-right: 8px; font-weight: bold; }
+    ul.check-list li { margin-bottom: 6px; color: #cbd5e1; }
+
+    .privacy-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+
+    .diagram-box {
+      background: rgba(0,0,0,0.2);
+      border: 1px dashed rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 3rem;
+    }
+
+    .node {
+      background: var(--card-docs);
+      border: 1px solid var(--accent-tech);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      position: relative;
+    }
+
+    .node-arrow::after {
+      content: '↓';
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--accent-tech);
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <a href="player_scores.html" class="back-btn">← Volver a la App</a>
+
+  <div class="docs-container">
+    <header class="docs-header">
+      <h1>Technical Blueprint v2.0</h1>
+      <p>Guía de arquitectura y funcionamiento interno de la Porra Mundial 2026</p>
+    </header>
+
+    <div class="section-title">
+      <span>🗺️</span> Flujo de Datos (Arquitectura)
+    </div>
+
+    <div class="diagram-box">
+      <div class="node node-arrow" style="border-color: #25D366;">WhatsApp (Usuario envía mensaje)</div>
+      <div class="node node-arrow">Bot en Render (Baileys)</div>
+      <div class="node node-arrow" style="border-color: var(--accent-ai);">Groq API (La IA procesa y genera respuesta)</div>
+      <div class="node" style="border-color: #25D366;">WhatsApp (Bot responde en el grupo)</div>
+      
+      <div style="margin-top: 20px; font-size: 0.75rem; color: var(--text-muted);">
+        * En cada paso, el Bot consulta a <strong>MongoDB</strong> para saber quién eres y cuántos puntos tienes.
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>🛠️</span> Componentes del Motor
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-card">
+        <span class="tech-badge badge-core">WhatsApp Socket</span>
+        <h3>Baileys Engine</h3>
+        <p>A diferencia de otras soluciones que usan navegadores ocultos (muy lentos), Baileys se conecta directamente a los servidores de WhatsApp mediante WebSockets.</p>
+        <div class="tech-details">
+          <strong>¿Por qué es clave?</strong>
+          <ul class="check-list">
+            <li>Soporta multi-dispositivo (el bot es un "PC" más).</li>
+            <li>Es extremadamente ligero y rápido.</li>
+            <li>Gestiona el cifrado de extremo a extremo automáticamente.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <span class="tech-badge badge-ai">Cerebro de IA</span>
+        <h3>Groq Cloud (Llama 3)</h3>
+        <p>Es el hardware más rápido del mundo para ejecutar IAs. Usamos el modelo Llama 3 de 70 billones de parámetros para las respuestas del Agente Mundial.</p>
+        <div class="tech-details">
+          <strong>¿Por qué es clave?</strong>
+          <ul class="check-list">
+            <li>Genera texto a 500 palabras por segundo.</li>
+            <li>Permite una personalidad fluida y sin "lags".</li>
+            <li>Compatible con el formato de OpenAI.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <span class="tech-badge badge-db">NoSQL Database</span>
+        <h3>MongoDB Atlas</h3>
+        <p>No es una base de datos de tablas rígidas, sino de documentos JSON. Esto permite guardar datos muy distintos (predicciones, mensajes, usuarios) de forma ágil.</p>
+        <div class="tech-details">
+          <strong>¿Qué guardamos aquí?</strong>
+          <ul class="check-list">
+            <li>Usuarios y sus teléfonos vinculados.</li>
+            <li>Todas las predicciones de goles.</li>
+            <li>Historial de chat para contexto (RAG).</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Vercel -->
+      <div class="tech-card featured">
+        <span class="tech-badge" style="background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);">Frontend Hosting</span>
+        <h3>Vercel</h3>
+        <p>Es la plataforma donde "vive" la interfaz web. Mientras Render se encarga de que el bot esté vivo, Vercel se encarga de que la web sea accesible y rápida.</p>
+        <div class="tech-details">
+          <strong>¿Por qué es clave?</strong>
+          <ul class="check-list">
+            <li><strong>Despliegue Atómico:</strong> La web se actualiza sola en segundos al guardar cambios.</li>
+            <li><strong>Edge Network:</strong> Carga instantánea desde cualquier lugar del mundo.</li>
+            <li><strong>HTTPS:</strong> Seguridad gestionada automáticamente.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Render -->
+      <div class="tech-card">
+        <span class="tech-badge badge-core">Backend Hosting</span>
+        <h3>Render.com</h3>
+        <p>Aquí reside el "motor" Node.js. A diferencia de Vercel (que es para webs estáticas), Render permite procesos continuos como la conexión de WhatsApp.</p>
+        <div class="tech-details">
+          <strong>¿Por qué es clave?</strong>
+          <ul class="check-list">
+            <li>Mantiene al bot escuchando 24/7.</li>
+            <li>Gestiona el servidor de la API que usa la web.</li>
+            <li>Manejo de variables de entorno para la sesión de WhatsApp.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tech-card">
+        <span class="tech-badge badge-ai">Memoria Semántica</span>
+        <h3>Sistema RAG</h3>
+        <p>RAG significa "Generación Aumentada por Recuperación". Evita que la IA "alucine" sobre lo que ha pasado en el grupo de WhatsApp.</p>
+        <div class="tech-details">
+          <strong>¿Cómo funciona?</strong>
+          <ul class="check-list">
+            <li>Busca mensajes pasados similares a la pregunta.</li>
+            <li>Se los entrega a la IA como contexto real.</li>
+            <li>Permite referencias como: "Como dijo Juan ayer...".</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>🎨</span> Interfaz de Usuario (Frontend)
+    </div>
+
+    <div class="tech-grid" style="grid-template-columns: 1fr;">
+      <div class="tech-card" style="border-left: 4px solid var(--accent-front);">
+        <span class="tech-badge badge-front">Arquitectura "Vanilla"</span>
+        <h3>HTML5, CSS3 & Modern JavaScript</h3>
+        <p>Proyecto construido con tecnología web pura, sin frameworks pesados. Esto garantiza una carga instantánea y una estética premium ultra-fluida.</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 1rem;">
+          <div>
+            <strong>Estética y UX</strong>
+            <ul class="check-list">
+              <li><strong>Glassmorphism:</strong> Efectos de cristal translúcido.</li>
+              <li><strong>Variables CSS:</strong> Sistema de diseño coherente.</li>
+              <li><strong>Responsive:</strong> Optimización total para móviles.</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Lógica de Cliente</strong>
+            <ul class="check-list">
+              <li><strong>LocalStorage:</strong> Gestión de sesión local.</li>
+              <li><strong>Fetch API:</strong> Sincronización asíncrona con el bot.</li>
+              <li><strong>Modular JS:</strong> Código organizado y reutilizable.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>🛡️</span> Privacidad y Seguridad
+    </div>
+
+    <div class="privacy-banner">
+      <h3 style="color: var(--accent-db); margin-top: 0;">Protocolo de Datos</h3>
+      <p>Para la tranquilidad de todos, el sistema sigue estas reglas de privacidad:</p>
+      <ul style="padding-left: 1.5rem; font-size: 0.9rem; color: #cbd5e1;">
+        <li><strong>No Entrenamiento:</strong> Groq y Hugging Face NO usan nuestros mensajes para entrenar sus modelos.</li>
+        <li><strong>Aislamiento por Grupo:</strong> Aunque el bot está en varios grupos, los datos de un grupo jamás se mezclan con los de otro.</li>
+        <li><strong>Logs Efímeros:</strong> Los logs de mensajes en los proveedores de IA se borran automáticamente tras 30 días.</li>
+        <li><strong>Seguridad en Tránsito:</strong> Toda comunicación entre el Bot y las APIs externas está cifrada (SSL/TLS).</li>
+      </ul>
+    </div>
+
+    <div class="section-title">
+      <span>⚙️</span> Glosario Técnico
+    </div>
+
+    <div style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 16px; font-size: 0.9rem;">
+      <p><strong>Node.js:</strong> El cerebro del servidor que une la base de datos, la IA y WhatsApp.</p>
+      <p><strong>Variable de Entorno:</strong> "Secretos" (como API Keys) guardados en el servidor, fuera del código visible.</p>
+      <p><strong>Render:</strong> La plataforma que mantiene el bot encendido y funcionando 24/7.</p>
+    </div>
+
+    <footer style="margin-top: 5rem; text-align: center; color: #475569; font-size: 0.8rem;">
+      Documentación Técnica Consolidada — Mayo 2026
+    </footer>
+  </div>
+
+</body>
+</html>

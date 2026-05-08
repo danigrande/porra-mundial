@@ -64,6 +64,35 @@
 
     <div class="groups-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
 
+      <!-- Modo de Predicción -->
+      <div class="group-card" style="border: 1px solid var(--accent-blue);">
+        <div class="group-header" style="background: rgba(59, 130, 246, 0.1);">
+          <div class="group-letter" style="background: var(--accent-blue); color: #fff;">⚙️</div>
+          <div>
+            <div class="group-name">Modo de Predicción</div>
+            <div class="group-teams-summary">Elige cómo se jugará la porra en este grupo</div>
+          </div>
+        </div>
+        <div style="padding: 1.25rem;">
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+              <input type="radio" name="prediction_mode" value="A" id="mode_a" checked onchange="handleModeChange()" style="margin-top: 4px;">
+              <div>
+                <strong>Opción A: Torneo Completo (Clásico)</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;">Los usuarios deben rellenar toda la fase de grupos y todo el cuadro eliminatorio antes de que empiece el primer partido del Mundial.</p>
+              </div>
+            </label>
+            <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+              <input type="radio" name="prediction_mode" value="B" id="mode_b" onchange="handleModeChange()" style="margin-top: 4px;">
+              <div>
+                <strong>Opción B: Por Fases (Dinámico)</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;">Las predicciones se abren ronda a ronda. El cuadro eliminatorio se construye con los clasificados reales y los usuarios tendrán 24-48h para predecir cada fase.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <!-- Fase de Grupos -->
       <div class="group-card">
         <div class="group-header">
@@ -199,6 +228,7 @@
     window.handleLogout = handleLogout;
     window.saveCriteriaToCloud = saveCriteriaToCloud;
     window.saveCriteria = saveCriteria;
+    window.handleModeChange = handleModeChange;
 
     renderNavigation('points_system.html');
     let currentUser = checkAuth();
@@ -220,6 +250,10 @@
     function disableEditing() {
       document.getElementById('adminNotice').style.display = 'flex';
       document.getElementById('btnSaveCloud').style.display = 'none';
+      
+      document.getElementById('mode_a').disabled = true;
+      document.getElementById('mode_b').disabled = true;
+      
       ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = true;
@@ -236,6 +270,10 @@
     function saveCriteria() {
       if (!currentUser.isAdmin) return;
       const data = {};
+      
+      // Modo de predicción
+      data.prediction_mode = document.getElementById('mode_b').checked ? 'B' : 'A';
+
       ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -249,6 +287,20 @@
       });
       localStorage.setItem(`worldcup2026_scoring_${currentUser.groupName}`, JSON.stringify(data));
     }
+
+    function handleModeChange() {
+      if (!currentUser.isAdmin) return;
+      const isModeB = document.getElementById('mode_b').checked;
+      
+      if (isModeB) {
+        // Warning when switching to B
+        alert("⚠️ ATENCIÓN: Al activar el modo por fases (Opción B), cualquier predicción que tus usuarios hayan hecho para las rondas eliminatorias se ocultará y deberán volver a votar cuando la fase correspondiente se abra. Usa esto solo si estás seguro de querer jugar ronda a ronda.");
+      }
+      saveCriteria();
+      // Auto-save to cloud on mode change to prevent desyncs
+      saveCriteriaToCloud();
+    }
+
 
     async function saveCriteriaToCloud() {
       if (!currentUser.isAdmin) return;
@@ -285,6 +337,13 @@
     }
 
     function applyCriteria(data) {
+      // Modo de predicción
+      if (data.prediction_mode === 'B') {
+        document.getElementById('mode_b').checked = true;
+      } else {
+        document.getElementById('mode_a').checked = true;
+      }
+
       ids.forEach(id => {
         if (data[id] !== undefined) {
           const el = document.getElementById(id);

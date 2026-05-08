@@ -33,6 +33,23 @@
   </header>
 
   <main class="main-content">
+    <!-- Countdown / Phase Info -->
+    <div id="tournamentBanner" class="group-card" style="margin-bottom:2rem; display:none; overflow: hidden; position: relative; border-left: 5px solid var(--accent-blue);">
+      <div style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div id="phaseIcon" style="font-size: 2rem;">🗓️</div>
+          <div>
+            <div id="phaseName" style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary);">Cargando fase...</div>
+            <div id="phaseStatus" style="font-size: 0.85rem; color: var(--text-muted);">Estado del torneo</div>
+          </div>
+        </div>
+        <div id="countdownContainer" style="text-align: right; min-width: 150px;">
+          <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 2px;">Cierre en:</div>
+          <div id="countdownTimer" style="font-family: 'Inter', monospace; font-weight: 800; font-size: 1.5rem; color: var(--accent-blue);">00:00:00</div>
+        </div>
+      </div>
+    </div>
+
     <div id="userNotification" class="group-card" style="margin-bottom:2rem; background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); display:none;">
       <div style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px;">
         <span>👋</span>
@@ -70,6 +87,10 @@
     let currentUser = checkAuth();
     initOnboarding('worldcup.html');
     let predictions = {};
+    let tournamentState = null;
+    let groupRules = {};
+    let realityResults = {};
+
 
     // Mapeo extendido para visualización (se podría mover a shared_data si se usa en más sitios)
     const groupMatchesMetadata = FIXTURE_GROUPS.map(g => ({
@@ -87,12 +108,77 @@
     }
 
     async function render() {
+      // 1. Cargar Estado y Reglas primero
+      try {
+        const [stateRes, rulesRes, realityRes] = await Promise.all([
+          apiCall({ action: 'tournament-state' }),
+          apiCall({ action: 'getRules', groupName: currentUser.groupName }),
+          apiCall({ action: 'getReality' })
+        ]);
+        
+        tournamentState = stateRes?.data || null;
+        groupRules = rulesRes || {};
+        realityResults = realityRes?.data || {};
+
+        if (tournamentState) {
+          updateTournamentUI();
+        }
+      } catch (e) {
+        console.error("Error cargando estado inicial", e);
+      }
+
       renderGroups();
       renderKnockout();
       renderAwards();
       await loadStoredData();
       updateAll();
     }
+
+    function updateTournamentUI() {
+      const banner = document.getElementById('tournamentBanner');
+      const phaseName = document.getElementById('phaseName');
+      const phaseStatus = document.getElementById('phaseStatus');
+      const countdownTimer = document.getElementById('countdownTimer');
+      
+      banner.style.display = 'block';
+      phaseName.textContent = tournamentState.name;
+      
+      if (tournamentState.isPredictionWindow) {
+        phaseStatus.textContent = "🟢 Fase abierta para predicciones";
+        banner.style.borderColor = "var(--accent-green)";
+        document.getElementById('btnSave').disabled = false;
+        startCountdown();
+      } else {
+        phaseStatus.textContent = "🔒 Fase bloqueada (Partidos en curso)";
+        banner.style.borderColor = "var(--border-color)";
+        document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateString() : 'Pendiente'}</div>`;
+        // Bloquear el botón de guardar si no hay nada que predecir
+        // document.getElementById('btnSave').disabled = true;
+      }
+    }
+
+    function startCountdown() {
+      const deadline = new Date(tournamentState.nextDeadline).getTime();
+      
+      const timer = setInterval(() => {
+        const now = Date.now();
+        const diff = deadline - now;
+        
+        if (diff <= 0) {
+          clearInterval(timer);
+          document.getElementById('countdownTimer').textContent = "CERRADO";
+          return;
+        }
+        
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        
+        document.getElementById('countdownTimer').textContent = 
+          `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+      }, 1000);
+    }
+
 
     function renderGroups() {
       const grid = document.getElementById('groupsGrid');
@@ -233,31 +319,85 @@
 
     function updateAll() {
       const currentData = collectData();
+      const isModeB = groupRules.prediction_mode === 'B';
+      const visiblePhases = tournamentState?.visiblePhases || [];
+      const unlocks = tournamentState?.unlocks || [];
+
+      // Fusionar predicciones con realidad para el Cuadro en Modo B
+      const dataForBracket = { ...currentData };
+      if (isModeB) {
+        // En modo B, los nombres de los equipos en el cuadro vienen de la REALIDAD si la fase ha pasado
+        Object.keys(realityResults).forEach(key => {
+          dataForBracket[key] = realityResults[key];
+        });
+      }
+
       FIXTURE_GROUPS.forEach(g => {
         const standings = getStandings(g.letter, currentData);
         const tbody = document.getElementById(`tbody_${g.letter}`);
         tbody.innerHTML = standings.map((s, i) => `<tr><td>${i+1}</td><td>${getTeamHtml(s.name)}</td><td>${s.pts}</td><td>${s.dg}</td></tr>`).join('');
+        
+        // Bloquear inputs si no están en 'unlocks' o si la fase de grupos ya pasó
+        const isGroupUnlock = unlocks.includes('groups');
+        const card = tbody.closest('.group-card');
+        if (!isGroupUnlock && tournamentState) {
+          card.querySelectorAll('input').forEach(input => input.disabled = true);
+          card.style.opacity = '0.8';
+        }
       });
 
       KNOCKOUT_BRACKET.forEach(round => {
+        const isRoundVisible = !isModeB || visiblePhases.includes(round.id.toLowerCase()) || round.matches.some(m => unlocks.includes('r'+m) || unlocks.includes(round.id.toLowerCase()));
+        const section = document.querySelector(`.knockout-section:nth-of-type(${KNOCKOUT_BRACKET.indexOf(round) + 1})`);
+        
+        // En modo B, ocultamos rondas que aún no "existen"
+        if (isModeB && !isRoundVisible) {
+           if (section) section.style.display = 'none';
+        } else if (section) {
+           section.style.display = 'block';
+           
+           // Bloquear si no es editable
+           const isEditable = unlocks.includes(round.id.toLowerCase()) || round.matches.some(m => unlocks.includes('r'+m));
+           if (!isEditable && tournamentState) {
+             section.querySelectorAll('input').forEach(input => input.disabled = true);
+             section.style.opacity = '0.9';
+           }
+        }
+
         round.matches.forEach(num => {
           const pairing = BRACKET_MATCHES[num];
-          const hName = fullResolve(pairing[0], currentData);
-          const aName = fullResolve(pairing[1], currentData);
-          document.getElementById(`team_name_${num}_h`).innerHTML = getTeamHtml(hName);
-          document.getElementById(`team_name_${num}_a`).innerHTML = getTeamHtml(aName);
+          // IMPORTANTE: En modo B usamos dataForBracket (Realidad) para resolver nombres
+          const hName = fullResolve(pairing[0], dataForBracket);
+          const aName = fullResolve(pairing[1], dataForBracket);
+          
+          const hEl = document.getElementById(`team_name_${num}_h`);
+          const aEl = document.getElementById(`team_name_${num}_a`);
+          if (hEl) hEl.innerHTML = getTeamHtml(hName);
+          if (aEl) aEl.innerHTML = getTeamHtml(aName);
           
           const hVal = currentData[`ko_${num}_h`];
           const aVal = currentData[`ko_${num}_a`];
-          document.getElementById(`pen_container_${num}`).style.display = (hVal !== undefined && aVal !== undefined && hVal === aVal) ? 'block' : 'none';
+          const penCont = document.getElementById(`pen_container_${num}`);
+          if (penCont) penCont.style.display = (hVal !== undefined && aVal !== undefined && hVal === aVal) ? 'block' : 'none';
         });
       });
 
-      const champ = fullResolve('W104', currentData);
-      const runner = fullResolve('L104', currentData);
-      document.getElementById('honor_champion').innerHTML = getTeamHtml(champ);
-      document.getElementById('honor_runnerup').innerHTML = getTeamHtml(runner);
+      // Honor Roll
+      const isHonorUnlock = unlocks.includes('honor');
+      const awardsCard = document.querySelector('.awards-card');
+      if (awardsCard && !isHonorUnlock && tournamentState) {
+        awardsCard.style.opacity = '0.8';
+        // No tenemos inputs directos aquí pero para consistencia
+      }
+
+      const champ = fullResolve('W104', dataForBracket);
+      const runner = fullResolve('L104', dataForBracket);
+      const hChamp = document.getElementById('honor_champion');
+      const hRunner = document.getElementById('honor_runnerup');
+      if (hChamp) hChamp.innerHTML = getTeamHtml(champ);
+      if (hRunner) hRunner.innerHTML = getTeamHtml(runner);
     }
+
 
     window.handleInputChange = () => {
       updateAll();

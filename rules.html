@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reglas del Juego - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root {
+      --bg-rules: #0a0a0a;
+      --card-rules: #161b22;
+      --accent-rules: #10b981; /* Verde esmeralda para el juego */
+      --accent-gold: #fbbf24;
+    }
+
+    body {
+      background-color: var(--bg-rules);
+      color: #e6edf3;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .rules-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    .rules-header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .rules-header h1 {
+      font-size: 2.8rem;
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .rule-section {
+      background: var(--card-rules);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 24px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .rule-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent-rules);
+      opacity: 0.5;
+    }
+
+    .rule-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #fff;
+    }
+
+    .pts-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+      margin-top: 1rem;
+    }
+
+    .pts-table tr {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .pts-table td {
+      padding: 12px 16px;
+      font-size: 0.95rem;
+    }
+
+    .pts-table td:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+
+    .pts-table td:last-child {
+      border-radius: 0 8px 8px 0;
+      text-align: right;
+      font-weight: 800;
+      color: var(--accent-rules);
+    }
+
+    .step-badge {
+      background: var(--accent-rules);
+      color: #000;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .penalty-box {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.8rem;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    .highlight-gold { color: var(--accent-gold); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <a href="player_scores.html" class="back-btn">← Volver a la Porra</a>
+
+  <div class="rules-container">
+    <header class="rules-header">
+      <h1>Reglas del Juego</h1>
+      <p style="color: #94a3b8;">Todo lo que necesitas saber para convertirte en el Rey de la Porra</p>
+    </header>
+
+    <!-- Sección 1: Cómo participar -->
+    <section class="rule-section">
+      <div class="rule-title">
+        <div class="step-badge">1</div>
+        ¿Cómo participar?
+      </div>
+      <p>La porra se divide en dos fases principales que debes completar antes de que empiece el Mundial:</p>
+      <ul style="padding-left: 1.2rem; margin-top: 1rem;">
+        <li><strong>Fase de Grupos:</strong> Introduce tus predicciones de goles para todos los partidos de la liguilla inicial.</li>
+        <li><strong>Cuadro Eliminatorio:</strong> Según tus resultados de grupos, se generará automáticamente tu cuadro de eliminatorias (Dieciseisavos, Octavos, etc.). Deberás rellenar quién pasa en cada ronda hasta llegar al Campeón.</li>
+        <li><strong>Cuadro de Honor:</strong> Elige a tus favoritos para los premios individuales (Bota de Oro, Balón de Oro).</li>
+      </ul>
+    </section>
+
+    <!-- Sección 2: Sistema de Puntuación -->
+    <section class="rule-section">
+      <div class="rule-title">
+        <span>📊</span> Sistema de Puntuación
+      </div>
+      <p>Los puntos se calculan de forma acumulativa por cada partido. Si aciertas el resultado exacto, ¡te llevas el premio máximo!</p>
+      
+      <table class="pts-table">
+        <tr>
+          <td><strong>Signo (1X2)</strong><br><small>Acertar si gana el local, visitante o hay empate</small></td>
+          <td>+10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>Diferencia de Goles</strong><br><small>Solo si acertaste el signo (ej: dijiste 2-1 y quedaron 1-0)</small></td>
+          <td>+10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>Resultado Exacto</strong><br><small>Bono por acertar el marcador exacto</small></td>
+          <td>+10 pts</td>
+        </tr>
+        <tr>
+          <td><strong>Posición en Grupo</strong><br><small>Acierto de posición exacta (1º, 2º, 3º o 4º)</small></td>
+          <td>+5 pts</td>
+        </tr>
+        <tr>
+          <td><strong>Clasificación</strong><br><small>Por cada equipo que aciertes que pasa de ronda</small></td>
+          <td>+5 a +10 pts</td>
+        </tr>
+      </table>
+      <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 1rem;">
+        💡 <em>Ejemplo: Si dices 2-1 y quedan 2-1, sumas 30 puntos (10 de signo + 10 de diferencia + 10 de bono exacto).</em>
+      </p>
+    </section>
+
+    <!-- Sección 3: Eliminatorias y Penaltis -->
+    <section class="rule-section" style="border-left-color: #3b82f6;">
+      <div class="rule-title">
+        <span>⚔️</span> Rondas Eliminatorias
+      </div>
+      <p>En las rondas de K.O., los puntos por partido suelen ser más altos (según la configuración de tu administrador). Pero hay una regla vital:</p>
+      
+      <div class="penalty-box">
+        <strong style="color: #ef4444; display: block; margin-bottom: 5px;">⚠️ La Regla del Empate</strong>
+        Si predices que un partido de eliminatoria terminará en **empate** (ej: 1-1), el sistema te obligará a elegir quién gana en la **tanda de penaltis**. 
+        <br><br>
+        Solo pasará a la siguiente ronda de tu cuadro el equipo que elijas como ganador de los penaltis.
+      </div>
+    </section>
+
+    <!-- Sección 4: Cuadro de Honor -->
+    <section class="rule-section">
+      <div class="rule-title">
+        <span class="highlight-gold">🏆</span> Premios Especiales
+      </div>
+      <p>Al final del Mundial, se reparten los puntos "gordos" por tus predicciones a largo plazo:</p>
+      <table class="pts-table">
+        <tr>
+          <td>Acierto del <strong class="highlight-gold">Campeón</strong></td>
+          <td>+50 pts</td>
+        </tr>
+        <tr>
+          <td>Acierto del Subcampeón</td>
+          <td>+30 pts</td>
+        </tr>
+        <tr>
+          <td>Bota / Balón de Oro</td>
+          <td>+25 pts</td>
+        </tr>
+      </table>
+    </section>
+
+    <!-- Sección 5: Restricciones -->
+    <section class="rule-section">
+      <div class="rule-title">
+        <span>🔒</span> Restricciones y Bloqueos
+      </div>
+      <ul style="padding-left: 1.2rem;">
+        <li><strong>Cierre de Predicciones:</strong> No podrás modificar tus predicciones una vez que comience el primer partido del Mundial (o según la hora de corte establecida).</li>
+        <li><strong>Modificaciones:</strong> Puedes cambiar tus marcadores tantas veces como quieras antes de la fecha límite.</li>
+        <li><strong>Empates en la Clasificación:</strong> Si dos jugadores tienen los mismos puntos, el sistema suele priorizar a quien tenga más "Resultados Exactos" acertados.</li>
+      </ul>
+    </section>
+
+    <footer style="margin-top: 5rem; text-align: center; color: #475569; font-size: 0.8rem;">
+      Las reglas definitivas dependen de la configuración de tu administrador de grupo.
+    </footer>
+  </div>
+
+</body>
+</html>

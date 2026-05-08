@@ -15,6 +15,7 @@ import { schedule } from 'node-cron';
 import config from './config.js';
 import { processMessage, generateGroupSummary, refreshCache, identifyPlayer } from './messageHandler.js';
 import { Group } from './models/Group.js';
+import { getTournamentState, getCurrentTime } from './tournamentState.js';
 
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });
@@ -407,6 +408,62 @@ async function startBot() {
 }
 
 // ==========================================
+// NOTIFICACIONES PROACTIVAS (Opción B)
+// ==========================================
+let lastAnnouncedPhase = null;
+let lastReminderPhase = null;
+
+async function initProactiveNotifications(sock) {
+  console.log('📢 Iniciando motor de notificaciones proactivas...');
+  
+  setInterval(async () => {
+    try {
+      const state = getTournamentState();
+      if (!state) return;
+
+      // 1. Detección de Apertura de Fase (Waiting)
+      if (state.isPredictionWindow && state.phase !== lastAnnouncedPhase) {
+        lastAnnouncedPhase = state.phase;
+        console.log(`🔔 Nueva fase detectada: ${state.name}. Notificando a los grupos...`);
+        
+        // Buscar grupos que tengan Opción B activada
+        const groups = await Group.find();
+        for (const group of groups) {
+          // Asumimos que prediction_mode está en rules
+          const rules = group.rules || {};
+          if (rules.prediction_mode === 'B' || state.phase === 'PRE_TOURNAMENT') {
+             await sock.sendMessage(group.whatsappGroupId, {
+               text: `🚨 *¡FASE ABIERTA!* 🚨\n\nEl torneo ha entrado en la fase: *${state.name}*.\n\nYa podéis entrar a la web para completar vuestras predicciones. Tenéis hasta el cierre de la ventana para guardar vuestros resultados.\n\n🌐 [Mundial 2026 - Predicciones](${process.env.FRONTEND_URL || 'https://tu-url.com'})`
+             });
+          }
+        }
+      }
+
+      // 2. Recordatorio de 2 horas
+      const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+      if (state.isPredictionWindow && state.timeRemainingMs < TWO_HOURS_MS && state.phase !== lastReminderPhase) {
+        lastReminderPhase = state.phase;
+        console.log(`⏰ Quedan menos de 2 horas para el cierre de ${state.name}. Enviando recordatorio...`);
+        
+        const groups = await Group.find();
+        for (const group of groups) {
+          const rules = group.rules || {};
+          if (rules.prediction_mode === 'B' || state.phase === 'PRE_TOURNAMENT') {
+            await sock.sendMessage(group.whatsappGroupId, {
+              text: `⏳ *¡ÚLTIMA LLAMADA!* ⏳\n\nQuedan menos de *2 horas* para que se cierren las predicciones de *${state.name}*.\n\n¡Entra ya si no quieres quedarte con 0 puntos en esta ronda!`
+            });
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Error en motor de notificaciones:', error.message);
+    }
+  }, 60000); // Comprobar cada minuto
+}
+
+
+// ==========================================
 // ARRANQUE
 // ==========================================
 
@@ -418,7 +475,9 @@ console.log(`
 ╚══════════════════════════════════════╝
 `);
 
-startBot().catch(err => {
+startBot().then(sock => {
+  initProactiveNotifications(sock);
+}).catch(err => {
   console.error('Error fatal:', err);
   process.exit(1);
 });

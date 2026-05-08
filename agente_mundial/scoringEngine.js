@@ -133,14 +133,26 @@ export function calculateScore(prediction, reality, rules = {}) {
 
 
   const ptsRules = {
-    group: { sign: getRule('pts_group_sign', 10), diff: getRule('pts_group_diff', 10), exact: getRule('pts_group_exact', 10) },
-    ko: { sign: getRule('pts_ko_sign', 10), diff: getRule('pts_ko_diff', 10), exact: getRule('pts_ko_exact', 10) },
+    group: { 
+      sign: getRule('pts_group_sign', 10), 
+      diff: getRule('pts_group_diff', 10), 
+      exact: getRule('pts_group_exact', 10),
+      pos: getRule('pts_group_pos', 5),
+      qualify: getRule('pts_group_qualify', 5)
+    },
+    ko: { 
+      sign: getRule('pts_ko_sign', 10), 
+      diff: getRule('pts_ko_diff', 10), 
+      exact: getRule('pts_ko_exact', 10),
+      qualify: getRule('pts_ko_qualify', 10)
+    },
     honor: {
       champ: getRule('pts_honor_champ', 50), runner: getRule('pts_honor_runner', 30), third: getRule('pts_honor_third', 20),
       gold: getRule('pts_award_gold', 25), silver: getRule('pts_award_silver', 15), bronze: getRule('pts_award_bronze', 10),
     },
   };
 
+  // --- 1. EVALUACIÓN DE PARTIDOS (Puntos por resultado) ---
   function evaluateMatch(hKey, aKey, isGroup) {
     const pRules = isGroup ? ptsRules.group : ptsRules.ko;
     const rH = parseInt(reality[hKey]);
@@ -188,6 +200,46 @@ export function calculateScore(prediction, reality, rules = {}) {
     }
   });
 
+  // --- 2. POSICIONES DE GRUPO ---
+  FIXTURE_GROUPS.forEach(group => {
+    const realStandings = getStandings(group.letter, reality);
+    const predStandings = getStandings(group.letter, prediction);
+    
+    realStandings.forEach((team, index) => {
+      // Si el equipo en la posición X de la realidad es el mismo que en la predicción
+      if (predStandings[index] && predStandings[index].name === team.name) {
+        const pts = ptsRules.group.pos;
+        if (pts > 0) {
+          totalPts += pts;
+          groupPts += pts;
+          history.push({ match: `Posición ${index + 1}º Grupo ${group.letter}`, pts, reason: `Acierto (${team.name})` });
+        }
+      }
+    });
+  });
+
+  // --- 3. EQUIPOS CLASIFICADOS (KO) ---
+  // Recorremos todos los partidos del bracket para ver si los equipos participantes coinciden
+  Object.keys(BRACKET_MATCHES).forEach(matchNum => {
+    const isRoundOf32 = KNOCKOUT_BRACKET[0].matches.includes(parseInt(matchNum));
+    const qualifyPts = isRoundOf32 ? ptsRules.group.qualify : ptsRules.ko.qualify;
+    
+    if (qualifyPts > 0) {
+      const realTeams = [fullResolve(BRACKET_MATCHES[matchNum][0], reality), fullResolve(BRACKET_MATCHES[matchNum][1], reality)];
+      const predTeams = [fullResolve(BRACKET_MATCHES[matchNum][0], prediction), fullResolve(BRACKET_MATCHES[matchNum][1], prediction)];
+      
+      // Por cada equipo real en este partido, ver si el usuario lo tenía también en este partido
+      realTeams.forEach(realTeam => {
+        if (realTeam && !realTeam.match(/^[1-3WLA-L]+$/) && predTeams.includes(realTeam)) {
+          totalPts += qualifyPts;
+          koPts += qualifyPts;
+          history.push({ match: `Clasificado ${resolveMatchName('ko_' + matchNum)}`, pts: qualifyPts, reason: `Acierto (${realTeam})` });
+        }
+      });
+    }
+  });
+
+  // --- 4. CUADRO DE HONOR ---
   const checkHonor = (actual, predicted, pts, label) => {
     if (actual && predicted && actual === predicted) {
       honorPts += pts; totalPts += pts;
