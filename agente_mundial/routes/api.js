@@ -589,25 +589,28 @@ router.delete('/groups/:groupName/players/:playerName', async (req, res) => {
         const { groupName, playerName } = req.params;
         console.log(`🗑️ [ADMIN] Eliminando jugador: "${playerName}" del grupo: "${groupName}"`);
 
-        const user = await User.findOne({ name: playerName });
-        const group = await Group.findOne({ name: groupName });
+        const group = await Group.findOne({ name: groupName }).populate('members');
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+
+        const user = group.members.find(m => m.name === playerName);
         
-        if (user && group) {
-            // Eliminar de la lista de grupos del usuario
+        if (user) {
+            // 1. Eliminar de la lista de grupos del usuario
             if (user.groups) {
                 user.groups = user.groups.filter(g => g !== groupName);
                 await user.save();
             }
             
-            // Eliminar de los miembros del grupo
-            if (group.members) {
-                group.members = group.members.filter(id => id.toString() !== user._id.toString());
-                await group.save();
-            }
+            // 2. Eliminar de los miembros del grupo
+            group.members = group.members.filter(m => m._id.toString() !== user._id.toString());
+            await group.save();
             
-            // Opcional: Podríamos borrar sus predicciones aquí si quisiéramos ser estrictos
-            // await Prediction.deleteMany({ user: user._id, group: group._id });
-            console.log(`✅ Jugador "${playerName}" desvinculado correctamente`);
+            // 3. Borrar sus predicciones (Limpieza total)
+            await Prediction.deleteMany({ user: user._id, group: group._id });
+            
+            console.log(`✅ Jugador "${playerName}" (ID: ${user._id}) desvinculado correctamente`);
+        } else {
+            console.warn(`⚠️ Jugador "${playerName}" no encontrado en los miembros del grupo`);
         }
         res.json(createResponse('success'));
     } catch (error) {
@@ -615,6 +618,7 @@ router.delete('/groups/:groupName/players/:playerName', async (req, res) => {
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
+
 
 router.get('/groups/:groupName/rules', async (req, res) => {
     try {
