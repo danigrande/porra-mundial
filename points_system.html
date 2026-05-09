@@ -307,7 +307,7 @@
         Al activar la <strong>Opción B</strong>, las predicciones de las rondas eliminatorias se ocultarán. 
         Los jugadores deberán volver a votar cuando cada fase se abra oficialmente.
         <br><br>
-        ¿Estás seguro de que quieres continuar?
+        <strong>Nota:</strong> Este cambio solo será definitivo cuando pulses el botón "Guardar en la nube".
       </p>
       <div class="modal-btns">
         <button class="btn-modal-confirm" onclick="confirmModeChange()">Si, adelante</button>
@@ -392,22 +392,34 @@
       const modeBChecked = document.getElementById('mode_b').checked;
       
       if (modeBChecked) {
-        // En lugar de alert, mostramos el modal
+        // En lugar de alert, mostramos el modal para confirmar el cambio LOCAL
         pendingMode = 'B';
         document.getElementById('confirmModal').classList.add('active');
       } else {
-        // Volver a A es directo
+        // Volver a A es directo (solo local)
         saveCriteria();
-        saveCriteriaToCloud();
+        highlightSaveButton();
       }
     }
 
     window.confirmModeChange = () => {
       document.getElementById('confirmModal').classList.remove('active');
       saveCriteria();
-      saveCriteriaToCloud();
+      highlightSaveButton();
       pendingMode = null;
     };
+
+    function highlightSaveButton() {
+      const btn = document.getElementById('btnSaveCloud');
+      if (btn) {
+        btn.style.transform = 'scale(1.05)';
+        btn.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+        setTimeout(() => {
+          btn.style.transform = '';
+          btn.style.boxShadow = '';
+        }, 1000);
+      }
+    }
 
     window.cancelModeChange = () => {
       document.getElementById('confirmModal').classList.remove('active');

@@ -187,6 +187,23 @@
   </header>
 
   <main class="main-content">
+    <!-- Countdown / Phase Info -->
+    <div id="tournamentBanner" class="group-card" style="margin-bottom:2rem; display:none; overflow: hidden; position: relative; border-left: 5px solid var(--accent-blue);">
+      <div style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div id="phaseIcon" style="font-size: 2rem;">🗓️</div>
+          <div>
+            <div id="phaseName" style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary);">Cargando fase...</div>
+            <div id="phaseStatus" style="font-size: 0.85rem; color: var(--text-muted);">Estado del torneo</div>
+          </div>
+        </div>
+        <div id="countdownContainer" style="text-align: right; min-width: 150px;">
+          <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 2px;">Cierre en:</div>
+          <div id="countdownTimer" style="font-family: 'Inter', monospace; font-weight: 800; font-size: 1.5rem; color: var(--accent-blue);">00:00:00</div>
+        </div>
+      </div>
+    </div>
+
     <div class="leaderboard-card" id="leaderboardContainer">
       <div class="lb-row lb-header-row">
         <div style="text-align:center;">Pos</div>
@@ -226,6 +243,43 @@
     let reality = JSON.parse(localStorage.getItem(`worldcup2026_testing_reality_${currentUser?.groupName}`)) || null;
     let savedSummaries = {};
 
+    function updateTournamentUI(tournamentState) {
+      const banner = document.getElementById('tournamentBanner');
+      const phaseName = document.getElementById('phaseName');
+      const phaseStatus = document.getElementById('phaseStatus');
+      
+      banner.style.display = 'block';
+      phaseName.textContent = tournamentState.name;
+      
+      if (tournamentState.isPredictionWindow) {
+        phaseStatus.innerHTML = `🟢 <a href="worldcup.html" style="color:inherit; text-decoration:underline;">Fase abierta para predicciones</a>`;
+        banner.style.borderColor = "var(--accent-green)";
+        startCountdown(tournamentState.nextDeadline);
+      } else {
+        phaseStatus.textContent = "🔒 Fase bloqueada (Partidos en curso)";
+        banner.style.borderColor = "var(--border-color)";
+        document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateString() : 'Pendiente'}</div>`;
+      }
+    }
+
+    function startCountdown(deadlineStr) {
+      const deadline = new Date(deadlineStr).getTime();
+      const timer = setInterval(() => {
+        const now = Date.now();
+        const diff = deadline - now;
+        if (diff <= 0) {
+          clearInterval(timer);
+          document.getElementById('countdownTimer').textContent = "CERRADO";
+          return;
+        }
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        document.getElementById('countdownTimer').textContent = 
+          `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+      }, 1000);
+    }
+
     async function init() {
       if (!currentUser) return;
       const lbBody = document.getElementById('lbBody');
@@ -233,17 +287,23 @@
 
       try {
         // 1. Obtener reglas, predicciones, resúmenes y REALIDAD en paralelo
-        const [rulesRes, predsRes, summariesRes, realityRes] = await Promise.all([
+        const [rulesRes, predsRes, summariesRes, realityRes, stateRes] = await Promise.all([
           apiCall({ action: 'getRules', groupName: currentUser.groupName }),
           apiCall({ action: 'getPredictions', groupName: currentUser.groupName }),
           apiCall({ action: 'getAllSummaries', groupName: currentUser.groupName }),
-          apiCall({ action: 'getReality' })
+          apiCall({ action: 'getReality' }),
+          apiCall({ action: 'tournament-state' })
         ]);
 
         const rules = rulesRes?.status === 'success' ? rulesRes.data : {};
         const playersData = predsRes?.status === 'success' ? predsRes.data : {};
         savedSummaries = summariesRes?.status === 'success' ? summariesRes.data : {};
         const cloudReality = realityRes?.status === 'success' ? realityRes.data : {};
+        const tournamentState = stateRes?.data || null;
+
+        if (tournamentState) {
+          updateTournamentUI(tournamentState);
+        }
 
         // 2. Calcular clasificación (Priorizando la realidad de la nube)
         const finalReality = (cloudReality && Object.keys(cloudReality).length > 0) ? cloudReality : reality;

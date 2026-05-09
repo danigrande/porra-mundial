@@ -311,6 +311,18 @@
 
 
 
+    let tournamentState = null;
+
+    async function fetchState() {
+      try {
+        const res = await apiCall({ action: 'tournament-state' });
+        tournamentState = res?.data || null;
+        renderPool();
+      } catch (e) {
+        console.error("Error cargando estado:", e);
+      }
+    }
+
     async function fetchCloudData() {
       if (!RENDER_URL) return;
 
@@ -335,18 +347,6 @@
             opt.textContent = '☁️ ' + playerName;
             select.appendChild(opt);
           });
-
-          // Try to select local player if exists in cloud
-          const localRaw = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
-          if (localRaw) {
-            try {
-              const localData = JSON.parse(localRaw);
-              if (localData._playerName && cloudData[localData._playerName]) {
-                select.value = localData._playerName;
-                renderPool();
-              }
-            } catch (e) { }
-          }
         }
         
         // ¡IMPORTANTE! Redibujar la tabla ahora que tenemos los datos
@@ -402,14 +402,21 @@
           const key = findPredictionKey(item, poolRowIndex, groupMatchKeys, koKeys);
           let score = '–';
           
+          const isMe = p === currentUser.name;
+          const canSeeOthers = tournamentState?.hasStarted;
+
           if (key) {
-            if (key.single) {
-              score = playerPredictions[key.single] || '–';
+            if (!isMe && !canSeeOthers) {
+              score = '🔒';
             } else {
-              const h = playerPredictions[key.home];
-              const a = playerPredictions[key.away];
-              if (h !== undefined && h !== "" && a !== undefined && a !== "") {
-                score = `${h} - ${a}`;
+              if (key.single) {
+                score = playerPredictions[key.single] || '–';
+              } else {
+                const h = playerPredictions[key.home];
+                const a = playerPredictions[key.away];
+                if (h !== undefined && h !== "" && a !== undefined && a !== "") {
+                  score = `${h} - ${a}`;
+                }
               }
             }
           }
@@ -425,6 +432,8 @@
         `;
       }).join('');
     }
+    
+    // ... rest of helper functions ...
 
     function buildGroupMatchKeys() {
       // Maps pool match index to worldcup input IDs
@@ -483,6 +492,7 @@
     checkAuth();
     renderPool();
     fetchCloudData();
+    fetchState();
   </script>
 </body>
 

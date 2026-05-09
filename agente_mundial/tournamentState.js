@@ -103,6 +103,7 @@ export const getTournamentState = () => {
     nextDeadline: new Date(currentPhase.end).toISOString(),
     timeRemainingMs: timeRemainingMs,
     isPredictionWindow: isPredictionWindow,
+    hasStarted: currentPhase.id !== 'PRE_TOURNAMENT',
     currentTime: new Date(now).toISOString()
   };
 };
