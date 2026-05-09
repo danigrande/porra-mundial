@@ -157,6 +157,12 @@ app.listen(config.bot.port, () => {
 // ==========================================
 
 async function startBot() {
+  // Añadimos un pequeño delay aleatorio al arrancar para evitar colisiones 
+  // si el servidor se reinicia muy rápido o hay dos instancias (ej: despliegue en Render).
+  const jitter = Math.floor(Math.random() * 5000) + 2000;
+  console.log(`⏳ Esperando ${jitter}ms para estabilizar la conexión de WhatsApp...`);
+  await new Promise(resolve => setTimeout(resolve, jitter));
+
   // ==========================================
   // GESTIÓN DE SESIÓN (Variable de Entorno o Carpeta)
   // ==========================================
