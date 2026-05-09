@@ -161,7 +161,11 @@
         phaseStatus.textContent = "🔒 Fase bloqueada (Partidos en curso)";
         banner.style.borderColor = "var(--border-color)";
         banner.style.background = "var(--bg-card)";
-        document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateStri    function checkCompliance() {
+        document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateString() : 'Pendiente'}</div>`;
+      }
+    }
+
+    function checkCompliance() {
       if (!tournamentState) return false;
       
       const mode = tournamentState.predictionMode || 'A';
@@ -208,10 +212,6 @@
         });
       }
 
-      return !missing;
-    }
-     });
-      }
       return !missing;
     }
 
