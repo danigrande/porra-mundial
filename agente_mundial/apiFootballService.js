@@ -118,11 +118,120 @@ export function simulateMatchEvents(matchId, homeTeam, awayTeam, date = null) {
 }
 
 /**
- * Simula todos los partidos del torneo (Grupos y Knockout)
- * @param {Array} groups Datos de los grupos de shared_data
- * @param {Object} bracket Datos del bracket de shared_data
- * @returns {Object} Un objeto reality completo con resultados y eventos
+ * Simula resultados solo para una fase específica
  */
+export function simulatePhaseResults(phaseId, currentReality, groups, bracket, matchesData) {
+    const results = { ...currentReality };
+    if (!results.events) results.events = {};
+
+    if (phaseId === 'groups') {
+        groups.forEach(g => {
+            for (let mIdx = 0; mIdx < 6; mIdx++) {
+                const matchId = `g${g.letter}_m${mIdx}`;
+                const hName = g.teams[mIdx % 4];
+                const aName = g.teams[(mIdx + 1) % 4];
+                const sim = simulateMatchEvents(matchId, hName, aName);
+                results[`${matchId}_h`] = sim.goals.home.toString();
+                results[`${matchId}_a`] = sim.goals.away.toString();
+                results.events[matchId] = sim.events;
+            }
+        });
+    } else {
+        // Encontrar qué partidos pertenecen a esta fase (r32, r16, qf, sf, 3rd, final)
+        const round = matchesData.find(r => r.id === phaseId);
+        if (round) {
+            round.matches.forEach(matchNum => {
+                const matchId = `ko_${matchNum}`;
+                // Intentar obtener equipos reales de los resultados previos si es posible
+                // Para simplificar el test, usamos nombres genéricos o "Ganador X"
+                const sim = simulateMatchEvents(matchId, "Equipo A", "Equipo B");
+                results[`${matchId}_h`] = sim.goals.home.toString();
+                results[`${matchId}_a`] = sim.goals.away.toString();
+                if (sim.penalties) {
+                    results[`pen_${matchNum}_h`] = sim.penalties.home.toString();
+                    results[`pen_${matchNum}_a`] = sim.penalties.away.toString();
+                }
+                results.events[matchId] = sim.events;
+            });
+        }
+    }
+
+    return results;
+}
+
+/**
+ * Traduce la respuesta de API-Football a nuestro formato Reality
+ */
+export function syncRealityFromApi(apiResponse, currentReality, groups, bracket) {
+    const results = { ...currentReality };
+    if (!results.events) results.events = {};
+
+    const fixtures = apiResponse.response || [];
+
+    fixtures.forEach(item => {
+        const f = item.fixture;
+        const teams = item.teams;
+        const goals = item.goals;
+        const score = item.score;
+        const events = item.events || [];
+
+        // 1. Identificar el partido en nuestro sistema
+        const matchId = findMatchIdByTeams(teams.home.name, teams.away.name, groups, bracket);
+        
+        if (matchId) {
+            console.log(`🔗 Mapeando partido API: ${teams.home.name} vs ${teams.away.name} -> ID: ${matchId}`);
+            
+            results[`${matchId}_h`] = (goals.home ?? 0).toString();
+            results[`${matchId}_a`] = (goals.away ?? 0).toString();
+            results[`${matchId}_date`] = f.date;
+
+            // Penaltis
+            if (score && score.penalty && score.penalty.home !== null) {
+                const matchNum = matchId.replace('ko_', '');
+                results[`pen_${matchNum}_h`] = score.penalty.home.toString();
+                results[`pen_${matchNum}_a`] = score.penalty.away.toString();
+            }
+
+            // Eventos
+            results.events[matchId] = events.map(e => ({
+                time: { elapsed: e.time.elapsed, extra: e.time.extra },
+                team: { name: e.team.name },
+                player: { name: e.player?.name || "Jugador" },
+                type: e.type,
+                detail: e.detail
+            }));
+        }
+    });
+
+    return results;
+}
+
+/**
+ * Función auxiliar para encontrar nuestro ID de partido basado en nombres de equipos
+ */
+function findMatchIdByTeams(hName, aName, groups, bracket) {
+    for (const g of groups) {
+        if (g.teams.includes(hName) && g.teams.includes(aName)) {
+            const pairs = [
+                [g.teams[0], g.teams[1]], // m0
+                [g.teams[2], g.teams[3]], // m1
+                [g.teams[0], g.teams[2]], // m2
+                [g.teams[1], g.teams[3]], // m3
+                [g.teams[0], g.teams[3]], // m4
+                [g.teams[1], g.teams[2]]  // m5
+            ];
+            for (let i = 0; i < 6; i++) {
+                if ((pairs[i][0] === hName && pairs[i][1] === aName) || 
+                    (pairs[i][0] === aName && pairs[i][1] === hName)) {
+                    return `g${g.letter}_m${i}`;
+                }
+            }
+        }
+    }
+    // En KO, durante el mundial real se usará una tabla de mapeo por ID de fixture
+    return null; 
+}
+
 export function simulateAllMatches(groups, bracket) {
     const results = { events: {} };
 

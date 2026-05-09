@@ -16,6 +16,7 @@
     "@langchain/groq": "^1.2.0",
     "@langchain/mongodb": "^1.1.0",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "axios": "^1.16.0",
     "cors": "^2.8.6",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",

@@ -15,7 +15,10 @@ import { schedule } from 'node-cron';
 import config from './config.js';
 import { processMessage, generateGroupSummary, refreshCache, identifyPlayer } from './messageHandler.js';
 import { Group } from './models/Group.js';
+import { Reality } from './models/Reality.js';
 import { getTournamentState, getCurrentTime } from './tournamentState.js';
+import * as apiFootballService from './apiFootballService.js';
+import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from './shared_data.js';
 
 // Logger silencioso para Baileys (demasiado verboso por defecto)
 const logger = pino({ level: 'warn' });
@@ -459,6 +462,67 @@ async function initProactiveNotifications(sock) {
     }
   }, 60000); // Comprobar cada minuto
 }
+// ==========================================
+// SIMULACIÓN AUTOMÁTICA (Solo en TEST_MODE)
+// ==========================================
+
+async function initAutoSimulation() {
+  if (process.env.TEST_MODE !== 'true') return;
+  
+  console.log('🧪 MODO TEST: Iniciando motor de auto-simulación de resultados...');
+  
+  setInterval(async () => {
+    try {
+      const state = getTournamentState();
+      if (!state) return;
+
+      // Definir qué fase de "Realidad" corresponde a cada fase del estado
+      const mapping = {
+        'GROUP_STAGE': 'groups',
+        'R32_ACTIVE': 'r32',
+        'R16_ACTIVE': 'r16',
+        'QF_ACTIVE': 'qf',
+        'SF_ACTIVE': 'sf',
+        'WAITING_FINALS': '3rd',
+        'FINALS_ACTIVE': 'final'
+      };
+
+      const phaseToPopulate = mapping[state.phase];
+      if (!phaseToPopulate) return;
+
+      const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+      const currentReality = realityDoc ? realityDoc.results : {};
+      const autoPopulated = realityDoc ? (realityDoc.autoPopulatedPhases || []) : [];
+
+      if (!autoPopulated.includes(phaseToPopulate)) {
+        console.log(`🤖 [AUTO-SIM] Generando resultados para la fase: ${phaseToPopulate}`);
+        
+        const updatedResults = apiFootballService.simulatePhaseResults(
+          phaseToPopulate,
+          currentReality,
+          FIXTURE_GROUPS,
+          BRACKET_MATCHES,
+          KNOCKOUT_BRACKET
+        );
+
+        await Reality.findOneAndUpdate(
+          { tournament: 'worldcup2026' },
+          { 
+            results: updatedResults, 
+            $addToSet: { autoPopulatedPhases: phaseToPopulate },
+            updatedAt: new Date() 
+          },
+          { upsert: true }
+        );
+        
+        console.log(`✅ [AUTO-SIM] Resultados de ${phaseToPopulate} inyectados correctamente.`);
+      }
+
+    } catch (error) {
+      console.error('❌ Error en motor de auto-simulación:', error.message);
+    }
+  }, 30000); // Comprobar cada 30 segundos
+}
 
 
 // ==========================================
@@ -475,6 +539,7 @@ console.log(`
 
 startBot().then(sock => {
   initProactiveNotifications(sock);
+  initAutoSimulation();
 }).catch(err => {
   console.error('Error fatal:', err);
   process.exit(1);

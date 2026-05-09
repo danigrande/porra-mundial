@@ -8,7 +8,7 @@ import { Reality } from '../models/Reality.js';
 import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
 import * as apiFootballService from '../apiFootballService.js';
-import { FIXTURE_GROUPS, BRACKET_MATCHES } from '../shared_data.js';
+import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from '../shared_data.js';
 import { getTournamentState } from '../tournamentState.js';
 
 const router = express.Router();
@@ -127,6 +127,62 @@ router.post('/admin/simulate-all', async (req, res) => {
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
+
+// ==========================================
+// RUTAS DE DESARROLLO (Testing Go-Live)
+// ==========================================
+
+router.post('/dev/populate-reality', async (req, res) => {
+    try {
+        const { phaseId } = req.body; // 'groups', 'r32', 'r16', 'qf', 'sf', '3rd', 'final'
+        const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+        const currentReality = realityDoc ? realityDoc.results : {};
+
+        const updatedResults = apiFootballService.simulatePhaseResults(
+            phaseId, 
+            currentReality, 
+            FIXTURE_GROUPS, 
+            BRACKET_MATCHES, 
+            KNOCKOUT_BRACKET
+        );
+
+        await Reality.findOneAndUpdate(
+            { tournament: 'worldcup2026' },
+            { results: updatedResults, updatedAt: new Date() },
+            { upsert: true }
+        );
+
+        res.json(createResponse('success', { phase: phaseId }));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/dev/reset-test', async (req, res) => {
+    try {
+        const { groupName } = req.body;
+        if (!groupName) throw new Error('Nombre de grupo requerido');
+
+        const group = await Group.findOne({ name: groupName });
+        if (!group) throw new Error('Grupo no encontrado');
+
+        // 1. Borrar predicciones del grupo
+        await Prediction.deleteMany({ group: group._id });
+
+        // 2. Resetear estados de notificación del grupo
+        group.lastAnnouncedPhase = null;
+        group.lastReminderPhase = null;
+        await group.save();
+
+        // 3. Borrar resultados de realidad (opcional, resetea TODO el mundial de test)
+        await Reality.deleteOne({ tournament: 'worldcup2026' });
+
+        res.json(createResponse('success', { message: `Grupo ${groupName} reseteado para el test` }));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 
 // ==========================================
 // RUTAS DE RESÚMENES (IA)
