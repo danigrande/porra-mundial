@@ -161,11 +161,7 @@
         phaseStatus.textContent = "🔒 Fase bloqueada (Partidos en curso)";
         banner.style.borderColor = "var(--border-color)";
         banner.style.background = "var(--bg-card)";
-        document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateString() : 'Pendiente'}</div>`;
-      }
-    }
-
-    function checkCompliance() {
+        document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateStri    function checkCompliance() {
       if (!tournamentState) return false;
       
       const mode = tournamentState.predictionMode || 'A';
@@ -175,32 +171,46 @@
 
       // 1. Validar Partidos
       const matchInputs = document.querySelectorAll('input.score-input');
-      matchInputs.forEach(input => {
-        const val = input.value.trim();
-        const id = input.id;
-
-        if (phaseId === 'PRE_TOURNAMENT') {
+      
+      if (phaseId === 'PRE_TOURNAMENT') {
+          // En 2026: 12 grupos * 6 partidos/grupo * 2 campos/partido = 144 campos
+          if (matchInputs.length < 144) missing = true;
+          
+          matchInputs.forEach(input => {
+            const val = input.value.trim();
+            const id = input.id;
+            if (mode === 'A') {
+              if (val === '') missing = true;
+            } else {
+              if (id.startsWith('g') && val === '') missing = true;
+            }
+          });
+          
+          // Si es modo A, validar que existan los de eliminatorias (32 partidos * 2 = 64)
           if (mode === 'A') {
-            // En modo A, todo es obligatorio
-            if (val === '') missing = true;
-          } else {
-            // En modo B pre-torneo, solo grupos
-            if (id.startsWith('g') && val === '') missing = true;
+             const koInputs = document.querySelectorAll('input.score-input[id^="ko_"]');
+             if (koInputs.length < 64) missing = true;
           }
-        } else {
-          // Durante el torneo, solo lo que esté en los unlocks actuales
-          // Si el input no está deshabilitado, es que es obligatorio ahora
-          if (!input.disabled && val === '') missing = true;
-        }
-      });
+      } else {
+          // Durante el torneo, validamos los campos que no estén bloqueados
+          if (matchInputs.length === 0) missing = true;
+          matchInputs.forEach(input => {
+            if (!input.disabled && input.value.trim() === '') missing = true;
+          });
+      }
 
-      // 2. Validar Premios (Solo en Pre-Mundial o si están desbloqueados)
+      // 2. Validar Premios
       if (phaseId === 'PRE_TOURNAMENT' || unlocks.includes('honor')) {
         const awardIds = ['boot_gold', 'boot_silver', 'boot_bronze', 'ball_gold', 'ball_silver', 'ball_bronze'];
         awardIds.forEach(id => {
           const el = document.getElementById(id);
-          if (el && el.value.trim() === '') missing = true;
+          if (!el || el.value.trim() === '') missing = true;
         });
+      }
+
+      return !missing;
+    }
+     });
       }
       return !missing;
     }
