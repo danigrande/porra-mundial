@@ -137,23 +137,67 @@
       const banner = document.getElementById('tournamentBanner');
       const phaseName = document.getElementById('phaseName');
       const phaseStatus = document.getElementById('phaseStatus');
-      const countdownTimer = document.getElementById('countdownTimer');
+      
+      if (!tournamentState) return;
       
       banner.style.display = 'block';
       phaseName.textContent = tournamentState.name;
       
       if (tournamentState.isPredictionWindow) {
-        phaseStatus.textContent = "🟢 Fase abierta para predicciones";
-        banner.style.borderColor = "var(--accent-green)";
-        document.getElementById('btnSave').disabled = false;
+        // Validación de cumplimiento
+        const isComplete = checkCompliance();
+        if (isComplete) {
+          phaseStatus.innerHTML = `✅ <span style="color: var(--accent-green); font-weight: 700;">¡Todo listo!</span> Tus predicciones están registradas.`;
+          banner.style.borderColor = "var(--accent-green)";
+          banner.style.background = "rgba(16, 185, 129, 0.05)";
+        } else {
+          phaseStatus.innerHTML = `🚨 <span style="color: var(--accent-red); font-weight: 700;">¡Pendiente!</span> Tienes partidos sin pronosticar para esta fase.`;
+          banner.style.borderColor = "var(--accent-red)";
+          banner.style.background = "rgba(239, 68, 68, 0.05)";
+        }
         startCountdown();
       } else {
         phaseStatus.textContent = "🔒 Fase bloqueada (Partidos en curso)";
         banner.style.borderColor = "var(--border-color)";
+        banner.style.background = "var(--bg-card)";
         document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateString() : 'Pendiente'}</div>`;
-        // Bloquear el botón de guardar si no hay nada que predecir
-        // document.getElementById('btnSave').disabled = true;
       }
+    }
+
+    function checkCompliance() {
+      // Obtenemos todos los inputs de la pantalla
+      const inputs = document.querySelectorAll('.score-input');
+      const mode = tournamentState.predictionMode || 'A';
+      const phaseId = tournamentState.id;
+
+      let missing = false;
+
+      inputs.forEach(input => {
+        const id = input.id;
+        const val = input.value;
+        
+        // Reglas de validación según fase y modo
+        if (phaseId === 'PRE_TOURNAMENT') {
+          if (mode === 'A') {
+            // En modo A, TODO debe estar relleno
+            if (val === '') missing = true;
+          } else {
+            // En modo B, solo los grupos (IDs que empiezan por 'g')
+            if (id.startsWith('g') && val === '') missing = true;
+          }
+        } else {
+          // Si estamos durante el torneo (Solo Modo B permite esto)
+          // Solo validamos los inputs que corresponden a la fase actual
+          if (!input.disabled && val === '') missing = true;
+        }
+      });
+
+      return !missing;
+    }
+
+    function handleInputChange() {
+      // Cada vez que el usuario escribe, refrescamos el banner
+      updateTournamentUI();
     }
 
     function startCountdown() {

@@ -252,14 +252,57 @@
       phaseName.textContent = tournamentState.name;
       
       if (tournamentState.isPredictionWindow) {
-        phaseStatus.innerHTML = `🟢 <a href="worldcup.html" style="color:inherit; text-decoration:underline;">Fase abierta para predicciones</a>`;
-        banner.style.borderColor = "var(--accent-green)";
+        // Validación de cumplimiento (usando los datos cargados en init)
+        const isComplete = checkCompliance(tournamentState);
+        if (isComplete) {
+          phaseStatus.innerHTML = `✅ <a href="worldcup.html" style="color:inherit; text-decoration:underline; font-weight:700;">¡Todo listo!</a> Tus predicciones están registradas.`;
+          banner.style.borderColor = "var(--accent-green)";
+          banner.style.background = "rgba(16, 185, 129, 0.05)";
+        } else {
+          phaseStatus.innerHTML = `🚨 <a href="worldcup.html" style="color:inherit; text-decoration:underline; font-weight:700;">¡Pendiente!</a> Tienes partidos sin pronosticar.`;
+          banner.style.borderColor = "var(--accent-red)";
+          banner.style.background = "rgba(239, 68, 68, 0.05)";
+        }
         startCountdown(tournamentState.nextDeadline);
       } else {
         phaseStatus.textContent = "🔒 Fase bloqueada (Partidos en curso)";
         banner.style.borderColor = "var(--border-color)";
+        banner.style.background = "var(--bg-card)";
         document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateString() : 'Pendiente'}</div>`;
       }
+    }
+
+    function checkCompliance(state) {
+      if (!currentUser || !window.lastLoadedPredictions) return false;
+      
+      const preds = window.lastLoadedPredictions;
+      const mode = state.predictionMode || 'A';
+      const phaseId = state.id;
+
+      // Simplificamos: contamos cuántas predicciones tiene
+      const count = Object.keys(preds).filter(k => !k.startsWith('_')).length;
+
+      if (phaseId === 'PRE_TOURNAMENT') {
+        if (mode === 'A') {
+          // Modo A: Debe tener ~104 predicciones (dejamos margen por si faltan premios)
+          return count >= 104;
+        } else {
+          // Modo B: Debe tener al menos las de grupos (72 partidos)
+          return count >= 72;
+        }
+      } else {
+        // Durante el torneo (Modo B)
+        // Como no tenemos la lista de IDs aquí, miramos si el número de predicciones 
+        // ha aumentado respecto al mínimo de grupos. 
+        // Esto es un heurístico, lo ideal sería cruzar con IDs.
+        // Pero para el dashboard es suficiente con avisar si tiene "pocas"
+        if (phaseId === 'R32') return count >= 88; // 72 + 16
+        if (phaseId === 'R16') return count >= 96; // 88 + 8
+        if (phaseId === 'QF') return count >= 100; // 96 + 4
+        if (phaseId === 'SF') return count >= 102; // 100 + 2
+        if (phaseId === 'FINAL') return count >= 104; // 102 + 2
+      }
+      return true;
     }
 
     function startCountdown(deadlineStr) {
@@ -302,6 +345,9 @@
         savedSummaries = summariesRes?.status === 'success' ? summariesRes.data : {};
         const cloudReality = realityRes?.status === 'success' ? realityRes.data : {};
         const tournamentState = stateRes?.data || null;
+
+        // Guardar para validación de cumplimiento
+        window.lastLoadedPredictions = playersData[currentUser.name]?.predictions || {};
 
         if (tournamentState) {
           updateTournamentUI(tournamentState);

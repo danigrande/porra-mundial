@@ -105,6 +105,7 @@ export const getTournamentState = () => {
     isPredictionWindow: isPredictionWindow,
     hasStarted: currentPhase.id !== 'PRE_TOURNAMENT',
     isTestMode: process.env.TEST_MODE === 'true',
+    predictionMode: (await Group.findOne({ name: 'Mundial 2026' }))?.predictionMode || 'A',
     currentTime: new Date(now).toISOString()
   };
 };
