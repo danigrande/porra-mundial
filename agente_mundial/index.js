@@ -157,10 +157,11 @@ app.listen(config.bot.port, () => {
 // ==========================================
 
 async function startBot() {
-  // Añadimos un pequeño delay aleatorio al arrancar para evitar colisiones 
-  // si el servidor se reinicia muy rápido o hay dos instancias (ej: despliegue en Render).
-  const jitter = Math.floor(Math.random() * 5000) + 2000;
-  console.log(`⏳ Esperando ${jitter}ms para estabilizar la conexión de WhatsApp...`);
+  // Añadimos un delay aleatorio más largo al arrancar (10-25s).
+  // Esto es vital en Render para asegurar que la instancia vieja se ha apagado 
+  // del todo antes de que la nueva intente conectar a WhatsApp.
+  const jitter = Math.floor(Math.random() * 15000) + 10000;
+  console.log(`⏳ Esperando ${jitter}ms para evitar conflictos con la instancia anterior...`);
   await new Promise(resolve => setTimeout(resolve, jitter));
 
   // ==========================================
@@ -532,8 +533,22 @@ async function initAutoSimulation() {
 
 
 // ==========================================
-// ARRANQUE
+// ARRANQUE Y CIERRE GRACIOSO
 // ==========================================
+
+async function shutdown(signal) {
+  console.log(`\n🛑 Recibida señal ${signal}. Cerrando bot de forma segura...`);
+  if (global.whatsappSock) {
+    try {
+      global.whatsappSock.logout();
+      global.whatsappSock.end();
+    } catch (e) {}
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 console.log(`
 ╔══════════════════════════════════════╗
@@ -544,6 +559,7 @@ console.log(`
 `);
 
 startBot().then(sock => {
+  global.whatsappSock = sock;
   initProactiveNotifications(sock);
   initAutoSimulation();
 }).catch(err => {
