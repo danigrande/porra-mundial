@@ -65,10 +65,37 @@
   </header>
 
   <main class="main-content">
-    <div class="admin-controls">
-      <button class="btn-save" id="btnSave" onclick="saveReality()">💾 Guardar en Nube</button>
-      <button class="btn-random" onclick="fillAll()">🎲 Rellenar Todo (Simulación API)</button>
-      <button class="btn-reset" onclick="resetAll()">🗑️ Borrar Todo</button>
+    <div id="simPanel" class="group-card" style="margin-bottom: 2rem; border: 1px solid var(--accent-gold); background: rgba(217, 119, 6, 0.05); display: none;">
+      <div style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">🚀</span>
+            <strong style="font-size: 1.1rem; color: var(--text-primary);">Panel de Simulación "Go-Live"</strong>
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            Motor de auto-población: <span id="simStatus" style="color: var(--accent-green); font-weight: 700;">🟢 ACTIVO</span>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 30px;">
+          <div style="text-align: center;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Tiempo Simulado</div>
+            <div id="simTime" style="font-weight: 800; color: var(--accent-gold); font-size: 1.2rem;">--:--</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Fases Inyectadas</div>
+            <div id="simInjected" style="font-weight: 800; color: var(--accent-blue); font-size: 1.2rem;">0/7</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn-save" id="btnSave" onclick="saveReality()" style="padding: 0.5rem 1rem; font-size: 0.8rem;">💾 Guardar Manual</button>
+          <button class="btn-reset" onclick="resetAll()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444;">🗑️ Reset Test</button>
+        </div>
+      </div>
+      <div id="injectedLog" style="padding: 0.75rem 1.5rem; background: rgba(0,0,0,0.2); font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05);">
+        Esperando datos del motor...
+      </div>
     </div>
 
     <div id="fixtureGroups" class="groups-grid"></div>
@@ -100,15 +127,7 @@
       return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
     }
 
-    window.fillAll = async () => {
-      if(!confirm('Esto simulará resultados, goles y tarjetas para TODO el torneo. ¿Continuar?')) return;
-      const res = await apiCall({ action: 'simulateAll' });
-      if (res.status === 'success') {
-        reality = res.data.results;
-        render(reality);
-        showToast('✅ Todo el torneo simulado y guardado');
-      }
-    };
+    // La función fillAll ha sido eliminada ya que ahora el proceso es automático.
 
     window.resetAll = async () => {
       if(confirm('¿Seguro que quieres borrar todos los resultados y eventos (goles/tarjetas) de la nube?')) {
@@ -168,9 +187,44 @@
     }
 
     async function init() {
-      const res = await apiCall({ action: 'getReality' });
-      if (res.status === 'success') reality = res.data;
-      render(reality);
+      try {
+        const [realityRes, stateRes] = await Promise.all([
+          apiCall({ action: 'getReality' }),
+          apiCall({ action: 'tournament-state' })
+        ]);
+        
+        if (realityRes.status === 'success') {
+          reality = realityRes.data;
+          updateDashboard(reality, stateRes?.data);
+        }
+        render(reality);
+      } catch (e) {
+        console.error("Error inicializando testing dashboard", e);
+      }
+    }
+
+    function updateDashboard(realityData, stateData) {
+      const simPanel = document.getElementById('simPanel');
+      if (stateData && stateData.isTestMode) {
+        simPanel.style.display = 'block';
+        const date = new Date(stateData.currentTime);
+        document.getElementById('simTime').textContent = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long' });
+        
+        const injected = realityData.autoPopulatedPhases || [];
+        document.getElementById('simInjected').textContent = `${injected.length}/7`;
+        
+        const log = document.getElementById('injectedLog');
+        if (injected.length === 0) {
+          log.textContent = "ℹ️ Ninguna fase inyectada automáticamente todavía.";
+        } else {
+          log.innerHTML = `✅ <strong>Fases inyectadas:</strong> ${injected.join(', ')}`;
+        }
+      } else {
+        simPanel.style.display = 'none';
+        // Si no es test mode, cambiamos el título para que sea más serio
+        document.querySelector('.header-text-gradient').textContent = 'Resultados Oficiales';
+        document.querySelector('.page-header .subtitle').textContent = 'Gestión manual de resultados para la competición real.';
+      }
     }
 
     function render(overrideData = null) {

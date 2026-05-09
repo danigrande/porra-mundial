@@ -104,6 +104,7 @@ export const getTournamentState = () => {
     timeRemainingMs: timeRemainingMs,
     isPredictionWindow: isPredictionWindow,
     hasStarted: currentPhase.id !== 'PRE_TOURNAMENT',
+    isTestMode: process.env.TEST_MODE === 'true',
     currentTime: new Date(now).toISOString()
   };
 };
