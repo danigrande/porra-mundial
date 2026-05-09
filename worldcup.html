@@ -169,12 +169,14 @@
           return;
         }
         
-        const h = Math.floor(diff / 3600000);
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
         
+        const daysPart = d > 0 ? `${d}d ` : '';
         document.getElementById('countdownTimer').textContent = 
-          `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+          `${daysPart}${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
       }, 1000);
     }
 
@@ -255,11 +257,52 @@
       const container = document.getElementById('awardsContainer');
       container.innerHTML = `
         <div class="group-card awards-card">
-          <div class="group-header">Cuadro de honor</div>
-          <table class="awards-table">
-            <tr><td>🏆 Campeón</td><td id="honor_champion">-</td></tr>
-            <tr><td>🥈 Subcampeón</td><td id="honor_runnerup">-</td></tr>
-          </table>
+          <div class="group-header">🏆 Cuadro de honor y Premios</div>
+          <div style="padding: 1.25rem;">
+            <table class="prediction-standings" style="text-align: left;">
+              <thead>
+                <tr><th colspan="2" style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); padding-bottom: 10px;">Torneo Final</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><strong>🥇 Campeón</strong></td><td id="honor_champion" style="font-weight: 700; color: var(--accent-gold);">-</td></tr>
+                <tr><td><strong>🥈 Subcampeón</strong></td><td id="honor_runnerup" style="font-weight: 600; color: #d1d5db;">-</td></tr>
+              </tbody>
+            </table>
+
+            <div style="margin-top: 1.5rem;">
+              <table class="prediction-standings" style="text-align: left;">
+                <thead>
+                  <tr><th colspan="2" style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); padding-bottom: 10px;">Premios Individuales</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>⚽ Bota de Oro</strong><br><small>Máximo Goleador</small></td>
+                    <td><input type="text" class="score-input" id="boot_gold" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                  </tr>
+                  <tr>
+                    <td><strong>🥈 Bota de Plata</strong></td>
+                    <td><input type="text" class="score-input" id="boot_silver" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                  </tr>
+                  <tr>
+                    <td><strong>🥉 Bota de Bronce</strong></td>
+                    <td><input type="text" class="score-input" id="boot_bronze" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                  </tr>
+                  <tr style="border-top: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding-top: 15px;"><strong>🌟 Balón de Oro</strong><br><small>Mejor Jugador</small></td>
+                    <td style="padding-top: 15px;"><input type="text" class="score-input" id="ball_gold" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                  </tr>
+                  <tr>
+                    <td><strong>🥈 Balón de Plata</strong></td>
+                    <td><input type="text" class="score-input" id="ball_silver" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                  </tr>
+                  <tr>
+                    <td><strong>🥉 Balón de Bronce</strong></td>
+                    <td><input type="text" class="score-input" id="ball_bronze" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       `;
     }
@@ -292,28 +335,44 @@
     };
 
     async function loadStoredData() {
-      // 1. Intentar cargar de LocalStorage primero
-      const raw = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
-      let data = raw ? JSON.parse(raw) : null;
-
-      // 2. Si no hay nada en local o falta el nombre, pedir a la nube (MongoDB)
-      if (!data || !data._playerName) {
-        console.log("☁️ Cargando predicciones desde MongoDB...");
+      console.log("☁️ Sincronizando predicciones con la nube...");
+      try {
         const res = await apiCall({ action: 'getPredictions', groupName: currentUser.groupName });
+        
         if (res.status === 'success' && res.data[currentUser.name]) {
-          data = res.data[currentUser.name].predictions;
-          // Guardar en local para la próxima vez
-          localStorage.setItem(`worldcup2026_predictions_${currentUser.groupName}`, JSON.stringify(data));
+          const cloudData = res.data[currentUser.name].predictions;
+          localStorage.setItem(`worldcup2026_predictions_${currentUser.groupName}`, JSON.stringify(cloudData));
+          applyDataToUI(cloudData);
+        } else {
+          // Si el servidor no tiene datos para este usuario, limpiamos el local 
+          // (importante para cuando el admin resetea el modo de juego)
+          console.log("ℹ️ No hay predicciones en la nube para este usuario. Limpiando cache local.");
+          localStorage.removeItem(`worldcup2026_predictions_${currentUser.groupName}`);
+          clearUI();
         }
+      } catch (e) {
+        console.error("Error cargando desde la nube, intentando fallback local...", e);
+        const raw = localStorage.getItem(`worldcup2026_predictions_${currentUser.groupName}`);
+        if (raw) applyDataToUI(JSON.parse(raw));
       }
+    }
 
-      if (data) {
-        Object.entries(data).forEach(([id, val]) => {
-          const el = document.getElementById(id);
-          if (el) el.value = val;
-        });
-        updateAll();
-      }
+    function applyDataToUI(data) {
+      if (!data) return;
+      Object.entries(data).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      });
+      updateAll();
+    }
+
+    function clearUI() {
+      document.querySelectorAll('input').forEach(input => {
+        if (input.type === 'number' || input.type === 'text') {
+          input.value = '';
+        }
+      });
+      updateAll();
     }
 
     function updateAll() {
