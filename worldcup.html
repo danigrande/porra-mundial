@@ -171,8 +171,8 @@
       const phaseId = tournamentState.id;
       let missing = false;
 
-      // 1. Validar Partidos
-      const matchInputs = document.querySelectorAll('.matches-container input');
+      // 1. Validar Partidos (Grupos y Eliminatorias)
+      const matchInputs = document.querySelectorAll('input.score-input');
       matchInputs.forEach(input => {
         if (input.disabled) return;
         const id = input.id;
