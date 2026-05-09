@@ -276,30 +276,43 @@
     function checkCompliance(state) {
       if (!currentUser || !window.lastLoadedPredictions) return false;
       
-      const preds = window.lastLoadedPredictions;
+      const data = window.lastLoadedPredictions;
       const mode = state.predictionMode || 'A';
       const phaseId = state.id;
+      const unlocks = state.unlocks || [];
+      let missing = false;
 
-      // Simplificamos: contamos cuántas predicciones tiene
-      const count = Object.keys(preds).filter(k => !k.startsWith('_')).length;
-
+      // 1. Validar Partidos
       if (phaseId === 'PRE_TOURNAMENT') {
-        if (mode === 'A') {
-          // Modo A: 104 partidos + 6 premios = 110
-          return count >= 110;
-        } else {
-          // Modo B: 72 partidos de grupo + 6 premios = 78
-          return count >= 78;
-        }
+          const groupMatchKeys = Object.keys(data).filter(k => k.startsWith('g'));
+          // En 2026 hay 72 partidos de grupo, cada uno con local y visitante = 144 campos
+          if (groupMatchKeys.length < 144) missing = true;
+          if (groupMatchKeys.some(k => !data[k] || data[k].toString().trim() === '')) missing = true;
+          
+          if (mode === 'A') {
+              const koKeys = Object.keys(data).filter(k => k.startsWith('ko_'));
+              // Hay 32 partidos de eliminatoria (16avos a Final) * 2 = 64 campos
+              if (koKeys.length < 64 || koKeys.some(k => !data[k] || data[k].toString().trim() === '')) missing = true;
+          }
       } else {
-        // Durante el torneo (Modo B)
-        if (phaseId === 'R32') return count >= 94; // 78 + 16
-        if (phaseId === 'R16') return count >= 102; // 94 + 8
-        if (phaseId === 'QF') return count >= 106; // 102 + 4
-        if (phaseId === 'SF') return count >= 108; // 106 + 2
-        if (phaseId === 'FINAL') return count >= 110; // 108 + 2
+          // Durante el torneo, miramos los unlocks
+          unlocks.forEach(u => {
+              if (u === 'groups') {
+                  if (Object.keys(data).filter(k => k.startsWith('g')).some(k => !data[k] || data[k].toString().trim() === '')) missing = true;
+              } else if (u.startsWith('r') || u === 'qf' || u === 'sf' || u === 'final' || u === '3rd') {
+                  const koKeys = Object.keys(data).filter(k => k.startsWith('ko_'));
+                  if (koKeys.some(k => !data[k] || data[k].toString().trim() === '')) missing = true;
+              }
+          });
       }
-      return true;
+
+      // 2. Validar Premios
+      if (phaseId === 'PRE_TOURNAMENT' || unlocks.includes('honor')) {
+        const awardIds = ['boot_gold', 'boot_silver', 'boot_bronze', 'ball_gold', 'ball_silver', 'ball_bronze'];
+        if (awardIds.some(id => !data[id] || data[id].toString().trim() === '')) missing = true;
+      }
+
+      return !missing;
     }
 
     function startCountdown(deadlineStr) {

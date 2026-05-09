@@ -173,8 +173,6 @@
       const unlocks = tournamentState.unlocks || [];
       let missing = false;
 
-      console.log(`[Compliance] Checking mode: ${mode}, phase: ${phaseId}`);
-
       // 1. Validar Partidos
       const matchInputs = document.querySelectorAll('input.score-input');
       matchInputs.forEach(input => {
@@ -204,8 +202,6 @@
           if (el && el.value.trim() === '') missing = true;
         });
       }
-
-      console.log(`[Compliance] Result: ${!missing ? 'OK' : 'MISSING'}`);
       return !missing;
     }
 
