@@ -170,31 +170,34 @@
       
       const mode = tournamentState.predictionMode || 'A';
       const phaseId = tournamentState.id;
+      const unlocks = tournamentState.unlocks || [];
       let missing = false;
 
-      // 1. Validar Partidos (Grupos y Eliminatorias)
+      console.log(`[Compliance] Checking mode: ${mode}, phase: ${phaseId}`);
+
+      // 1. Validar Partidos
       const matchInputs = document.querySelectorAll('input.score-input');
       matchInputs.forEach(input => {
-        if (input.disabled) return;
-        const id = input.id;
         const val = input.value.trim();
+        const id = input.id;
 
         if (phaseId === 'PRE_TOURNAMENT') {
           if (mode === 'A') {
-            // En modo A, grupos y eliminatorias son obligatorios
+            // En modo A, todo es obligatorio
             if (val === '') missing = true;
           } else {
             // En modo B pre-torneo, solo grupos
             if (id.startsWith('g') && val === '') missing = true;
           }
         } else {
-          // Durante el torneo (Modo B), solo los que estén desbloqueados
-          if (val === '') missing = true;
+          // Durante el torneo, solo lo que esté en los unlocks actuales
+          // Si el input no está deshabilitado, es que es obligatorio ahora
+          if (!input.disabled && val === '') missing = true;
         }
       });
 
-      // 2. Validar Cuadro de Honor / Premios (Siempre obligatorio al inicio)
-      if (phaseId === 'PRE_TOURNAMENT') {
+      // 2. Validar Premios (Solo en Pre-Mundial o si están desbloqueados)
+      if (phaseId === 'PRE_TOURNAMENT' || unlocks.includes('honor')) {
         const awardIds = ['boot_gold', 'boot_silver', 'boot_bronze', 'ball_gold', 'ball_silver', 'ball_bronze'];
         awardIds.forEach(id => {
           const el = document.getElementById(id);
@@ -202,6 +205,7 @@
         });
       }
 
+      console.log(`[Compliance] Result: ${!missing ? 'OK' : 'MISSING'}`);
       return !missing;
     }
 
