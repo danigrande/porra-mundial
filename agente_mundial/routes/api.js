@@ -21,8 +21,8 @@ const createResponse = (status, data = null, message = null) => {
 // ==========================================
 // ESTADO DEL TORNEO
 // ==========================================
-router.get('/tournament-state', (req, res) => {
-  res.json(createResponse('success', getTournamentState()));
+router.get('/tournament-state', async (req, res) => {
+  res.json(createResponse('success', await getTournamentState()));
 });
 
 // Middleware para verificar conexión a DB

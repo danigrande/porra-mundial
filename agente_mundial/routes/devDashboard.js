@@ -504,7 +504,7 @@ router.post('/users/:userName/reset-pin', async (req, res) => {
 // ==========================================
 import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
 
-router.post('/simulate-time', (req, res) => {
+router.post('/simulate-time', async (req, res) => {
   try {
     const { timeStr } = req.body;
     // Si timeStr está vacío, false o null, desactiva la simulación
@@ -513,7 +513,7 @@ router.post('/simulate-time', (req, res) => {
     res.json({ 
       status: 'ok', 
       message: timeStr ? `Tiempo simulado a ${timeStr}` : 'Simulación de tiempo desactivada',
-      newState: getTournamentState()
+      newState: await getTournamentState()
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -426,7 +426,7 @@ async function initProactiveNotifications(sock) {
   
   setInterval(async () => {
     try {
-      const state = getTournamentState();
+      const state = await getTournamentState();
       if (!state) return;
 
       const groups = await Group.find();
@@ -480,7 +480,7 @@ async function initAutoSimulation() {
   
   setInterval(async () => {
     try {
-      const state = getTournamentState();
+      const state = await getTournamentState();
       if (!state) return;
 
       // Definir qué fase de "Realidad" corresponde a cada fase del estado
