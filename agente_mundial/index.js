@@ -410,49 +410,47 @@ async function startBot() {
 // ==========================================
 // NOTIFICACIONES PROACTIVAS (Opción B)
 // ==========================================
-let lastAnnouncedPhase = null;
-let lastReminderPhase = null;
 
 async function initProactiveNotifications(sock) {
-  console.log('📢 Iniciando motor de notificaciones proactivas...');
+  console.log('📢 Iniciando motor de notificaciones proactivas con persistencia...');
   
   setInterval(async () => {
     try {
       const state = getTournamentState();
       if (!state) return;
 
-      // 1. Detección de Apertura de Fase (Waiting)
-      if (state.isPredictionWindow && state.phase !== lastAnnouncedPhase) {
-        lastAnnouncedPhase = state.phase;
-        console.log(`🔔 Nueva fase detectada: ${state.name}. Notificando a los grupos...`);
-        
-        // Buscar grupos que tengan Opción B activada
-        const groups = await Group.find();
-        for (const group of groups) {
-          // Asumimos que prediction_mode está en rules
-          const rules = group.rules || {};
-          if (rules.prediction_mode === 'B' || state.phase === 'PRE_TOURNAMENT') {
-             await sock.sendMessage(group.whatsappGroupId, {
-               text: `🚨 *¡FASE ABIERTA!* 🚨\n\nEl torneo ha entrado en la fase: *${state.name}*.\n\nYa podéis entrar a la web para completar vuestras predicciones. Tenéis hasta el cierre de la ventana para guardar vuestros resultados.\n\n🌐 [Mundial 2026 - Predicciones](${process.env.FRONTEND_URL || 'https://tu-url.com'})`
-             });
-          }
-        }
-      }
-
-      // 2. Recordatorio de 2 horas
+      const groups = await Group.find();
       const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
-      if (state.isPredictionWindow && state.timeRemainingMs < TWO_HOURS_MS && state.phase !== lastReminderPhase) {
-        lastReminderPhase = state.phase;
-        console.log(`⏰ Quedan menos de 2 horas para el cierre de ${state.name}. Enviando recordatorio...`);
-        
-        const groups = await Group.find();
-        for (const group of groups) {
-          const rules = group.rules || {};
-          if (rules.prediction_mode === 'B' || state.phase === 'PRE_TOURNAMENT') {
-            await sock.sendMessage(group.whatsappGroupId, {
-              text: `⏳ *¡ÚLTIMA LLAMADA!* ⏳\n\nQuedan menos de *2 horas* para que se cierren las predicciones de *${state.name}*.\n\n¡Entra ya si no quieres quedarte con 0 puntos en esta ronda!`
-            });
-          }
+
+      for (const group of groups) {
+        if (!group.whatsappGroupId) continue;
+        const rules = group.rules || {};
+        const isEligible = rules.prediction_mode === 'B' || state.phase === 'PRE_TOURNAMENT';
+
+        if (!isEligible) continue;
+
+        // 1. Detección de Apertura de Fase (Waiting)
+        if (state.isPredictionWindow && group.lastAnnouncedPhase !== state.phase) {
+          console.log(`🔔 Notificando APERTURA de ${state.phase} al grupo ${group.name}...`);
+          
+          await sock.sendMessage(group.whatsappGroupId, {
+            text: `🚨 *¡FASE ABIERTA!* 🚨\n\nEl torneo ha entrado en la fase: *${state.name}*.\n\nYa podéis entrar a la web para completar vuestras predicciones. Tenéis hasta el cierre de la ventana para guardar vuestros resultados.\n\n🌐 [Mundial 2026 - Predicciones](${process.env.FRONTEND_URL || 'https://tu-url.com'})`
+          });
+
+          group.lastAnnouncedPhase = state.phase;
+          await group.save();
+        }
+
+        // 2. Recordatorio de 2 horas
+        if (state.isPredictionWindow && state.timeRemainingMs < TWO_HOURS_MS && group.lastReminderPhase !== state.phase) {
+          console.log(`⏰ Enviando RECORDATORIO de ${state.phase} al grupo ${group.name}...`);
+          
+          await sock.sendMessage(group.whatsappGroupId, {
+            text: `⏳ *¡ÚLTIMA LLAMADA!* ⏳\n\nQuedan menos de *2 horas* para que se cierren las predicciones de *${state.name}*.\n\n¡Entra ya si no quieres quedarte con 0 puntos en esta ronda!`
+          });
+
+          group.lastReminderPhase = state.phase;
+          await group.save();
         }
       }
 
