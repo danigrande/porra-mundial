@@ -623,7 +623,11 @@ router.delete('/groups/:groupName/players/:playerName', async (req, res) => {
 router.get('/groups/:groupName/rules', async (req, res) => {
     try {
         const group = await Group.findOne({ name: req.params.groupName });
-        res.json(createResponse('success', group ? group.rules : {}));
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        // Devolvemos las reglas + el modo de predicción
+        const data = { ...group.rules.toObject(), predictionMode: group.predictionMode || 'A' };
+        res.json(createResponse('success', data));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
     }
@@ -636,35 +640,30 @@ router.post('/groups/:groupName/rules', async (req, res) => {
         const group = await Group.findOne({ name: groupName });
         
         if (group) {
-            const oldMode = group.rules?.prediction_mode || 'A';
-            const newMode = newRules.prediction_mode || 'A';
+            const oldMode = group.predictionMode || 'A';
+            const newMode = req.body.predictionMode || newRules.predictionMode || newRules.prediction_mode || 'A';
 
-            // Si cambiamos de A -> B, borramos predicciones de eliminatorias de todos los miembros
+            // Si cambiamos de A -> B, borramos predicciones de eliminatorias
             if (oldMode === 'A' && newMode === 'B') {
                 console.log(`🧹 [MODO B] Limpiando predicciones eliminatorias para el grupo: ${groupName}`);
-                
-                // Buscar todas las predicciones de este grupo
                 const predictions = await Prediction.find({ group: group._id });
-                
                 for (const pred of predictions) {
                     const keys = Object.keys(pred.predictions || {});
                     let hasChanged = false;
-                    
                     keys.forEach(key => {
                         if (key.startsWith('ko_') || key.startsWith('pen_') || key.startsWith('honor_')) {
                             delete pred.predictions[key];
                             hasChanged = true;
                         }
                     });
-
                     if (hasChanged) {
                         pred.markModified('predictions');
                         await pred.save();
                     }
                 }
-                console.log(`✅ Limpieza completada para ${predictions.length} jugadores.`);
             }
 
+            group.predictionMode = newMode;
             group.rules = { ...group.rules, ...newRules };
             group.markModified('rules');
             await group.save();

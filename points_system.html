@@ -441,14 +441,16 @@
       status.style.display = 'none';
 
       const data = {};
-      data.prediction_mode = document.getElementById('mode_b').checked ? 'B' : 'A';
+      const predictionMode = document.getElementById('mode_b').checked ? 'B' : 'A';
+      // Mandamos el modo tanto en el objeto raíz como en data por compatibilidad
+      const payload = { predictionMode, data };
       ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) data[id] = el.type === 'checkbox' ? el.checked : Number(el.value);
       });
 
       try {
-        const res = await apiCall({ action: 'saveRules', groupName: currentUser.groupName, data: data }, { method: 'POST' });
+        const res = await apiCall({ action: 'saveRules', groupName: currentUser.groupName, ...payload }, { method: 'POST' });
         if (res?.status === 'success') {
           showToast('✅ Reglas actualizadas en MongoDB');
           status.style.display = 'inline-flex';
@@ -465,8 +467,8 @@
     }
 
     function applyCriteria(data) {
-      // Modo de predicción
-      if (data.prediction_mode === 'B') {
+      const mode = data.predictionMode || data.prediction_mode || 'A';
+      if (mode === 'B') {
         document.getElementById('mode_b').checked = true;
       } else {
         document.getElementById('mode_a').checked = true;
