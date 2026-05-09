@@ -290,6 +290,20 @@
           </ul>
         </div>
       </div>
+
+      <div class="tech-card">
+        <span class="tech-badge badge-core">Data Source</span>
+        <h3>API-Football (v3)</h3>
+        <p>La fuente oficial de la FIFA. Proporciona resultados en tiempo real, goleadores, tarjetas y estadísticas de cada partido del Mundial.</p>
+        <div class="tech-details">
+          <strong>¿Qué aporta?</strong>
+          <ul class="check-list">
+            <li>Sincronización automática de resultados.</li>
+            <li>Validación de goleadores oficiales.</li>
+            <li>Mapeo de eventos (VAR, tarjetas, etc.).</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <div class="section-title">
@@ -317,6 +331,37 @@
               <li><strong>LocalStorage:</strong> Gestión de sesión local.</li>
               <li><strong>Fetch API:</strong> Sincronización asíncrona con el bot.</li>
               <li><strong>Modular JS:</strong> Código organizado y reutilizable.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>🧪</span> Simulación y Modo de Testeo
+    </div>
+
+    <div class="tech-grid" style="grid-template-columns: 1fr;">
+      <div class="tech-card" style="border-left: 4px solid var(--accent-ai);">
+        <span class="tech-badge badge-ai">Go-Live Simulation</span>
+        <h3>Modo de Testeo Acelerado (TEST_MODE)</h3>
+        <p>Para asegurar que todo funcione el día del Mundial, el sistema permite realizar simulacros completos antes del evento real.</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 1rem;">
+          <div>
+            <strong>Calendario de Mayo (Pruebas)</strong>
+            <ul class="check-list">
+              <li><strong>Compresión Temporal:</strong> El mundial se simula en 10 días (18-28 de Mayo).</li>
+              <li><strong>Auto-Populate:</strong> Los resultados se inyectan solos según el calendario.</li>
+              <li><strong>WhatsApp Dry-Run:</strong> Los bots lanzan avisos reales para validar el timing.</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Validación Técnica</strong>
+            <ul class="check-list">
+              <li><strong>Integración Real:</strong> Se usa la estructura JSON oficial de la API.</li>
+              <li><strong>Mapeo de IDs:</strong> Verificación de que "Equipo A" coincide con la base de datos.</li>
+              <li><strong>Clean Slate:</strong> Herramientas para resetear grupos de test en un click.</li>
             </ul>
           </div>
         </div>
