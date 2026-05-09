@@ -435,31 +435,31 @@ async function initProactiveNotifications(sock) {
       for (const group of groups) {
         if (!group.whatsappGroupId) continue;
         const rules = group.rules || {};
-        const isEligible = rules.prediction_mode === 'B' || state.phase === 'PRE_TOURNAMENT';
+        const isEligible = rules.prediction_mode === 'B' || state.id === 'PRE_TOURNAMENT';
 
         if (!isEligible) continue;
 
         // 1. Detección de Apertura de Fase (Waiting)
-        if (state.isPredictionWindow && group.lastAnnouncedPhase !== state.phase) {
-          console.log(`🔔 Notificando APERTURA de ${state.phase} al grupo ${group.name}...`);
+        if (state.isPredictionWindow && group.lastAnnouncedPhase !== state.id) {
+          console.log(`🔔 Notificando APERTURA de ${state.id} al grupo ${group.name}...`);
           
           await sock.sendMessage(group.whatsappGroupId, {
             text: `🚨 *¡FASE ABIERTA!* 🚨\n\nEl torneo ha entrado en la fase: *${state.name}*.\n\nYa podéis entrar a la web para completar vuestras predicciones. Tenéis hasta el cierre de la ventana para guardar vuestros resultados.\n\n🌐 [Mundial 2026 - Predicciones](${process.env.FRONTEND_URL || 'https://tu-url.com'})`
           });
 
-          group.lastAnnouncedPhase = state.phase;
+          group.lastAnnouncedPhase = state.id;
           await group.save();
         }
 
         // 2. Recordatorio de 2 horas
-        if (state.isPredictionWindow && state.timeRemainingMs < TWO_HOURS_MS && group.lastReminderPhase !== state.phase) {
-          console.log(`⏰ Enviando RECORDATORIO de ${state.phase} al grupo ${group.name}...`);
+        if (state.isPredictionWindow && state.timeRemainingMs < TWO_HOURS_MS && group.lastReminderPhase !== state.id) {
+          console.log(`⏰ Enviando RECORDATORIO de ${state.id} al grupo ${group.name}...`);
           
           await sock.sendMessage(group.whatsappGroupId, {
             text: `⏳ *¡ÚLTIMA LLAMADA!* ⏳\n\nQuedan menos de *2 horas* para que se cierren las predicciones de *${state.name}*.\n\n¡Entra ya si no quieres quedarte con 0 puntos en esta ronda!`
           });
 
-          group.lastReminderPhase = state.phase;
+          group.lastReminderPhase = state.id;
           await group.save();
         }
       }
