@@ -284,23 +284,19 @@
 
       if (phaseId === 'PRE_TOURNAMENT') {
         if (mode === 'A') {
-          // Modo A: Debe tener ~104 predicciones (dejamos margen por si faltan premios)
-          return count >= 104;
+          // Modo A: 104 partidos + 6 premios = 110
+          return count >= 110;
         } else {
-          // Modo B: Debe tener al menos las de grupos (72 partidos)
-          return count >= 72;
+          // Modo B: 72 partidos de grupo + 6 premios = 78
+          return count >= 78;
         }
       } else {
         // Durante el torneo (Modo B)
-        // Como no tenemos la lista de IDs aquí, miramos si el número de predicciones 
-        // ha aumentado respecto al mínimo de grupos. 
-        // Esto es un heurístico, lo ideal sería cruzar con IDs.
-        // Pero para el dashboard es suficiente con avisar si tiene "pocas"
-        if (phaseId === 'R32') return count >= 88; // 72 + 16
-        if (phaseId === 'R16') return count >= 96; // 88 + 8
-        if (phaseId === 'QF') return count >= 100; // 96 + 4
-        if (phaseId === 'SF') return count >= 102; // 100 + 2
-        if (phaseId === 'FINAL') return count >= 104; // 102 + 2
+        if (phaseId === 'R32') return count >= 94; // 78 + 16
+        if (phaseId === 'R16') return count >= 102; // 94 + 8
+        if (phaseId === 'QF') return count >= 106; // 102 + 4
+        if (phaseId === 'SF') return count >= 108; // 106 + 2
+        if (phaseId === 'FINAL') return count >= 110; // 108 + 2
       }
       return true;
     }

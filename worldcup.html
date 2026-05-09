@@ -165,32 +165,41 @@
     }
 
     function checkCompliance() {
-      // Obtenemos todos los inputs de la pantalla
-      const inputs = document.querySelectorAll('.score-input');
+      if (!tournamentState) return false;
+      
       const mode = tournamentState.predictionMode || 'A';
       const phaseId = tournamentState.id;
-
       let missing = false;
 
-      inputs.forEach(input => {
+      // 1. Validar Partidos
+      const matchInputs = document.querySelectorAll('.matches-container input');
+      matchInputs.forEach(input => {
+        if (input.disabled) return;
         const id = input.id;
-        const val = input.value;
-        
-        // Reglas de validación según fase y modo
+        const val = input.value.trim();
+
         if (phaseId === 'PRE_TOURNAMENT') {
           if (mode === 'A') {
-            // En modo A, TODO debe estar relleno
+            // En modo A, grupos y eliminatorias son obligatorios
             if (val === '') missing = true;
           } else {
-            // En modo B, solo los grupos (IDs que empiezan por 'g')
+            // En modo B pre-torneo, solo grupos
             if (id.startsWith('g') && val === '') missing = true;
           }
         } else {
-          // Si estamos durante el torneo (Solo Modo B permite esto)
-          // Solo validamos los inputs que corresponden a la fase actual
-          if (!input.disabled && val === '') missing = true;
+          // Durante el torneo (Modo B), solo los que estén desbloqueados
+          if (val === '') missing = true;
         }
       });
+
+      // 2. Validar Cuadro de Honor / Premios (Siempre obligatorio al inicio)
+      if (phaseId === 'PRE_TOURNAMENT') {
+        const awardIds = ['boot_gold', 'boot_silver', 'boot_bronze', 'ball_gold', 'ball_silver', 'ball_bronze'];
+        awardIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.value.trim() === '') missing = true;
+        });
+      }
 
       return !missing;
     }
