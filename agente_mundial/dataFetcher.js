@@ -59,7 +59,10 @@ export async function apiCall(params = {}, options = {}) {
     case 'setRules':
       endpoint = `/groups/${encodeURIComponent(groupName)}/rules`;
       method = 'POST';
-      body = { data: params.data || params.rules };
+      body = { 
+        data: params.data || params.rules,
+        predictionMode: params.predictionMode // Añadido para persistencia
+      };
       break;
     case 'getPredictions':
       endpoint = `/predictions?groupName=${encodeURIComponent(groupName)}`;
@@ -148,7 +151,7 @@ export async function apiCall(params = {}, options = {}) {
       method = 'POST';
       break;
     case 'tournament-state':
-      endpoint = `/tournament-state`;
+      endpoint = `/tournament-state?groupName=${encodeURIComponent(groupName)}`;
       break;
     default:
       console.warn(`[API] Acción no implementada en la nueva API: ${action}`);

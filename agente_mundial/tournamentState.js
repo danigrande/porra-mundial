@@ -44,7 +44,7 @@ export const setSimulatedTime = (isoString) => {
 };
 export const getCurrentTime = () => simulatedTime || Date.now();
 
-export const getTournamentState = async () => {
+export const getTournamentState = async (groupName = 'Mundial 2026') => {
   const now = getCurrentTime();
   const currentPhaseIndex = TOURNAMENT_PHASES.findIndex(p => {
     const start = new Date(p.start).getTime();
@@ -58,21 +58,33 @@ export const getTournamentState = async () => {
 
   const currentPhase = TOURNAMENT_PHASES[currentPhaseIndex];
   const nextPhase = TOURNAMENT_PHASES[currentPhaseIndex + 1] || null;
+  
+  // Determinar qué fases están abiertas (en este momento y en el pasado para visualización)
+  let pastUnlocks = [];
+  for (let i = 0; i <= currentPhaseIndex; i++) {
+    pastUnlocks = pastUnlocks.concat(TOURNAMENT_PHASES[i].unlocks || []);
+  }
+  const visiblePhases = [...new Set(pastUnlocks)];
+
+  // Es ventana de predicción si la fase actual tiene 'unlocks' definidos
   const isPredictionWindow = currentPhase.unlocks && currentPhase.unlocks.length > 0;
+  
   const nextDeadline = new Date(currentPhase.end).getTime();
   const timeRemainingMs = Math.max(0, nextDeadline - now);
 
   let predictionMode = 'A';
   try {
-    const group = await Group.findOne({ name: 'Mundial 2026' });
-    if (group) predictionMode = group.predictionMode;
+    const group = await Group.findOne({ name: groupName });
+    if (group) predictionMode = group.predictionMode || 'A';
   } catch (e) {
-    console.error("Error fetching predictionMode:", e.message);
+    console.error(`Error fetching predictionMode for ${groupName}:`, e.message);
   }
 
   return {
     id: currentPhase.id,
     name: currentPhase.name,
+    unlocks: currentPhase.unlocks || [], // CRÍTICO: Para habilitar inputs
+    visiblePhases: visiblePhases,       // CRÍTICO: Para mostrar rondas
     deadline: currentPhase.end,
     nextDeadline: nextPhase ? nextPhase.end : null,
     timeRemainingMs,

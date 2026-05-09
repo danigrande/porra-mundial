@@ -22,7 +22,8 @@ const createResponse = (status, data = null, message = null) => {
 // ESTADO DEL TORNEO
 // ==========================================
 router.get('/tournament-state', async (req, res) => {
-  res.json(createResponse('success', await getTournamentState()));
+  const { groupName } = req.query;
+  res.json(createResponse('success', await getTournamentState(groupName)));
 });
 
 // Middleware para verificar conexión a DB
