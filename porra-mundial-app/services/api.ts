@@ -92,6 +92,13 @@ export async function savePredictions(playerName, groupName, predictions) {
   });
 }
 
+export async function registerPushToken(phone: string, token: string, platform: string) {
+  return apiFetch('/push-token', {
+    method: 'POST',
+    body: JSON.stringify({ phone, token, platform }),
+  });
+}
+
 // ==========================================
 // RANKING Y REALIDAD
 // ==========================================

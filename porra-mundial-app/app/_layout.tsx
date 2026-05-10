@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { loadAuth, getAuth, subscribeAuth } from '../stores/authStore';
+import { setupPushNotifications } from '../services/push';
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -13,12 +14,18 @@ export default function RootLayout() {
     // Escuchar cambios de autenticación (login/logout)
     const unsubscribe = subscribeAuth((data) => {
       setIsLoggedIn(!!data);
+      if (data && data.phone) {
+        setupPushNotifications(data.phone);
+      }
     });
 
     // Carga inicial
     loadAuth().then((data) => {
       setIsLoggedIn(!!data);
       setIsReady(true);
+      if (data && data.phone) {
+        setupPushNotifications(data.phone);
+      }
     });
 
     return unsubscribe;
