@@ -977,7 +977,7 @@ router.get('/user/by-phone/:phone', async (req, res) => {
 // ==========================================
 // PREDICCIONES
 // ==========================================
-import { Prediction } from '../models/Prediction.js';
+
 
 router.get('/predictions', async (req, res) => {
     try {
