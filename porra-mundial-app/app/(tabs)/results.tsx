@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, RefreshControl } from 'react-native';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET } from '../../constants/tournamentData';
+import TournamentBanner from '../../components/TournamentBanner';
 
 export default function ResultsScreen() {
   const auth = getAuth();
   const isAdmin = auth?.isAdmin || false;
   
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [reality, setReality] = useState<any>({ events: {} });
   const [state, setState] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'groups' | 'knockout'>('groups');
@@ -26,16 +28,24 @@ export default function ResultsScreen() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [auth?.currentGroup]); // Recargar si cambia el grupo
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData().finally(() => setRefreshing(false));
+  }, [auth?.currentGroup]);
 
   async function fetchData() {
-    setLoading(true);
     try {
+      const gName = auth?.currentGroup || '';
+      console.log(`[Results] Fetching data for group: "${gName}"`);
+      
       const [realityRes, stateRes] = await Promise.all([
         api.getReality(),
-        api.getTournamentState(auth?.currentGroup || '')
+        api.getTournamentState(gName)
       ]);
-      console.log('[Results] State:', stateRes);
+      
+      console.log('[Results] State received:', stateRes);
       setReality(realityRes || { events: {} });
       setState(stateRes);
     } catch (e) {
@@ -94,6 +104,8 @@ export default function ResultsScreen() {
 
   return (
     <View style={styles.container}>
+      <TournamentBanner state={state} />
+
       {/* HEADER DINÁMICO (Como en la Web) */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
@@ -121,10 +133,15 @@ export default function ResultsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView 
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#f5a623" />
+        }
+      >
         
         {/* PANEL DE SIMULACIÓN "GO-LIVE" */}
-        {isTestMode && (
+        {(isTestMode || (isAdmin && !state)) && (
           <View style={styles.simPanel}>
             <View style={styles.simHeader}>
               <View>

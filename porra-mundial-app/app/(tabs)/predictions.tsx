@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
-import { FIXTURE_GROUPS, getGroupMatches } from '../../constants/fixtures';
+import { FIXTURE_GROUPS, getGroupMatches } from '../../constants/tournamentData';
+import TournamentBanner from '../../components/TournamentBanner';
 
 export default function PredictionsScreen() {
   const auth = getAuth();
@@ -12,6 +13,7 @@ export default function PredictionsScreen() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [state, setState] = useState<any>(null);
   
   const [selectedGroup, setSelectedGroup] = useState('A');
   const [predictions, setPredictions] = useState<Record<string, string>>({}); // {"gA_m0_h": "4", "gA_m0_a": "5"}
@@ -20,13 +22,17 @@ export default function PredictionsScreen() {
     if (!groupName || !phone) return;
     
     setLoading(true);
-    api.getMyPredictions(groupName, phone)
-      .then(data => {
-        setPredictions(data || {});
+    Promise.all([
+      api.getMyPredictions(groupName, phone),
+      api.getTournamentState(groupName)
+    ])
+      .then(([predData, stateData]) => {
+        setPredictions(predData || {});
+        setState(stateData);
       })
       .catch(e => {
         console.error(e);
-        Alert.alert('Error', 'No se pudieron cargar tus predicciones');
+        Alert.alert('Error', 'No se pudieron cargar los datos');
       })
       .finally(() => {
         setLoading(false);
@@ -78,6 +84,8 @@ export default function PredictionsScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       
+      <TournamentBanner state={state} />
+
       {/* Selector de Grupos Horizontal */}
       <View style={styles.groupSelectorContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.groupScroll}>

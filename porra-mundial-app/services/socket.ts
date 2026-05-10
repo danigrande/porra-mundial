@@ -12,7 +12,9 @@ export type ChatMessage = {
   chatId: string;
   senderName: string;
   senderId: string;
-  text: string;
+  text?: string;
+  type: 'text' | 'image' | 'audio' | 'sticker' | 'gif';
+  mediaUrl?: string;
   isBot: boolean;
   timestamp: string;
 };
@@ -73,10 +75,10 @@ export function joinGroup(groupName: string) {
 }
 
 /**
- * Enviar un mensaje al grupo.
+ * Enviar un mensaje al grupo (Texto, Imagen, Audio, Sticker o GIF).
  */
-export function sendMessage(groupName: string, text: string) {
-  socket?.emit('send-message', { groupName, text });
+export function sendMessage(groupName: string, text?: string, type: 'text' | 'image' | 'audio' | 'sticker' | 'gif' = 'text', mediaUrl?: string) {
+  socket?.emit('send-message', { groupName, text, type, mediaUrl });
 }
 
 /**

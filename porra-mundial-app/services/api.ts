@@ -1,11 +1,10 @@
-// ============================================
-// API SERVICE — Comunicación con el backend
-// ============================================
+import { Platform } from 'react-native';
 
 // Cambia esta URL a tu servidor en Render cuando despliegues
+const LOCAL_IP = '192.168.1.10';
 const API_BASE = __DEV__ 
-  ? 'http://192.168.1.10:3000'  // IP local para desarrollo
-  : 'https://tu-app.onrender.com'; // URL de producción
+  ? (Platform.OS === 'web' ? 'http://localhost:3000' : `http://${LOCAL_IP}:3000`)
+  : 'https://tu-app.onrender.com'; 
 
 export const API_URL = API_BASE;
 export const SOCKET_URL = API_BASE;
@@ -65,8 +64,21 @@ export async function getUserGroups(phone) {
 // GRUPOS Y JUGADORES
 // ==========================================
 
-export async function getGroupPlayers(groupName) {
+export async function getPlayers(groupName) {
   return apiFetch(`/groups/${encodeURIComponent(groupName)}/players`);
+}
+
+export async function addPlayer(groupName, playerName, phone) {
+  return apiFetch(`/groups/${encodeURIComponent(groupName)}/players`, {
+    method: 'POST',
+    body: JSON.stringify({ playerName, phone }),
+  });
+}
+
+export async function removePlayer(groupName, playerName) {
+  return apiFetch(`/groups/${encodeURIComponent(groupName)}/players/${encodeURIComponent(playerName)}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function getGroupRules(groupName) {
@@ -117,6 +129,20 @@ export async function getReality() {
 export async function getTournamentState(groupName) {
   const params = groupName ? `?groupName=${encodeURIComponent(groupName)}` : '';
   return apiFetch(`/tournament-state${params}`);
+}
+
+export async function saveReality(results) {
+  return apiFetch('/reality', {
+    method: 'POST',
+    body: JSON.stringify({ results }),
+  });
+}
+
+export async function simulateMatch(matchId, homeTeam, awayTeam) {
+  return apiFetch('/admin/simulate-match', {
+    method: 'POST',
+    body: JSON.stringify({ matchId, homeTeam, awayTeam }),
+  });
 }
 
 // ==========================================

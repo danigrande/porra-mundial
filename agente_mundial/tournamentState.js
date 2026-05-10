@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Group } from './models/Group.js';
 
 // ============================================

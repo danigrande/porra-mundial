@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { loadAuth, getAuth, subscribeAuth } from '../stores/authStore';
 import { setupPushNotifications } from '../services/push';
+import { connect as connectSocket } from '../services/socket';
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -14,8 +15,9 @@ export default function RootLayout() {
     // Escuchar cambios de autenticación (login/logout)
     const unsubscribe = subscribeAuth((data) => {
       setIsLoggedIn(!!data);
-      if (data && data.phone) {
+      if (data && data.phone && data.pin) {
         setupPushNotifications(data.phone);
+        connectSocket(data.phone, data.pin);
       }
     });
 
@@ -23,8 +25,9 @@ export default function RootLayout() {
     loadAuth().then((data) => {
       setIsLoggedIn(!!data);
       setIsReady(true);
-      if (data && data.phone) {
+      if (data && data.phone && data.pin) {
         setupPushNotifications(data.phone);
+        connectSocket(data.phone, data.pin);
       }
     });
 

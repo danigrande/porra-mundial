@@ -108,10 +108,10 @@ export function initChatServer(httpServer) {
 
     // --- ENVIAR MENSAJE ---
     socket.on('send-message', async (data) => {
-      const { groupName, text } = data;
+      const { groupName, text, type = 'text', mediaUrl } = data;
       
-      if (!text || !text.trim()) return;
       if (!groupName) return;
+      if (type === 'text' && (!text || !text.trim())) return;
 
       const { userName, userId, phone } = socket.userData;
 
@@ -121,7 +121,9 @@ export function initChatServer(httpServer) {
           chatId: groupName,
           senderId: phone,
           senderName: userName,
-          text: text.trim(),
+          text: text?.trim(),
+          type,
+          mediaUrl,
           isBot: false
         });
 
@@ -131,7 +133,9 @@ export function initChatServer(httpServer) {
           chatId: groupName,
           senderName: userName,
           senderId: phone,
-          text: text.trim(),
+          text: text?.trim(),
+          type,
+          mediaUrl,
           isBot: false,
           timestamp: userMessage.timestamp
         };
@@ -174,6 +178,7 @@ export function initChatServer(httpServer) {
               senderId: 'agente-mundial',
               senderName: 'Agente Mundial 🏆',
               text: botResponse,
+              type: 'text',
               isBot: true
             });
 
@@ -183,6 +188,7 @@ export function initChatServer(httpServer) {
               senderName: 'Agente Mundial 🏆',
               senderId: 'agente-mundial',
               text: botResponse,
+              type: 'text',
               isBot: true,
               timestamp: botMessage.timestamp
             };

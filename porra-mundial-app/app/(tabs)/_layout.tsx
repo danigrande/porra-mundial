@@ -25,63 +25,68 @@ export default function TabLayout() {
         tabBarStyle: { 
           backgroundColor: '#0a0e27',
           borderTopColor: '#1e2a5a',
-          height: 60,
-          paddingBottom: 8,
+          height: 65,
+          paddingBottom: 10,
           paddingTop: 8,
         },
         tabBarActiveTintColor: '#f5a623',
-        tabBarInactiveTintColor: '#666',
+        tabBarInactiveTintColor: '#64748b',
         sceneStyle: { backgroundColor: '#0a0e27' }
       }}
     >
       <Tabs.Screen
-        name="dashboard"
+        name="index"
         options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color }) => <MaterialIcons name="dashboard" size={24} color={color} />,
+          title: 'Clasificación',
+          tabBarIcon: ({ color }) => <MaterialIcons name="leaderboard" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
         name="results"
         options={{
           title: 'Resultados',
-          tabBarIcon: ({ color }) => <Ionicons name="football" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="football" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat',
-          tabBarIcon: ({ color }) => <FontAwesome5 name="comment-dots" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="comment-dots" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="predictions"
         options={{
-          title: 'Predicciones',
-          tabBarIcon: ({ color }) => <MaterialIcons name="sports-soccer" size={24} color={color} />,
+          title: 'Mi porra',
+          tabBarIcon: ({ color }) => <MaterialIcons name="sports-soccer" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
+        name="menu"
+        options={{
+          title: 'Más',
+          tabBarIcon: ({ color }) => <Ionicons name="menu" size={26} color={color} />,
+        }}
+      />
+
+      {/* RUTAS OCULTAS DEL MENÚ INFERIOR */}
+      <Tabs.Screen
         name="pool"
         options={{
-          title: 'El Muro',
-          tabBarIcon: ({ color }) => <MaterialIcons name="format-list-bulleted" size={24} color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color }) => <MaterialIcons name="person" size={24} color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen
         name="admin"
         options={{
-          title: 'Admin',
-          tabBarIcon: ({ color }) => <MaterialIcons name="admin-panel-settings" size={24} color={color} />,
-          href: isAdmin ? '/(tabs)/admin' : null,
+          href: null,
         }}
       />
     </Tabs>
