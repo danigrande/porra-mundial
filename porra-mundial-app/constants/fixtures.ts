@@ -17,15 +17,15 @@ export const FIXTURE_GROUPS = [
   { letter: 'L', teams: ['Inglaterra', 'Croacia', 'Ghana', 'Panamá'] },
 ];
 
-// Helper para obtener los partidos de un grupo (todos contra todos = 6 partidos por grupo)
 export function getGroupMatches(group: { letter: string, teams: string[] }) {
   const matches = [];
   const t = group.teams;
-  matches.push({ id: `G${group.letter}1`, team1: t[0], team2: t[1] });
-  matches.push({ id: `G${group.letter}2`, team1: t[2], team2: t[3] });
-  matches.push({ id: `G${group.letter}3`, team1: t[0], team2: t[2] });
-  matches.push({ id: `G${group.letter}4`, team1: t[1], team2: t[3] });
-  matches.push({ id: `G${group.letter}5`, team1: t[3], team2: t[0] });
-  matches.push({ id: `G${group.letter}6`, team1: t[1], team2: t[2] });
+  const L = group.letter;
+  matches.push({ id: `g${L}_m0`, team1: t[0], team2: t[1] });
+  matches.push({ id: `g${L}_m1`, team1: t[2], team2: t[3] });
+  matches.push({ id: `g${L}_m2`, team1: t[0], team2: t[2] });
+  matches.push({ id: `g${L}_m3`, team1: t[1], team2: t[3] });
+  matches.push({ id: `g${L}_m4`, team1: t[3], team2: t[0] });
+  matches.push({ id: `g${L}_m5`, team1: t[1], team2: t[2] });
   return matches;
 }

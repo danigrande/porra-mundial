@@ -14,7 +14,7 @@ export default function PredictionsScreen() {
   const [saving, setSaving] = useState(false);
   
   const [selectedGroup, setSelectedGroup] = useState('A');
-  const [predictions, setPredictions] = useState<Record<string, string>>({}); // { "GA1": "2-1", "GA2": "0-0" }
+  const [predictions, setPredictions] = useState<Record<string, string>>({}); // {"gA_m0_h": "4", "gA_m0_a": "5"}
 
   useEffect(() => {
     if (!groupName || !phone) return;
@@ -42,28 +42,16 @@ export default function PredictionsScreen() {
   const handleScoreChange = (matchId: string, teamIndex: 1 | 2, text: string) => {
     // Solo permitimos números
     const value = text.replace(/[^0-9]/g, '').substring(0, 2);
+    const key = `${matchId}_${teamIndex === 1 ? 'h' : 'a'}`;
     
     setPredictions(prev => {
-      const current = prev[matchId] || '-';
-      const parts = current.split('-');
-      const t1 = parts[0] === '' || parts[0] === undefined ? '' : parts[0];
-      const t2 = parts[1] === '' || parts[1] === undefined ? '' : parts[1];
-      
-      let newScore = '';
-      if (teamIndex === 1) {
-        newScore = `${value}-${t2}`;
+      const next = { ...prev };
+      if (value === '') {
+        delete next[key];
       } else {
-        newScore = `${t1}-${value}`;
+        next[key] = value;
       }
-      
-      // Si ambos están vacíos, lo borramos del objeto
-      if (newScore === '-') {
-        const next = { ...prev };
-        delete next[matchId];
-        return next;
-      }
-      
-      return { ...prev, [matchId]: newScore };
+      return next;
     });
   };
 
@@ -110,10 +98,8 @@ export default function PredictionsScreen() {
       {/* Lista de Partidos */}
       <ScrollView contentContainerStyle={styles.matchesList} keyboardShouldPersistTaps="handled">
         {matchesToDisplay.map(match => {
-          const pred = predictions[match.id] || '';
-          const parts = pred.split('-');
-          const score1 = parts[0] !== undefined && parts[0] !== '' ? parts[0] : '';
-          const score2 = parts[1] !== undefined && parts[1] !== '' ? parts[1] : '';
+          const score1 = predictions[`${match.id}_h`] || '';
+          const score2 = predictions[`${match.id}_a`] || '';
 
           return (
             <View key={match.id} style={styles.matchCard}>

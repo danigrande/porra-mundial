@@ -67,8 +67,14 @@ export function initChatServer(httpServer) {
   // MANEJO DE CONEXIONES
   // ==========================================
   io.on('connection', (socket) => {
+    if (!socket.userData) {
+      console.warn('⚠️ Conexión rechazada: userData indefinido');
+      socket.disconnect(true);
+      return;
+    }
+
     const { userName, userId, groups } = socket.userData;
-    console.log(`💬 ${userName} conectado al chat (${groups.length} grupos)`);
+    console.log(`💬 ${userName} conectado al chat (${groups?.length || 0} grupos)`);
 
     // Unir automáticamente a las salas de sus grupos
     for (const groupName of groups) {
