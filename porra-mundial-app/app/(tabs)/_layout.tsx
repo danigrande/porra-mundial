@@ -42,6 +42,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="results"
+        options={{
+          title: 'Resultados',
+          tabBarIcon: ({ color }) => <Ionicons name="football" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat',
@@ -56,11 +63,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="admin"
+        name="pool"
         options={{
-          title: 'Admin',
-          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
-          href: isAdmin ? '/(tabs)/admin' : null,
+          title: 'El Muro',
+          tabBarIcon: ({ color }) => <MaterialIcons name="format-list-bulleted" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -68,6 +74,14 @@ export default function TabLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color }) => <MaterialIcons name="person" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          tabBarIcon: ({ color }) => <MaterialIcons name="admin-panel-settings" size={24} color={color} />,
+          href: isAdmin ? '/(tabs)/admin' : null,
         }}
       />
     </Tabs>

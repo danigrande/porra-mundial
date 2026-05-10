@@ -39,7 +39,8 @@ export async function setupPushNotifications(phone: string) {
       Constants?.easConfig?.projectId;
 
     if (!projectId) {
-      console.warn('[Push] Faltan los IDs del proyecto de Expo. Asegúrate de configurar app.json / EAS');
+      console.warn('[Push] Faltan los IDs del proyecto de Expo. Asegúrate de ejecutar "eas init" para configurar app.json. Notificaciones deshabilitadas temporalmente.');
+      return null;
     }
 
     const tokenData = await Notifications.getExpoPushTokenAsync({
