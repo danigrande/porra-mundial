@@ -420,6 +420,16 @@ router.get('/predictions', async (req, res) => {
             return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
         }
 
+        // Si se pasa el teléfono, devolver solo las de ese usuario (formato plano)
+        if (phone) {
+            const user = await User.findOne({ phone });
+            if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+            
+            const pred = await Prediction.findOne({ user: user._id, group: group._id });
+            return res.json(createResponse('success', pred ? pred.predictions : {}));
+        }
+
+        // Si no, devolver todas (formato anidado para dashboard)
         const predictions = await Prediction.find({ group: group._id }).populate('user', 'name');
         console.log(`📈 Encontradas ${predictions.length} predicciones para el grupo ${groupName}`);
         
