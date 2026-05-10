@@ -411,7 +411,7 @@ router.post('/register', async (req, res) => {
 
 router.get('/predictions', async (req, res) => {
     try {
-        const { groupName } = req.query;
+        const { groupName, phone } = req.query;
         console.log(`🔍 Buscando predicciones para el grupo: "${groupName}"`);
         
         const group = await Group.findOne({ name: groupName });
