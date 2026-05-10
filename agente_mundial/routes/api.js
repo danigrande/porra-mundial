@@ -985,6 +985,36 @@ router.get('/user/by-phone/:phone', async (req, res) => {
 });
 
 // ==========================================
+// REGLAS DEL GRUPO (Admin)
+// ==========================================
+router.get('/groups/:groupName/rules', async (req, res) => {
+    try {
+        const group = await Group.findOne({ name: req.params.groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        res.json(createResponse('success', group.rules || {}));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/groups/:groupName/rules', async (req, res) => {
+    try {
+        const { data, predictionMode } = req.body;
+        const group = await Group.findOne({ name: req.params.groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        if (data) group.rules = data;
+        if (predictionMode) group.predictionMode = predictionMode;
+        
+        await group.save();
+        res.json(createResponse('success'));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// ==========================================
 // PREDICCIONES
 // ==========================================
 

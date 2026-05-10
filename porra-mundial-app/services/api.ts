@@ -73,6 +73,13 @@ export async function getGroupRules(groupName) {
   return apiFetch(`/groups/${encodeURIComponent(groupName)}/rules`);
 }
 
+export async function saveGroupRules(groupName, data, predictionMode) {
+  return apiFetch(`/groups/${encodeURIComponent(groupName)}/rules`, {
+    method: 'POST',
+    body: JSON.stringify({ data, predictionMode }),
+  });
+}
+
 // ==========================================
 // PREDICCIONES
 // ==========================================
@@ -135,15 +142,6 @@ export async function getChatHistory(groupName, before = null, limit = 50) {
 }
 
 // ==========================================
-// PUSH NOTIFICATIONS
-// ==========================================
-
-export async function registerPushToken(phone, token, platform) {
-  return apiFetch('/push-token', {
-    method: 'POST',
-    body: JSON.stringify({ phone, token, platform }),
-  });
-}
 
 // ==========================================
 // PERFIL

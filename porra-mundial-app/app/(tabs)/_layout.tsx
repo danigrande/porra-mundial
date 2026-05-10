@@ -1,7 +1,22 @@
 import { Tabs } from 'expo-router';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { getAuth, subscribeAuth } from '../../stores/authStore';
 
 export default function TabLayout() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Estado inicial
+    setIsAdmin(!!getAuth()?.isAdmin);
+    
+    // Suscripción a cambios
+    const unsubscribe = subscribeAuth((data) => {
+      setIsAdmin(!!data?.isAdmin);
+    });
+    return unsubscribe;
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
@@ -38,6 +53,14 @@ export default function TabLayout() {
         options={{
           title: 'Predicciones',
           tabBarIcon: ({ color }) => <MaterialIcons name="sports-soccer" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          title: 'Admin',
+          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
+          href: isAdmin ? '/(tabs)/admin' : null,
         }}
       />
       <Tabs.Screen
