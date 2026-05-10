@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 import { Group } from '../models/Group.js';
 import { Prediction } from '../models/Prediction.js';
 import { Summary } from '../models/Summary.js';
+import { Message } from '../models/Message.js';
 import { Reality } from '../models/Reality.js';
 import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
@@ -874,16 +875,6 @@ router.post('/groups/:groupName/leave-whatsapp', async (req, res) => {
             return res.status(400).json(createResponse('error', null, 'El grupo no tiene WhatsApp vinculado'));
         }
 
-        // Intentar salir del grupo de WhatsApp
-        if (global.whatsappSock?.user) {
-            try {
-                await global.whatsappSock.groupLeave(group.whatsappGroupId);
-                console.log(`👋 [WhatsApp] Bot salió del grupo "${groupName}" (${group.whatsappGroupId})`);
-            } catch (waError) {
-                console.warn(`⚠️ [WhatsApp] Error al salir del grupo (puede que ya no estemos): ${waError.message}`);
-            }
-        }
-        
         // Limpiar el campo en la BD
         group.whatsappGroupId = null;
         await group.save();
@@ -895,5 +886,159 @@ router.post('/groups/:groupName/leave-whatsapp', async (req, res) => {
     }
 });
 
-export default router;
+// ==========================================
+// RUTAS DE CHAT (App Móvil)
+// ==========================================
 
+// Historial de mensajes de un grupo (paginado)
+router.get('/chat/:groupName/messages', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const { before, limit = 50 } = req.query;
+        
+        const query = { chatId: groupName };
+        if (before) {
+            query.timestamp = { $lt: new Date(before) };
+        }
+        
+        const messages = await Message.find(query)
+            .sort({ timestamp: -1 })
+            .limit(parseInt(limit))
+            .lean();
+        
+        res.json(createResponse('success', messages.reverse()));
+    } catch (error) {
+        console.error('❌ Error en GET /chat/messages:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// ==========================================
+// RUTAS DE PUSH NOTIFICATIONS
+// ==========================================
+
+// Registrar token de push notification
+router.post('/push-token', async (req, res) => {
+    try {
+        const { phone, token, platform } = req.body;
+        if (!phone || !token) {
+            return res.status(400).json(createResponse('error', null, 'phone y token son requeridos'));
+        }
+        
+        const user = await User.findOne({ phone });
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+        
+        const pushService = await import('../pushService.js');
+        await pushService.registerToken(user._id.toString(), token, platform || 'android');
+        
+        res.json(createResponse('success'));
+    } catch (error) {
+        console.error('❌ Error en POST /push-token:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// Eliminar token de push notification (logout)
+router.delete('/push-token', async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json(createResponse('error', null, 'token es requerido'));
+        
+        const pushService = await import('../pushService.js');
+        await pushService.removeToken(token);
+        
+        res.json(createResponse('success'));
+    } catch (error) {
+        console.error('❌ Error en DELETE /push-token:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// ==========================================
+// BUSCAR USUARIO POR TELÉFONO (para la app)
+// ==========================================
+router.get('/user/by-phone/:phone', async (req, res) => {
+    try {
+        const user = await User.findOne({ phone: req.params.phone });
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+        
+        res.json(createResponse('success', {
+            name: user.name,
+            phone: user.phone,
+            groups: user.groups,
+            isAdminOf: user.isAdminOf || [],
+            nickname: user.nickname || user.name,
+        }));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// ==========================================
+// PREDICCIONES
+// ==========================================
+import { Prediction } from '../models/Prediction.js';
+
+router.get('/predictions', async (req, res) => {
+    try {
+        const { groupName, phone } = req.query;
+        if (!groupName) return res.status(400).json(createResponse('error', null, 'Falta groupName'));
+
+        const group = await Group.findOne({ name: groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+
+        if (phone) {
+            // Predicciones de un solo usuario
+            const user = await User.findOne({ phone });
+            if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+            
+            const pred = await Prediction.findOne({ user: user._id, group: group._id });
+            return res.json(createResponse('success', pred ? pred.predictions : {}));
+        } else {
+            // Todas las predicciones del grupo
+            const preds = await Prediction.find({ group: group._id }).populate('user', 'name');
+            const result = {};
+            preds.forEach(p => {
+                if (p.user) result[p.user.name] = p.predictions;
+            });
+            return res.json(createResponse('success', result));
+        }
+    } catch (error) {
+        console.error('❌ Error GET /predictions:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/predictions', async (req, res) => {
+    try {
+        // En la app mandamos playerName (que en realidad no es phone). Ah no, api.ts manda playerName.
+        // Mejor cambiamos el backend para usar playerName o phone.
+        const { playerName, groupName, predictions } = req.body;
+        if (!playerName || !groupName || !predictions) {
+            return res.status(400).json(createResponse('error', null, 'Faltan datos'));
+        }
+
+        // Buscamos al usuario por nombre en el grupo
+        const group = await Group.findOne({ name: groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+
+        const user = await User.findOne({ name: playerName, groups: groupName });
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado en este grupo'));
+
+        let pred = await Prediction.findOne({ user: user._id, group: group._id });
+        if (!pred) {
+            pred = new Prediction({ user: user._id, group: group._id, predictions });
+        } else {
+            pred.predictions = predictions;
+            pred.updatedAt = new Date();
+        }
+        await pred.save();
+
+        res.json(createResponse('success', null, 'Predicciones guardadas'));
+    } catch (error) {
+        console.error('❌ Error POST /predictions:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+export default router;

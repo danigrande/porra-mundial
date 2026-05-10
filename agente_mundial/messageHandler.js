@@ -18,25 +18,44 @@ const whatsappGroupCache = new Map();
 const WA_CACHE_TTL = 2 * 60 * 1000; // 2 minutos
 
 /**
- * Identifica el nombre legible del grupo a partir del ID de WhatsApp.
- * Busca primero en config.js (compatibilidad), luego en MongoDB.
+ * Identifica el nombre legible del grupo.
+ * Acepta tanto nombres de grupo directos (chat propio) como WhatsApp JIDs (legacy).
  */
-async function resolveGroupName(groupId) {
-  // 1. Buscar en config.js (compatibilidad con mapeo estático)
-  const configName = config.groups[groupId];
+async function resolveGroupName(groupIdOrName) {
+  // 1. Si ya es un nombre de grupo (chat propio), verificar que existe en MongoDB
+  if (!groupIdOrName.endsWith('@g.us')) {
+    // Es un nombre directo, no un WhatsApp JID
+    const cached = whatsappGroupCache.get(groupIdOrName);
+    if (cached && (Date.now() - cached.timestamp) < WA_CACHE_TTL) {
+      return cached.name;
+    }
+    try {
+      const group = await Group.findOne({ name: groupIdOrName });
+      if (group) {
+        whatsappGroupCache.set(groupIdOrName, { name: group.name, timestamp: Date.now() });
+        return group.name;
+      }
+    } catch (e) {
+      console.error('Error buscando grupo en BD:', e.message);
+    }
+    return groupIdOrName; // Devolver tal cual si no se encuentra
+  }
+  
+  // 2. Legacy: WhatsApp JID — buscar en config.js
+  const configName = config.groups[groupIdOrName];
   if (configName) return configName;
   
-  // 2. Buscar en cache local
-  const cached = whatsappGroupCache.get(groupId);
+  // 3. Legacy: Buscar en cache local
+  const cached = whatsappGroupCache.get(groupIdOrName);
   if (cached && (Date.now() - cached.timestamp) < WA_CACHE_TTL) {
     return cached.name;
   }
   
-  // 3. Buscar en MongoDB
+  // 4. Legacy: Buscar en MongoDB por WhatsApp ID
   try {
-    const group = await Group.findOne({ whatsappGroupId: groupId });
+    const group = await Group.findOne({ whatsappGroupId: groupIdOrName });
     if (group) {
-      whatsappGroupCache.set(groupId, { name: group.name, timestamp: Date.now() });
+      whatsappGroupCache.set(groupIdOrName, { name: group.name, timestamp: Date.now() });
       return group.name;
     }
   } catch (e) {
@@ -126,13 +145,13 @@ export function detectIntent(text) {
 /**
  * Procesa un mensaje y genera una respuesta.
  */
-export async function processMessage(text, senderPhone, isGroup, isMentioned, whatsappGroupId) {
+export async function processMessage(text, senderPhone, isGroup, isMentioned, groupIdOrName) {
   // 1. Identificar Grupo
-  const groupName = isGroup ? await resolveGroupName(whatsappGroupId) : null;
+  const groupName = isGroup ? await resolveGroupName(groupIdOrName) : null;
   
   if (isGroup && !isMentioned) return null;
   if (isGroup && !groupName) {
-    return "⚠️ Este grupo no está registrado. Pide al administrador que vincule el bot desde la web.";
+    return "⚠️ Este grupo no está registrado. Pide al administrador que lo cree desde la web.";
   }
 
   // 2. Refrescar datos del grupo
@@ -164,7 +183,7 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, wh
     let chatContext = "";
     try {
         const rag = await import('./ragService.js');
-        chatContext = await rag.retrieveContextForPlayer(whatsappGroupId || process.env.WHATSAPP_GROUP_ID, playerName);
+        chatContext = await rag.retrieveContextForPlayer(groupIdOrName, playerName);
     } catch (e) {
         console.error("Error recuperando RAG context:", e);
     }
@@ -210,8 +229,8 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, wh
  * @param {string} whatsappGroupId - ID del grupo en WhatsApp
  * @param {boolean} force - Si es true, ignora la comprobación de si hubo partidos hoy
  */
-export async function generateGroupSummary(whatsappGroupId, force = false) {
-  const groupName = await resolveGroupName(whatsappGroupId);
+export async function generateGroupSummary(groupIdOrName, force = false) {
+  const groupName = await resolveGroupName(groupIdOrName);
   if (!groupName) return "Error: Grupo no reconocido";
 
   await refreshCache(groupName);
