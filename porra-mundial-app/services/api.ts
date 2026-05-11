@@ -229,3 +229,16 @@ export async function changePin(phone, groupName, oldPin, newPin) {
     body: JSON.stringify({ phone, groupName, oldPin, newPin }),
   });
 }
+
+export async function deleteAccount(phone: string) {
+  return apiFetch(`/profile?phone=${encodeURIComponent(phone)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function reportContent(data: { reporterPhone: string, reportedUser: string, messageId?: string, reason: string }) {
+  return apiFetch('/report', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}

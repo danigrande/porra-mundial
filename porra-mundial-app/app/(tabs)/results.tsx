@@ -288,7 +288,11 @@ export default function ResultsScreen() {
               <View style={styles.awardRow}>
                 <View>
                   <Text style={styles.awardLabel}>🏆 Campeón del Mundo</Text>
-                  <Text style={styles.awardVal}>{reality['ko_104_h_team'] && parseInt(reality['ko_104_h']) > parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : (reality['ko_104_a_team'] || 'Por definir')}</Text>
+                  <Text style={styles.awardVal}>
+                    {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
+                      ? (parseInt(reality['ko_104_h']) > parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
+                      : 'Por definir'}
+                  </Text>
                 </View>
                 <MaterialCommunityIcons name="star" size={20} color="#f5a623" />
               </View>
@@ -296,14 +300,51 @@ export default function ResultsScreen() {
               <View style={styles.awardRow}>
                 <View>
                   <Text style={styles.awardLabel}>🥈 Subcampeón</Text>
-                  <Text style={styles.awardVal}>{reality['ko_104_h_team'] && parseInt(reality['ko_104_h']) < parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : (reality['ko_104_a_team'] || 'Por definir')}</Text>
+                  <Text style={styles.awardVal}>
+                    {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
+                      ? (parseInt(reality['ko_104_h']) < parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
+                      : 'Por definir'}
+                  </Text>
                 </View>
               </View>
 
+              {/* BALONES DE ORO */}
+              <View style={styles.awardRow}>
+                <View>
+                  <Text style={styles.awardLabel}>⚽ Balón de Oro</Text>
+                  <Text style={styles.awardVal}>{reality['ball_gold'] || 'Mejor jugador...'}</Text>
+                </View>
+              </View>
+              <View style={styles.awardRow}>
+                <View>
+                  <Text style={styles.awardLabel}>⚪ Balón de Plata</Text>
+                  <Text style={styles.awardVal}>{reality['ball_silver'] || 'Segundo mejor...'}</Text>
+                </View>
+              </View>
+              <View style={styles.awardRow}>
+                <View>
+                  <Text style={styles.awardLabel}>🟤 Balón de Bronce</Text>
+                  <Text style={styles.awardVal}>{reality['ball_bronze'] || 'Tercer mejor...'}</Text>
+                </View>
+              </View>
+
+              {/* BOTAS DE ORO */}
+              <View style={styles.awardRow}>
+                <View>
+                  <Text style={styles.awardLabel}>👟 Bota de Oro</Text>
+                  <Text style={styles.awardVal}>{reality['boot_gold'] || 'Máximo goleador...'}</Text>
+                </View>
+              </View>
+              <View style={styles.awardRow}>
+                <View>
+                  <Text style={styles.awardLabel}>🥈 Bota de Plata</Text>
+                  <Text style={styles.awardVal}>{reality['boot_silver'] || 'Segundo goleador...'}</Text>
+                </View>
+              </View>
               <View style={[styles.awardRow, { borderBottomWidth: 0 }]}>
                 <View>
-                  <Text style={styles.awardLabel}>⚽ Bota de Oro</Text>
-                  <Text style={styles.awardVal}>{reality['boot_gold'] || 'Máximo goleador...'}</Text>
+                  <Text style={styles.awardLabel}>🥉 Bota de Bronce</Text>
+                  <Text style={styles.awardVal}>{reality['boot_bronze'] || 'Tercer goleador...'}</Text>
                 </View>
               </View>
             </View>

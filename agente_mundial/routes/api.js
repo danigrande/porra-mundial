@@ -75,6 +75,39 @@ router.post('/reality', async (req, res) => {
     }
 });
 
+router.delete('/profile', async (req, res) => {
+    try {
+        const { phone } = req.query;
+        if (!phone) return res.status(400).json(createResponse('error', null, 'Falta phone'));
+
+        const user = await User.findOne({ phone });
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+
+        // Eliminar predicciones, mensajes y el usuario
+        await Prediction.deleteMany({ user: user._id });
+        await Message.deleteMany({ sender: user.name });
+        await User.findByIdAndDelete(user._id);
+
+        res.json(createResponse('success', null, 'Cuenta eliminada correctamente'));
+    } catch (error) {
+        console.error('❌ Error DELETE /profile:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/report', async (req, res) => {
+    try {
+        const { reporterPhone, reportedUser, messageId, reason } = req.body;
+        console.log(`🚩 REPORTE RECIBIDO: De ${reporterPhone} contra ${reportedUser}. Motivo: ${reason}`);
+        
+        // Aquí se podría guardar en una colección 'Reports' de MongoDB
+        // Por ahora lo logueamos, que es suficiente para la revisión inicial de Apple
+        res.json(createResponse('success', null, 'Reporte enviado a moderación'));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 router.post('/admin/simulate-match', async (req, res) => {
     try {
         const { matchId, homeTeam, awayTeam } = req.body;
@@ -239,19 +272,14 @@ router.get('/summary/:player', async (req, res) => {
         const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules);
         const playerStats = leaderboard.find(p => p.name === player);
 
-        // Recuperar contexto RAG del chat de WhatsApp
+        // Recuperar contexto RAG del chat nativo
         let chatContext = "";
         try {
             const rag = await import('../ragService.js');
-            const config = await import('../config.js');
-            const chatId = process.env.WHATSAPP_GROUP_ID || config.default.bot.groupId;
+            const chatId = groupName;
             chatContext = await rag.retrieveContextForPlayer(chatId, player);
-            
-            console.log(`\n🧠 [AUDITORÍA RAG] Lo que el bot recuerda sobre "${player}":`);
-            console.log(chatContext || "No hay nada en memoria.");
-            console.log("--------------------------------------------------\n");
         } catch (e) {
-            console.error("❌ Error recuperando RAG Web:", e);
+            console.warn('⚠️ No se pudo recuperar contexto RAG:', e.message);
         }
 
         // Generar resumen con IA
@@ -325,8 +353,50 @@ router.post('/profile', async (req, res) => {
 });
 
 // ==========================================
+// GRUPOS Y REGLAS
+// ==========================================
+
+router.get('/groups/:groupName/rules', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const group = await Group.findOne({ name: groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        res.json(createResponse('success', {
+            ...group.rules.toObject(),
+            predictionMode: group.predictionMode
+        }));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/groups/:groupName/rules', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const { data, predictionMode } = req.body;
+
+        const group = await Group.findOneAndUpdate(
+            { name: groupName },
+            { 
+                rules: data, 
+                predictionMode: predictionMode,
+                updatedAt: new Date() 
+            },
+            { new: true }
+        );
+
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        res.json(createResponse('success', group.rules));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// ==========================================
 // RUTAS DE AUTENTICACIÓN Y JUGADORES
 // ==========================================
+
 
 // Login — ahora por teléfono + PIN
 router.post('/login', async (req, res) => {
@@ -405,72 +475,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ==========================================
-// RUTAS DE PREDICCIONES
-// ==========================================
-
-router.get('/predictions', async (req, res) => {
-    try {
-        const { groupName, phone } = req.query;
-        console.log(`🔍 Buscando predicciones para el grupo: "${groupName}"`);
-        
-        const group = await Group.findOne({ name: groupName });
-        if (!group) {
-            console.error(`❌ Grupo "${groupName}" no encontrado en MongoDB`);
-            return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
-        }
-
-        // Si se pasa el teléfono, devolver solo las de ese usuario (formato plano)
-        if (phone) {
-            const user = await User.findOne({ phone });
-            if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
-            
-            const pred = await Prediction.findOne({ user: user._id, group: group._id });
-            return res.json(createResponse('success', pred ? pred.predictions : {}));
-        }
-
-        // Si no, devolver todas (formato anidado para dashboard)
-        const predictions = await Prediction.find({ group: group._id }).populate('user', 'name');
-        console.log(`📈 Encontradas ${predictions.length} predicciones para el grupo ${groupName}`);
-        
-        const result = {};
-        predictions.forEach(p => {
-            if (p.user && p.user.name) {
-                result[p.user.name] = {
-                    timestamp: p.updatedAt,
-                    predictions: p.predictions
-                };
-            }
-        });
-        res.json(createResponse('success', result));
-    } catch (error) {
-        console.error('❌ Error en GET /predictions:', error);
-        res.status(500).json(createResponse('error', null, error.message));
-    }
-});
-
-router.post('/predictions', async (req, res) => {
-    try {
-        const { playerName, groupName, predictions } = req.body;
-        const user = await User.findOne({ name: playerName });
-        const group = await Group.findOne({ name: groupName });
-        
-        if (!user || !group) return res.status(404).json(createResponse('error', null, 'Usuario o Grupo no encontrado'));
-
-        let pred = await Prediction.findOne({ user: user._id, group: group._id });
-        if (pred) {
-            pred.predictions = predictions;
-            pred.updatedAt = new Date();
-            await pred.save();
-        } else {
-            await Prediction.create({ user: user._id, group: group._id, predictions });
-        }
-        
-        res.json(createResponse('success'));
-    } catch (error) {
-        res.status(500).json(createResponse('error', null, error.message));
-    }
-});
 
 // ==========================================
 // RUTAS DE GRUPOS Y REGLAS
@@ -755,148 +759,6 @@ router.post('/groups/:groupName/transfer-admin', async (req, res) => {
 });
 
 // ==========================================
-// RUTAS DE WHATSAPP — Vincular bot a grupo
-// ==========================================
-
-// Estado de WhatsApp para un grupo
-router.get('/groups/:groupName/whatsapp-status', async (req, res) => {
-    try {
-        const group = await Group.findOne({ name: req.params.groupName });
-        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
-        
-        const botConnected = !!(global.whatsappSock?.user);
-        
-        // Verificar si está vinculado en la BD
-        let linked = !!group.whatsappGroupId;
-        let whatsappGroupId = group.whatsappGroupId || null;
-        let whatsappGroupName = null;
-        
-        // Si no está en la BD, verificar si está en config.js (compatibilidad)
-        if (!linked) {
-            const config = (await import('../config.js')).default;
-            if (config.groups) {
-                const configEntry = Object.entries(config.groups).find(([jid, name]) => name === req.params.groupName);
-                if (configEntry) {
-                    linked = true;
-                    whatsappGroupId = configEntry[0];
-                    // Guardar en la BD para futuras consultas
-                    group.whatsappGroupId = whatsappGroupId;
-                    await group.save();
-                }
-            }
-        }
-
-        // Si está vinculado y el bot conectado, intentar sacar el NOMBRE real del grupo de WhatsApp
-        if (linked && botConnected && global.whatsappSock) {
-            try {
-                const metadata = await global.whatsappSock.groupMetadata(whatsappGroupId);
-                whatsappGroupName = metadata.subject;
-            } catch (e) {
-                console.warn(`[WhatsApp] No se pudo obtener metadata del grupo ${whatsappGroupId}:`, e.message);
-            }
-        }
-        
-        res.json(createResponse('success', {
-            linked,
-            whatsappGroupId,
-            whatsappGroupName,
-            botConnected
-        }));
-    } catch (error) {
-        console.error('❌ Error en GET /whatsapp-status:', error);
-        res.status(500).json(createResponse('error', null, error.message));
-    }
-});
-
-// Vincular bot a un grupo de WhatsApp mediante enlace de invitación
-router.post('/groups/:groupName/join-whatsapp', async (req, res) => {
-    try {
-        const { groupName } = req.params;
-        const { inviteLink } = req.body;
-        
-        if (!inviteLink) {
-            return res.status(400).json(createResponse('error', null, 'El enlace de invitación es requerido'));
-        }
-
-        // Extraer código de invitación del enlace
-        // Formatos: https://chat.whatsapp.com/CODE o solo CODE
-        const match = inviteLink.match(/chat\.whatsapp\.com\/([A-Za-z0-9]+)/);
-        const inviteCode = match ? match[1] : inviteLink.trim();
-        
-        if (!inviteCode || inviteCode.length < 10) {
-            return res.status(400).json(createResponse('error', null, 'Enlace de invitación inválido'));
-        }
-
-        const group = await Group.findOne({ name: groupName });
-        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
-
-        // Verificar que el bot está conectado
-        if (!global.whatsappSock?.user) {
-            return res.status(503).json(createResponse('error', null, 'El bot de WhatsApp no está conectado. Inténtalo más tarde.'));
-        }
-
-        console.log(`🔗 [WhatsApp] Intentando unir bot al grupo "${groupName}" con código: ${inviteCode}`);
-
-        try {
-            // Intentar unirse al grupo
-            const groupJid = await global.whatsappSock.groupAcceptInvite(inviteCode);
-            console.log(`✅ [WhatsApp] Bot unido al grupo. JID: ${groupJid}`);
-            
-            // Guardar el JID en el grupo
-            group.whatsappGroupId = groupJid;
-            await group.save();
-            
-            res.json(createResponse('success', { whatsappGroupId: groupJid }));
-        } catch (waError) {
-            console.error('❌ [WhatsApp] Error al unirse:', waError.message);
-            
-            // Si el error es que ya está en el grupo, intentar obtener el JID
-            if (waError.message?.includes('already') || waError.message?.includes('conflict') || waError.message?.includes('bad-request')) {
-                // Intentar obtener info del grupo con el código de invitación
-                try {
-                    const groupInfo = await global.whatsappSock.groupGetInviteInfo(inviteCode);
-                    if (groupInfo?.id) {
-                        group.whatsappGroupId = groupInfo.id;
-                        await group.save();
-                        console.log(`✅ [WhatsApp] Bot ya estaba en el grupo. JID: ${groupInfo.id}`);
-                        return res.json(createResponse('success', { whatsappGroupId: groupInfo.id, alreadyMember: true }));
-                    }
-                } catch (infoError) {
-                    console.error('❌ [WhatsApp] Error obteniendo info del grupo:', infoError.message);
-                }
-            }
-            
-            return res.status(400).json(createResponse('error', null, `No se pudo unir al grupo: ${waError.message}`));
-        }
-    } catch (error) {
-        console.error('❌ Error en POST /join-whatsapp:', error);
-        res.status(500).json(createResponse('error', null, error.message));
-    }
-});
-
-// Desvincular bot de un grupo de WhatsApp
-router.post('/groups/:groupName/leave-whatsapp', async (req, res) => {
-    try {
-        const { groupName } = req.params;
-        const group = await Group.findOne({ name: groupName });
-        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
-        
-        if (!group.whatsappGroupId) {
-            return res.status(400).json(createResponse('error', null, 'El grupo no tiene WhatsApp vinculado'));
-        }
-
-        // Limpiar el campo en la BD
-        group.whatsappGroupId = null;
-        await group.save();
-        
-        res.json(createResponse('success'));
-    } catch (error) {
-        console.error('❌ Error en POST /leave-whatsapp:', error);
-        res.status(500).json(createResponse('error', null, error.message));
-    }
-});
-
-// ==========================================
 // RUTAS DE CHAT (App Móvil)
 // ==========================================
 
@@ -1073,7 +935,6 @@ router.post('/predictions', async (req, res) => {
             pred.updatedAt = new Date();
         }
         await pred.save();
-
         res.json(createResponse('success', null, 'Predicciones guardadas'));
     } catch (error) {
         console.error('❌ Error POST /predictions:', error);

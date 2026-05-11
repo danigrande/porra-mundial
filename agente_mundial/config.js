@@ -19,13 +19,6 @@ const config = {
     url: process.env.GOOGLE_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbx1_NLJukiXGHYzcWv52zjr_F-0g3pfHc1AaP6CyqStT3YUHHSQC5ctdzHx81m4Lsmp/exec',
   },
 
-  // --- Mapeo de Grupos ---
-  // WhatsApp Group ID -> Group Name (human readable in the web app)
-  groups: {
-    [process.env.WHATSAPP_GROUP_ID || '120363XXXXXXXXX@g.us']: 'Los amigos de Dani',
-    // 'another_id@g.us': 'Grupo Secundario',
-  },
-
   // --- Mapeo de números de teléfono a nombres de jugador (Global fallback) ---
   phoneToPlayer: {
     [process.env.PHONE_DANI || '34600000001']: 'Dani',

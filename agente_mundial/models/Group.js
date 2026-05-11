@@ -23,7 +23,6 @@ const groupSchema = new mongoose.Schema({
   },
   predictionMode: { type: String, enum: ['A', 'B'], default: 'A' },
   members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  whatsappGroupId: { type: String, default: null }, // WhatsApp Group JID (ej: "120363xxxxx@g.us")
   lastAnnouncedPhase: { type: String, default: null },
   lastReminderPhase: { type: String, default: null },
   createdAt: { type: Date, default: Date.now }

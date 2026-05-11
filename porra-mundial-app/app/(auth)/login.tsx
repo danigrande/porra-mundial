@@ -20,6 +20,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [availableGroups, setAvailableGroups] = useState<string[]>([]);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // ==========================================
   // LOGIN LOGIC
@@ -89,6 +90,10 @@ export default function LoginScreen() {
     }
     if (pin.length !== 4) {
       Alert.alert('Error', 'El PIN debe tener 4 dígitos');
+      return;
+    }
+    if (!acceptedTerms) {
+      Alert.alert('EULA', 'Debes aceptar los términos y condiciones de uso para continuar.');
       return;
     }
     setLoading(true);
@@ -275,6 +280,22 @@ export default function LoginScreen() {
                   {isNewGroup && <Text style={styles.checkmark}>✓</Text>}
                 </View>
                 <Text style={styles.checkLabel}>Es un grupo nuevo</Text>
+              </TouchableOpacity>
+
+              {/* EULA (Apple Requirement) */}
+              <TouchableOpacity
+                style={styles.checkRow}
+                onPress={() => setAcceptedTerms(!acceptedTerms)}
+              >
+                <View style={[styles.checkbox, acceptedTerms && styles.checkboxActive, { borderColor: '#10b981' }]}>
+                  {acceptedTerms && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
+                  <Text style={styles.checkLabel}>Acepto los </Text>
+                  <TouchableOpacity onPress={() => Alert.alert('Términos y Condiciones (EULA)', 'Al usar esta App, te comprometes a no publicar contenido ofensivo, abusivo o discriminatorio. El Agente Mundial se reserva el derecho de moderar y eliminar mensajes inapropiados y bloquear a usuarios que incumplan estas normas.')}>
+                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>términos de uso y conducta</Text>
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity

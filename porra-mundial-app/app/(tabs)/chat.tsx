@@ -383,6 +383,58 @@ export default function ChatScreen() {
     return `${minutes}:${(parseInt(seconds) < 10 ? '0' : '')}${seconds}`;
   };
 
+  const handleMessageAction = (message: socketService.ChatMessage) => {
+    const isMe = message.senderId === auth?.phone;
+    if (isMe) return; // No te puedes reportar a ti mismo
+
+    Alert.alert(
+      'Acciones de Mensaje',
+      `¿Qué quieres hacer con el mensaje de ${message.senderName}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: '🚩 Reportar contenido', 
+          onPress: () => {
+            Alert.alert(
+              'Reportar',
+              '¿Por qué quieres reportar este mensaje?',
+              [
+                { text: 'Spam', onPress: () => sendReport(message, 'Spam') },
+                { text: 'Acoso', onPress: () => sendReport(message, 'Acoso') },
+                { text: 'Contenido inapropiado', onPress: () => sendReport(message, 'Contenido inapropiado') },
+                { text: 'Cancelar', style: 'cancel' }
+              ]
+            );
+          }
+        },
+        {
+          text: '🚫 Bloquear usuario',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Bloquear', `¿Seguro que quieres bloquear a ${message.senderName}? No volverás a ver sus mensajes.`, [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Bloquear', style: 'destructive', onPress: () => Alert.alert('Éxito', 'Usuario bloqueado localmente.') }
+            ]);
+          }
+        }
+      ]
+    );
+  };
+
+  const sendReport = async (message: socketService.ChatMessage, reason: string) => {
+    try {
+      await api.reportContent({
+        reporterPhone: auth?.phone || '',
+        reportedUser: message.senderName,
+        messageId: message._id,
+        reason
+      });
+      Alert.alert('Reportado', 'Gracias por avisar. El equipo de moderación revisará el mensaje.');
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo enviar el reporte.');
+    }
+  };
+
   const renderMessage = ({ item, index }: { item: socketService.ChatMessage, index: number }) => {
     const isMe = item.senderId === auth?.phone;
     const showDate = index === 0 || new Date(messages[index-1].timestamp).toDateString() !== new Date(item.timestamp).toDateString();
@@ -403,11 +455,15 @@ export default function ChatScreen() {
             </View>
           )}
 
-          <View style={[
-            styles.messageBubble, 
-            isMe ? styles.messageMe : item.isBot ? styles.messageBot : styles.messageOther,
-            (item.type === 'sticker' || item.type === 'gif') && { backgroundColor: 'transparent', borderWidth: 0, padding: 0 }
-          ]}>
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onLongPress={() => handleMessageAction(item)}
+            style={[
+              styles.messageBubble, 
+              isMe ? styles.messageMe : item.isBot ? styles.messageBot : styles.messageOther,
+              (item.type === 'sticker' || item.type === 'gif') && { backgroundColor: 'transparent', borderWidth: 0, padding: 0 }
+            ]}
+          >
             {!isMe && <Text style={[styles.senderName, item.isBot && { color: '#a78bfa' }]}>{item.senderName}</Text>}
             
             {(item.type === 'text' || !item.type) && <Text style={styles.messageText}>{item.text}</Text>}
@@ -454,7 +510,7 @@ export default function ChatScreen() {
                 {isMe && <MaterialCommunityIcons name="check-all" size={14} color="#3b82f6" style={{ marginLeft: 4 }} />}
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
     );

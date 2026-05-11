@@ -1,8 +1,8 @@
 // ============================================
 // CHAT SERVICE — Socket.IO Real-Time Chat
 // ============================================
-// Reemplaza WhatsApp (Baileys) con un servidor de chat propio.
-// Los clientes (app móvil / web) se conectan por WebSocket.
+// Servidor de chat propio basado en Socket.IO
+// Maneja la comunicación en tiempo real entre los usuarios y el Agente Mundial.
 
 import { Server } from 'socket.io';
 import { User } from './models/User.js';

@@ -5,7 +5,6 @@ import { getAuth, logout, setCurrentGroup } from '../../stores/authStore';
 import * as api from '../../services/api';
 import * as socketService from '../../services/socket';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -19,6 +18,16 @@ export default function ProfileScreen() {
   const [humorStyle, setHumorStyle] = useState('Divertido y amigable');
   const [likes, setLikes] = useState('');
   const [dislikes, setDislikes] = useState('');
+  
+  // UI State
+  const [showHumorMenu, setShowHumorMenu] = useState(false);
+  const humorOptions = [
+    { id: 'Sarcástico y mordaz', icon: '🎭' },
+    { id: 'Divertido y amigable', icon: '😊' },
+    { id: 'Épico y motivador', icon: '🔥' },
+    { id: 'Analítico y serio', icon: '📊' },
+    { id: 'Troll total', icon: '😈' }
+  ];
 
   // PIN Change State
   const [oldPin, setOldPin] = useState('');
@@ -89,13 +98,32 @@ export default function ProfileScreen() {
     }
   }
 
-  async function handleLogout() {
-    socketService.disconnect();
-    await logout();
-    router.replace('/(auth)/login');
+  async function handleDeleteAccount() {
+    if (!auth) return;
+    
+    Alert.alert(
+      '⚠️ ELIMINAR CUENTA',
+      '¿Estás COMPLETAMENTE seguro? Esta acción no se puede deshacer y perderás todos tus puntos y predicciones.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'SÍ, BORRAR TODO', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await api.deleteAccount(auth.phone);
+              await logout();
+              router.replace('/(auth)/login');
+            } catch (e: any) {
+              setLoading(false);
+              Alert.alert('Error', 'No se pudo eliminar la cuenta: ' + e.message);
+            }
+          }
+        }
+      ]
+    );
   }
-
-
 
   if (loading) {
     return (
@@ -123,8 +151,6 @@ export default function ProfileScreen() {
           <Text style={styles.userPhone}>+{auth?.phone}</Text>
         </View>
 
-
-
         {/* CONFIGURACIÓN IA */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -148,20 +174,41 @@ export default function ProfileScreen() {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Estilo de Humor de la IA</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={humorStyle}
-                onValueChange={(itemValue) => setHumorStyle(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="#fff"
-              >
-                <Picker.Item label="Sarcástico y mordaz" value="Sarcástico y mordaz" color="#fff" />
-                <Picker.Item label="Divertido y amigable" value="Divertido y amigable" color="#fff" />
-                <Picker.Item label="Épico y motivador" value="Épico y motivador" color="#fff" />
-                <Picker.Item label="Analítico y serio" value="Analítico y serio" color="#fff" />
-                <Picker.Item label="Troll total 😈" value="Troll total" color="#fff" />
-              </Picker>
-            </View>
+            <TouchableOpacity 
+              style={styles.comboTrigger}
+              onPress={() => setShowHumorMenu(!showHumorMenu)}
+            >
+              <Text style={styles.comboTriggerText}>
+                {humorOptions.find(o => o.id === humorStyle)?.icon || '😊'} {humorStyle}
+              </Text>
+              <Ionicons name={showHumorMenu ? 'chevron-up' : 'chevron-down'} size={20} color="#64748b" />
+            </TouchableOpacity>
+
+            {showHumorMenu && (
+              <View style={styles.comboMenu}>
+                {humorOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={[
+                      styles.comboItem,
+                      humorStyle === option.id && styles.comboItemActive
+                    ]}
+                    onPress={() => {
+                      setHumorStyle(option.id);
+                      setShowHumorMenu(false);
+                    }}
+                  >
+                    <Text style={styles.comboItemIcon}>{option.icon}</Text>
+                    <Text style={[
+                      styles.comboItemText,
+                      humorStyle === option.id && styles.comboItemTextActive
+                    ]}>
+                      {option.id}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           <View style={styles.formGroup}>
@@ -260,11 +307,14 @@ export default function ProfileScreen() {
             {changingPin ? <ActivityIndicator color="#f59e0b" /> : <Text style={styles.pinButtonText}>Actualizar PIN</Text>}
           </TouchableOpacity>
         </View>
-
-        {/* LOGOUT */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out" size={20} color="#ef4444" />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
+        
+        {/* BOTÓN ELIMINAR CUENTA (Requisito Apple) */}
+        <TouchableOpacity 
+          style={styles.deleteButton} 
+          onPress={handleDeleteAccount}
+        >
+          <Ionicons name="trash-outline" size={18} color="#ef4444" />
+          <Text style={styles.deleteButtonText}>Eliminar mi cuenta definitivamente</Text>
         </TouchableOpacity>
 
         <View style={{height: 40}} />
@@ -300,8 +350,14 @@ const styles = StyleSheet.create({
   label: { color: '#94a3b8', fontSize: 13, fontWeight: '600', marginBottom: 8, marginLeft: 4 },
   input: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 12, color: '#fff', fontSize: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   textArea: { height: 80, textAlignVertical: 'top' },
-  pickerContainer: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
-  picker: { color: '#fff', height: 50 },
+  comboTrigger: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  comboTriggerText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  comboMenu: { backgroundColor: '#151a3a', marginTop: 4, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+  comboItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  comboItemActive: { backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+  comboItemIcon: { fontSize: 18, marginRight: 12 },
+  comboItemText: { color: '#94a3b8', fontSize: 14, fontWeight: '600' },
+  comboItemTextActive: { color: '#3b82f6' },
   hint: { color: '#475569', fontSize: 11, marginTop: 4, marginLeft: 4, fontStyle: 'italic' },
   saveButton: { backgroundColor: '#3b82f6', padding: 16, borderRadius: 16, alignItems: 'center', marginTop: 8 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
@@ -309,6 +365,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
   pinButton: { backgroundColor: 'transparent', padding: 16, borderRadius: 16, alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: '#f59e0b' },
   pinButtonText: { color: '#f59e0b', fontSize: 16, fontWeight: '800' },
-  logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, marginTop: 10 },
-  logoutText: { color: '#ef4444', fontSize: 16, fontWeight: '800', marginLeft: 8 },
+  deleteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(239, 68, 68, 0.1)' },
+  deleteButtonText: { color: '#ef4444', fontSize: 14, fontWeight: '600', marginLeft: 8 },
 });

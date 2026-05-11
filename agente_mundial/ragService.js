@@ -21,7 +21,7 @@ try {
 }
 
 /**
- * Guarda un mensaje de WhatsApp en MongoDB y calcula su vector (embedding)
+ * Guarda un mensaje en MongoDB y calcula su vector (embedding)
  */
 export async function saveChatMessage(chatId, senderId, senderName, text) {
   try {

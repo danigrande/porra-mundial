@@ -90,6 +90,38 @@ export default function ResultsManagement() {
           />
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Premios Individuales</Text>
+          
+          <AwardInput 
+            label="⚽ Balón de Oro" id="ball_gold" 
+            value={reality['ball_gold']} onUpdate={updateScore} 
+          />
+          <AwardInput 
+            label="⚪ Balón de Plata" id="ball_silver" 
+            value={reality['ball_silver']} onUpdate={updateScore} 
+          />
+          <AwardInput 
+            label="🟤 Balón de Bronce" id="ball_bronze" 
+            value={reality['ball_bronze']} onUpdate={updateScore} 
+          />
+
+          <View style={{ height: 20 }} />
+
+          <AwardInput 
+            label="👟 Bota de Oro" id="boot_gold" 
+            value={reality['boot_gold']} onUpdate={updateScore} 
+          />
+          <AwardInput 
+            label="🥈 Bota de Plata" id="boot_silver" 
+            value={reality['boot_silver']} onUpdate={updateScore} 
+          />
+          <AwardInput 
+            label="🥉 Bota de Bronce" id="boot_bronze" 
+            value={reality['boot_bronze']} onUpdate={updateScore} 
+          />
+        </View>
+
         <TouchableOpacity 
           style={[styles.saveButton, saving && styles.buttonDisabled]} 
           onPress={handleSave} 
@@ -106,6 +138,21 @@ export default function ResultsManagement() {
         </TouchableOpacity>
 
       </ScrollView>
+    </View>
+  );
+}
+
+function AwardInput({ label, id, value, onUpdate }: any) {
+  return (
+    <View style={styles.awardInputRow}>
+      <Text style={styles.awardInputLabel}>{label}</Text>
+      <TextInput 
+        style={styles.awardInput} 
+        value={value || ''} 
+        onChangeText={(v) => onUpdate(id, v)}
+        placeholder="Nombre del jugador..."
+        placeholderTextColor="#475569"
+      />
     </View>
   );
 }
@@ -166,5 +213,8 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   buttonDisabled: { opacity: 0.6 },
   resetButton: { padding: 16, alignItems: 'center', marginTop: 10 },
-  resetButtonText: { color: '#ef4444', fontSize: 14, fontWeight: '600' }
+  resetButtonText: { color: '#ef4444', fontSize: 14, fontWeight: '600' },
+  awardInputRow: { marginBottom: 12 },
+  awardInputLabel: { color: '#8b949e', fontSize: 12, fontWeight: '700', marginBottom: 4 },
+  awardInput: { backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, color: '#fff', fontSize: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }
 });

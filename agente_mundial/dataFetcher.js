@@ -138,18 +138,6 @@ export async function apiCall(params = {}, options = {}) {
       endpoint = `/admin/simulate-all`;
       method = 'POST';
       break;
-    case 'getWhatsAppStatus':
-      endpoint = `/groups/${encodeURIComponent(groupName)}/whatsapp-status`;
-      break;
-    case 'joinWhatsApp':
-      endpoint = `/groups/${encodeURIComponent(groupName)}/join-whatsapp`;
-      method = 'POST';
-      body = { inviteLink: params.inviteLink };
-      break;
-    case 'leaveWhatsApp':
-      endpoint = `/groups/${encodeURIComponent(groupName)}/leave-whatsapp`;
-      method = 'POST';
-      break;
     case 'tournament-state':
       endpoint = `/tournament-state?groupName=${encodeURIComponent(groupName)}`;
       break;

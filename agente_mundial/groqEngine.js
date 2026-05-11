@@ -31,7 +31,7 @@ const SYSTEM_PROMPT = `Eres el "Agente Mundial" 🏆, un chatbot para varios gru
  - Menciona el nombre del grupo cuando sea relevante para crear sentimiento de comunidad
  - Si no tienes datos suficientes, improvisa algo divertido
  - Usa emojis con moderación (2-3 por mensaje)
- - No uses markdown ni formateo especial, solo texto plano para WhatsApp`;
+ - No uses markdown complejo ni formateo especial, mantén un estilo limpio para el chat.`;
 
 /**
  * Guarda un log de interacción con la IA (fire-and-forget).
@@ -121,7 +121,7 @@ Responde como Andrés Montes, personaliza la respuesta para ${profile?.nickname 
       promptTokens: usage.prompt_tokens || 0,
       completionTokens: usage.completion_tokens || 0,
       latencyMs,
-      source: meta.source || 'whatsapp',
+      source: meta.source || 'chat',
       success: true
     });
 
@@ -143,7 +143,7 @@ Responde como Andrés Montes, personaliza la respuesta para ${profile?.nickname 
       temperature: config.groq.temperature,
       maxTokens: config.groq.maxTokens,
       latencyMs,
-      source: meta.source || 'whatsapp',
+      source: meta.source || 'chat',
       success: false,
       errorMessage: error.message
     });
@@ -168,7 +168,7 @@ export async function generateDailySummary(leaderboard, profiles, groupName) {
     return `${i + 1}. ${profile.nickname || p.name} (${p.name}): ${p.totalPts} pts - ${p.exactHits} plenos - Grupos: ${p.groupPts}, Eliminatorias: ${p.koPts}, Honor: ${p.honorPts}`;
   }).join('\n');
 
-  const userMessage = `Genera un RESUMEN DE JORNADA para el grupo "${groupName}" de la Porra Mundial 2026 para publicar en WhatsApp.
+  const userMessage = `Genera un RESUMEN DE JORNADA para el grupo "${groupName}" de la Porra Mundial 2026 para publicar en el chat de la app.
 
 CLASIFICACIÓN ACTUAL:
 ${rankingText}

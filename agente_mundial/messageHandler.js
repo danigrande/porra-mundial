@@ -13,56 +13,28 @@ import { Group } from './models/Group.js';
 const caches = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
-// Cache de mapeo WhatsApp GroupId -> GroupName (para no hacer query cada mensaje)
-const whatsappGroupCache = new Map();
-const WA_CACHE_TTL = 2 * 60 * 1000; // 2 minutos
+// Cache de grupos (para no hacer query cada mensaje)
+const groupCache = new Map();
+const GROUP_CACHE_TTL = 2 * 60 * 1000; // 2 minutos
 
 /**
  * Identifica el nombre legible del grupo.
- * Acepta tanto nombres de grupo directos (chat propio) como WhatsApp JIDs (legacy).
  */
-async function resolveGroupName(groupIdOrName) {
-  // 1. Si ya es un nombre de grupo (chat propio), verificar que existe en MongoDB
-  if (!groupIdOrName.endsWith('@g.us')) {
-    // Es un nombre directo, no un WhatsApp JID
-    const cached = whatsappGroupCache.get(groupIdOrName);
-    if (cached && (Date.now() - cached.timestamp) < WA_CACHE_TTL) {
-      return cached.name;
-    }
-    try {
-      const group = await Group.findOne({ name: groupIdOrName });
-      if (group) {
-        whatsappGroupCache.set(groupIdOrName, { name: group.name, timestamp: Date.now() });
-        return group.name;
-      }
-    } catch (e) {
-      console.error('Error buscando grupo en BD:', e.message);
-    }
-    return groupIdOrName; // Devolver tal cual si no se encuentra
-  }
-  
-  // 2. Legacy: WhatsApp JID — buscar en config.js
-  const configName = config.groups[groupIdOrName];
-  if (configName) return configName;
-  
-  // 3. Legacy: Buscar en cache local
-  const cached = whatsappGroupCache.get(groupIdOrName);
-  if (cached && (Date.now() - cached.timestamp) < WA_CACHE_TTL) {
+async function resolveGroupName(groupName) {
+  const cached = groupCache.get(groupName);
+  if (cached && (Date.now() - cached.timestamp) < GROUP_CACHE_TTL) {
     return cached.name;
   }
-  
-  // 4. Legacy: Buscar en MongoDB por WhatsApp ID
   try {
-    const group = await Group.findOne({ whatsappGroupId: groupIdOrName });
+    const group = await Group.findOne({ name: groupName });
     if (group) {
-      whatsappGroupCache.set(groupIdOrName, { name: group.name, timestamp: Date.now() });
+      groupCache.set(groupName, { name: group.name, timestamp: Date.now() });
       return group.name;
     }
   } catch (e) {
     console.error('Error buscando grupo en BD:', e.message);
   }
-  
-  return null;
+  return groupName;
 }
 
 /**
@@ -145,20 +117,12 @@ export function detectIntent(text) {
 /**
  * Procesa un mensaje y genera una respuesta.
  */
-export async function processMessage(text, senderPhone, isGroup, isMentioned, groupIdOrName) {
-  // 1. Identificar Grupo
-  const groupName = isGroup ? await resolveGroupName(groupIdOrName) : null;
-  
-  if (isGroup && !isMentioned) return null;
-  if (isGroup && !groupName) {
-    return "⚠️ Este grupo no está registrado. Pide al administrador que lo cree desde la web.";
-  }
-
-  // 2. Refrescar datos del grupo
+export async function processMessage(text, senderPhone, groupName) {
+  // 1. Refrescar datos del grupo
   await refreshCache(groupName);
   const cache = caches[groupName] || {};
 
-  // 3. Identificar al jugador
+  // 2. Identificar al jugador
   let playerName = identifyPlayer(senderPhone, groupName);
   
   const intent = detectIntent(text);
@@ -168,7 +132,7 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, gr
 \nPuedes preguntarme por la clasificación, tu posición o un resumen de la jornada.`;
   }
 
-  // 4. Si el usuario pide su estado o ranking
+  // 3. Si el usuario pide su estado o ranking
   if (intent === 'my_status' || intent === 'explain_score' || intent === 'summary') {
     if (!playerName) {
       return "No tengo tu teléfono registrado, ¡jugón! Dile al administrador que te añada a la porra.";
@@ -179,11 +143,11 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, gr
     );
     const profile = cache.profiles ? (cache.profiles[playerName] || Object.values(cache.profiles).find(pr => pr.nickname === playerName)) : null;
     
-    // --- RAG: Buscar contexto de este jugador en WhatsApp ---
+    // --- RAG: Buscar contexto de este jugador ---
     let chatContext = "";
     try {
         const rag = await import('./ragService.js');
-        chatContext = await rag.retrieveContextForPlayer(groupIdOrName, playerName);
+        chatContext = await rag.retrieveContextForPlayer(groupName, playerName);
     } catch (e) {
         console.error("Error recuperando RAG context:", e);
     }
@@ -194,7 +158,7 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, gr
       playerStats,
       profile,
       leaderboard: cache.leaderboard,
-      chatContext // NUEVO
+      chatContext
     };
 
     console.log(`🤖 Generando respuesta IA para ${playerName} con ${chatContext.length > 50 ? 'contexto RAG' : 'sin RAG'}...`);
@@ -217,7 +181,7 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, gr
   const effectiveName = playerName || 'Desconocido';
   let effectiveQuestion = text;
 
-  if (!playerName && isGroup) {
+  if (!playerName) {
     effectiveQuestion = `[Usuario no identificado pregunta]: ${text}. Dile que no sé quién es y que debe registrar su número en la web para el grupo ${groupName}.`;
   }
 
@@ -226,18 +190,18 @@ export async function processMessage(text, senderPhone, isGroup, isMentioned, gr
 
 /**
  * Genera un resumen para un grupo.
- * @param {string} whatsappGroupId - ID del grupo en WhatsApp
+ * @param {string} groupName - Nombre del grupo
  * @param {boolean} force - Si es true, ignora la comprobación de si hubo partidos hoy
  */
-export async function generateGroupSummary(groupIdOrName, force = false) {
-  const groupName = await resolveGroupName(groupIdOrName);
-  if (!groupName) return "Error: Grupo no reconocido";
+export async function generateGroupSummary(groupName, force = false) {
+  const resolvedName = await resolveGroupName(groupName);
+  if (!resolvedName) return "Error: Grupo no reconocido";
 
-  await refreshCache(groupName);
-  const cache = caches[groupName];
+  await refreshCache(resolvedName);
+  const cache = caches[resolvedName];
 
   if (!cache || !cache.leaderboard || cache.leaderboard.length === 0) {
-    return '📊 No hay datos suficientes para el grupo ' + groupName;
+    return '📊 No hay datos suficientes para el grupo ' + resolvedName;
   }
 
   // Comprobar si hubo partidos hoy (a menos que se force el resumen)
@@ -249,10 +213,10 @@ export async function generateGroupSummary(groupIdOrName, force = false) {
     );
     
     if (!hasMatchesToday) {
-      console.log(`📭 No hubo partidos hoy (${today}) para el grupo ${groupName}. Saltando resumen.`);
+      console.log(`📭 No hubo partidos hoy (${today}) para el grupo ${resolvedName}. Saltando resumen.`);
       return null; 
     }
   }
 
-  return await generateDailySummary(cache.leaderboard, cache.profiles || {}, groupName);
+  return await generateDailySummary(cache.leaderboard, cache.profiles || {}, resolvedName);
 }

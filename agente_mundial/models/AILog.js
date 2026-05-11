@@ -34,8 +34,8 @@ const aiLogSchema = new mongoose.Schema({
   // Origin
   source: { 
     type: String, 
-    enum: ['whatsapp', 'web', 'cron', 'manual'], 
-    default: 'whatsapp' 
+    enum: ['chat', 'web', 'cron', 'manual'], 
+    default: 'chat' 
   },
   
   // Status
