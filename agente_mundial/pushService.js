@@ -53,7 +53,10 @@ export async function sendToGroup(groupName, title, body, data = {}, excludeUser
       .filter(id => id !== excludeUserId);
 
     const tokens = await PushToken.find({ user: { $in: memberIds } });
-    if (tokens.length === 0) return;
+    if (tokens.length === 0) {
+      console.warn(`[Push] ⚠️ No hay tokens registrados para los miembros del grupo ${groupName}. No se enviarán notificaciones.`);
+      return;
+    }
 
     const messages = tokens.map(t => ({
       to: t.token,
@@ -124,7 +127,7 @@ export async function registerToken(userId, token, platform = 'android') {
       { user: userId, token, platform, updatedAt: new Date() },
       { upsert: true }
     );
-    console.log(`[Push] Token registrado para usuario ${userId} (${platform})`);
+    console.log(`[Push] ✅ TOKEN REGISTRADO: ${token.substring(0, 20)}... para usuario ${userId} (${platform})`);
   } catch (error) {
     console.error('[Push] Error registrando token:', error.message);
   }

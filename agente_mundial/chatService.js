@@ -140,8 +140,17 @@ export function initChatServer(httpServer) {
           timestamp: userMessage.timestamp
         };
         io.to(`group:${groupName}`).emit('new-message', messagePayload);
+        
+        // 3. Notificación Push a los miembros desconectados
+        pushService.sendToGroup(
+          groupName,
+          userName, // Título: nombre de quien escribe
+          text?.trim() || '📸 Imagen/Media',
+          { screen: 'chat', groupName },
+          userId // Excluir al que envía el mensaje
+        );
 
-        // 3. Detectar si el mensaje va dirigido al bot
+        // 4. Detectar si el mensaje va dirigido al bot
         const textLower = text.toLowerCase();
         const isBotMention = textLower.includes('@agente') || 
                             textLower.includes('@bot') ||

@@ -1,7 +1,7 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { registerPushToken } from './api';
 
 // Configuración de cómo se muestran las notificaciones cuando la app está abierta (foreground)
@@ -38,8 +38,11 @@ export async function setupPushNotifications(phone: string) {
       Constants?.expoConfig?.extra?.eas?.projectId ??
       Constants?.easConfig?.projectId;
 
+    console.log('[Push] Buscando ProjectId:', projectId);
+
     if (!projectId) {
-      console.warn('[Push] Faltan los IDs del proyecto de Expo. Asegúrate de ejecutar "eas init" para configurar app.json. Notificaciones deshabilitadas temporalmente.');
+      console.error('[Push] ❌ ERROR: Falta el projectId en app.json. Las notificaciones NO funcionarán sin él.');
+      Alert.alert('Configuración Push', 'Falta el projectId en app.json. Las notificaciones están deshabilitadas.');
       return null;
     }
 
