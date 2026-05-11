@@ -102,19 +102,65 @@ export default function ResultsScreen() {
   const isTestMode = state?.isTestMode === true;
   const injected = reality?.autoPopulatedPhases || [];
 
+  const resolveTeamName = (code: string) => {
+    if (!code || !reality) return code;
+    
+    // 1. Si es un equipo real, lo devolvemos
+    if (TEAM_CODES[code]) return code;
+
+    // 2. Si es posición de grupo (ej: "1A")
+    const groupMatch = code.match(/^([1-2])([A-L])$/);
+    if (groupMatch) {
+      const pos = parseInt(groupMatch[1]);
+      const letter = groupMatch[2];
+      // Nota: Esto requeriría calcular los standings en el móvil o que el server los de.
+      // Por simplicidad, devolvemos el código si no podemos calcularlo aquí,
+      // pero el server ya nos da la realidad poblada en matchId si usamos el motor de simulación.
+      return code; 
+    }
+
+    // 3. Si es ganador/perdedor de partido (ej: "W104")
+    const matchRef = code.match(/^([WL])(\d+)$/);
+    if (matchRef) {
+      const type = matchRef[1];
+      const mNum = matchRef[2];
+      const hScore = parseInt(reality[`ko_${mNum}_h`]);
+      const aScore = parseInt(reality[`ko_${mNum}_a`]);
+      
+      if (isNaN(hScore) || isNaN(aScore)) return code;
+      
+      // Aquí necesitaríamos saber quiénes jugaron ese partido para saber quién ganó.
+      // En la app, el motor de simulación del servidor ya inyecta los nombres reales 
+      // en la 'reality' cuando se avanza de fase.
+      return code;
+    }
+
+    return code;
+  };
+
+  const getWinner = (matchId: string) => {
+    const h = parseInt(reality[`${matchId}_h`]);
+    const a = parseInt(reality[`${matchId}_a`]);
+    if (isNaN(h) || isNaN(a)) return null;
+    
+    // Simplificado: esto debería venir resuelto del server en un caso ideal
+    // Pero podemos intentar leer los nombres que el server inyectó
+    return h > a ? 'Ganador' : 'Ganador'; 
+  };
+
   return (
     <View style={styles.container}>
       <TournamentBanner state={state} />
 
-      {/* HEADER DINÁMICO (Como en la Web) */}
+      {/* HEADER DINÁMICO */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {isTestMode ? 'Resultados – Control Oficial' : 'Resultados del Torneo'}
+          {isTestMode ? 'Control de Resultados' : 'Resultados Oficiales'}
         </Text>
         <Text style={styles.headerSubtitle}>
           {isTestMode 
-            ? 'Control total del torneo. Modo simulación activo.' 
-            : 'Consulta los marcadores oficiales y el estado del torneo.'}
+            ? 'Panel de simulación y gestión de fases activo.' 
+            : 'Sigue el mundial y consulta el cuadro de honor.'}
         </Text>
       </View>
 
@@ -123,7 +169,7 @@ export default function ResultsScreen() {
           style={[styles.tab, activeTab === 'groups' && styles.tabActive]} 
           onPress={() => setActiveTab('groups')}
         >
-          <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>Fase Grupos</Text>
+          <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>Grupos</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'knockout' && styles.tabActive]} 
@@ -150,7 +196,7 @@ export default function ResultsScreen() {
                 </View>
                 <View style={styles.simStatusRow}>
                   <View style={styles.statusDot} />
-                  <Text style={styles.simStatusText}>MOTOR DE AUTO-POBLACIÓN: ACTIVO</Text>
+                  <Text style={styles.simStatusText}>MODO PRUEBAS: ACTIVO</Text>
                 </View>
               </View>
               {isAdmin && (
@@ -162,26 +208,25 @@ export default function ResultsScreen() {
 
             <View style={styles.simMetrics}>
               <View style={styles.metric}>
-                <Text style={styles.metricLabel}>TIEMPO SIMULADO</Text>
+                <Text style={styles.metricLabel}>FECHA ACTUAL</Text>
                 <Text style={styles.metricVal}>
-                  {state?.currentTime ? new Date(state.currentTime).toLocaleDateString('es-ES', { day: '2-digit', month: 'long' }) : '--'}
+                  {state?.currentTime ? new Date(state.currentTime).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '--'}
                 </Text>
               </View>
               <View style={styles.metric}>
-                <Text style={styles.metricLabel}>FASES INYECTADAS</Text>
-                <Text style={[styles.metricVal, {color: '#3b82f6'}]}>{injected.length}/7</Text>
+                <Text style={styles.metricLabel}>PROGRESO</Text>
+                <Text style={[styles.metricVal, {color: '#3b82f6'}]}>{injected.length}/7 Fases</Text>
               </View>
             </View>
 
             <View style={styles.timeline}>
-              <Text style={styles.timelineTitle}>CALENDARIO DE SIMULACIÓN:</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timelineScroll}>
                 {simSteps.map(step => {
                   const isActive = injected.includes(step.phase);
                   return (
                     <View key={step.phase} style={[styles.timelineStep, isActive && styles.timelineStepActive]}>
                       <Text style={[styles.timelineStepText, isActive && styles.timelineStepTextActive]}>
-                        {isActive ? '✅ ' : '📅 '}{step.label}
+                        {isActive ? '✅ ' : ''}{step.label.split(': ')[1]}
                       </Text>
                     </View>
                   );
@@ -201,8 +246,8 @@ export default function ResultsScreen() {
               </View>
               {[0, 1, 2, 3, 4, 5].map(mIdx => {
                 const matchId = `g${g.letter}_m${mIdx}`;
-                const hName = g.teams[mIdx % 4];
-                const aName = g.teams[(mIdx + 1) % 4];
+                const hName = reality[`${matchId}_h_team`] || g.teams[mIdx % 4];
+                const aName = reality[`${matchId}_a_team`] || g.teams[(mIdx + 1) % 4];
                 return (
                   <MatchRow 
                     key={matchId}
@@ -218,32 +263,54 @@ export default function ResultsScreen() {
             {KNOCKOUT_BRACKET.map(stage => (
               <View key={stage.id} style={styles.groupCard}>
                 <Text style={styles.stageTitle}>{stage.name}</Text>
-                {stage.matches.map(mId => (
-                  <MatchRow 
+                {stage.matches.map(mId => {
+                  const matchId = `ko_${mId}`;
+                  const hName = reality[`${matchId}_h_team`] || "TBD";
+                  const aName = reality[`${matchId}_a_team`] || "TBD";
+                  return (
+                    <MatchRow 
                       key={mId}
-                      matchId={`ko_${mId}`} hName="TBD" aName="TBD" 
+                      matchId={matchId} hName={hName} aName={aName} 
                       reality={reality} onSimulate={handleSimulate} isAdmin={isAdmin}
                     />
-                ))}
+                  );
+                })}
               </View>
             ))}
             
-            {/* HONOR ROLL */}
+            {/* CUADRO DE HONOR DINÁMICO */}
             <View style={styles.awardsCard}>
-              <Text style={styles.awardsTitle}>🏆 Cuadro de Honor</Text>
-              <View style={styles.awardRow}>
-                <Text style={styles.awardLabel}>Campeón</Text>
-                <Text style={styles.awardVal}>Pendiente</Text>
+              <View style={styles.awardsHeader}>
+                <MaterialCommunityIcons name="trophy-variant" size={24} color="#f5a623" />
+                <Text style={styles.awardsTitle}>Cuadro de Honor</Text>
               </View>
+
               <View style={styles.awardRow}>
-                <Text style={styles.awardLabel}>Subcampeón</Text>
-                <Text style={styles.awardVal}>Pendiente</Text>
+                <View>
+                  <Text style={styles.awardLabel}>🏆 Campeón del Mundo</Text>
+                  <Text style={styles.awardVal}>{reality['ko_104_h_team'] && parseInt(reality['ko_104_h']) > parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : (reality['ko_104_a_team'] || 'Por definir')}</Text>
+                </View>
+                <MaterialCommunityIcons name="star" size={20} color="#f5a623" />
+              </View>
+
+              <View style={styles.awardRow}>
+                <View>
+                  <Text style={styles.awardLabel}>🥈 Subcampeón</Text>
+                  <Text style={styles.awardVal}>{reality['ko_104_h_team'] && parseInt(reality['ko_104_h']) < parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : (reality['ko_104_a_team'] || 'Por definir')}</Text>
+                </View>
+              </View>
+
+              <View style={[styles.awardRow, { borderBottomWidth: 0 }]}>
+                <View>
+                  <Text style={styles.awardLabel}>⚽ Bota de Oro</Text>
+                  <Text style={styles.awardVal}>{reality['boot_gold'] || 'Máximo goleador...'}</Text>
+                </View>
               </View>
             </View>
           </View>
         )}
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );

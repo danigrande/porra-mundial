@@ -1081,4 +1081,29 @@ router.post('/predictions', async (req, res) => {
     }
 });
 
+router.get('/leaderboard', async (req, res) => {
+    try {
+        const { groupName } = req.query;
+        if (!groupName) return res.status(400).json(createResponse('error', null, 'Falta groupName'));
+
+        const group = await Group.findOne({ name: groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+
+        const predictions = await Prediction.find({ group: group._id }).populate('user', 'name');
+        const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+        const reality = realityDoc ? realityDoc.results : {};
+
+        const playersData = {};
+        predictions.forEach(p => { 
+            if (p.user) playersData[p.user.name] = { predictions: p.predictions }; 
+        });
+
+        const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules);
+        res.json(createResponse('success', leaderboard));
+    } catch (error) {
+        console.error('❌ Error obteniendo leaderboard:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 export default router;

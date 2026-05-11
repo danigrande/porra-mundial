@@ -1,11 +1,34 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import * as api from '../../services/api';
 
 export default function AdminHub() {
   const router = useRouter();
   const auth = getAuth();
+
+  const handleReset = () => {
+    Alert.alert(
+      "Resetear Grupo",
+      "¿Estás seguro? Se borrarán TODAS las predicciones y se reiniciará el torneo para este grupo. Esta acción no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Sí, Resetear", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.resetGroup(auth?.currentGroup || '');
+              Alert.alert("Éxito", "El grupo ha sido reseteado correctamente.");
+            } catch (e) {
+              Alert.alert("Error", "No se pudo resetear el grupo.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (!auth?.isAdmin) {
     return (
@@ -48,6 +71,18 @@ export default function AdminHub() {
           </View>
           <Text style={styles.menuTitle}>Gestión de Miembros</Text>
           <Text style={styles.menuDesc}>Añade jugadores, quita miembros o vincula WhatsApp.</Text>
+        </TouchableOpacity>
+
+        {/* RESET DE TEST (danger zone) */}
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderColor: 'rgba(239, 68, 68, 0.2)' }]} 
+          onPress={handleReset}
+        >
+          <View style={[styles.iconContainer, {backgroundColor: 'rgba(239, 68, 68, 0.1)'}]}>
+            <MaterialCommunityIcons name="refresh-circle" size={32} color="#ef4444" />
+          </View>
+          <Text style={[styles.menuTitle, { color: '#ef4444' }]}>Zona de Pruebas: Reset</Text>
+          <Text style={styles.menuDesc}>Borra todas las predicciones y reinicia el Mundial (Solo para testing).</Text>
         </TouchableOpacity>
 
       </View>

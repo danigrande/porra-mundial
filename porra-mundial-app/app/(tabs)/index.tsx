@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import TournamentBanner from '../../components/TournamentBanner';
@@ -9,36 +9,20 @@ export default function DashboardScreen() {
   const [tournamentState, setTournamentState] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
   
   const auth = getAuth();
   const groupName = auth?.currentGroup || '';
 
   const loadData = useCallback(async () => {
     try {
-      // For now, we fetch predictions, reality, and rules to calculate the basic ranking
-      // In a real app, you might want an endpoint that just returns the pre-calculated ranking
-      const [predictionsRes, realityRes, rulesRes, stateRes] = await Promise.all([
-        api.getPredictions(groupName),
-        api.getReality(),
-        api.getGroupRules(groupName),
+      const [leaderboardRes, stateRes] = await Promise.all([
+        api.getLeaderboard(groupName),
         api.getTournamentState(groupName)
       ]);
 
       setTournamentState(stateRes);
-      
-      // Basic mock ranking just to show UI structure until we port scoringEngine logic to app or backend endpoint
-      // The web dashboard does this in JS, we should ideally add an endpoint in api.js: GET /groups/:group/leaderboard
-      // But for now, let's just display the users we got from predictions
-      
-      const users = Object.keys(predictionsRes || {});
-      const mockRanking = users.map((u, index) => ({
-        name: u,
-        points: (users.length - index) * 10, // Mock points
-        exact: Math.floor(Math.random() * 5),
-        trend: index === 0 ? 'up' : index === users.length - 1 ? 'down' : 'same'
-      }));
-      
-      setRanking(mockRanking.sort((a, b) => b.points - a.points));
+      setRanking(leaderboardRes);
     } catch (e) {
       console.error('Error loading dashboard', e);
     } finally {
@@ -56,10 +40,14 @@ export default function DashboardScreen() {
     loadData();
   }, [loadData]);
 
+  const toggleExpand = (name: string) => {
+    setExpandedPlayer(expandedPlayer === name ? null : name);
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1e40af" />
+        <ActivityIndicator size="large" color="#f5a623" />
       </View>
     );
   }
@@ -82,21 +70,49 @@ export default function DashboardScreen() {
           <Text style={[styles.th, styles.colRank]}>#</Text>
           <Text style={[styles.th, styles.colName]}>Jugador</Text>
           <Text style={[styles.th, styles.colPts]}>Pts</Text>
-          <Text style={[styles.th, styles.colExact]}>Ex</Text>
+          <Text style={[styles.th, styles.colExact]}>Exactos</Text>
         </View>
 
         {ranking.map((player, index) => (
-          <View key={player.name} style={[styles.tableRow, player.name === auth?.name && styles.myRow]}>
-            <Text style={[styles.td, styles.colRank, index < 3 && styles.topRank]}>
-              {index + 1}
-            </Text>
-            <View style={styles.colName}>
-              <Text style={[styles.tdName, player.name === auth?.name && styles.myText]}>
-                {player.name}
+          <View key={player.name}>
+            <TouchableOpacity 
+              style={[styles.tableRow, player.name === auth?.name && styles.myRow]}
+              onPress={() => toggleExpand(player.name)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.td, styles.colRank, index < 3 && styles.topRank]}>
+                {index + 1}
               </Text>
-            </View>
-            <Text style={[styles.td, styles.colPts, styles.bold]}>{player.points}</Text>
-            <Text style={[styles.td, styles.colExact]}>{player.exact}</Text>
+              <View style={styles.colName}>
+                <Text style={[styles.tdName, player.name === auth?.name && styles.myText]}>
+                  {player.name}
+                </Text>
+              </View>
+              <Text style={[styles.td, styles.colPts, styles.bold]}>{player.totalPts}</Text>
+              <Text style={[styles.td, styles.colExact]}>{player.exactHits}</Text>
+            </TouchableOpacity>
+
+            {/* DESGLOSE EXPANDIDO */}
+            {expandedPlayer === player.name && (
+              <View style={styles.expandedContent}>
+                <Text style={styles.expandedTitle}>Puntos detallados</Text>
+                {player.history && player.history.length > 0 ? (
+                  player.history.map((h: any, i: number) => (
+                    <View key={i} style={styles.historyRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.historyMatch} numberOfLines={1}>{h.match}</Text>
+                        <Text style={styles.reasonText}>{h.reason || 'Puntos'}</Text>
+                      </View>
+                      <View style={styles.historyBadge}>
+                        <Text style={styles.historyPts}>+{h.pts}</Text>
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.noHistory}>No hay puntos registrados aún.</Text>
+                )}
+              </View>
+            )}
           </View>
         ))}
         
@@ -217,9 +233,60 @@ const styles = StyleSheet.create({
     padding: 20,
     fontStyle: 'italic',
   },
-  aiText: {
-    color: '#ccc',
-    lineHeight: 22,
-    fontSize: 15,
+  aiText: { color: '#94a3b8', fontSize: 14, lineHeight: 22 },
+  
+  // ESTILOS EXPANDIDO
+  expandedContent: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    marginHorizontal: 12,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  expandedTitle: {
+    color: '#f5a623',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    letterSpacing: 1
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.03)',
+  },
+  historyMatch: {
+    color: '#e2e8f0',
+    fontSize: 13,
+    fontWeight: '600'
+  },
+  reasonText: {
+    color: '#64748b',
+    fontSize: 11,
+    marginTop: 2
+  },
+  historyBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  historyPts: {
+    color: '#10b981',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  noHistory: {
+    color: '#64748b',
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 10
   }
 });

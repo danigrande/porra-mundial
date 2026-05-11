@@ -18,12 +18,34 @@ import { getTournamentState, getCurrentTime } from './tournamentState.js';
 import * as apiFootballService from './apiFootballService.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from './shared_data.js';
 import { connectDB } from './db.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import multer from 'multer';
 import apiRoutes from './routes/api.js';
 import devDashboardRoutes from './routes/devDashboard.js';
 import { initChatServer, sendBotMessage } from './chatService.js';
 import * as pushService from './pushService.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const logger = pino({ level: 'warn' });
+
+// Asegurar carpeta de uploads
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+// Configurar Multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage });
 
 // Conectar a MongoDB
 connectDB();
@@ -36,6 +58,18 @@ const server = http.createServer(app);
 
 app.use(cors()); // Permitir llamadas desde la web
 app.use(express.json()); // Permitir body en JSON para la nueva API
+
+// Servir archivos estáticos
+app.use('/uploads', express.static(uploadDir));
+
+// Endpoint de subida de archivos
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ status: 'error', message: 'No se subió ningún archivo' });
+  
+  // Construir URL pública (usar HOST si existe, sino relativo)
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ status: 'success', data: { url: fileUrl } });
+});
 
 // Usar nuestras rutas de Node.js
 app.use('/api', apiRoutes);

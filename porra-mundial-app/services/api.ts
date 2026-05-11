@@ -10,6 +10,34 @@ export const API_URL = API_BASE;
 export const SOCKET_URL = API_BASE;
 
 /**
+ * Subir un archivo al servidor.
+ */
+export async function uploadFile(fileUri: string, type: 'image' | 'audio') {
+  const formData = new FormData();
+  const filename = fileUri.split('/').pop() || (type === 'image' ? 'photo.jpg' : 'voice.m4a');
+  
+  formData.append('file', {
+    uri: Platform.OS === 'ios' ? fileUri.replace('file://', '') : fileUri,
+    name: filename,
+    type: type === 'image' ? 'image/jpeg' : 'audio/m4a',
+  } as any);
+
+  const response = await fetch(`${API_URL}/api/upload`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  const data = await response.json();
+  if (data.status === 'error') throw new Error(data.message);
+  
+  // Devolver URL completa
+  return `${API_URL}${data.data.url}`;
+}
+
+/**
  * Wrapper para fetch con manejo de errores.
  */
 async function apiFetch(endpoint, options = {}) {
@@ -89,6 +117,17 @@ export async function saveGroupRules(groupName, data, predictionMode) {
   return apiFetch(`/groups/${encodeURIComponent(groupName)}/rules`, {
     method: 'POST',
     body: JSON.stringify({ data, predictionMode }),
+  });
+}
+
+export async function getLeaderboard(groupName) {
+  return apiFetch(`/leaderboard?groupName=${encodeURIComponent(groupName)}`);
+}
+
+export async function resetGroup(groupName) {
+  return apiFetch('/dev/reset-test', {
+    method: 'POST',
+    body: JSON.stringify({ groupName }),
   });
 }
 

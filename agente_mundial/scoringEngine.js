@@ -48,7 +48,17 @@ export function fullResolve(code, dataSource) {
   // Grupo: "1A" → 1º del grupo A
   const groupMatch = code.match(/^([1-2])([A-L])$/);
   if (groupMatch) {
-    return getStandings(groupMatch[2], dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
+    const letter = groupMatch[2];
+    // Verificar si el grupo ha terminado
+    let groupFinished = true;
+    for (let i = 0; i < 6; i++) {
+      if (isNaN(parseInt(dataSource[`g${letter}_m${i}_h`])) || isNaN(parseInt(dataSource[`g${letter}_m${i}_a`]))) {
+        groupFinished = false;
+        break;
+      }
+    }
+    if (!groupFinished) return code; // No resolvemos si no ha terminado el grupo
+    return getStandings(letter, dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
   }
 
   // Mejores terceros: simplificado
@@ -61,6 +71,8 @@ export function fullResolve(code, dataSource) {
     const num = matchRef[2];
     const gh = parseInt(dataSource[`ko_${num}_h`]);
     const ga = parseInt(dataSource[`ko_${num}_a`]);
+    
+    // Solo resolvemos si el partido se ha jugado (tiene goles)
     if (isNaN(gh) || isNaN(ga)) return code;
 
     const pairing = BRACKET_MATCHES[num];
@@ -88,6 +100,21 @@ export function fullResolve(code, dataSource) {
   }
 
   return code;
+}
+
+/**
+ * Verifica si un nombre de equipo es un equipo real (no TBD o código).
+ */
+export function isRealTeam(name) {
+  if (!name || name === 'TBD' || name === 'Por definir') return false;
+  
+  // Bloquear códigos de posición (1A, 2B, 3ABC, etc)
+  if (name.match(/^[1-3][A-Z]+$/)) return false;
+  
+  // Bloquear códigos de eliminatorias (W95, L104, etc)
+  if (name.match(/^[WL]\d+$/)) return false;
+
+  return true;
 }
 
 /**
@@ -202,35 +229,47 @@ export function calculateScore(prediction, reality, rules = {}) {
 
   // --- 2. POSICIONES DE GRUPO ---
   FIXTURE_GROUPS.forEach(group => {
-    const realStandings = getStandings(group.letter, reality);
-    const predStandings = getStandings(group.letter, prediction);
-    
-    realStandings.forEach((team, index) => {
-      // Si el equipo en la posición X de la realidad es el mismo que en la predicción
-      if (predStandings[index] && predStandings[index].name === team.name) {
-        const pts = ptsRules.group.pos;
-        if (pts > 0) {
-          totalPts += pts;
-          groupPts += pts;
-          history.push({ match: `Posición ${index + 1}º Grupo ${group.letter}`, pts, reason: `Acierto (${team.name})` });
-        }
+    // Solo dar puntos si el grupo ha terminado (6 partidos jugados)
+    let groupFinished = true;
+    for (let i = 0; i < 6; i++) {
+      if (isNaN(parseInt(reality[`g${group.letter}_m${i}_h`])) || isNaN(parseInt(reality[`g${group.letter}_m${i}_a`]))) {
+        groupFinished = false;
+        break;
       }
-    });
+    }
+
+    if (groupFinished) {
+      const realStandings = getStandings(group.letter, reality);
+      const predStandings = getStandings(group.letter, prediction);
+      
+      realStandings.forEach((team, index) => {
+        if (predStandings[index] && predStandings[index].name === team.name && isRealTeam(team.name)) {
+          const pts = ptsRules.group.pos;
+          if (pts > 0) {
+            totalPts += pts;
+            groupPts += pts;
+            history.push({ match: `Posición ${index + 1}º Grupo ${group.letter}`, pts, reason: `Acierto (${team.name})` });
+          }
+        }
+      });
+    }
   });
 
   // --- 3. EQUIPOS CLASIFICADOS (KO) ---
-  // Recorremos todos los partidos del bracket para ver si los equipos participantes coinciden
   Object.keys(BRACKET_MATCHES).forEach(matchNum => {
     const isRoundOf32 = KNOCKOUT_BRACKET[0].matches.includes(parseInt(matchNum));
     const qualifyPts = isRoundOf32 ? ptsRules.group.qualify : ptsRules.ko.qualify;
     
     if (qualifyPts > 0) {
-      const realTeams = [fullResolve(BRACKET_MATCHES[matchNum][0], reality), fullResolve(BRACKET_MATCHES[matchNum][1], reality)];
+      const realH = fullResolve(BRACKET_MATCHES[matchNum][0], reality);
+      const realA = fullResolve(BRACKET_MATCHES[matchNum][1], reality);
+      
+      const realTeams = [realH, realA];
       const predTeams = [fullResolve(BRACKET_MATCHES[matchNum][0], prediction), fullResolve(BRACKET_MATCHES[matchNum][1], prediction)];
       
-      // Por cada equipo real en este partido, ver si el usuario lo tenía también en este partido
       realTeams.forEach(realTeam => {
-        if (realTeam && !realTeam.match(/^[1-3WLA-L]+$/) && predTeams.includes(realTeam)) {
+        // SOLO si el equipo real ya está definido (es un país, no un código)
+        if (isRealTeam(realTeam) && predTeams.includes(realTeam)) {
           totalPts += qualifyPts;
           koPts += qualifyPts;
           history.push({ match: `Clasificado ${resolveMatchName('ko_' + matchNum)}`, pts: qualifyPts, reason: `Acierto (${realTeam})` });
@@ -241,7 +280,7 @@ export function calculateScore(prediction, reality, rules = {}) {
 
   // --- 4. CUADRO DE HONOR ---
   const checkHonor = (actual, predicted, pts, label) => {
-    if (actual && predicted && actual === predicted) {
+    if (actual && predicted && actual === predicted && isRealTeam(actual)) {
       honorPts += pts; totalPts += pts;
       history.push({ match: `Honor: ${label}`, pts, reason: 'Acierto' });
     }
@@ -253,7 +292,9 @@ export function calculateScore(prediction, reality, rules = {}) {
 
   ['boot', 'ball'].forEach(cat => ['gold', 'silver', 'bronze'].forEach(rank => {
     const key = `${cat}_${rank}`;
-    checkHonor(reality[key], prediction[key], ptsRules.honor[rank], (cat === 'boot' ? 'Bota' : 'Balón') + ' ' + rank);
+    if (isRealTeam(reality[key])) {
+      checkHonor(reality[key], prediction[key], ptsRules.honor[rank], (cat === 'boot' ? 'Bota' : 'Balón') + ' ' + rank);
+    }
   }));
 
   return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), honorPts: Math.round(honorPts), history };
