@@ -1,16 +1,21 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import axios from 'axios';
 import { User } from '../models/User.js';
 import { Group } from '../models/Group.js';
 import { Prediction } from '../models/Prediction.js';
 import { Summary } from '../models/Summary.js';
 import { Message } from '../models/Message.js';
 import { Reality } from '../models/Reality.js';
+import { Report } from '../models/Report.js';
+import { BlockedUser } from '../models/BlockedUser.js';
 import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
 import * as apiFootballService from '../apiFootballService.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from '../shared_data.js';
 import { getTournamentState } from '../tournamentState.js';
+import { adminAuth } from '../middleware.js';
 
 const router = express.Router();
 
@@ -98,17 +103,81 @@ router.delete('/profile', async (req, res) => {
 router.post('/report', async (req, res) => {
     try {
         const { reporterPhone, reportedUser, messageId, reason } = req.body;
-        console.log(`🚩 REPORTE RECIBIDO: De ${reporterPhone} contra ${reportedUser}. Motivo: ${reason}`);
-        
-        // Aquí se podría guardar en una colección 'Reports' de MongoDB
-        // Por ahora lo logueamos, que es suficiente para la revisión inicial de Apple
-        res.json(createResponse('success', null, 'Reporte enviado a moderación'));
+        if (!reporterPhone || !reportedUser || !reason) {
+            return res.status(400).json(createResponse('error', null, 'Faltan campos obligatorios'));
+        }
+
+        // Recuperar el texto del mensaje si existe
+        let messageText = '';
+        let groupName = '';
+        if (messageId) {
+            const msg = await Message.findById(messageId).lean();
+            if (msg) {
+                messageText = msg.text || '';
+                groupName = msg.chatId || '';
+            }
+        }
+
+        const report = await Report.create({
+            reporterPhone,
+            reportedUser,
+            messageId,
+            messageText,
+            reason,
+            groupName
+        });
+
+        console.log(`🚩 REPORTE #${report._id}: De ${reporterPhone} contra ${reportedUser}. Motivo: ${reason}`);
+        res.json(createResponse('success', { reportId: report._id }, 'Reporte enviado a moderación'));
+    } catch (error) {
+        console.error('❌ Error en POST /report:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// --- Bloquear usuario (server-side) ---
+router.post('/block', async (req, res) => {
+    try {
+        const { blockerPhone, blockedPhone, groupName } = req.body;
+        if (!blockerPhone || !blockedPhone) {
+            return res.status(400).json(createResponse('error', null, 'Faltan campos obligatorios'));
+        }
+        await BlockedUser.findOneAndUpdate(
+            { blockerPhone, blockedPhone },
+            { blockerPhone, blockedPhone, groupName, createdAt: new Date() },
+            { upsert: true }
+        );
+        console.log(`🚫 BLOQUEO: ${blockerPhone} bloqueó a ${blockedPhone}`);
+        res.json(createResponse('success', null, 'Usuario bloqueado'));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
 
-router.post('/admin/simulate-match', async (req, res) => {
+// --- Desbloquear usuario ---
+router.post('/unblock', async (req, res) => {
+    try {
+        const { blockerPhone, blockedPhone } = req.body;
+        await BlockedUser.deleteOne({ blockerPhone, blockedPhone });
+        res.json(createResponse('success', null, 'Usuario desbloqueado'));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// --- Obtener lista de bloqueados ---
+router.get('/blocked', async (req, res) => {
+    try {
+        const { phone } = req.query;
+        if (!phone) return res.status(400).json(createResponse('error', null, 'Falta phone'));
+        const blocked = await BlockedUser.find({ blockerPhone: phone }).lean();
+        res.json(createResponse('success', blocked.map(b => b.blockedPhone)));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/admin/simulate-match', adminAuth, async (req, res) => {
     try {
         const { matchId, homeTeam, awayTeam } = req.body;
         if (!matchId || !homeTeam || !awayTeam) {
@@ -146,7 +215,7 @@ router.post('/admin/simulate-match', async (req, res) => {
     }
 });
 
-router.post('/admin/simulate-all', async (req, res) => {
+router.post('/admin/simulate-all', adminAuth, async (req, res) => {
     try {
         const results = apiFootballService.simulateAllMatches(FIXTURE_GROUPS, BRACKET_MATCHES);
         
@@ -167,7 +236,7 @@ router.post('/admin/simulate-all', async (req, res) => {
 // RUTAS DE DESARROLLO (Testing Go-Live)
 // ==========================================
 
-router.post('/dev/populate-reality', async (req, res) => {
+router.post('/dev/populate-reality', adminAuth, async (req, res) => {
     try {
         const { phaseId } = req.body; // 'groups', 'r32', 'r16', 'qf', 'sf', '3rd', 'final'
         const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
@@ -193,7 +262,7 @@ router.post('/dev/populate-reality', async (req, res) => {
     }
 });
 
-router.post('/dev/reset-test', async (req, res) => {
+router.post('/dev/reset-test', adminAuth, async (req, res) => {
     try {
         const { groupName } = req.body;
         if (!groupName) throw new Error('Nombre de grupo requerido');
@@ -318,7 +387,8 @@ router.get('/profile', async (req, res) => {
             likes: user.likes || [],
             dislikes: user.dislikes || [],
             humor_style: user.humor_style || 'Divertido y amigable',
-            nickname: user.nickname || user.name
+            nickname: user.nickname || user.name,
+            notificationPreference: user.notificationPreference || 'all'
         }));
     } catch (error) {
         console.error('❌ Error en GET /profile:', error);
@@ -333,6 +403,7 @@ router.post('/profile', async (req, res) => {
 
         // Buscar por phone primero, fallback a name
         const query = phone ? { phone } : { name: playerName };
+        console.log(`👤 [Profile] Actualizando preferencias para ${phone || playerName}:`, profile.notificationPreference);
         const user = await User.findOneAndUpdate(
             query,
             { 
@@ -340,12 +411,13 @@ router.post('/profile', async (req, res) => {
                     nickname: profile.nickname || playerName,
                     likes: profile.likes || [],
                     dislikes: profile.dislikes || [],
-                    humor_style: profile.humor_style || 'Divertido y amigable'
+                    humor_style: profile.humor_style || 'Divertido y amigable',
+                    notificationPreference: profile.notificationPreference || 'all'
                 }
             },
             { new: true }
         );
-        res.json(createResponse('success'));
+        res.json(createResponse('success', { notificationPreference: user.notificationPreference }));
     } catch (error) {
         console.error('❌ Error en POST /profile:', error);
         res.status(500).json(createResponse('error', null, error.message));
@@ -398,7 +470,7 @@ router.post('/groups/:groupName/rules', async (req, res) => {
 // ==========================================
 
 
-// Login — ahora por teléfono + PIN
+// Login — ahora con PIN hasheado
 router.post('/login', async (req, res) => {
   try {
     const { phone, playerPin, groupName } = req.body;
@@ -406,15 +478,28 @@ router.post('/login', async (req, res) => {
     const group = await Group.findOne({ name: groupName });
     if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
 
-    const user = await User.findOne({ phone, pin: playerPin, groups: groupName });
-    if (!user) return res.status(401).json(createResponse('error', null, 'Teléfono, PIN o Grupo incorrecto'));
+    const user = await User.findOne({ phone, groups: groupName });
+    if (!user) return res.status(401).json(createResponse('error', null, 'Teléfono o Grupo incorrecto'));
+
+    // Verificar PIN (con fallback a texto plano para usuarios antiguos)
+    let isMatch = false;
+    if (user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$')) {
+        isMatch = await bcrypt.compare(playerPin, user.pin);
+    } else {
+        isMatch = (user.pin === playerPin);
+        // Si coincide en texto plano, lo hasheamos ahora
+        if (isMatch) {
+            user.pin = await bcrypt.hash(playerPin, 10);
+            await user.save();
+            console.log(`🔐 PIN de ${user.name} actualizado a hash automáticamente`);
+        }
+    }
+
+    if (!isMatch) return res.status(401).json(createResponse('error', null, 'PIN incorrecto'));
 
     const isAdmin = group.admin && group.admin.toString() === user._id.toString();
     
-    console.log(`🔐 Login: ${user.name} (📱${phone}) en ${groupName}`);
-    console.log(`👑 Admin del grupo ID: ${group.admin}`);
-    console.log(`👤 Usuario logueado ID: ${user._id}`);
-    console.log(`❓ ¿Es Admin?: ${isAdmin}`);
+    console.log(`🔐 Login exitoso: ${user.name} (📱${phone}) en ${groupName}`);
 
     res.json(createResponse('success', { isAdmin, name: user.name }));
   } catch (error) {
@@ -423,7 +508,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Registro — ahora con teléfono como identificador único
+// Registro — con PIN hasheado
 router.post('/register', async (req, res) => {
   try {
     const { playerName, phone, playerPin, groupName, isNewGroup } = req.body;
@@ -432,13 +517,16 @@ router.post('/register', async (req, res) => {
       return res.status(400).json(createResponse('error', null, 'El número de teléfono es obligatorio'));
     }
 
+    // Hashear PIN
+    const hashedPin = await bcrypt.hash(playerPin, 10);
+
     // Buscar por teléfono (identificador único)
     let user = await User.findOne({ phone });
     if (!user) {
        console.log(`✨ Creando nuevo usuario: ${playerName} (📱${phone})`);
        user = await User.create({ 
          name: playerName, 
-         pin: playerPin, 
+         pin: hashedPin, 
          phone, 
          groups: [groupName] 
        });
@@ -463,6 +551,12 @@ router.post('/register', async (req, res) => {
            group.members.push(user._id);
            await group.save();
        }
+    }
+
+    // Notificar cambios en el grupo por Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('group-updated', { groupName });
     }
 
     res.json(createResponse('success', { name: user.name }, 'Usuario registrado con éxito'));
@@ -499,9 +593,22 @@ router.get('/groups', async (req, res) => {
 
 router.get('/groups/:groupName/players', async (req, res) => {
     try {
-        const group = await Group.findOne({ name: req.params.groupName }).populate('members', 'name');
-        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
-        res.json(createResponse('success', group.members.map(m => m.name)));
+        // Búsqueda insensible a mayúsculas/minúsculas
+        const group = await Group.findOne({ name: { $regex: new RegExp(`^${req.params.groupName}$`, 'i') } }).populate('members', 'name phone nickname');
+        if (!group) {
+            console.warn(`[API] Grupo no encontrado: ${req.params.groupName}`);
+            return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        }
+
+        console.log(`[API] Enviando ${group.members?.length || 0} jugadores para el grupo ${group.name}`);
+
+        console.log(`[API] Raw members first element type: ${typeof group.members[0]}, value:`, group.members[0]);
+        const players = group.members.map(m => ({
+            name: m.name,
+            phone: m.phone,
+            nickname: m.nickname || m.name
+        }));
+        res.json(createResponse('success', players, 'DEBUG_OBJECTS_ACTIVE'));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
     }
@@ -554,13 +661,16 @@ router.post('/groups/:groupName/players', async (req, res) => {
 
         if (!playerName || !phone) return res.status(400).json(createResponse('error', null, 'El nombre y teléfono del jugador son requeridos'));
 
+        // Hashear PIN
+        const hashedPin = await bcrypt.hash('1234', 10);
+
         // Buscar por teléfono (identificador único)
         let user = await User.findOne({ phone });
         if (!user) {
             console.log(`✨ Creando nuevo usuario: ${playerName} (📱${phone})`);
             user = await User.create({ 
                 name: playerName, 
-                pin: '1234', 
+                pin: hashedPin, 
                 phone, 
                 groups: [groupName] 
             });
@@ -589,6 +699,10 @@ router.post('/groups/:groupName/players', async (req, res) => {
         } else {
             console.log(`ℹ️ El usuario ya es miembro del grupo`);
         }
+
+        // Notificar cambios en el grupo
+        const io = req.app.get('io');
+        if (io) io.emit('group-updated', { groupName });
 
         res.json(createResponse('success'));
     } catch (error) {
@@ -628,6 +742,11 @@ router.delete('/groups/:groupName/players/:playerName', async (req, res) => {
         } else {
             console.warn(`⚠️ Jugador "${playerName}" no encontrado en los miembros del grupo`);
         }
+
+        // Notificar cambios en el grupo
+        const io = req.app.get('io');
+        if (io) io.emit('group-updated', { groupName });
+
         res.json(createResponse('success'));
     } catch (error) {
         console.error('❌ Error en DELETE /groups/:groupName/players:', error);
@@ -704,12 +823,20 @@ router.post('/profile/change-pin', async (req, res) => {
         const query = phone ? { phone, groups: groupName } : { name: playerName, groups: groupName };
         const user = await User.findOne(query);
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+
+        // Verificar PIN actual (con fallback)
+        let isMatch = false;
+        if (user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$')) {
+            isMatch = await bcrypt.compare(oldPin, user.pin);
+        } else {
+            isMatch = (user.pin === oldPin);
+        }
         
-        if (user.pin !== oldPin) {
+        if (!isMatch) {
             return res.status(401).json(createResponse('error', null, 'El PIN actual es incorrecto'));
         }
         
-        user.pin = newPin;
+        user.pin = await bcrypt.hash(newPin, 10);
         await user.save();
         
         console.log(`🔐 PIN actualizado para ${user.name} (📱${user.phone}) en ${groupName}`);
@@ -822,6 +949,25 @@ router.delete('/push-token', async (req, res) => {
         res.json(createResponse('success'));
     } catch (error) {
         console.error('❌ Error en DELETE /push-token:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// Ruta temporal para probar notificaciones push del Bot
+router.get('/test-push/:groupName', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const pushService = await import('../pushService.js');
+        
+        await pushService.sendToGroup(
+            groupName, 
+            '🏆 Agente Mundial (Test)', 
+            'Esta es una notificación de prueba para verificar tus ajustes de silencio.', 
+            { screen: 'chat', groupName }
+        );
+        
+        res.json(createResponse('success', { message: `Notificación de prueba enviada al grupo ${groupName}` }));
+    } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
@@ -963,6 +1109,32 @@ router.get('/leaderboard', async (req, res) => {
         res.json(createResponse('success', leaderboard));
     } catch (error) {
         console.error('❌ Error obteniendo leaderboard:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// --- Proxy de GIPHY (Para ocultar la API key en el cliente) ---
+router.get('/giphy/search', async (req, res) => {
+    try {
+        const { q, limit = 20 } = req.query;
+        const apiKey = process.env.GIPHY_API_KEY || 'XszfwZBVBmHmmFMxmAQqY1VuQu8YDUsR';
+        const response = await axios.get(`https://api.giphy.com/v1/gifs/search`, {
+            params: {
+                api_key: apiKey,
+                q: q || 'soccer world cup',
+                limit,
+                rating: 'g' // Rating obligatorio para App Store
+            }
+        });
+        
+        const gifs = response.data.data.map(g => ({
+            id: g.id,
+            url: g.images.fixed_height.url
+        }));
+        
+        res.json(createResponse('success', gifs));
+    } catch (error) {
+        console.error('❌ Error proxy GIPHY:', error.message);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });

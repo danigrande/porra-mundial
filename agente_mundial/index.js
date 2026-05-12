@@ -13,6 +13,7 @@ import { schedule } from 'node-cron';
 import config from './config.js';
 import { refreshCache, generateGroupSummary } from './messageHandler.js';
 import { Group } from './models/Group.js';
+import { adminAuth } from './middleware.js';
 import { Reality } from './models/Reality.js';
 import { getTournamentState, getCurrentTime } from './tournamentState.js';
 import * as apiFootballService from './apiFootballService.js';
@@ -89,7 +90,7 @@ app.get('/health', (req, res) => {
 });
 
 // Endpoint para forzar un resumen (útil para testing)
-app.get('/trigger-summary', async (req, res) => {
+app.get('/trigger-summary', adminAuth, async (req, res) => {
   try {
     const requestedGroup = req.query.groupName;
     
@@ -180,6 +181,7 @@ app.get('/api/summary/:player', async (req, res) => {
 // INICIALIZAR SOCKET.IO CHAT
 // ==========================================
 const io = initChatServer(server);
+app.set('io', io);
 
 // ==========================================
 // ARRANCAR SERVIDOR

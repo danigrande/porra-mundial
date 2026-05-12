@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Keyboard, Modal, Alert, ScrollView, Animated, PanResponder } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
+import { useLocalSearchParams } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as socketService from '../../services/socket';
 import * as api from '../../services/api';
 
@@ -15,17 +17,36 @@ const EMOJIS = [
 ];
 const STICKERS: string[] = []; // Los cargaremos dinámicamente
 
-const TENOR_API_KEY = 'LIVEOXIT8AD'; // Public demo key for Tenor
+const STICKERS: string[] = []; // Los cargaremos dinámicamente
 
 export default function ChatScreen() {
+  const { groupName: paramGroupName } = useLocalSearchParams<{ groupName: string }>();
   const [messages, setMessages] = useState<socketService.ChatMessage[]>([]);
+  
+  // Función para actualizar mensajes sin duplicados (Deduplicación Atómica)
+  const setMessagesSafe = (updater: socketService.ChatMessage[] | ((prev: socketService.ChatMessage[]) => socketService.ChatMessage[])) => {
+    setMessages(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const seen = new Set();
+      return next.filter(m => {
+        if (!m._id || seen.has(m._id)) return false;
+        seen.add(m._id);
+        return true;
+      });
+    });
+  };
+
+  const [lastReadId, setLastReadId] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showUnreadMarker, setShowUnreadMarker] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(true);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerTab, setPickerTab] = useState<'emoji' | 'sticker' | 'gif'>('emoji');
-  
+
   // GIF State
   const [gifSearch, setGifSearch] = useState('');
   const [gifs, setGifs] = useState<any[]>([]);
@@ -36,81 +57,195 @@ export default function ChatScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [recentStickers, setRecentStickers] = useState<string[]>([]);
+  const [groupMembers, setGroupMembers] = useState<{name: string, phone: string, nickname?: string}[]>([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  
+  // Lista de mensajes única para la vista (Garantía total contra duplicados)
+  const uniqueMessages = useMemo(() => {
+    const seen = new Set();
+    // Filtrar duplicados Y bloqueados
+    return messages.filter(m => {
+      if (!m._id || seen.has(m._id) || blockedUsers.includes(m.senderId)) return false;
+      seen.add(m._id);
+      return true;
+    });
+  }, [messages, blockedUsers]);
   
   const flatListRef = useRef<FlatList>(null);
+  const canClearUnread = useRef(false);
+  const isAtBottomRef = useRef(true);
+  const messagesRef = useRef(messages);
+  const showUnreadMarkerRef = useRef(showUnreadMarker);
   const auth = getAuth();
-  const groupName = auth?.currentGroup || '';
+  const groupName = paramGroupName || auth?.currentGroup || '';
 
   useEffect(() => {
-    if (!auth) return;
-    loadHistory();
+    messagesRef.current = messages;
+    showUnreadMarkerRef.current = showUnreadMarker;
+  }, [messages, showUnreadMarker]);
+
+  useEffect(() => {
+    if (auth?.phone) {
+        api.getBlockedUsers(auth.phone).then(setBlockedUsers).catch(console.error);
+    }
+  }, [auth]);
+
+  useEffect(() => {
+    if (!auth || !groupName) return;
+    // Ya no llamamos a loadHistory() aquí porque el socket nos enviará el historial al unirse
+    setLoading(true);
+    socketService.joinGroup(groupName);
 
     const socket = socketService.getSocket();
     if (!socket) return;
 
-    socket.on('new-message', (msg: socketService.ChatMessage) => {
-      setMessages(prev => [...prev, msg]);
+    const onNewMessage = (msg: socketService.ChatMessage) => {
+      setMessagesSafe(prev => {
+        const newMsgs = [...prev, msg];
+        
+        if (msg.senderId === auth.phone || isAtBottomRef.current) {
+          updateLastRead(msg._id);
+          setShowUnreadMarker(false);
+          setUnreadCount(0);
+        } else {
+          if (showUnreadMarkerRef.current) {
+            setUnreadCount(prev => prev + 1);
+          } else {
+            setShowUnreadMarker(true);
+            setUnreadCount(1);
+          }
+        }
+        return newMsgs;
+      });
       if (msg.senderId === auth.phone) {
-          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       }
-    });
+    };
 
-    socket.on('chat-history', (data) => {
+    const onChatHistory = async (data: any) => {
       if (data.groupName === groupName) {
-        setMessages(data.messages);
+        setMessagesSafe(data.messages);
         setLoading(false);
+        
+        // El temporizador de "lectura permitida" empieza solo después de cargar el historial
+        canClearUnread.current = false;
+        setTimeout(() => {
+          canClearUnread.current = true;
+          console.log('[Unread] Lectura automática activada');
+        }, 3000);
+        
+        // Mover aquí la lógica de mensajes no leídos
+        const savedId = await AsyncStorage.getItem(`lastRead_${groupName}`);
+        if (savedId && data.messages.length > 0) {
+          setLastReadId(savedId);
+          const index = data.messages.findIndex((m: any) => m._id === savedId);
+          if (index !== -1 && index < data.messages.length - 1) {
+            const count = data.messages.length - 1 - index;
+            setUnreadCount(count);
+            setShowUnreadMarker(true);
+            
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({ 
+                index: index + 1, 
+                animated: false,
+                viewPosition: 0,
+                viewOffset: 20 
+              });
+            }, 400);
+            return;
+          }
+        }
+        
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 200);
       }
-    });
+    };
 
-    socket.on('user-typing', (data) => {
+    const onUserTyping = (data: any) => {
       if (data.groupName === groupName && data.userName !== auth.name) {
         setTypingUsers(prev => prev.includes(data.userName) ? prev : [...prev, data.userName]);
       }
-    });
+    };
 
-    socket.on('user-stopped-typing', (data) => {
+    const onUserStoppedTyping = (data: any) => {
       if (data.groupName === groupName) {
         setTypingUsers(prev => prev.filter(name => name !== data.userName));
       }
-    });
+    };
 
-    socket.on('bot-typing', (data) => {
+    const onBotTyping = (data: any) => {
       if (data.groupName === groupName) {
         setTypingUsers(prev => prev.includes('Agente Mundial') ? prev : [...prev, 'Agente Mundial']);
       }
-    });
+    };
 
-    socket.on('bot-stopped-typing', (data) => {
+    const onBotStoppedTyping = (data: any) => {
       if (data.groupName === groupName) {
         setTypingUsers(prev => prev.filter(name => name !== 'Agente Mundial'));
       }
-    });
+    };
+
+    socket.on('new-message', onNewMessage);
+    socket.on('chat-history', onChatHistory);
+    socket.on('user-typing', onUserTyping);
+    socket.on('user-stopped-typing', onUserStoppedTyping);
+    socket.on('bot-typing', onBotTyping);
+    socket.on('bot-stopped-typing', onBotStoppedTyping);
 
     return () => {
-      socket.off('new-message');
-      socket.off('chat-history');
-      socket.off('user-typing');
-      socket.off('user-stopped-typing');
-      socket.off('bot-typing');
-      socket.off('bot-stopped-typing');
+      socket.off('new-message', onNewMessage);
+      socket.off('chat-history', onChatHistory);
+      socket.off('user-typing', onUserTyping);
+      socket.off('user-stopped-typing', onUserStoppedTyping);
+      socket.off('bot-typing', onBotTyping);
+      socket.off('bot-stopped-typing', onBotStoppedTyping);
     };
-  }, [auth]);
+  }, [auth, groupName]);
 
-  async function loadHistory() {
-    try {
-      setLoading(true);
-      const history = await api.getChatHistory(groupName);
-      setMessages(history);
-      // Forzar scroll al final tras un pequeño delay para que el FlatList renderice
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
-      }, 300);
-    } catch (e) {
-      console.error('Failed to load history', e);
-    } finally {
-      setLoading(false);
+  // Eliminamos el useEffect que guardaba al desmontar porque era demasiado agresivo
+  // y podía marcar como leído mensajes que el usuario aún no había visto bien.
+
+  useEffect(() => {
+    const loadLastRead = async () => {
+      const savedId = await AsyncStorage.getItem(`lastRead_${groupName}`);
+      setLastReadId(savedId);
+    };
+    loadLastRead();
+
+    return () => {
+      canClearUnread.current = false;
+    };
+  }, [groupName]);
+
+  // Guardar el último mensaje al salir o actualizar
+  const updateLastRead = async (id: string) => {
+    await AsyncStorage.setItem(`lastRead_${groupName}`, id);
+    setLastReadId(id);
+  };
+
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+    isAtBottomRef.current = isAtBottom;
+    
+    // Solo borramos la marca si el usuario está haciendo scroll de forma consciente
+    if (isAtBottom && canClearUnread.current) {
+      if (showUnreadMarkerRef.current) {
+        setShowUnreadMarker(false);
+        setUnreadCount(0);
+      }
+      // Siempre actualizamos el último leído si estamos al fondo
+      if (messagesRef.current.length > 0) {
+        const lastId = messagesRef.current[messagesRef.current.length - 1]._id;
+        if (lastId !== lastReadId) updateLastRead(lastId);
+      }
     }
+  };
+
+  // loadHistory queda como respaldo o para recarga manual si fuera necesario, 
+  // pero desactivamos su uso automático para evitar duplicados con el socket.
+  async function loadHistory() {
+    // console.log('loadHistory (REST) desactivado en favor del socket');
   }
 
   // ==========================================
@@ -149,17 +284,21 @@ export default function ChatScreen() {
   const searchGifs = async (query: string) => {
     setGifsLoading(true);
     try {
-      // Volver a v1 que es más fiable para claves demo
-      const response = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=12`);
-      const data = await response.json();
-      // En v1 el formato es un poco distinto
-      const formattedGifs = data.results.map((g: any) => ({
-        id: g.id,
-        url: g.media[0].tinygif.url
-      }));
-      setGifs(formattedGifs);
-    } catch (e) {
-      console.error('GIF search failed', e);
+      const response = await api.searchGiphy(query || 'soccer world cup');
+      if (response && Array.isArray(response)) {
+        setGifs(response);
+      } else {
+        setGifs([]);
+      }
+    } catch (e: any) {
+      console.error('[GIPHY] Error:', e.message);
+      setGifs([]);
+    } finally {
+      setGifsLoading(false);
+    }
+  };
+      console.error('[GIPHY] ❌ Fallo crítico:', e.message);
+      setGifs([]);
     } finally {
       setGifsLoading(false);
     }
@@ -168,6 +307,77 @@ export default function ChatScreen() {
   // ==========================================
   // RENDERING
   // ==========================================
+
+  useEffect(() => {
+    if (groupName) {
+      loadGroupMembers();
+      
+      // Escuchar cambios en el grupo en tiempo real
+      const socket = socketService.getSocket();
+      socket.on('group-updated', (data) => {
+        if (data.groupName === groupName) {
+          console.log('🔄 Lista de miembros actualizada por socket');
+          loadGroupMembers();
+        }
+      });
+
+      return () => {
+        socket.off('group-updated');
+      };
+    }
+  }, [groupName]);
+
+  const loadGroupMembers = async () => {
+    try {
+      console.log(`[Chat] Cargando miembros para el grupo: "${groupName}"...`);
+      const players = await api.getPlayers(groupName);
+      console.log(`[Chat] Respuesta API jugadores:`, JSON.stringify(players).substring(0, 200));
+      
+      if (!players || players.length === 0) {
+        console.warn('[Chat] ⚠️ La API devolvió 0 jugadores para este grupo');
+      }
+
+      // Añadir la opción "@todos" manualmente
+      setGroupMembers([{ name: 'todos', phone: 'all', nickname: 'Todos' }, ...players]);
+    } catch (e) {
+      console.error('Error cargando miembros:', e);
+    }
+  };
+
+  const handleTextChange = (val: string) => {
+    setText(val);
+    
+    // Detectar si el último caracter o palabra sugiere una mención
+    const lastAtPos = val.lastIndexOf('@');
+    if (lastAtPos !== -1) {
+      const textAfterAt = val.slice(lastAtPos + 1);
+      // Solo mostrar si no hay espacios después del @ o es el final
+      if (!textAfterAt.includes(' ')) {
+        setMentionQuery(textAfterAt.toLowerCase());
+        setShowMentions(true);
+      } else {
+        setShowMentions(false);
+      }
+    } else {
+      setShowMentions(false);
+    }
+
+    if (val.length > 0 && !isTyping) {
+      socketService.sendTyping(groupName);
+      setIsTyping(true);
+    } else if (val.length === 0 && isTyping) {
+      socketService.sendStopTyping(groupName);
+      setIsTyping(false);
+    }
+  };
+
+  const insertMention = (member: any) => {
+    const lastAtPos = text.lastIndexOf('@');
+    const displayName = member.nickname || member.name || 'Usuario';
+    const newText = text.slice(0, lastAtPos) + `@${displayName} `;
+    setText(newText);
+    setShowMentions(false);
+  };
 
   const handleSend = () => {
     if (!text.trim() || !auth) return;
@@ -341,7 +551,7 @@ export default function ChatScreen() {
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      
+
       // Importante: Volver al modo de reproducción normal
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
@@ -349,7 +559,7 @@ export default function ChatScreen() {
       });
 
       setRecording(null);
-      
+
       if (uri) {
         const serverUrl = await api.uploadFile(uri, 'audio');
         socketService.sendMessage(groupName, 'Nota de voz enviada', 'audio', serverUrl);
@@ -392,8 +602,8 @@ export default function ChatScreen() {
       `¿Qué quieres hacer con el mensaje de ${message.senderName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: '🚩 Reportar contenido', 
+        {
+          text: '🚩 Reportar contenido',
           onPress: () => {
             Alert.alert(
               'Reportar',
@@ -435,10 +645,36 @@ export default function ChatScreen() {
     }
   };
 
+  // Función para renderizar el texto del mensaje con menciones resaltadas
+  const renderMessageText = (text: string) => {
+    if (!text) return null;
+    
+    // Regex para detectar menciones (ej: @Dani, @todos, @Arafat)
+    const parts = text.split(/(@\w+)/g);
+    
+    return (
+      <Text style={styles.messageText}>
+        {parts.map((part, index) => {
+          if (part.startsWith('@')) {
+            return (
+              <Text key={index} style={styles.mentionHighlight}>
+                {part}
+              </Text>
+            );
+          }
+          return part;
+        })}
+      </Text>
+    );
+  };
+
   const renderMessage = ({ item, index }: { item: socketService.ChatMessage, index: number }) => {
     const isMe = item.senderId === auth?.phone;
-    const showDate = index === 0 || new Date(messages[index-1].timestamp).toDateString() !== new Date(item.timestamp).toDateString();
+    const showDate = index === 0 || new Date(messages[index - 1].timestamp).toDateString() !== new Date(item.timestamp).toDateString();
     const dateLabel = new Date(item.timestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+    
+    // El marcador aparece justo ANTES del primer mensaje no leído
+    const isFirstUnread = showUnreadMarker && lastReadId && messages[index - 1]?._id === lastReadId;
 
     return (
       <View>
@@ -447,7 +683,18 @@ export default function ChatScreen() {
             <View style={styles.dateLine} /><Text style={styles.dateText}>{dateLabel}</Text><View style={styles.dateLine} />
           </View>
         )}
-        
+
+        {isFirstUnread && (
+          <View style={styles.unreadSeparator}>
+            <View style={styles.unreadLine} />
+            <View style={styles.unreadTag}>
+              <Ionicons name="arrow-down" size={12} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={styles.unreadText}>{unreadCount} {unreadCount === 1 ? 'Mensaje no leído' : 'Mensajes no leídos'}</Text>
+            </View>
+            <View style={styles.unreadLine} />
+          </View>
+        )}
+
         <View style={[styles.messageRow, isMe ? { justifyContent: 'flex-end' } : { justifyContent: 'flex-start' }]}>
           {!isMe && (
             <View style={[styles.avatar, { backgroundColor: item.isBot ? '#4c1d95' : '#3b82f6' }]}>
@@ -455,19 +702,19 @@ export default function ChatScreen() {
             </View>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.8}
             onLongPress={() => handleMessageAction(item)}
             style={[
-              styles.messageBubble, 
+              styles.messageBubble,
               isMe ? styles.messageMe : item.isBot ? styles.messageBot : styles.messageOther,
               (item.type === 'sticker' || item.type === 'gif') && { backgroundColor: 'transparent', borderWidth: 0, padding: 0 }
             ]}
           >
             {!isMe && <Text style={[styles.senderName, item.isBot && { color: '#a78bfa' }]}>{item.senderName}</Text>}
-            
-            {(item.type === 'text' || !item.type) && <Text style={styles.messageText}>{item.text}</Text>}
-            
+
+            {(item.type === 'text' || !item.type) && renderMessageText(item.text)}
+
             {item.type === 'image' && (
               <Image source={{ uri: item.mediaUrl }} style={styles.messageImage} resizeMode="cover" />
             )}
@@ -479,24 +726,24 @@ export default function ChatScreen() {
             {item.type === 'gif' && (
               <Image source={{ uri: item.mediaUrl }} style={styles.messageGif} resizeMode="cover" />
             )}
-            
+
             {item.type === 'audio' && (
               <TouchableOpacity style={styles.audioContainer} onPress={() => playAudio(item._id, item.mediaUrl)}>
-                <Ionicons 
-                  name={playingId === item._id ? "pause" : "play"} 
-                  size={24} 
-                  color="#fff" 
+                <Ionicons
+                  name={playingId === item._id ? "pause" : "play"}
+                  size={24}
+                  color="#fff"
                 />
                 <View style={styles.audioBar}>
-                  <View style={[styles.audioProgress, { 
-                    width: playingId === item._id 
-                      ? `${(playbackStatus.position / playbackStatus.duration) * 100}%` 
-                      : '0%' 
+                  <View style={[styles.audioProgress, {
+                    width: playingId === item._id
+                      ? `${(playbackStatus.position / playbackStatus.duration) * 100}%`
+                      : '0%'
                   }]} />
                 </View>
                 <Text style={styles.audioDuration}>
-                  {playingId === item._id 
-                    ? formatMillis(playbackStatus.position) 
+                  {playingId === item._id
+                    ? formatMillis(playbackStatus.position)
                     : 'Nota'}
                 </Text>
               </TouchableOpacity>
@@ -522,13 +769,35 @@ export default function ChatScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
       <FlatList
         ref={flatListRef}
-        data={messages}
+        data={uniqueMessages}
         keyExtractor={item => item._id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onScrollToIndexFailed={info => {
+          const wait = new Promise(resolve => setTimeout(resolve, 500));
+          wait.then(() => {
+            flatListRef.current?.scrollToIndex({ index: info.index, animated: false, viewPosition: 0 });
+          });
+        }}
       />
-      
+
+      {showUnreadMarker && (
+        <TouchableOpacity 
+          style={styles.floatingUnread} 
+          onPress={() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+            setShowUnreadMarker(false);
+            if (messages.length > 0) updateLastRead(messages[messages.length - 1]._id);
+          }}
+        >
+          <Ionicons name="chevron-down" size={24} color="#fff" />
+          <View style={styles.unreadBadge} />
+        </TouchableOpacity>
+      )}
+
       {typingUsers.length > 0 && <View style={styles.typingIndicator}><Text style={styles.typingText}>{typingUsers.join(', ')} escribiendo...</Text></View>}
 
       {showPicker && !isRecording && (
@@ -565,7 +834,7 @@ export default function ChatScreen() {
                     </View>
                     <Text style={styles.addStickerLabel}>Nuevo</Text>
                   </TouchableOpacity>
-                  
+
                   {recentStickers.map((url, idx) => (
                     <TouchableOpacity key={idx} onPress={() => sendMedia('sticker', url)} style={styles.stickerItem}>
                       <Image source={{ uri: url }} style={styles.stickerThumb} />
@@ -576,16 +845,20 @@ export default function ChatScreen() {
             )}
 
             {pickerTab === 'gif' && (
-              <View style={{flex: 1}}>
+              <View style={{ flex: 1 }}>
                 <TextInput
                   style={styles.gifSearch}
-                  placeholder="Buscar GIFs en Tenor..."
+                  placeholder="Buscar GIFs en GIPHY..."
                   placeholderTextColor="#64748b"
                   value={gifSearch}
                   onChangeText={setGifSearch}
                 />
-                {gifsLoading ? <ActivityIndicator style={{marginTop: 20}} /> : (
-                  <ScrollView contentContainerStyle={styles.gifGrid}>
+                <Text style={{ color: '#64748b', fontSize: 10, textAlign: 'center', marginBottom: 5 }}>Powered by GIPHY</Text>
+                {gifsLoading ? <ActivityIndicator style={{ marginTop: 20 }} /> : (
+                  <ScrollView 
+                    contentContainerStyle={styles.gifGrid}
+                    keyboardShouldPersistTaps="handled"
+                  >
                     {gifs.map(g => (
                       <TouchableOpacity key={g.id} onPress={() => sendMedia('gif', g.url)} style={styles.gifItem}>
                         <Image source={{ uri: g.url }} style={styles.gifThumb} />
@@ -599,6 +872,40 @@ export default function ChatScreen() {
         </View>
       )}
 
+      {/* MENTIONS SUGGESTIONS */}
+      {showMentions && (
+        <View style={styles.mentionOverlay}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {groupMembers
+              .filter(m => {
+                const name = m.name || '';
+                const nickname = m.nickname || '';
+                // Solo incluir si tiene nombre o apodo Y coincide con la búsqueda
+                if (!name && !nickname) return false;
+                return name.toLowerCase().includes(mentionQuery) || 
+                       nickname.toLowerCase().includes(mentionQuery);
+              })
+              .map((member, idx) => {
+                const displayName = member.nickname || member.name || 'Usuario';
+                return (
+                  <TouchableOpacity 
+                    key={idx} 
+                    style={styles.mentionItem} 
+                    onPress={() => insertMention(member)}
+                  >
+                    <View style={styles.mentionAvatar}>
+                      <Text style={styles.mentionAvatarText}>
+                        {displayName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.mentionName}>{displayName}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+          </ScrollView>
+        </View>
+      )}
+
       {/* INPUT AREA */}
       <View style={styles.inputContainer}>
         {isRecording ? (
@@ -606,7 +913,7 @@ export default function ChatScreen() {
             <TouchableOpacity onPress={cancelRecording} style={styles.cancelBtn}>
               <Ionicons name="trash-outline" size={24} color="#ef4444" />
             </TouchableOpacity>
-            
+
             <View style={styles.recordingStatus}>
               <Animated.View style={[styles.recordingDot, { opacity: pulseAnim }]} />
               <Text style={styles.recordingTimer}>{recordingTime}s</Text>
@@ -620,8 +927,8 @@ export default function ChatScreen() {
               )}
             </View>
 
-            <TouchableOpacity 
-              style={[styles.sendButton, { backgroundColor: '#10b981' }]} 
+            <TouchableOpacity
+              style={[styles.sendButton, { backgroundColor: '#10b981' }]}
               onPress={() => stopRecording(true)}
             >
               <MaterialIcons name="send" size={22} color="#fff" />
@@ -632,14 +939,14 @@ export default function ChatScreen() {
             <TouchableOpacity style={styles.attachBtn} onPress={pickImage}>
               <Ionicons name="camera" size={24} color="#8b949e" />
             </TouchableOpacity>
-            
+
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}
                 placeholder="Mensaje..."
                 placeholderTextColor="#64748b"
                 value={text}
-                onChangeText={(t) => { setText(t); socketService.sendTyping(groupName); }}
+                onChangeText={handleTextChange}
                 onFocus={() => setShowPicker(false)}
                 multiline
               />
@@ -653,10 +960,10 @@ export default function ChatScreen() {
                 <MaterialIcons name="send" size={22} color="#fff" />
               </TouchableOpacity>
             ) : (
-              <Animated.View 
+              <Animated.View
                 {...panResponder.panHandlers}
                 style={[
-                  styles.sendButton, 
+                  styles.sendButton,
                   isRecording && { backgroundColor: '#ef4444', transform: [{ scale: 1.2 }] }
                 ]}
               >
@@ -686,6 +993,7 @@ const styles = StyleSheet.create({
   messageBot: { backgroundColor: '#2d1b4e', borderBottomLeftRadius: 2 },
   senderName: { color: '#f5a623', fontSize: 11, fontWeight: 'bold', marginBottom: 4 },
   messageText: { color: '#fff', fontSize: 15 },
+  mentionHighlight: { color: '#3b82f6', fontWeight: 'bold' },
   messageImage: { width: 200, height: 150, borderRadius: 10, marginTop: 4 },
   messageSticker: { width: 150, height: 150 },
   messageGif: { width: 180, height: 120, borderRadius: 8 },
@@ -721,6 +1029,44 @@ const styles = StyleSheet.create({
   typingIndicator: { paddingHorizontal: 20, paddingVertical: 4 },
   typingText: { color: '#64748b', fontSize: 12 },
   
+  mentionOverlay: {
+    backgroundColor: '#151a3a',
+    borderTopWidth: 1,
+    borderTopColor: '#1e2a5a',
+    paddingVertical: 10,
+    maxHeight: 60,
+  },
+  mentionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginHorizontal: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  mentionAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  mentionAvatarText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  mentionName: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
   pickerContainer: { height: 280, backgroundColor: '#151a3a', borderTopWidth: 1, borderTopColor: '#1e2a5a' },
   pickerTabs: { flexDirection: 'row', height: 44, borderBottomWidth: 1, borderBottomColor: '#1e2a5a' },
   pickerTab: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -786,5 +1132,59 @@ const styles = StyleSheet.create({
   inputWrapper: { flex: 1, flexDirection: 'row', backgroundColor: '#151a3a', borderRadius: 20, alignItems: 'center', paddingHorizontal: 10 },
   input: { flex: 1, color: '#fff', paddingVertical: 8, marginLeft: 10, maxHeight: 100 },
   sendButton: { backgroundColor: '#1e40af', width: 45, height: 45, borderRadius: 22.5, justifyContent: 'center', alignItems: 'center' },
-  lockIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4 }
+  lockIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  
+  // Estilos No Leídos
+  unreadSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 10
+  },
+  unreadLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(59, 130, 246, 0.3)'
+  },
+  unreadTag: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10
+  },
+  unreadText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold'
+  },
+  floatingUnread: {
+    position: 'absolute',
+    bottom: 90,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#1e40af',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#ef4444',
+    borderWidth: 2,
+    borderColor: '#1e40af'
+  }
 });

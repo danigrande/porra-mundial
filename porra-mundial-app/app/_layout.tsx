@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
 import { loadAuth, getAuth, subscribeAuth } from '../stores/authStore';
 import { setupPushNotifications } from '../services/push';
 import { connect as connectSocket } from '../services/socket';
@@ -10,6 +11,30 @@ export default function RootLayout() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const segments = useSegments();
   const router = useRouter();
+
+  // Escuchar cuando el usuario pulsa una notificación
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+
+  useEffect(() => {
+    if (
+      lastNotificationResponse &&
+      lastNotificationResponse.notification.request.content.data.screen === 'chat' &&
+      lastNotificationResponse.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
+    ) {
+      const { groupName } = lastNotificationResponse.notification.request.content.data;
+      console.log('[Push] Navegando al chat:', groupName);
+      
+      // Pequeño delay para asegurar que el router está listo
+      setTimeout(() => {
+        if (isLoggedIn) {
+          router.push({
+            pathname: '/(tabs)/chat', // Ruta correcta corregida
+            params: { groupName }
+          });
+        }
+      }, 500);
+    }
+  }, [lastNotificationResponse, isLoggedIn]);
 
   useEffect(() => {
     // Escuchar cambios de autenticación (login/logout)

@@ -242,3 +242,26 @@ export async function reportContent(data: { reporterPhone: string, reportedUser:
     body: JSON.stringify(data),
   });
 }
+
+export async function blockUser(blockerPhone: string, blockedPhone: string, groupName?: string) {
+  return apiFetch('/block', {
+    method: 'POST',
+    body: JSON.stringify({ blockerPhone, blockedPhone, groupName }),
+  });
+}
+
+export async function unblockUser(blockerPhone: string, blockedPhone: string) {
+  return apiFetch('/unblock', {
+    method: 'POST',
+    body: JSON.stringify({ blockerPhone, blockedPhone }),
+  });
+}
+
+export async function getBlockedUsers(phone: string): Promise<string[]> {
+  return apiFetch(`/blocked?phone=${encodeURIComponent(phone)}`);
+}
+
+export async function searchGiphy(query: string) {
+  return apiFetch(`/giphy/search?q=${encodeURIComponent(query)}`);
+}
+

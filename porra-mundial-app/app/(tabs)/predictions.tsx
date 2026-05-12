@@ -169,7 +169,7 @@ export default function PredictionsScreen() {
       <ScrollView contentContainerStyle={styles.matchesList} keyboardShouldPersistTaps="handled">
         {selectedGroup === 'PREMIOS' ? (
           <View style={styles.awardsContainer}>
-            <Text style={styles.awardsTitle}>Tus Apuestas Individuales</Text>
+            <Text style={styles.awardsTitle}>Tus Pronósticos Individuales</Text>
             <Text style={styles.awardsSubtitle}>Elige a los mejores del torneo para ganar puntos extra.</Text>
 
             <View style={styles.awardInputBox}>

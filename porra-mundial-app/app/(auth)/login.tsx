@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as api from '../../services/api';
 import { saveAuth } from '../../stores/authStore';
 import { connect } from '../../services/socket';
+
+// URL de los términos legales (cambiar a tu dominio real)
+const TERMS_URL = 'https://tu-app.onrender.com/legal/terms';
+const PRIVACY_URL = 'https://tu-app.onrender.com/legal/privacy';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -132,8 +136,8 @@ export default function LoginScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.trophy}>🏆</Text>
-          <Text style={styles.title}>Porra Mundial</Text>
-          <Text style={styles.subtitle}>2026</Text>
+          <Text style={styles.title}>Predicción Mundial</Text>
+          <Text style={styles.subtitle}>2026 — Pronósticos entre amigos</Text>
         </View>
 
         {/* Tab Switcher */}
@@ -292,8 +296,12 @@ export default function LoginScreen() {
                 </View>
                 <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
                   <Text style={styles.checkLabel}>Acepto los </Text>
-                  <TouchableOpacity onPress={() => Alert.alert('Términos y Condiciones (EULA)', 'Al usar esta App, te comprometes a no publicar contenido ofensivo, abusivo o discriminatorio. El Agente Mundial se reserva el derecho de moderar y eliminar mensajes inapropiados y bloquear a usuarios que incumplan estas normas.')}>
-                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>términos de uso y conducta</Text>
+                  <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)}>
+                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>términos de uso</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.checkLabel}> y la </Text>
+                  <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL)}>
+                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>política de privacidad</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -309,7 +317,10 @@ export default function LoginScreen() {
           )}
 
         </View>
-        <Text style={styles.footer}>Agente Mundial 🏆 — Chat con IA</Text>
+        <Text style={styles.footer}>Predicción Mundial 🏆 — Sin dinero real</Text>
+        <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL)} style={{ marginTop: 8 }}>
+          <Text style={[styles.footer, { color: '#3b82f6', textDecorationLine: 'underline' }]}>Política de Privacidad</Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );

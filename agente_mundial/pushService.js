@@ -6,6 +6,8 @@
 
 import { PushToken } from './models/PushToken.js';
 import { Group } from './models/Group.js';
+import { User } from './models/User.js';
+import { BlockedUser } from './models/BlockedUser.js';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -48,23 +50,71 @@ export async function sendToGroup(groupName, title, body, data = {}, excludeUser
     const group = await Group.findOne({ name: groupName }).populate('members');
     if (!group) return;
 
-    const memberIds = group.members
-      .map(m => m._id.toString())
-      .filter(id => id !== excludeUserId);
-
-    const tokens = await PushToken.find({ user: { $in: memberIds } });
+    const memberIds = group.members.map(m => m._id.toString());
+    const tokens = await PushToken.find({ user: { $in: memberIds } }).populate('user');
+    
     if (tokens.length === 0) {
       console.warn(`[Push] ⚠️ No hay tokens registrados para los miembros del grupo ${groupName}. No se enviarán notificaciones.`);
       return;
     }
 
-    const messages = tokens.map(t => ({
-      to: t.token,
-      sound: 'default',
-      title,
-      body,
-      data: { ...data, groupName },
-    }));
+    // --- BLOQUEOS ---
+    let blockedMePhones = [];
+    if (excludeUserId) {
+        const sender = await User.findById(excludeUserId).select('phone');
+        if (sender) {
+            const blocks = await BlockedUser.find({ blockedPhone: sender.phone }).select('blockerPhone');
+            blockedMePhones = blocks.map(b => b.blockerPhone);
+        }
+    }
+
+    const messages = [];
+    const textLower = body.toLowerCase();
+
+    for (const t of tokens) {
+      const user = t.user;
+      if (!user || user._id.toString() === excludeUserId) continue;
+
+      // No enviar si el destinatario ha bloqueado al remitente
+      if (blockedMePhones.includes(user.phone)) {
+          console.log(`[Push] 🚫 Saltando a ${user.name} (ha bloqueado al remitente)`);
+          continue;
+      }
+
+      // Lógica de filtrado por preferencias
+      const pref = user.notificationPreference || 'all';
+      console.log(`[Push] Usuario: ${user.name} (${user._id}), Token: ${t.token.substring(0,10)}..., Pref: "${pref}"`);
+
+      if (pref === 'none') {
+        console.log(`[Push] 🔇 Silencio total para ${user.name}`);
+        continue;
+      }
+
+      if (pref === 'mentions') {
+        const nameMention = `@${user.name.toLowerCase()}`;
+        const nickMention = user.nickname ? `@${user.nickname.toLowerCase()}` : null;
+        
+        const isMentioned = textLower.includes(nameMention) || 
+                           (nickMention && textLower.includes(nickMention)) ||
+                           textLower.includes('@todos') || 
+                           textLower.includes('@all');
+
+        if (!isMentioned) {
+          console.log(`[Push] 🔇 Saltando a ${user.name} (solo menciones, no detectada)`);
+          continue;
+        }
+      }
+
+      messages.push({
+        to: t.token,
+        sound: 'default',
+        title,
+        body,
+        data: { ...data, groupName },
+      });
+    }
+
+    if (messages.length === 0) return;
 
     await sendPushBatch(messages);
     console.log(`[Push] Enviado a ${messages.length} dispositivos del grupo ${groupName}`);

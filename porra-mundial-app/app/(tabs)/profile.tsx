@@ -167,7 +167,7 @@ export default function ProfileScreen() {
               style={styles.input} 
               value={nickname} 
               onChangeText={setNickname}
-              placeholder="Ej: El Mago de la Porra"
+              placeholder="Ej: El Gurú del Mundial"
               placeholderTextColor="#64748b"
             />
           </View>

@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import { User } from './models/User.js';
 import { Group } from './models/Group.js';
 import { Message } from './models/Message.js';
+import { BlockedUser } from './models/BlockedUser.js';
 import { processMessage, refreshCache, identifyPlayer } from './messageHandler.js';
 import * as pushService from './pushService.js';
 
@@ -97,9 +98,18 @@ export function initChatServer(httpServer) {
           .limit(50)
           .lean();
         
+        // Obtener lista de usuarios que el usuario ha bloqueado
+        const blockedByMe = await BlockedUser.find({ blockerPhone: phone }).lean();
+        const blockedPhones = blockedByMe.map(b => b.blockedPhone);
+
+        // Filtrar mensajes de usuarios bloqueados
+        const filteredMessages = messages
+          .filter(m => !blockedPhones.includes(m.senderId))
+          .reverse(); // Orden cronológico
+        
         socket.emit('chat-history', {
           groupName,
-          messages: messages.reverse() // Orden cronológico
+          messages: filteredMessages
         });
       } catch (e) {
         console.error('[Chat] Error cargando historial:', e.message);
@@ -127,7 +137,7 @@ export function initChatServer(httpServer) {
           isBot: false
         });
 
-        // 2. Emitir a todos los miembros del grupo (incluido el remitente)
+        // 2. Emitir a todos los miembros del grupo (excepto a quienes hayan bloqueado al remitente)
         const messagePayload = {
           _id: userMessage._id.toString(),
           chatId: groupName,
@@ -139,7 +149,17 @@ export function initChatServer(httpServer) {
           isBot: false,
           timestamp: userMessage.timestamp
         };
-        io.to(`group:${groupName}`).emit('new-message', messagePayload);
+
+        // En lugar de broadcast simple, filtramos destinatarios
+        const socketsInRoom = await io.in(`group:${groupName}`).fetchSockets();
+        for (const s of socketsInRoom) {
+            // No enviar si el destinatario ha bloqueado al remitente
+            // Nota: Para optimizar, podríamos cachear los bloqueos en el socket
+            const isBlocked = await BlockedUser.findOne({ blockerPhone: s.userData.phone, blockedPhone: phone });
+            if (!isBlocked) {
+                s.emit('new-message', messagePayload);
+            }
+        }
         
         // 3. Notificación Push a los miembros desconectados
         pushService.sendToGroup(
@@ -171,10 +191,8 @@ export function initChatServer(httpServer) {
           
           const botResponse = await processMessage(
             cleanText, 
-            phone,        // senderPhone
-            true,         // isGroup
-            true,         // isMentioned (siempre true porque ya filtramos)
-            groupName     // chatId = groupName (ya no es WhatsApp JID)
+            phone,
+            groupName
           );
 
           if (botResponse) {
@@ -219,7 +237,7 @@ export function initChatServer(httpServer) {
 
         // 8. Guardar embedding para RAG (fire-and-forget)
         import('./ragService.js').then(rag => {
-          rag.saveChatMessage(groupName, phone, userName, text.trim());
+          rag.vectorizeMessage(userMessage._id, text.trim());
         }).catch(e => console.error('[Chat] Error RAG:', e.message));
 
       } catch (error) {

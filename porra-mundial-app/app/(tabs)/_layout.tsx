@@ -58,7 +58,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="predictions"
         options={{
-          title: 'Mi porra',
+          title: 'Mi predicción',
           tabBarIcon: ({ color }) => <MaterialIcons name="sports-soccer" size={26} color={color} />,
         }}
       />
@@ -85,6 +85,12 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="admin"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
         options={{
           href: null,
         }}

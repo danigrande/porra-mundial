@@ -21,28 +21,19 @@ try {
 }
 
 /**
- * Guarda un mensaje en MongoDB y calcula su vector (embedding)
+ * Calcula el vector (embedding) de un mensaje ya existente y lo actualiza
  */
-export async function saveChatMessage(chatId, senderId, senderName, text) {
+export async function vectorizeMessage(messageId, text) {
   try {
-    let vector = [];
-    if (embeddings) {
-      // Generar el embedding del texto
-      const response = await embeddings.embedQuery(text);
-      vector = response;
-    }
+    if (!embeddings) return;
 
-    await Message.create({
-      chatId,
-      senderId,
-      senderName,
-      text,
-      embedding: vector
-    });
+    // Generar el embedding del texto
+    const vector = await embeddings.embedQuery(text);
 
-    console.log(`[RAG] Mensaje guardado y vectorizado de ${senderName || senderId}`);
+    await Message.findByIdAndUpdate(messageId, { embedding: vector });
+    console.log(`[RAG] Mensaje ${messageId} vectorizado correctamente.`);
   } catch (error) {
-    console.error('[RAG] Error guardando mensaje:', error.message);
+    console.error('[RAG] Error vectorizando mensaje:', error.message);
   }
 }
 

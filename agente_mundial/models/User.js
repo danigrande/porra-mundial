@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema({
   humor_style: { type: String, default: 'Divertido y amigable' },
   groups: [{ type: String }],
   isAdminOf: [{ type: String }], // Grupos de los que es admin
+  notificationPreference: { 
+    type: String, 
+    enum: ['all', 'mentions', 'none'], 
+    default: 'all' 
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

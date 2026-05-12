@@ -46,7 +46,7 @@ export default function MenuScreen() {
         <MenuButton 
           icon="format-list-bulleted" 
           label="El Muro" 
-          sublabel="Ver todas las porras del grupo"
+          sublabel="Ver todas las predicciones del grupo"
           onPress={() => router.push('/(tabs)/pool')}
           color="#3b82f6"
         />
@@ -56,6 +56,13 @@ export default function MenuScreen() {
           sublabel="Ajustes de cuenta e IA"
           onPress={() => router.push('/(tabs)/profile')}
           color="#10b981"
+        />
+        <MenuButton 
+          icon="notifications" 
+          label="Notificaciones" 
+          sublabel="Silenciar o personalizar avisos"
+          onPress={() => router.push('/(tabs)/notifications')}
+          color="#f43f5e"
         />
       </View>
 
@@ -77,7 +84,7 @@ export default function MenuScreen() {
           <MaterialIcons name="logout" size={20} color="#ef4444" />
           <Text style={styles.logoutText}>Cerrar Sesión</Text>
         </TouchableOpacity>
-        <Text style={styles.version}>Porra Mundial v1.2.0</Text>
+        <Text style={styles.version}>Predicción Mundial v1.2.0</Text>
       </View>
     </ScrollView>
   );
