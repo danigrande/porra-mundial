@@ -54,6 +54,8 @@ export async function retrieveContextForPlayer(chatId, playerName, limit = 30) {
     // Si no está configurado, hacemos un fallback a búsqueda de texto simple
     
     // Fallback simple: Buscar mensajes donde se mencione el nombre o que haya enviado él
+    console.log(`[RAG] Buscando mensajes para chatId: "${chatId}", playerName: "${playerName}"`);
+    
     const messages = await Message.find({
       chatId,
       $or: [
@@ -62,10 +64,29 @@ export async function retrieveContextForPlayer(chatId, playerName, limit = 30) {
       ]
     }).sort({ timestamp: -1 }).limit(limit);
 
-    if (messages.length === 0) return "No hay contexto en el chat sobre este jugador.";
+    let finalMessages = [...messages];
 
-    // Unir los mensajes para el contexto del LLM
-    const context = messages.map(m => `[${new Date(m.timestamp).toLocaleDateString()}] ${m.senderName}: ${m.text}`).join('\n');
+    // Si no hay muchos mensajes sobre el jugador, traer los últimos 5 del grupo para contexto reciente
+    if (finalMessages.length < 5) {
+        const recentMessages = await Message.find({ chatId })
+            .sort({ timestamp: -1 })
+            .limit(5);
+        
+        // Evitar duplicados
+        recentMessages.forEach(rm => {
+            if (!finalMessages.find(fm => fm._id.toString() === rm._id.toString())) {
+                finalMessages.push(rm);
+            }
+        });
+        // Re-ordenar por tiempo
+        finalMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    }
+
+    console.log(`[RAG] Mensajes finales para contexto: ${finalMessages.length}`);
+
+    if (finalMessages.length === 0) return "";
+
+    const context = finalMessages.map(m => `[${new Date(m.timestamp).toLocaleTimeString()}] ${m.senderName}: ${m.text}`).join('\n');
     return context;
 
   } catch (error) {

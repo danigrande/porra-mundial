@@ -88,6 +88,7 @@ async function loadHealth() {
     // Header status dots
     document.getElementById('header-status').innerHTML = `
       <span><span class="status-dot ${s.mongodb.connected ? 'green' : 'red'}"></span><span class="status-label">MongoDB</span></span>
+      <span><span class="status-dot ${s.socketio?.active ? 'green' : 'red'}"></span><span class="status-label">Socket.IO</span></span>
       <span><span class="status-dot ${s.groq.configured ? 'green' : 'red'}"></span><span class="status-label">Groq</span></span>
       <span><span class="status-dot ${s.huggingface.configured ? 'green' : 'amber'}"></span><span class="status-label">HF Embed</span></span>
     `;
@@ -108,6 +109,11 @@ async function loadHealth() {
         <div class="card-label">HuggingFace</div>
         <div class="card-value ${s.huggingface.configured ? 'green' : 'amber'}">${s.huggingface.configured ? 'ACTIVE' : 'DISABLED'}</div>
         <div class="card-sub">Embeddings para RAG</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Socket.IO Chat</div>
+        <div class="card-value ${s.socketio?.active ? 'green' : 'red'}">${s.socketio?.active ? 'ACTIVE' : 'DOWN'}</div>
+        <div class="card-sub">${s.socketio?.clients || 0} clientes conectados</div>
       </div>
       <div class="card">
         <div class="card-label">Server Uptime</div>

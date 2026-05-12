@@ -67,6 +67,13 @@ export default function MenuScreen() {
           onPress={() => router.push('/(tabs)/notifications')}
           color="#f43f5e"
         />
+        <MenuButton 
+          icon="menu-book" 
+          label="Reglas del Juego" 
+          sublabel="Cómo puntuar y modos de juego"
+          onPress={() => router.push('/(tabs)/rules')}
+          color="#10b981"
+        />
       </View>
 
       {isAdmin && (

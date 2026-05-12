@@ -74,6 +74,10 @@ router.get('/health', async (req, res) => {
           configured: !!process.env.HUGGINGFACEHUB_API_KEY,
           embeddingsActive: !!process.env.HUGGINGFACEHUB_API_KEY
         },
+        socketio: {
+          active: !!req.app.get('io'),
+          clients: req.app.get('io')?.engine?.clientsCount || 0
+        },
         server: {
           uptime: Math.floor(process.uptime()),
           uptimeFormatted: formatUptime(process.uptime()),

@@ -122,49 +122,54 @@ export async function processMessage(text, senderPhone, groupName) {
   await refreshCache(groupName);
   const cache = caches[groupName] || {};
 
-  // 2. Identificar al jugador
-  let playerName = identifyPlayer(senderPhone, groupName);
-  
-  const intent = detectIntent(text);
-
-  if (intent === 'help') {
-    return `🏆 *Agente Mundial* — Asistente del grupo *${groupName || 'Privado'}*
-\nPuedes preguntarme por la clasificación, tu posición o un resumen de la jornada.`;
-  }
-
-  // 3. Si el usuario pide su estado o ranking
-  if (intent === 'my_status' || intent === 'explain_score' || intent === 'summary') {
-    if (!playerName) {
-      return "No tengo tu teléfono registrado, ¡jugón! Dile al administrador que te añada a la porra.";
-    }
-
-    const playerStats = cache.leaderboard?.find(p => 
-        p.name.trim().toLowerCase() === playerName?.trim().toLowerCase()
-    );
-    const profile = cache.profiles ? (cache.profiles[playerName] || Object.values(cache.profiles).find(pr => pr.nickname === playerName)) : null;
+    console.log(`🤖 [Identify] Intentando identificar: ${senderPhone} en ${groupName}`);
+    let playerName = identifyPlayer(senderPhone, groupName);
+    console.log(`🤖 [Identify] Resultado: ${playerName || 'No identificado'}`);
     
-    // --- RAG: Buscar contexto de este jugador ---
-    let chatContext = "";
-    try {
-        const rag = await import('./ragService.js');
-        chatContext = await rag.retrieveContextForPlayer(groupName, playerName);
-    } catch (e) {
-        console.error("Error recuperando RAG context:", e);
+    const intent = detectIntent(text);
+
+    if (intent === 'help') {
+      return `🏆 *Agente Mundial* — Asistente del grupo *${groupName || 'Privado'}*
+\nPuedes preguntarme por la clasificación, tu posición o un resumen de la jornada.`;
     }
 
-    const context = {
-      groupName,
-      ranking: cache.leaderboard,
-      playerStats,
-      profile,
-      leaderboard: cache.leaderboard,
-      chatContext
-    };
+    // 3. Si el usuario pide su estado o ranking
+    if (intent === 'my_status' || intent === 'explain_score' || intent === 'summary' || intent === 'general') {
+      if (!playerName) {
+        // Permitir que 'general' pase aunque no esté identificado, usaremos 'Desconocido'
+        if (intent !== 'general') {
+          return "No tengo tu teléfono registrado, ¡jugón! Dile al administrador que te añada a la porra.";
+        }
+      }
 
-    console.log(`🤖 Generando respuesta IA para ${playerName} con ${chatContext.length > 50 ? 'contexto RAG' : 'sin RAG'}...`);
-    const response = await generateResponse(playerName, text, context);
-    return response;
-  }
+      const playerStats = cache.leaderboard?.find(p => 
+          p.name.trim().toLowerCase() === playerName?.trim().toLowerCase()
+      );
+      const profile = cache.profiles ? (cache.profiles[playerName] || Object.values(cache.profiles).find(pr => pr.nickname === playerName)) : null;
+      
+      // --- RAG: Buscar contexto de este jugador ---
+      let chatContext = "";
+      try {
+          const rag = await import('./ragService.js');
+          const effectiveSearchName = playerName || 'Agente Mundial';
+          chatContext = await rag.retrieveContextForPlayer(groupName, effectiveSearchName);
+      } catch (e) {
+          console.error("Error recuperando RAG context:", e);
+      }
+
+      const context = {
+        groupName,
+        ranking: cache.leaderboard,
+        playerStats,
+        profile,
+        leaderboard: cache.leaderboard,
+        chatContext
+      };
+
+      console.log(`🤖 Generando respuesta IA para ${playerName || 'Desconocido'} con ${chatContext.length > 50 ? 'contexto RAG' : 'sin RAG'}...`);
+      const response = await generateResponse(playerName || 'Desconocido', text, context);
+      return response;
+    }
 
   // 4. Construir contexto (fallback para otros intents)
   const profile = playerName ? (cache.profiles?.[playerName] || config.playerProfiles[playerName]) : null;

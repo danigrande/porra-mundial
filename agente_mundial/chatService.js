@@ -10,6 +10,7 @@ import { Group } from './models/Group.js';
 import { Message } from './models/Message.js';
 import { BlockedUser } from './models/BlockedUser.js';
 import { processMessage, refreshCache, identifyPlayer } from './messageHandler.js';
+import { vectorizeMessage } from './ragService.js';
 import * as pushService from './pushService.js';
 
 let io = null;
@@ -83,7 +84,7 @@ export function initChatServer(httpServer) {
       return;
     }
 
-    const { userName, userId, groups } = socket.userData;
+    const { userName, userId, groups, phone } = socket.userData;
     console.log(`💬 ${userName} conectado al chat (${groups?.length || 0} grupos)`);
 
     // Unir automáticamente a las salas de sus grupos
@@ -152,6 +153,9 @@ export function initChatServer(httpServer) {
           mediaUrl,
           isBot: false
         });
+
+        // 1.1 Vectorizar mensaje para el RAG
+        vectorizeMessage(userMessage._id, text.trim());
 
         // 2. Emitir a todos los miembros del grupo (excepto a quienes hayan bloqueado al remitente)
         const messagePayload = {
@@ -224,6 +228,9 @@ export function initChatServer(httpServer) {
               type: 'text',
               isBot: true
             });
+
+            // 5.1 Vectorizar respuesta del bot para el RAG
+            vectorizeMessage(botMessage._id, botResponse);
 
             const botPayload = {
               _id: botMessage._id.toString(),

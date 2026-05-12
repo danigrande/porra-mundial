@@ -17,8 +17,6 @@ const EMOJIS = [
 ];
 const STICKERS: string[] = []; // Los cargaremos dinámicamente
 
-const STICKERS: string[] = []; // Los cargaremos dinámicamente
-
 export default function ChatScreen() {
   const { groupName: paramGroupName } = useLocalSearchParams<{ groupName: string }>();
   const [messages, setMessages] = useState<socketService.ChatMessage[]>([]);
@@ -94,9 +92,6 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!auth || !groupName) return;
     // Ya no llamamos a loadHistory() aquí porque el socket nos enviará el historial al unirse
-    setLoading(true);
-    socketService.joinGroup(groupName);
-
     const socket = socketService.getSocket();
     if (!socket) return;
 
@@ -124,6 +119,7 @@ export default function ChatScreen() {
     };
 
     const onChatHistory = async (data: any) => {
+      console.log('[Chat] Historial recibido:', data.messages?.length, 'mensajes');
       if (data.groupName === groupName) {
         setMessagesSafe(data.messages);
         setLoading(false);
@@ -185,12 +181,17 @@ export default function ChatScreen() {
       }
     };
 
+    // 1. Registrar listeners PRIMERO
     socket.on('new-message', onNewMessage);
     socket.on('chat-history', onChatHistory);
     socket.on('user-typing', onUserTyping);
     socket.on('user-stopped-typing', onUserStoppedTyping);
     socket.on('bot-typing', onBotTyping);
     socket.on('bot-stopped-typing', onBotStoppedTyping);
+
+    // 2. Emitir join-group DESPUÉS de registrar listeners
+    setLoading(true);
+    socketService.joinGroup(groupName);
 
     return () => {
       socket.off('new-message', onNewMessage);
@@ -292,12 +293,6 @@ export default function ChatScreen() {
       }
     } catch (e: any) {
       console.error('[GIPHY] Error:', e.message);
-      setGifs([]);
-    } finally {
-      setGifsLoading(false);
-    }
-  };
-      console.error('[GIPHY] ❌ Fallo crítico:', e.message);
       setGifs([]);
     } finally {
       setGifsLoading(false);
