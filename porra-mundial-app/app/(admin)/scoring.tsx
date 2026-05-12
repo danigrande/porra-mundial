@@ -132,7 +132,7 @@ export default function AdminScreen() {
             </View>
             <View>
               <Text style={styles.cardTitle}>Modo de Predicción</Text>
-              <Text style={styles.cardSubtitle}>Elige cómo se jugará la porra</Text>
+              <Text style={styles.cardSubtitle}>Elige cómo se jugará la competición</Text>
             </View>
           </View>
 

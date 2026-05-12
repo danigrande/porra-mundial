@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAuth, logout } from '../../stores/authStore';
 import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,9 @@ export default function MenuScreen() {
   const router = useRouter();
   const auth = getAuth();
   const isAdmin = auth?.isAdmin || false;
+  
+  const PRIVACY_URL = 'https://tu-app.onrender.com/legal/privacy';
+  const TERMS_URL = 'https://tu-app.onrender.com/legal/terms';
 
   const handleLogout = () => {
     Alert.alert('Cerrar Sesión', '¿Estás seguro de que quieres salir?', [
@@ -78,6 +81,24 @@ export default function MenuScreen() {
           />
         </View>
       )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Legal y Privacidad</Text>
+        <MenuButton 
+          icon="security" 
+          label="Política de Privacidad" 
+          sublabel="Cómo cuidamos tus datos"
+          onPress={() => Linking.openURL(PRIVACY_URL)}
+          color="#94a3b8"
+        />
+        <MenuButton 
+          icon="gavel" 
+          label="Términos de Uso" 
+          sublabel="Condiciones del servicio (EULA)"
+          onPress={() => Linking.openURL(TERMS_URL)}
+          color="#94a3b8"
+        />
+      </View>
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

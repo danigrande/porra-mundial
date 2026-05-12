@@ -89,6 +89,59 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+// ==========================================
+// RUTAS LEGALES (Requisito App Store)
+// ==========================================
+const legalLayout = (title, content) => `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title} - Predicción Mundial</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+      h1 { color: #1e40af; }
+      h2 { color: #1e3a8a; margin-top: 30px; }
+      .footer { margin-top: 50px; font-size: 0.8em; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1>${title}</h1>
+    ${content}
+    <div class="footer">
+      &copy; 2026 Predicción Mundial. Esta aplicación es para fines de entretenimiento y no involucra apuestas con dinero real.
+    </div>
+  </body>
+  </html>
+`;
+
+app.get('/legal/privacy', (req, res) => {
+  const content = `
+    <p>Última actualización: 12 de mayo de 2026</p>
+    <h2>1. Datos que recopilamos</h2>
+    <p>Recopilamos su número de teléfono únicamente para fines de autenticación y vinculación con su grupo de amigos. No compartimos estos datos con terceros.</p>
+    <h2>2. Uso de la Información</h2>
+    <p>Sus datos se utilizan para gestionar sus pronósticos, mostrar su posición en el ranking del grupo e interactuar en el chat del grupo.</p>
+    <h2>3. Derechos del Usuario</h2>
+    <p>Usted puede eliminar su cuenta y todos sus datos asociados en cualquier momento desde la sección de Perfil dentro de la aplicación.</p>
+  `;
+  res.send(legalLayout('Política de Privacidad', content));
+});
+
+app.get('/legal/terms', (req, res) => {
+  const content = `
+    <p>Última actualización: 12 de mayo de 2026</p>
+    <h2>1. Naturaleza del Servicio</h2>
+    <p>Predicción Mundial es una plataforma de entretenimiento para realizar pronósticos deportivos entre amigos. NO es una aplicación de apuestas y no se permite el intercambio de dinero real a través de la plataforma.</p>
+    <h2>2. Comportamiento del Usuario (EULA)</h2>
+    <p>No se tolerará contenido inapropiado, acoso o lenguaje ofensivo en el chat. Los usuarios pueden reportar contenido ofensivo y el equipo de moderación actuará en menos de 24 horas eliminando el contenido o bloqueando al usuario infractor.</p>
+    <h2>3. Exención de Responsabilidad</h2>
+    <p>Apple Inc. no es patrocinador ni está involucrado en las actividades de esta aplicación.</p>
+  `;
+  res.send(legalLayout('Términos de Uso (EULA)', content));
+});
+
 // Endpoint para forzar un resumen (útil para testing)
 app.get('/trigger-summary', adminAuth, async (req, res) => {
   try {
