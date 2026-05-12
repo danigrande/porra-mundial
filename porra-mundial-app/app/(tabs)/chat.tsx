@@ -749,6 +749,12 @@ export default function ChatScreen() {
               </TouchableOpacity>
             )}
 
+            {item.isBot && item.type === 'text' && (
+              <Text style={{ fontSize: 9, color: '#a78bfa', marginTop: 4, fontStyle: 'italic' }}>
+                Resumen generado por IA. Puede contener errores.
+              </Text>
+            )}
+
             {item.type !== 'sticker' && item.type !== 'gif' && (
               <View style={styles.messageMeta}>
                 <Text style={styles.timeText}>

@@ -313,6 +313,10 @@ export default function LoginScreen() {
               >
                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>🎉 Registrarse</Text>}
               </TouchableOpacity>
+
+              <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 15, paddingHorizontal: 20 }}>
+                * Apple Inc. no es patrocinador ni está involucrado de ninguna manera en esta aplicación o sus pronósticos.
+              </Text>
             </>
           )}
 

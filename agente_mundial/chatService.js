@@ -14,6 +14,15 @@ import * as pushService from './pushService.js';
 
 let io = null;
 
+// Lista básica de palabras prohibidas (Automatización de Moderación - Guideline 1.2)
+const PROFANITY_LIST = ['puto', 'puta', 'mierda', 'cabron', 'cabrón', 'maricon', 'maricón', 'zorra', 'joder']; 
+
+function containsProfanity(text) {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return PROFANITY_LIST.some(word => lower.includes(word));
+}
+
 /**
  * Inicializa el servidor Socket.IO sobre el servidor HTTP de Express.
  * @param {import('http').Server} httpServer - Servidor HTTP de Express
@@ -122,6 +131,13 @@ export function initChatServer(httpServer) {
       
       if (!groupName) return;
       if (type === 'text' && (!text || !text.trim())) return;
+
+      // --- FILTRO AUTOMÁTICO (Apple Requirement) ---
+      if (type === 'text' && containsProfanity(text)) {
+          console.warn(`[Chat] 🚫 Mensaje bloqueado por filtro: "${text}"`);
+          socket.emit('error', { message: 'Tu mensaje ha sido bloqueado por contener lenguaje inapropiado.' });
+          return;
+      }
 
       const { userName, userId, phone } = socket.userData;
 
