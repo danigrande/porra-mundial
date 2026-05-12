@@ -141,13 +141,19 @@ export function initChatServer(httpServer) {
       }
 
       const { userName, userId, phone } = socket.userData;
+      const cleanGroupName = groupName.trim();
 
       try {
+        // Asegurar que el caché esté fresco para la identificación
+        await refreshCache(cleanGroupName);
+        const identifiedName = identifyPlayer(phone, cleanGroupName);
+        const senderNameForDb = identifiedName || userName;
+
         // 1. Guardar mensaje del usuario en MongoDB
         const userMessage = await Message.create({
-          chatId: groupName,
+          chatId: cleanGroupName,
           senderId: phone,
-          senderName: userName,
+          senderName: senderNameForDb,
           text: text?.trim(),
           type,
           mediaUrl,
@@ -155,13 +161,13 @@ export function initChatServer(httpServer) {
         });
 
         // 1.1 Vectorizar mensaje para el RAG
-        vectorizeMessage(userMessage._id, text.trim());
+        vectorizeMessage(userMessage._id, text?.trim());
 
         // 2. Emitir a todos los miembros del grupo (excepto a quienes hayan bloqueado al remitente)
         const messagePayload = {
           _id: userMessage._id.toString(),
-          chatId: groupName,
-          senderName: userName,
+          chatId: cleanGroupName,
+          senderName: senderNameForDb,
           senderId: phone,
           text: text?.trim(),
           type,

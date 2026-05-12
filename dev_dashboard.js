@@ -226,12 +226,19 @@ async function openLogDetail(id) {
         ${!log.success ? ' · <span class="badge badge-error">ERROR: ' + (log.errorMessage || '') + '</span>' : ''}
       </div>
 
-      ${log.ragContext ? `
+      ${log.ragQuery ? `
         <div class="prompt-block">
-          <div class="prompt-label">🧠 RAG Context (${log.ragResultCount || 0} mensajes recuperados)</div>
-          <div class="prompt-content rag">${escapeHtml(log.ragContext)}</div>
+          <div class="prompt-label">🔍 RAG Query</div>
+          <div class="prompt-content" style="border-left: 3px solid var(--accent-cyan)">${escapeHtml(log.ragQuery)}</div>
         </div>
-      ` : '<div class="prompt-block"><div class="prompt-label">🧠 RAG Context</div><div class="prompt-content rag" style="color:var(--text-muted);font-style:italic">Sin contexto RAG para esta interacción</div></div>'}
+      ` : ''}
+
+      <div class="prompt-block">
+        <div class="prompt-label">🧠 RAG Context (${log.ragResultCount || 0} mensajes recuperados)</div>
+        <div class="prompt-content rag">
+          ${log.ragContext ? escapeHtml(log.ragContext) : '<span style="color:var(--text-muted);font-style:italic">Sin contexto recuperado de la base de datos</span>'}
+        </div>
+      </div>
 
       <div class="prompt-block">
         <div class="prompt-label">🟣 System Prompt</div>

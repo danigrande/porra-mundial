@@ -50,4 +50,4 @@ aiLogSchema.index({ createdAt: -1 });
 aiLogSchema.index({ playerName: 1, createdAt: -1 });
 aiLogSchema.index({ type: 1, createdAt: -1 });
 
-export const AILog = mongoose.model('AILog', aiLogSchema);
+export const AILog = mongoose.models.AILog || mongoose.model('AILog', aiLogSchema);

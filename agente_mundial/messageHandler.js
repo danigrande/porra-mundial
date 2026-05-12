@@ -151,8 +151,9 @@ export async function processMessage(text, senderPhone, groupName) {
       let chatContext = "";
       try {
           const rag = await import('./ragService.js');
+          const cleanGroupName = groupName ? groupName.trim() : "";
           const effectiveSearchName = playerName || 'Agente Mundial';
-          chatContext = await rag.retrieveContextForPlayer(groupName, effectiveSearchName);
+          chatContext = await rag.retrieveContextForPlayer(cleanGroupName, effectiveSearchName);
       } catch (e) {
           console.error("Error recuperando RAG context:", e);
       }
