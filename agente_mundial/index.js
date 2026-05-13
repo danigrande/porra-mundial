@@ -365,7 +365,7 @@ async function initAutoSimulation() {
         'FINALS_ACTIVE': 'final'
       };
 
-      const phaseToPopulate = mapping[state.phase];
+      const phaseToPopulate = mapping[state.id];
       if (!phaseToPopulate) return;
 
       const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
