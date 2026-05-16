@@ -9,7 +9,7 @@ window.CONFIG = {
   // URL del bot/API
   RENDER_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'
-    : 'https://porra-mundial.onrender.com'
+    : window.location.origin // Usar el propio dominio (aprovechando el proxy de render.yaml)
 };
 
 // Exponer variables globales explícitamente para los módulos

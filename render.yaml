@@ -1,0 +1,52 @@
+services:
+  # ---------------------------------------------------------------------------
+  # BACKEND: Agente Mundial (Node.js Web Service)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: agente-mundial-backend
+    env: node
+    plan: free
+    region: frankfurt # Oregón por defecto si no se especifica
+    rootDir: agente_mundial
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 3000
+      - key: GROQ_API_KEY
+        sync: false # Configurar manualmente en el dashboard por seguridad
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: MONGODB_URI
+        sync: false # Configurar manualmente en el dashboard
+      - key: GOOGLE_SCRIPT_URL
+        value: https://script.google.com/macros/s/AKfycbxqcLRNrr8eHaxll-Xwo_R56GYU_AmZoKwf4mrUvVt8YnGXZnJaJt0Tm5b_madhOX35/exec
+      - key: HUGGINGFACEHUB_API_KEY
+        sync: false
+      - key: API_FOOTBALL_KEY
+        sync: false
+      - key: DEV_DASHBOARD_KEY
+        value: agente-dev-2026
+      - key: TEST_MODE
+        value: "true"
+      - key: PHONE_DANI
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND: Porra Mundial (Static Site)
+  # ---------------------------------------------------------------------------
+  - type: static
+    name: porra-mundial-frontend
+    env: static
+    plan: free
+    publishDir: .
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://agente-mundial-backend.onrender.com/api/* # Proxy a tu backend
