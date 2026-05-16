@@ -169,14 +169,14 @@
     <div class="nav-inner">
       <a href="player_scores.html" class="nav-logo">
         <span class="nav-logo-icon">⚽</span>
-        <span class="nav-logo-text">Mundial 2026</span>
+        <span class="nav-logo-text" data-i18n="common.app_title">Mundial 2026</span>
       </a>
       <div class="nav-links" id="navLinks">
         <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
-        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+        <a href="#" onclick="handleLogout()" class="nav-logout" data-i18n="common.logout">Cerrar Sesión</a>
       </div>
     </div>
   </nav>
@@ -382,6 +382,7 @@
 
     function renderLeaderboard(results) {
       const container = document.getElementById('lbBody');
+      if (window.i18n) window.i18n.updateDOM();
       container.innerHTML = results.map((r, idx) => {
         const topClass = idx === 0 ? 'lb-top1' : idx === 1 ? 'lb-top2' : idx === 2 ? 'lb-top3' : '';
         const trend = Math.random() > 0.5 ? 'up' : 'eq'; // Placeholder trend
@@ -398,23 +399,23 @@
             <div class="lb-points">${r.totalPts}<span class="lb-pts-label" data-i18n="dashboard.points">pts</span></div>
             <div class="lb-trend trend-${trend}">${trendIcon}</div>
             
-            <button class="ai-btn" onclick="event.stopPropagation(); window.fetchAISummary('${r.name}', ${idx})">✨ Resumen IA</button>
+            <button class="ai-btn" onclick="event.stopPropagation(); window.fetchAISummary('${r.name}', ${idx})">✨ <span data-i18n="dashboard.ai_summary_btn">Resumen IA</span></button>
             
             <div class="ai-summary-box" id="ai_summary_${idx}" style="${savedSummaries[r.name] ? 'display:block' : ''}">
               ${savedSummaries[r.name] ? `<strong>IA:</strong> ${savedSummaries[r.name]}` : ''}
             </div>
 
             <div class="lb-breakdown" id="breakdown_${idx}">
-              <div class="lb-b-item"><span class="lb-b-label">Grupos</span><span class="lb-b-value"><span>${r.groupPts}</span> pts</span></div>
-              <div class="lb-b-item"><span class="lb-b-label">Eliminatorias</span><span class="lb-b-value"><span>${r.koPts}</span> pts</span></div>
-              <div class="lb-b-item"><span class="lb-b-label">Honor</span><span class="lb-b-value"><span>${r.honorPts}</span> pts</span></div>
-              <div class="lb-b-item"><span class="lb-b-label">Exactos</span><span class="lb-b-value"><span>${r.exactHits}</span></span></div>
+              <div class="lb-b-item"><span class="lb-b-label" data-i18n="dashboard.groups_label">Grupos</span><span class="lb-b-value"><span>${r.groupPts}</span> pts</span></div>
+              <div class="lb-b-item"><span class="lb-b-label" data-i18n="dashboard.knockout_label">Eliminatorias</span><span class="lb-b-value"><span>${r.koPts}</span> pts</span></div>
+              <div class="lb-b-item"><span class="lb-b-label" data-i18n="dashboard.honor_label">Honor</span><span class="lb-b-value"><span>${r.honorPts}</span> pts</span></div>
+              <div class="lb-b-item"><span class="lb-b-label" data-i18n="dashboard.exact">Exactos</span><span class="lb-b-value"><span>${r.exactHits}</span></span></div>
               
               <div class="lb-history-container">
-                <div class="lb-history-title">📝 Desglose de puntos</div>
+                <div class="lb-history-title">📝 <span data-i18n="dashboard.breakdown_title">Desglose de puntos</span></div>
                 <div class="lb-history-scroll">
                   <table class="lb-history-table">
-                    <thead><tr><th>Partido</th><th style="text-align:right">Pts</th><th>Motivo</th></tr></thead>
+                    <thead><tr><th data-i18n="dashboard.history_match">Partido</th><th style="text-align:right" data-i18n="dashboard.history_pts">Pts</th><th data-i18n="dashboard.history_reason">Motivo</th></tr></thead>
                     <tbody>
                       ${r.history.map(h => `<tr><td class="hist-match">${h.match}</td><td class="hist-pts">+${h.pts}</td><td class="hist-reason">${h.reason}</td></tr>`).join('')}
                     </tbody>
@@ -425,12 +426,13 @@
           </div>
         `;
       }).join('');
+      if (window.i18n) window.i18n.updateDOM();
     }
 
     window.fetchAISummary = async (playerName, idx) => {
       const box = document.getElementById(`ai_summary_${idx}`);
       box.style.display = 'block';
-      box.innerHTML = '<i>✨ Generando resumen...</i>';
+      box.innerHTML = `<i>✨ ${window.i18n ? window.i18n.t('dashboard.generating') : 'Generando resumen...'}</i>`;
       try {
         const res = await apiCall({ action: 'getSummary', playerName, groupName: currentUser.groupName });
         if (res.status === 'success') {
@@ -439,7 +441,7 @@
           box.innerHTML = `⚠️ ${res.message || 'Error'}`;
         }
       } catch (e) {
-        box.innerHTML = '⚠️ No se pudo conectar con el bot.';
+        box.innerHTML = '⚠️ ' + (window.i18n ? window.i18n.t('common.error') : 'Error');
       }
     };
 

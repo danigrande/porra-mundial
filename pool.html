@@ -55,7 +55,7 @@
     <div class="nav-inner">
       <a href="player_scores.html" class="nav-logo">
         <span class="nav-logo-icon">⚽</span>
-        <span class="nav-logo-text">Mundial 2026</span>
+        <span class="nav-logo-text" data-i18n="common.app_title">Mundial 2026</span>
       </a>
       <div class="nav-links" id="navLinks">
         <!-- Generado dinámicamente -->
@@ -63,15 +63,15 @@
 
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
-        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+        <a href="#" onclick="handleLogout()" class="nav-logout" data-i18n="common.logout">Cerrar Sesión</a>
       </div>
     </div>
   </nav>
 
   <!-- Header -->
   <header class="page-header">
-    <h1><span class="header-icon">📋</span> <span class="header-text-gradient">Predicciones – El Muro de la Porra</span></h1>
-    <p class="subtitle">Listado completo de partidos con las predicciones de cada jugador</p>
+    <h1><span class="header-icon">📋</span> <span class="header-text-gradient" data-i18n="predictions.pool_title">Predicciones – El Muro de la Porra</span></h1>
+    <p class="subtitle" data-i18n="predictions.pool_subtitle">Listado completo de partidos con las predicciones de cada jugador</p>
   </header>
 
   <!-- Main Content -->
@@ -81,14 +81,14 @@
         <div style="display:flex; align-items:center; gap:14px;">
           <div class="group-letter" style="background: var(--gradient-gold);">📋</div>
           <div>
-            <div class="group-name">Pool de predicciones</div>
-            <div class="group-teams-summary">Selecciona un jugador para ver sus resultados</div>
+            <div class="group-name" data-i18n="predictions.pool_header">Pool de predicciones</div>
+            <div class="group-teams-summary" data-i18n="predictions.pool_desc">Selecciona un jugador para ver sus resultados</div>
           </div>
         </div>
         <div id="playerSelectContainer" style="display:none;">
           <select id="playerSelect" class="score-input"
             style="width: auto; height: 36px; padding: 0 10px; font-size: 0.85rem;" onchange="renderPool()">
-            <option value="_local_">Tus predicciones (Local)</option>
+            <option value="_local_" data-i18n="predictions.pool_local">Tus predicciones (Local)</option>
           </select>
         </div>
       </div>
@@ -133,7 +133,7 @@
     const poolMatches = [
       // ===== FASE DE GRUPOS =====
       // Jornada 1
-      { section: 'FASE DE GRUPOS - Jornada 1' },
+      { section: (window.i18n ? window.i18n.t('predictions.group').toUpperCase() + ' - ' + window.i18n.t('predictions.jornada') + ' 1' : 'FASE DE GRUPOS - Jornada 1') },
       { id: 'A1', match: 'México-Sudáfrica' },
       { id: 'A1', match: 'Corea del Sur-República Checa' },
       { id: 'B1', match: 'Canadá-Bosnia y Herzegovina' },
@@ -159,7 +159,7 @@
       { id: 'L1', match: 'Inglaterra-Croacia' },
       { id: 'L1', match: 'Ghana-Panamá' },
       // Jornada 2
-      { section: 'FASE DE GRUPOS - Jornada 2' },
+      { section: (window.i18n ? window.i18n.t('predictions.group').toUpperCase() + ' - ' + window.i18n.t('predictions.jornada') + ' 2' : 'FASE DE GRUPOS - Jornada 2') },
       { id: 'A2', match: 'República Checa-Sudáfrica' },
       { id: 'A2', match: 'México-Corea del Sur' },
       { id: 'B2', match: 'Suiza-Bosnia y Herzegovina' },
@@ -185,7 +185,7 @@
       { id: 'L2', match: 'Inglaterra-Ghana' },
       { id: 'L2', match: 'Panamá-Croacia' },
       // Jornada 3
-      { section: 'FASE DE GRUPOS - Jornada 3' },
+      { section: (window.i18n ? window.i18n.t('predictions.group').toUpperCase() + ' - ' + window.i18n.t('predictions.jornada') + ' 3' : 'FASE DE GRUPOS - Jornada 3') },
       { id: 'A3', match: 'República Checa-México' },
       { id: 'A3', match: 'Sudáfrica-Corea del Sur' },
       { id: 'B3', match: 'Suiza-Canadá' },
@@ -211,7 +211,7 @@
       { id: 'L3', match: 'Panamá-Inglaterra' },
       { id: 'L3', match: 'Croacia-Ghana' },
       // ===== ELIMINATORIAS =====
-      { section: 'DIECISEISAVOS DE FINAL' },
+      { section: (window.i18n ? window.i18n.t('predictions.round_r32').toUpperCase() : 'DIECISEISAVOS DE FINAL') },
       { id: '73', match: '2A vs 2B' },
       { id: '76', match: '1C vs 2F' },
       { id: '74', match: '1E vs 3ABCDF' },
@@ -228,7 +228,7 @@
       { id: '88', match: '2D vs 2G' },
       { id: '86', match: '1J vs 2H' },
       { id: '87', match: '1K vs 3DEIJL' },
-      { section: 'OCTAVOS DE FINAL' },
+      { section: (window.i18n ? window.i18n.t('predictions.round_r16').toUpperCase() : 'OCTAVOS DE FINAL') },
       { id: '90', match: 'W73 vs W75' },
       { id: '89', match: 'W74 vs W77' },
       { id: '91', match: 'W76 vs W78' },
@@ -237,17 +237,17 @@
       { id: '94', match: 'W81 vs W82' },
       { id: '95', match: 'W86 vs W88' },
       { id: '96', match: 'W85 vs W87' },
-      { section: 'CUARTOS DE FINAL' },
+      { section: (window.i18n ? window.i18n.t('predictions.round_qf').toUpperCase() : 'CUARTOS DE FINAL') },
       { id: '97', match: 'W89 vs W90' },
       { id: '98', match: 'W93 vs W94' },
       { id: '99', match: 'W91 vs W92' },
       { id: '100', match: 'W95 vs W96' },
-      { section: 'SEMIFINALES' },
+      { section: (window.i18n ? window.i18n.t('predictions.round_sf').toUpperCase() : 'SEMIFINALES') },
       { id: '101', match: 'W97 vs W98' },
       { id: '102', match: 'W99 vs W100' },
-      { section: 'TERCER PUESTO' },
+      { section: (window.i18n ? window.i18n.t('predictions.3rd').toUpperCase() : 'TERCER PUESTO') },
       { id: '103', match: 'L101 vs L102' },
-      { section: 'FINAL' },
+      { section: (window.i18n ? window.i18n.t('predictions.round_final').toUpperCase() : 'FINAL') },
       { id: '104', match: 'W101 vs W102' },
       // ===== PREMIOS INDIVIDUALES =====
       { section: 'PREMIOS INDIVIDUALES' },
@@ -328,7 +328,7 @@
 
       try {
         const select = document.getElementById('playerSelect');
-        select.options[0].text = 'Cargando jugadores en la nube...';
+        select.options[0].text = (window.i18n ? window.i18n.t('predictions.pool_loading') : 'Cargando jugadores en la nube...');
 
         const result = await apiCall({ 
           action: 'getPredictions', 
@@ -340,7 +340,7 @@
           console.log("📥 Datos recibidos de la nube:", cloudData);
 
           // Update dropdown
-          select.innerHTML = '<option value="_local_">Tus predicciones (Local)</option>';
+          select.innerHTML = '<option value="_local_" data-i18n="predictions.pool_local">Tus predicciones (Local)</option>';
           Object.keys(cloudData).sort().forEach(playerName => {
             const opt = document.createElement('option');
             opt.value = playerName;
@@ -389,6 +389,7 @@
       const koKeys = buildKoMatchKeys();
       let poolRowIndex = 0;
 
+      if (window.i18n) window.i18n.updateDOM();
       tbody.innerHTML = poolMatches.map(item => {
         if (item.section) {
           return `<tr class="pool-section-header"><td colspan="${2 + players.length}">${item.section}</td></tr>`;
@@ -431,6 +432,7 @@
           </tr>
         `;
       }).join('');
+      if (window.i18n) window.i18n.updateDOM();
     }
     
     // ... rest of helper functions ...

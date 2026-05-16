@@ -15,21 +15,21 @@
     <div class="nav-inner">
       <a href="player_scores.html" class="nav-logo">
         <span class="nav-logo-icon">⚽</span>
-        <span class="nav-logo-text">Mundial 2026</span>
+        <span class="nav-logo-text" data-i18n="common.app_title">Mundial 2026</span>
       </a>
       <div class="nav-links" id="navLinks">
         <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
-        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+        <a href="#" onclick="handleLogout()" class="nav-logout" data-i18n="common.logout">Cerrar Sesión</a>
       </div>
     </div>
   </nav>
 
   <header class="page-header">
-    <h1><span class="header-icon">🏆</span> <span class="header-text-gradient">Mi predicción – Mundial 2026</span></h1>
-    <p class="subtitle">Introduce tus predicciones de goles para cada partido</p>
+    <h1><span class="header-icon">🏆</span> <span class="header-text-gradient" data-i18n="predictions.title">Mi predicción – Mundial 2026</span></h1>
+    <p class="subtitle" data-i18n="predictions.subtitle">Introduce tus predicciones de goles para cada partido</p>
   </header>
 
   <main class="main-content">
@@ -39,12 +39,12 @@
         <div style="display: flex; align-items: center; gap: 12px;">
           <div id="phaseIcon" style="font-size: 2rem;">🗓️</div>
           <div>
-            <div id="phaseName" style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary);">Cargando fase...</div>
-            <div id="phaseStatus" style="font-size: 0.85rem; color: var(--text-muted);">Estado del torneo</div>
+            <div id="phaseName" style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary);" data-i18n="predictions.phase_loading">Cargando fase...</div>
+            <div id="phaseStatus" style="font-size: 0.85rem; color: var(--text-muted);" data-i18n="predictions.tournament_status">Estado del torneo</div>
           </div>
         </div>
         <div id="countdownContainer" style="text-align: right; min-width: 150px;">
-          <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 2px;">Cierre en:</div>
+          <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 2px;" data-i18n="predictions.closing_in">Cierre en:</div>
           <div id="countdownTimer" style="font-family: 'Inter', monospace; font-weight: 800; font-size: 1.5rem; color: var(--accent-blue);">00:00:00</div>
         </div>
       </div>
@@ -54,8 +54,8 @@
       <div style="padding: 1rem 1.5rem; display: flex; align-items: center; gap: 12px;">
         <span>👋</span>
         <div style="font-size: 0.9rem; font-weight: 500; color: var(--text-primary);">
-          Sesión iniciada como: <strong id="userNameHighlight" style="color:var(--accent-green)"></strong>. 
-          Tus predicciones se guardarán automáticamente en la nube.
+          <span data-i18n="common.logged_as">Sesión iniciada como:</span> <strong id="userNameHighlight" style="color:var(--accent-green)"></strong>. 
+          <span data-i18n="common.cloud_sync">Tus predicciones se guardarán automáticamente en la nube.</span>
         </div>
       </div>
     </div>
@@ -67,8 +67,8 @@
   </main>
 
   <div class="save-bar">
-    <button class="btn-save" id="btnSave" onclick="saveData()">💾 Guardar predicciones</button>
-    <span class="save-status" id="saveStatus">✓ Guardado</span>
+    <button class="btn-save" id="btnSave" onclick="saveData()">💾 <span data-i18n="common.save_predictions">Guardar predicciones</span></button>
+    <span class="save-status" id="saveStatus">✓ <span data-i18n="common.saved">Guardado</span></span>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -158,7 +158,7 @@
         }
         startCountdown();
       } else {
-        phaseStatus.textContent = "🔒 Fase bloqueada (Partidos en curso)";
+        phaseStatus.innerHTML = `🔒 <span data-i18n="predictions.locked">Fase bloqueada (Partidos en curso)</span>`;
         banner.style.borderColor = "var(--border-color)";
         banner.style.background = "var(--bg-card)";
         document.getElementById('countdownContainer').innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRÓXIMA FASE: <br> ${tournamentState.nextDeadline ? new Date(tournamentState.nextDeadline).toLocaleDateString() : 'Pendiente'}</div>`;
@@ -252,7 +252,7 @@
           <div class="group-header">
             <div class="group-letter">${g.letter}</div>
             <div>
-              <div class="group-name">Grupo ${g.letter}</div>
+              <div class="group-name"><span data-i18n="predictions.group">Grupo</span> ${g.letter}</div>
               <div class="group-teams-summary">${g.teams.join(' · ')}</div>
             </div>
           </div>
@@ -274,7 +274,7 @@
             </div>
             <div class="standings-section">
               <table class="prediction-standings">
-                <thead><tr><th>Pos</th><th>Selección</th><th>Pts</th><th>DG</th></tr></thead>
+                <thead><tr><th data-i18n="dashboard.pos">Pos</th><th data-i18n="predictions.teams">Selección</th><th data-i18n="predictions.pts">Pts</th><th data-i18n="predictions.dg">DG</th></tr></thead>
                 <tbody id="tbody_${g.letter}"></tbody>
               </table>
             </div>
@@ -287,7 +287,7 @@
       const container = document.getElementById('knockoutContainer');
       container.innerHTML = KNOCKOUT_BRACKET.map(round => `
         <div class="knockout-section">
-          <div class="knockout-title">${round.name}</div>
+          <div class="knockout-title" data-i18n="predictions.round_${round.id}">${round.name}</div>
           <div class="knockout-matches">
             ${round.matches.map(num => `
               <div class="knockout-match">
@@ -321,15 +321,15 @@
       const container = document.getElementById('awardsContainer');
       container.innerHTML = `
         <div class="group-card awards-card">
-          <div class="group-header">🏆 Cuadro de honor y Premios</div>
+          <div class="group-header" data-i18n="predictions.honor_title">🏆 Cuadro de honor y Premios</div>
           <div style="padding: 1.25rem;">
             <table class="prediction-standings" style="text-align: left;">
               <thead>
                 <tr><th colspan="2" style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); padding-bottom: 10px;">Torneo Final</th></tr>
               </thead>
               <tbody>
-                <tr><td><strong>🥇 Campeón</strong></td><td id="honor_champion" style="font-weight: 700; color: var(--accent-gold);">-</td></tr>
-                <tr><td><strong>🥈 Subcampeón</strong></td><td id="honor_runnerup" style="font-weight: 600; color: #d1d5db;">-</td></tr>
+                <tr><td><strong>🥇 <span data-i18n="predictions.champion">Campeón</span></strong></td><td id="honor_champion" style="font-weight: 700; color: var(--accent-gold);">-</td></tr>
+                <tr><td><strong>🥈 <span data-i18n="predictions.runnerup">Subcampeón</span></strong></td><td id="honor_runnerup" style="font-weight: 600; color: #d1d5db;">-</td></tr>
               </tbody>
             </table>
 
@@ -340,28 +340,28 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td><strong>⚽ Bota de Oro</strong><br><small>Máximo Goleador</small></td>
-                    <td><input type="text" class="score-input" id="boot_gold" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                    <td><strong>⚽ <span data-i18n="predictions.boot_gold">Bota de Oro</span></strong><br><small data-i18n="predictions.top_scorer">Máximo Goleador</small></td>
+                    <td><input type="text" class="score-input" id="boot_gold" placeholder="Nombre..." data-i18n-placeholder="predictions.placeholder_name" oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
                   </tr>
                   <tr>
-                    <td><strong>🥈 Bota de Plata</strong></td>
-                    <td><input type="text" class="score-input" id="boot_silver" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                    <td><strong>🥈 <span data-i18n="predictions.boot_silver">Bota de Plata</span></strong></td>
+                    <td><input type="text" class="score-input" id="boot_silver" placeholder="Nombre..." data-i18n-placeholder="predictions.placeholder_name" oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
                   </tr>
                   <tr>
-                    <td><strong>🥉 Bota de Bronce</strong></td>
-                    <td><input type="text" class="score-input" id="boot_bronze" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                    <td><strong>🥉 <span data-i18n="predictions.boot_bronze">Bota de Bronce</span></strong></td>
+                    <td><input type="text" class="score-input" id="boot_bronze" placeholder="Nombre..." data-i18n-placeholder="predictions.placeholder_name" oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
                   </tr>
                   <tr style="border-top: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding-top: 15px;"><strong>🌟 Balón de Oro</strong><br><small>Mejor Jugador</small></td>
-                    <td style="padding-top: 15px;"><input type="text" class="score-input" id="ball_gold" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                    <td style="padding-top: 15px;"><strong>🌟 <span data-i18n="predictions.ball_gold">Balón de Oro</span></strong><br><small data-i18n="predictions.best_player">Mejor Jugador</small></td>
+                    <td style="padding-top: 15px;"><input type="text" class="score-input" id="ball_gold" placeholder="Nombre..." data-i18n-placeholder="predictions.placeholder_name" oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
                   </tr>
                   <tr>
-                    <td><strong>🥈 Balón de Plata</strong></td>
-                    <td><input type="text" class="score-input" id="ball_silver" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                    <td><strong>🥈 <span data-i18n="predictions.ball_silver">Balón de Plata</span></strong></td>
+                    <td><input type="text" class="score-input" id="ball_silver" placeholder="Nombre..." data-i18n-placeholder="predictions.placeholder_name" oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
                   </tr>
                   <tr>
-                    <td><strong>🥉 Balón de Bronce</strong></td>
-                    <td><input type="text" class="score-input" id="ball_bronze" placeholder="Nombre..." oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
+                    <td><strong>🥉 <span data-i18n="predictions.ball_bronze">Balón de Bronce</span></strong></td>
+                    <td><input type="text" class="score-input" id="ball_bronze" placeholder="Nombre..." data-i18n-placeholder="predictions.placeholder_name" oninput="handleInputChange()" style="width: 150px !important; text-align: left; padding: 8px !important;"></td>
                   </tr>
                 </tbody>
               </table>

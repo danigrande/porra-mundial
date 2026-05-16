@@ -27,7 +27,8 @@ export function checkAuth() {
 }
 
 export function handleLogout() {
-  if (confirm('¿Quieres cerrar sesión?')) {
+  const msg = window.i18n ? window.i18n.t('common.logout_confirm') : '¿Quieres cerrar sesión?';
+  if (confirm(msg)) {
     localStorage.removeItem('worldcup2026_user');
     window.location.href = 'index.html';
   }
@@ -54,12 +55,12 @@ export function renderNavigation(currentPage) {
 
   const links = [
     { href: 'player_scores.html', text: window.i18n ? window.i18n.t('tabs.dashboard') : 'Clasificación', adminOnly: false },
-    { href: 'fixture_testing.html', text: window.i18n ? window.i18n.t('tabs.results') : 'Resultados', adminOnly: false },
-    { href: 'pool.html', text: window.i18n ? window.i18n.t('tabs.pool') : 'Predicciones', adminOnly: false },
-    { href: 'worldcup.html', text: window.i18n ? window.i18n.t('tabs.predictions') : 'Mi predicción', adminOnly: false },
-    { href: 'about_user.html', text: window.i18n ? window.i18n.t('tabs.chat') : 'Mi Perfil', adminOnly: false }, // using chat as a fallback for profile label for now, though we should map it properly
-    { href: 'points_system.html', text: 'Sistema de puntuación', adminOnly: false },
-    { href: 'scoring_criteria.html', text: 'Configuración', adminOnly: true }
+    { href: 'fixture_testing.html', text: window.i18n ? window.i18n.t('tabs.results') : 'Calendario', adminOnly: false },
+    { href: 'pool.html', text: window.i18n ? window.i18n.t('tabs.pool') : 'El Muro', adminOnly: false },
+    { href: 'worldcup.html', text: window.i18n ? window.i18n.t('tabs.predictions') : 'Mis Pronósticos', adminOnly: false },
+    { href: 'about_user.html', text: window.i18n ? window.i18n.t('tabs.profile') : 'Mi Perfil', adminOnly: false },
+    { href: 'points_system.html', text: window.i18n ? window.i18n.t('tabs.scoring') : 'Sistema Puntos', adminOnly: false },
+    { href: 'scoring_criteria.html', text: window.i18n ? window.i18n.t('tabs.config') : 'Configuración', adminOnly: true }
   ];
 
   let html = links

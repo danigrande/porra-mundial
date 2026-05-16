@@ -145,7 +145,7 @@
       <div class="form-group">
         <label class="form-label" for="loginGroupSelect" data-i18n="login.group_label">Selecciona tu grupo</label>
         <select id="loginGroupSelect" class="login-input">
-          <option value="">Primero introduce tu teléfono...</option>
+          <option value=""><span data-i18n="admin.group_prompt">Primero introduce tu teléfono...</span></option>
         </select>
       </div>
       <div class="form-group">
@@ -171,7 +171,7 @@
         <input type="text" id="regName" class="login-input" data-i18n-placeholder="login.name_placeholder" placeholder="Ej: Pepito Pérez">
       </div>
       <div class="form-group">
-        <label class="form-label" for="regPhone">Tu Teléfono Móvil</label>
+        <label class="form-label" for="regPhone" data-i18n="login.phone_label">Tu Teléfono Móvil</label>
         <div class="phone-input-group">
           <select id="regCountryCode" class="country-select"></select>
           <input type="tel" id="regPhone" class="phone-number-input" data-i18n-placeholder="login.phone_placeholder" placeholder="612 345 678" autocomplete="off"
@@ -295,7 +295,7 @@
         const fullPhone = buildFullPhone('loginCountryCode', 'loginPhone');
         const rawNumber = document.getElementById('loginPhone').value.replace(/[^0-9]/g, '');
         if (rawNumber.length < 6) {
-          loginGroup.innerHTML = '<option value="">Primero introduce tu teléfono...</option>';
+          loginGroup.innerHTML = '<option value=""><span data-i18n="admin.group_prompt">Primero introduce tu teléfono...</span></option>';
           playerStatus.textContent = '';
           return;
         }

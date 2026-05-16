@@ -114,22 +114,22 @@
     <div class="nav-inner">
       <a href="player_scores.html" class="nav-logo">
         <span class="nav-logo-icon">⚽</span>
-        <span class="nav-logo-text">Mundial 2026</span>
+        <span class="nav-logo-text" data-i18n="common.app_title">Mundial 2026</span>
       </a>
       <div class="nav-links" id="navLinks">
         <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
-        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+        <a href="#" onclick="handleLogout()" class="nav-logout" data-i18n="common.logout">Cerrar Sesión</a>
       </div>
     </div>
   </nav>
 
   <!-- Header -->
   <header class="page-header">
-    <h1><span class="header-icon">🏆</span> <span class="header-text-gradient">Sistema de Puntuación</span></h1>
-    <p class="subtitle" id="pageSubtitle">Consulta los puntos otorgados por cada acierto en la porra</p>
+    <h1><span class="header-icon">🏆</span> <span class="header-text-gradient" data-i18n="scoring.title">Sistema de Puntuación</span></h1>
+    <p class="subtitle" id="pageSubtitle" data-i18n="scoring.subtitle">Consulta los puntos otorgados por cada acierto en la porra</p>
   </header>
 
   <!-- Main Content -->
@@ -137,7 +137,7 @@
 
     <div id="adminNotice" class="admin-notice" style="display:none;">
       <span>⚠️</span>
-      <span>Solo el administrador del grupo puede modificar estas reglas.</span>
+      <span><span data-i18n="scoring.admin_only">Solo el administrador del grupo puede modificar estas reglas.</span></span>
     </div>
 
     <div class="groups-grid" style="grid-template-columns: 1fr; gap: 1.5rem;">
@@ -147,8 +147,8 @@
         <div class="group-header" style="background: rgba(59, 130, 246, 0.1);">
           <div class="group-letter" style="background: var(--accent-blue); color: #fff;">⚙️</div>
           <div>
-            <div class="group-name">Modo de Predicción</div>
-            <div class="group-teams-summary">Elige cómo se jugará la porra en este grupo</div>
+            <div class="group-name" data-i18n="scoring.mode_title">Modo de Predicción</div>
+            <div class="group-teams-summary" data-i18n="scoring.mode_desc">Elige cómo se jugará la porra en este grupo</div>
           </div>
         </div>
         <div style="padding: 1.25rem;">
@@ -156,15 +156,15 @@
             <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
               <input type="radio" name="prediction_mode" value="A" id="mode_a" checked onchange="handleModeChange()" style="margin-top: 4px;">
               <div>
-                <strong>Opción A: Torneo Completo (Clásico)</strong>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;">Los usuarios deben rellenar toda la fase de grupos y todo el cuadro eliminatorio antes de que empiece el primer partido del Mundial.</p>
+                <strong data-i18n="scoring.mode_a_title">Opción A: Torneo Completo (Clásico)</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;"><span data-i18n="scoring.mode_a_desc">Los usuarios deben rellenar toda la fase de grupos y todo el cuadro eliminatorio antes de que empiece el primer partido del Mundial.</span></p>
               </div>
             </label>
             <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
               <input type="radio" name="prediction_mode" value="B" id="mode_b" onchange="handleModeChange()" style="margin-top: 4px;">
               <div>
-                <strong>Opción B: Por Fases (Dinámico)</strong>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;">Las predicciones se abren ronda a ronda. El cuadro eliminatorio se construye con los clasificados reales y los usuarios tendrán 24-48h para predecir cada fase.</p>
+                <strong data-i18n="scoring.mode_b_title">Opción B: Por Fases (Dinámico)</strong>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;"><span data-i18n="scoring.mode_b_desc">Las predicciones se abren ronda a ronda. El cuadro eliminatorio se construye con los clasificados reales y los usuarios tendrán 24-48h para predecir cada fase.</span></p>
               </div>
             </label>
           </div>
@@ -176,31 +176,31 @@
         <div class="group-header">
           <div class="group-letter" style="background: var(--gradient-primary);">1</div>
           <div>
-            <div class="group-name">Fase de Grupos</div>
-            <div class="group-teams-summary">Puntos otorgados en los partidos de la fase inicial</div>
+            <div class="group-name" data-i18n="scoring.group_title">Fase de Grupos</div>
+            <div class="group-teams-summary" data-i18n="scoring.group_desc">Puntos otorgados en los partidos de la fase inicial</div>
           </div>
         </div>
         <div style="padding: 1.25rem;">
           <table class="prediction-standings" style="text-align: left;">
             <tbody>
               <tr>
-                <td style="padding-left:1rem;"><strong>Signo 1X2</strong> <br><small style="color:var(--text-muted)">Acertar ganador o empate</small></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_1x2">Signo 1X2</strong> <br><small style="color:var(--text-muted)"><span data-i18n="scoring.desc_1x2">Acertar ganador o empate</span></small></td>
                 <td style="width: 100px;"><input type="number" id="pts_group_sign" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Diferencia de goles</strong> <br><small style="color:var(--text-muted)">Con el signo acertado</small></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_diff">Diferencia de goles</strong> <br><small style="color:var(--text-muted)"><span data-i18n="scoring.desc_diff">Con el signo acertado</span></small></td>
                 <td><input type="number" id="pts_group_diff" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Resultado exacto</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_exact">Resultado exacto</strong></td>
                 <td><input type="number" id="pts_group_exact" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Posición exacta en el grupo</strong> <br><small style="color:var(--text-muted)">1º, 2º, 3º o 4º</small></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_pos">Posición exacta en el grupo</strong> <br><small style="color:var(--text-muted)"><span data-i18n="scoring.desc_pos">1º, 2º, 3º o 4º</span></small></td>
                 <td><input type="number" id="pts_group_pos" class="score-input" value="5" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Equipo clasificado para Dieciseisavos</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_qualify">Equipo clasificado para Dieciseisavos</strong></td>
                 <td><input type="number" id="pts_group_qualify" class="score-input" value="5" min="0" onchange="saveCriteria()"></td>
               </tr>
             </tbody>
@@ -213,27 +213,27 @@
         <div class="group-header">
           <div class="group-letter" style="background: var(--gradient-secondary);">2</div>
           <div>
-            <div class="group-name">Rondas Eliminatorias</div>
-            <div class="group-teams-summary">Desde Dieciseisavos hasta la Final</div>
+            <div class="group-name" data-i18n="scoring.ko_title">Rondas Eliminatorias</div>
+            <div class="group-teams-summary" data-i18n="scoring.ko_desc">Desde Dieciseisavos hasta la Final</div>
           </div>
         </div>
         <div style="padding: 1.25rem;">
           <table class="prediction-standings" style="text-align: left;">
             <tbody>
               <tr>
-                <td style="padding-left:1rem;"><strong>Signo 1X2</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_1x2">Signo 1X2</strong></td>
                 <td style="width: 100px;"><input type="number" id="pts_ko_sign" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Diferencia de goles</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_diff">Diferencia de goles</strong></td>
                 <td><input type="number" id="pts_ko_diff" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Resultado exacto</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_exact">Resultado exacto</strong></td>
                 <td><input type="number" id="pts_ko_exact" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Equipo clasificado para la siguiente ronda</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.label_qualify">Equipo clasificado para la siguiente ronda</strong></td>
                 <td><input type="number" id="pts_ko_qualify" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
             </tbody>
@@ -246,35 +246,35 @@
         <div class="group-header">
           <div class="group-letter" style="background: var(--gradient-gold);">3</div>
           <div>
-            <div class="group-name">Cuadro de Honor y Premios</div>
-            <div class="group-teams-summary">Aciertos a largo plazo al final del mundial</div>
+            <div class="group-name" data-i18n="scoring.honor_title">Cuadro de Honor y Premios</div>
+            <div class="group-teams-summary" data-i18n="scoring.honor_desc">Aciertos a largo plazo al final del mundial</div>
           </div>
         </div>
         <div style="padding: 1.25rem;">
           <table class="prediction-standings" style="text-align: left;">
             <tbody>
               <tr>
-                <td style="padding-left:1rem;"><strong>Campeón del Mundo</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.champ">Campeón del Mundo</strong></td>
                 <td style="width: 100px;"><input type="number" id="pts_honor_champ" class="score-input" value="50" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Subcampeón</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.runner">Subcampeón</strong></td>
                 <td><input type="number" id="pts_honor_runner" class="score-input" value="30" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>3º Puesto</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.third">3º Puesto</strong></td>
                 <td><input type="number" id="pts_honor_third" class="score-input" value="20" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Bota / Balón de Oro</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.award_gold">Bota / Balón de Oro</strong></td>
                 <td><input type="number" id="pts_award_gold" class="score-input" value="25" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Bota / Balón de Plata</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.award_silver">Bota / Balón de Plata</strong></td>
                 <td><input type="number" id="pts_award_silver" class="score-input" value="15" min="0" onchange="saveCriteria()"></td>
               </tr>
               <tr>
-                <td style="padding-left:1rem;"><strong>Bota / Balón de Bronce</strong></td>
+                <td style="padding-left:1rem;"><strong data-i18n="scoring.award_bronze">Bota / Balón de Bronce</strong></td>
                 <td><input type="number" id="pts_award_bronze" class="score-input" value="10" min="0" onchange="saveCriteria()"></td>
               </tr>
             </tbody>
@@ -289,7 +289,7 @@
 
   <!-- Barra flotante de guardado para admin -->
   <div class="save-bar" id="adminSaveBar" style="display:none;">
-    <button class="btn-save" id="btnSaveCloud" onclick="saveCriteriaToCloud()">☁️ Guardar Configuración</button>
+    <button class="btn-save" id="btnSaveCloud" onclick="saveCriteriaToCloud()">☁️ <span data-i18n="scoring.save_config">Guardar Configuración</span></button>
     <span class="save-status" id="saveStatus" style="display:none;">✓ Guardado</span>
   </div>
 
@@ -302,16 +302,15 @@
   <div id="confirmModal" class="modal-overlay">
     <div class="modal-card">
       <span class="modal-icon">⚠️</span>
-      <h3 class="modal-title">¿Cambiar a Modo por Fases?</h3>
+      <h3 class="modal-title"><span data-i18n="scoring.modal_title">¿Cambiar a Modo por Fases?</span></h3>
       <p class="modal-text">
-        Al activar la <strong>Opción B</strong>, las predicciones de las rondas eliminatorias se ocultarán. 
-        Los jugadores deberán volver a votar cuando cada fase se abra oficialmente.
+        <span data-i18n="scoring.modal_text">Al activar la Opción B, las rondas eliminatorias se ocultarán hasta que se abran.</span>
         <br><br>
         <strong>Nota:</strong> Este cambio solo será definitivo cuando pulses el botón "Guardar Configuración".
       </p>
       <div class="modal-btns">
-        <button class="btn-modal-confirm" onclick="confirmModeChange()">Si, adelante</button>
-        <button class="btn-modal-cancel" onclick="cancelModeChange()">No hacer cambios</button>
+        <button class="btn-modal-confirm" onclick="confirmModeChange()"><span data-i18n="scoring.modal_yes">Si, adelante</span></button>
+        <button class="btn-modal-cancel" onclick="cancelModeChange()"><span data-i18n="scoring.modal_no">No hacer cambios</span></button>
       </div>
     </div>
   </div>
@@ -461,7 +460,7 @@
         showToast('❌ Error de conexión', true);
       } finally {
         btn.disabled = false;
-        btn.textContent = '☁️ Guardar Configuración';
+        btn.textContent = '☁️ <span data-i18n="scoring.save_config">Guardar Configuración</span>';
       }
     }
 

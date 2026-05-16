@@ -166,14 +166,14 @@
     <div class="nav-inner">
       <a href="player_scores.html" class="nav-logo">
         <span class="nav-logo-icon">⚽</span>
-        <span class="nav-logo-text">Mundial 2026</span>
+        <span class="nav-logo-text" data-i18n="common.app_title">Mundial 2026</span>
       </a>
       <div class="nav-links" id="navLinks">
         <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user" style="display:none;">
         <span class="nav-user-name" id="displayUserName"></span>
-        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+        <a href="#" onclick="handleLogout()" class="nav-logout" data-i18n="common.logout">Cerrar Sesión</a>
       </div>
     </div>
   </nav>
@@ -229,7 +229,7 @@
       </div>
       <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 10px;">
         <div style="display: flex; gap: 10px;">
-          <input type="text" id="newPlayerName" placeholder="Nombre del jugador"
+          <input type="text" id="newPlayerName" placeholder="Nombre del jugador" data-i18n-placeholder="admin.player_name_placeholder"
             style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary);">
         </div>
         <div style="display: flex; gap: 10px;">
@@ -239,7 +239,7 @@
           </div>
           <button onclick="addPlayerToGroup()" class="btn-cloud" style="margin: 0; padding: 0.75rem 1.5rem;">
             <span class="icon">➕</span>
-            <span>Añadir</span>
+            <span data-i18n="common.add">Añadir</span>
           </button>
         </div>
       </div>

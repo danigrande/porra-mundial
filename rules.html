@@ -137,11 +137,11 @@
 </head>
 <body>
 
-  <a href="player_scores.html" class="back-btn">← Volver a la Porra</a>
+  <a href="player_scores.html" class="back-btn">← <span data-i18n="common.back_to_pool">Volver a la Porra</span></a>
 
   <div class="rules-container">
     <header class="rules-header">
-      <h1>Reglas del Juego</h1>
+      <h1 data-i18n="rules.title">Reglas del Juego</h1>
       <p style="color: #94a3b8;">Todo lo que necesitas saber para convertirte en el Rey de la Porra</p>
     </header>
 
@@ -149,7 +149,7 @@
     <section class="rule-section">
       <div class="rule-title">
         <div class="step-badge">1</div>
-        ¿Cómo jugar? (Modos de Juego)
+        <span data-i18n="rules.section1_title">¿Cómo jugar? (Modos de Juego)</span>
       </div>
       <p>Dependiendo de la configuración de tu administrador, la porra se puede jugar de dos formas:</p>
       
@@ -176,7 +176,7 @@
     <!-- Sección 2: El Agente Mundial -->
     <section class="rule-section" style="border-left-color: #25D366;">
       <div class="rule-title">
-        <span>🤖</span> Notificaciones del Bot
+        <span>🤖</span> <span data-i18n="rules.section2_title">Notificaciones del Bot</span>
       </div>
       <p>Nuestro <strong>Agente Mundial</strong> en WhatsApp te mantendrá al tanto de todo:</p>
       <ul style="padding-left: 1.2rem; margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">
@@ -186,11 +186,11 @@
       </ul>
     </section>
 
-    <!-- Sección 3: Sistema de Puntuación -->
+    <!-- Sección 3: <span data-i18n="rules.section3_title">Sistema de Puntuación</span> -->
     <section class="rule-section">
       <div class="rule-title">
         <div class="step-badge">2</div>
-        Sistema de Puntuación
+        <span data-i18n="rules.section3_title">Sistema de Puntuación</span>
       </div>
       <p>Los puntos se calculan de forma acumulativa por cada partido. Si aciertas el resultado exacto, ¡te llevas el premio máximo!</p>
       
@@ -228,7 +228,7 @@
     <section class="rule-section" style="border-left-color: #3b82f6;">
       <div class="rule-title">
         <div class="step-badge">3</div>
-        Rondas Eliminatorias
+        <span data-i18n="rules.section4_title">Rondas Eliminatorias</span>
       </div>
       <p>En las rondas de K.O., los puntos por partido suelen ser más altos (según la configuración de tu administrador). Pero hay una regla vital:</p>
       
@@ -244,7 +244,7 @@
     <section class="rule-section">
       <div class="rule-title">
         <div class="step-badge">4</div>
-        Premios Especiales
+        <span data-i18n="rules.section5_title">Premios Especiales</span>
       </div>
       <p>Al final del Mundial, se reparten los puntos "gordos" por tus predicciones a largo plazo:</p>
       <table class="pts-table">
@@ -278,7 +278,7 @@
     <section class="rule-section">
       <div class="rule-title">
         <div class="step-badge">5</div>
-        Restricciones y Bloqueos
+        <span data-i18n="rules.section6_title">Restricciones y Bloqueos</span>
       </div>
       <ul style="padding-left: 1.2rem;">
         <li><strong>Cierre de Predicciones:</strong> No podrás modificar tus predicciones una vez que comience el primer partido del Mundial (o según la hora de corte establecida).</li>
@@ -292,5 +292,6 @@
     </footer>
   </div>
 
+<script src="i18n.js"></script>
 </body>
 </html>

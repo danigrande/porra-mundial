@@ -90,21 +90,21 @@
     <div class="nav-inner">
       <a href="player_scores.html" class="nav-logo">
         <span class="nav-logo-icon">⚽</span>
-        <span class="nav-logo-text">Mundial 2026</span>
+        <span class="nav-logo-text" data-i18n="common.app_title">Mundial 2026</span>
       </a>
       <div class="nav-links" id="navLinks">
         <!-- Generado dinámicamente -->
       </div>
       <div id="navUserInfo" class="nav-user">
         <span class="nav-user-name" id="displayUserName"></span>
-        <a href="#" onclick="handleLogout()" class="nav-logout">Cerrar Sesión</a>
+        <a href="#" onclick="handleLogout()" class="nav-logout" data-i18n="common.logout">Cerrar Sesión</a>
       </div>
     </div>
   </nav>
 
   <header class="page-header">
-    <h1><span class="header-icon">👤</span> <span class="header-text-gradient">Configura tu Perfil IA</span></h1>
-    <p class="subtitle">Cuéntanos sobre ti para que los resúmenes sean más divertidos y personalizados</p>
+    <h1><span class="header-icon">👤</span> <span class="header-text-gradient" data-i18n="profile.title">Configura tu Perfil IA</span></h1>
+    <p class="subtitle" data-i18n="profile.subtitle">Cuéntanos sobre ti para que los resúmenes sean más divertidos y personalizados</p>
   </header>
 
   <main class="main-content">
@@ -113,40 +113,40 @@
 
       <form id="profileForm">
         <div class="form-group">
-          <label for="nickname">Nickname (Cómo te llamará la IA)</label>
-          <input type="text" id="nickname" class="form-control" placeholder="Ej: El Mago de la Porra" required>
+          <label for="nickname" data-i18n="profile.nickname">Nickname (Cómo te llamará la IA)</label>
+          <input type="text" id="nickname" class="form-control" placeholder="Ej: El Mago de la Porra" data-i18n-placeholder="profile.nickname_placeholder" required>
         </div>
 
         <div class="form-group">
-          <label for="phone">Tu Teléfono Móvil</label>
+          <label for="phone" data-i18n="login.phone_label">Tu Teléfono Móvil</label>
           <input type="text" id="phone" class="form-control" readonly style="opacity: 0.7; cursor: not-allowed;">
-          <p class="info-note">Tu teléfono es tu identificador único y no se puede cambiar desde aquí.</p>
+          <p class="info-note"><span data-i18n="profile.phone_note">Tu teléfono es tu identificador único y no se puede cambiar desde aquí.</span></p>
         </div>
 
         <div class="form-group">
-          <label for="humor_style">Estilo de Humor de la IA</label>
+          <label for="humor_style" data-i18n="profile.humor_style">Estilo de Humor de la IA</label>
           <select id="humor_style" class="form-control">
-            <option value="Sarcástico y mordaz">Sarcástico y mordaz (Nivel Pro)</option>
-            <option value="Divertido y amigable">Divertido y amigable</option>
-            <option value="Épico y motivador">Épico y motivador</option>
-            <option value="Analítico y serio">Analítico y serio</option>
-            <option value="Troll total">Troll total 😈</option>
+            <option value="Sarcástico y mordaz" data-i18n="profile.humor_sarcastic">Sarcástico y mordaz (Nivel Pro)</option>
+            <option value="Divertido y amigable" data-i18n="profile.humor_friendly">Divertido y amigable</option>
+            <option value="Épico y motivador" data-i18n="profile.humor_epic">Épico y motivador</option>
+            <option value="Analítico y serio" data-i18n="profile.humor_serious">Analítico y serio</option>
+            <option value="Troll total" data-i18n="profile.humor_troll">Troll total 😈</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="likes">Cosas que te gustan (separadas por comas)</label>
-          <textarea id="likes" class="form-control" rows="2" placeholder="Ej: Real Madrid, Goles de chilena, Ganar en el último minuto"></textarea>
-          <p class="info-note">La IA te felicitará cuando algo de esto ocurra.</p>
+          <label for="likes" data-i18n="profile.likes">Cosas que te gustan</label>
+          <textarea id="likes" class="form-control" rows="2" placeholder="Ej: Real Madrid..." data-i18n-placeholder="profile.likes_placeholder"></textarea>
+          <p class="info-note"><span data-i18n="profile.likes_note">La IA te felicitará cuando algo de esto ocurra.</span></p>
         </div>
 
         <div class="form-group">
-          <label for="dislikes">Cosas que NO te gustan (separadas por comas)</label>
-          <textarea id="dislikes" class="form-control" rows="2" placeholder="Ej: El VAR, Perder tiempo, Los penaltis fallados"></textarea>
-          <p class="info-note">La IA se burlará de ti si esto sucede o te dará ánimos.</p>
+          <label for="dislikes" data-i18n="profile.dislikes">Cosas que NO te gustan</label>
+          <textarea id="dislikes" class="form-control" rows="2" placeholder="Ej: El VAR..." data-i18n-placeholder="profile.dislikes_placeholder"></textarea>
+          <p class="info-note"><span data-i18n="profile.dislikes_note">La IA se burlará de ti si esto sucede o te dará ánimos.</span></p>
         </div>
 
-        <button type="submit" id="saveBtn" class="btn-save">Guardar Configuración</button>
+        <button type="submit" id="saveBtn" class="btn-save"><span data-i18n="common.save">Guardar Configuración</span></button>
       </form>
 
       <!-- SECCIÓN CAMBIO PIN -->
@@ -157,23 +157,23 @@
         <div id="pinStatusMsg" class="status-msg"></div>
         
         <div class="form-group">
-          <label for="oldPin">PIN Actual</label>
+          <label for="oldPin" data-i18n="profile.old_pin">PIN Actual</label>
           <input type="password" id="oldPin" class="form-control" maxlength="4" placeholder="••••">
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
-            <label for="newPin">Nuevo PIN (4 dígitos)</label>
+            <label for="newPin" data-i18n="profile.new_pin">Nuevo PIN (4 dígitos)</label>
             <input type="password" id="newPin" class="form-control" maxlength="4" placeholder="••••">
           </div>
           <div class="form-group">
-            <label for="confirmPin">Confirmar Nuevo PIN</label>
+            <label for="confirmPin" data-i18n="profile.confirm_pin">Confirmar Nuevo PIN</label>
             <input type="password" id="confirmPin" class="form-control" maxlength="4" placeholder="••••">
           </div>
         </div>
         
         <button type="button" id="changePinBtn" class="btn-save" style="background: var(--bg-card); border: 1px solid var(--accent-gold); color: var(--accent-gold);">
-          Actualizar PIN
+          <span data-i18n="profile.update_pin_btn">Actualizar PIN</span>
         </button>
       </div>
     </div>
@@ -220,7 +220,7 @@
       const statusMsg = document.getElementById('statusMsg');
       
       saveBtn.disabled = true;
-      saveBtn.textContent = 'Guardando...';
+      saveBtn.textContent = (window.i18n ? window.i18n.t('common.saving') : 'Guardando...');
       statusMsg.className = 'status-msg';
 
       const profileData = {
@@ -240,7 +240,7 @@
         });
         
         if (result.status === 'success') {
-          statusMsg.textContent = '¡Configuración guardada con éxito!';
+          statusMsg.textContent = (window.i18n ? window.i18n.t('profile.success') : '¡Configuración guardada con éxito!');
           statusMsg.classList.add('status-success');
         } else {
           throw new Error(result.message);
@@ -250,7 +250,7 @@
         statusMsg.classList.add('status-error');
       } finally {
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Guardar Configuración';
+        saveBtn.textContent = '<span data-i18n="common.save">Guardar Configuración</span>';
       }
     };
 
@@ -275,7 +275,7 @@
       }
 
       btn.disabled = true;
-      btn.textContent = 'Cambiando...';
+      btn.textContent = (window.i18n ? window.i18n.t('common.loading') : 'Cambiando...');
       status.className = 'status-msg';
 
       try {
@@ -289,7 +289,7 @@
         });
 
         if (res.status === 'success') {
-          status.textContent = '✅ PIN actualizado con éxito';
+          status.textContent = '✅ ' + (window.i18n ? window.i18n.t('profile.pin_success') : 'PIN actualizado con éxito');
           status.className = 'status-msg status-success';
           
           // Actualizar localStorage para no perder la sesión
@@ -308,7 +308,7 @@
         status.className = 'status-msg status-error';
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Actualizar PIN';
+        btn.textContent = '<span data-i18n="profile.update_pin_btn">Actualizar PIN</span>';
       }
     };
 
