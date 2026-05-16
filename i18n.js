@@ -62,7 +62,10 @@ const translations = {
       "generating": "Generando resumen...",
       "groups_label": "Grupos",
       "knockout_label": "Eliminatorias",
-      "honor_label": "Cuadro de Honor"
+      "honor_label": "Cuadro de Honor",
+      "closing_in": "Cierre en:",
+      "no_results_cloud": "⚠️ No hay resultados oficiales en la nube.",
+      "error_loading_leaderboard": "❌ Error al cargar la clasificación."
     },
     "common": {
       "error": "Error",
@@ -83,7 +86,24 @@ const translations = {
       "saving": "Guardando...",
       "logged_as": "Sesión iniciada como:",
       "cloud_sync": "Tus predicciones se guardarán en la nube.",
-      "back_to_pool": "Volver a la Porra"
+      "back_to_pool": "Volver a la Porra",
+      "app_title": "Mundial 2026"
+    },
+    "teams": {
+      "México": "México", "Sudáfrica": "Sudáfrica", "Corea del Sur": "Corea del Sur", "República Checa": "República Checa",
+      "Canadá": "Canadá", "Bosnia y Herzegovina": "Bosnia y Herzegovina", "Catar": "Catar", "Suiza": "Suiza",
+      "Brasil": "Brasil", "Marruecos": "Marruecos", "Haití": "Haití", "Escocia": "Escocia",
+      "Estados Unidos": "Estados Unidos", "Paraguay": "Paraguay", "Australia": "Australia", "Turquía": "Turquía",
+      "Alemania": "Alemania", "Curazao": "Curazao", "Costa de Marfil": "Costa de Marfil", "Ecuador": "Ecuador",
+      "Países Bajos": "Países Bajos", "Japón": "Japón", "Suecia": "Suecia", "Túnez": "Túnez",
+      "Bélgica": "Bélgica", "Egipto": "Egipto", "Irán": "Irán", "Nueva Zelanda": "Nueva Zelanda",
+      "España": "España", "Cabo Verde": "Cabo Verde", "Arabia Saudita": "Arabia Saudita", "Uruguay": "Uruguay",
+      "Francia": "Francia", "Senegal": "Senegal", "Irak": "Irak", "Noruega": "Noruega",
+      "Argentina": "Argentina", "Argelia": "Argelia", "Austria": "Austria", "Jordania": "Jordania",
+      "Portugal": "Portugal", "RD Congo": "RD Congo", "Uzbekistán": "Uzbekistán", "Colombia": "Colombia",
+      "Inglaterra": "Inglaterra", "Croacia": "Croacia", "Ghana": "Ghana", "Panamá": "Panamá",
+      "Bota de Oro (Oro)": "Bota de Oro (Oro)", "Bota de Oro (Plata)": "Bota de Oro (Plata)", "Bota de Oro (Bronce)": "Bota de Oro (Bronce)",
+      "Balón de Oro (Oro)": "Balón de Oro (Oro)", "Balón de Oro (Plata)": "Balón de Oro (Plata)", "Balón de Oro (Bronce)": "Balón de Oro (Bronce)"
     },
     "admin": {
       "title": "Panel de Control",
@@ -129,6 +149,8 @@ const translations = {
       "top_scorer": "Máximo Goleador",
       "best_player": "Mejor Jugador",
       "placeholder_name": "Nombre...",
+      "tournament_final": "Torneo Final",
+      "individual_prizes": "Premios Individuales",
       "round_r32": "Dieciseisavos de Final",
       "round_r16": "Octavos de Final",
       "round_qf": "Cuartos de Final",
@@ -142,7 +164,8 @@ const translations = {
       "pool_loading": "Cargando jugadores...",
       "pool_error": "Error al cargar datos de la nube.",
       "match": "Partido",
-      "jornada": "Jornada"
+      "jornada": "Jornada",
+      "group": "Grupo"
     },
     "scoring": {
       "title": "Sistema de Puntuación",
@@ -179,6 +202,11 @@ const translations = {
       "modal_text": "Al activar la Opción B, las rondas eliminatorias se ocultarán hasta que se abran.",
       "modal_yes": "Si, adelante",
       "modal_no": "No hacer cambios"
+    },
+    "results": {
+      "groups_tab": "Grupos",
+      "knockout_tab": "Elim.",
+      "honor_title": "Honor"
     },
     "rules": {
       "title": "Reglas del Juego",
@@ -280,7 +308,10 @@ const translations = {
       "generating": "Generating summary...",
       "groups_label": "Groups",
       "knockout_label": "Knockout",
-      "honor_label": "Honor Roll"
+      "honor_label": "Honor Roll",
+      "closing_in": "Closing in:",
+      "no_results_cloud": "⚠️ No official results in the cloud.",
+      "error_loading_leaderboard": "❌ Error loading leaderboard."
     },
     "common": {
       "error": "Error",
@@ -301,7 +332,24 @@ const translations = {
       "saving": "Saving...",
       "logged_as": "Logged in as:",
       "cloud_sync": "Your predictions will be saved in the cloud.",
-      "back_to_pool": "Back to Pool"
+      "back_to_pool": "Back to Pool",
+      "app_title": "World Cup 2026"
+    },
+    "teams": {
+      "México": "Mexico", "Sudáfrica": "South Africa", "Corea del Sur": "South Korea", "República Checa": "Czech Republic",
+      "Canadá": "Canada", "Bosnia y Herzegovina": "Bosnia and Herzegovina", "Catar": "Qatar", "Suiza": "Switzerland",
+      "Brasil": "Brazil", "Marruecos": "Morocco", "Haití": "Haiti", "Escocia": "Scotland",
+      "Estados Unidos": "USA", "Paraguay": "Paraguay", "Australia": "Australia", "Turquía": "Turkey",
+      "Alemania": "Germany", "Curazao": "Curacao", "Costa de Marfil": "Ivory Coast", "Ecuador": "Ecuador",
+      "Países Bajos": "Netherlands", "Japón": "Japan", "Suecia": "Sweden", "Túnez": "Tunisia",
+      "Bélgica": "Belgium", "Egipto": "Egypt", "Irán": "Iran", "Nueva Zelanda": "New Zealand",
+      "España": "Spain", "Cabo Verde": "Cape Verde", "Arabia Saudita": "Saudi Arabia", "Uruguay": "Uruguay",
+      "Francia": "France", "Senegal": "Senegal", "Irak": "Iraq", "Noruega": "Norway",
+      "Argentina": "Argentina", "Argelia": "Algeria", "Austria": "Austria", "Jordania": "Jordan",
+      "Portugal": "Portugal", "RD Congo": "DR Congo", "Uzbekistán": "Uzbekistan", "Colombia": "Colombia",
+      "Inglaterra": "England", "Croacia": "Croacia", "Ghana": "Ghana", "Panamá": "Panama",
+      "Bota de Oro (Oro)": "Golden Boot (Gold)", "Bota de Oro (Plata)": "Golden Boot (Silver)", "Bota de Oro (Bronce)": "Golden Boot (Bronze)",
+      "Balón de Oro (Oro)": "Golden Ball (Gold)", "Balón de Oro (Plata)": "Golden Ball (Silver)", "Balón de Oro (Bronce)": "Golden Ball (Bronze)"
     },
     "admin": {
       "title": "Control Panel",
@@ -347,6 +395,8 @@ const translations = {
       "top_scorer": "Top Scorer",
       "best_player": "Best Player",
       "placeholder_name": "Name...",
+      "tournament_final": "Final Tournament",
+      "individual_prizes": "Individual Prizes",
       "round_r32": "Round of 32",
       "round_r16": "Round of 16",
       "round_qf": "Quarter-finals",
@@ -360,7 +410,8 @@ const translations = {
       "pool_loading": "Loading players...",
       "pool_error": "Error loading cloud data.",
       "match": "Match",
-      "jornada": "Matchday"
+      "jornada": "Matchday",
+      "group": "Group"
     },
     "scoring": {
       "title": "Scoring System",
@@ -397,6 +448,11 @@ const translations = {
       "modal_text": "By activating Option B, knockout predictions will be hidden until each phase opens.",
       "modal_yes": "Yes, proceed",
       "modal_no": "Cancel"
+    },
+    "results": {
+      "groups_tab": "Groups",
+      "knockout_tab": "KO",
+      "honor_title": "Honor"
     },
     "rules": {
       "title": "Game Rules",

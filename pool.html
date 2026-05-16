@@ -250,7 +250,7 @@
       { section: (window.i18n ? window.i18n.t('predictions.round_final').toUpperCase() : 'FINAL') },
       { id: '104', match: 'W101 vs W102' },
       // ===== PREMIOS INDIVIDUALES =====
-      { section: 'PREMIOS INDIVIDUALES' },
+      { section: (window.i18n ? window.i18n.t('dashboard.honor_label').toUpperCase() : 'PREMIOS INDIVIDUALES') },
       { id: 'BG', match: 'Bota de Oro (Oro)', single: 'boot_gold' },
       { id: 'BS', match: 'Bota de Oro (Plata)', single: 'boot_silver' },
       { id: 'BB', match: 'Bota de Oro (Bronce)', single: 'boot_bronze' },
@@ -282,16 +282,19 @@
       if (parts.length === 2) {
         const home = parts[0].trim();
         const away = parts[1].trim();
-        const homeCode = teamCodes[home];
-        const awayCode = teamCodes[away];
+        const homeCode = teamCodes ? teamCodes[home] : (typeof TEAM_CODES !== 'undefined' ? TEAM_CODES[home] : null);
+        const awayCode = teamCodes ? teamCodes[away] : (typeof TEAM_CODES !== 'undefined' ? TEAM_CODES[away] : null);
+        
+        const homeTranslated = window.i18n ? window.i18n.t(`teams.${home}`) : home;
+        const awayTranslated = window.i18n ? window.i18n.t(`teams.${away}`) : away;
         
         const homeImg = homeCode ? `<img src="https://flagcdn.com/w40/${homeCode}.png" class="flag-img" style="margin-right:6px">` : '';
         const awayImg = awayCode ? `<img src="https://flagcdn.com/w40/${awayCode}.png" class="flag-img" style="margin-right:6px">` : '';
         
         return `<div style="display:flex; align-items:center;">
-                  <div style="flex:1; text-align:right;">${home} ${homeImg}</div>
+                  <div style="flex:1; text-align:right;">${homeTranslated} ${homeImg}</div>
                   <div style="margin:0 8px; color:var(--text-muted); font-size:0.7rem;">${separator.trim()}</div>
-                  <div style="flex:1; text-align:left;">${awayImg} ${away}</div>
+                  <div style="flex:1; text-align:left;">${awayImg} ${awayTranslated}</div>
                 </div>`;
       }
       return matchStr;

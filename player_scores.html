@@ -198,7 +198,7 @@
           </div>
         </div>
         <div id="countdownContainer" style="text-align: right; min-width: 150px;">
-          <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 2px;">Cierre en:</div>
+          <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 2px;" data-i18n="dashboard.closing_in">Cierre en:</div>
           <div id="countdownTimer" style="font-family: 'Inter', monospace; font-weight: 800; font-size: 1.5rem; color: var(--accent-blue);">00:00:00</div>
         </div>
       </div>
@@ -250,7 +250,7 @@
       
       banner.style.display = 'block';
       const mode = tournamentState.predictionMode || 'A';
-      phaseName.innerHTML = `${tournamentState.name} <span style="font-size: 0.6rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px;">MODO ${mode}</span>`;
+      phaseName.innerHTML = `${window.i18n ? window.i18n.t('predictions.round_' + tournamentState.id) : tournamentState.name} <span style="font-size: 0.6rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 8px;">MODO ${mode}</span>`;
       
       if (tournamentState.isPredictionWindow) {
         // Validación de cumplimiento (usando los datos cargados en init)
@@ -367,7 +367,7 @@
         const finalReality = (cloudReality && Object.keys(cloudReality).length > 0) ? cloudReality : reality;
 
         if (!finalReality || Object.keys(finalReality).length === 0) {
-          lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">⚠️ No hay resultados oficiales en la nube. Ve a "Resultados Testing" para generarlos.</div>';
+          lbBody.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-muted);"> ${window.i18n ? window.i18n.t('dashboard.no_results_cloud') : '⚠️ No hay resultados oficiales en la nube.'}</div>`;
           return;
         }
 
@@ -376,7 +376,7 @@
 
       } catch (e) {
         console.error(e);
-        lbBody.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--accent-red);">❌ Error al cargar la clasificación.</div>';
+        lbBody.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--accent-red);">${window.i18n ? window.i18n.t('dashboard.error_loading_leaderboard') : '❌ Error al cargar la clasificación.'}</div>`;
       }
     }
 
@@ -417,7 +417,32 @@
                   <table class="lb-history-table">
                     <thead><tr><th data-i18n="dashboard.history_match">Partido</th><th style="text-align:right" data-i18n="dashboard.history_pts">Pts</th><th data-i18n="dashboard.history_reason">Motivo</th></tr></thead>
                     <tbody>
-                      ${r.history.map(h => `<tr><td class="hist-match">${h.match}</td><td class="hist-pts">+${h.pts}</td><td class="hist-reason">${h.reason}</td></tr>`).join('')}
+                      ${r.history.map(h => {
+                        let match = h.match;
+                        let reason = h.reason;
+                        if (window.i18n) {
+                          // Translate team names in match name
+                          Object.keys(translations['es'].teams).forEach(team => {
+                            match = match.replace(new RegExp(team, 'g'), window.i18n.t(`teams.${team}`));
+                          });
+                          // Translate common reasons
+                          if (window.i18n.locale === 'en') {
+                            reason = reason.replace(/Signo/g, 'Sign')
+                                           .replace(/Exacto/g, 'Exact')
+                                           .replace(/Diferencia/g, 'Difference')
+                                           .replace(/Acierto/g, 'Hit')
+                                           .replace(/Posición/g, 'Position')
+                                           .replace(/Grupo/g, 'Group')
+                                           .replace(/Clasificado/g, 'Qualified')
+                                           .replace(/Campeón/g, 'Champion')
+                                           .replace(/Subcampeón/g, 'Runner-up')
+                                           .replace(/3er Puesto/g, '3rd Place')
+                                           .replace(/Bota/g, 'Boot')
+                                           .replace(/Balón/g, 'Ball');
+                          }
+                        }
+                        return `<tr><td class="hist-match">${match}</td><td class="hist-pts">+${h.pts}</td><td class="hist-reason">${reason}</td></tr>`;
+                      }).join('')}
                     </tbody>
                   </table>
                 </div>
