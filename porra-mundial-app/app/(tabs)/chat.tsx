@@ -8,6 +8,7 @@ import { getAuth } from '../../stores/authStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as socketService from '../../services/socket';
 import * as api from '../../services/api';
+import { useTranslation } from '../../i18n/i18n';
 
 const EMOJIS = [
   '⚽', '🏆', '🔥', '👏', '🙌', '🤣', '😭', '🤯', '💪', '🇸🇦', '🇲🇽', '🇪🇸', '🇦🇷', '🇧🇷', '🇫🇷',
@@ -20,6 +21,7 @@ const STICKERS: string[] = []; // Los cargaremos dinámicamente
 export default function ChatScreen() {
   const { groupName: paramGroupName } = useLocalSearchParams<{ groupName: string }>();
   const [messages, setMessages] = useState<socketService.ChatMessage[]>([]);
+  const { t } = useTranslation();
   
   // Función para actualizar mensajes sin duplicados (Deduplicación Atómica)
   const setMessagesSafe = (updater: socketService.ChatMessage[] | ((prev: socketService.ChatMessage[]) => socketService.ChatMessage[])) => {
@@ -402,7 +404,7 @@ export default function ChatScreen() {
         socketService.sendMessage(groupName, undefined, 'image', serverUrl);
       }
     } catch (e) {
-      Alert.alert('Error', 'No se pudo subir la imagen');
+      Alert.alert(t('common.error'), t('chat.upload_error'));
     }
   };
 
@@ -466,7 +468,7 @@ export default function ChatScreen() {
       setPlayingId(messageId);
     } catch (e) {
       console.error('Error reproduciendo audio:', e);
-      Alert.alert('Error', 'No se pudo reproducir el audio');
+      Alert.alert(t('common.error'), t('chat.audio_play_error'));
     }
   };
 
@@ -562,7 +564,7 @@ export default function ChatScreen() {
     } catch (e) {
       console.error('Error al parar de grabar:', e);
       setRecording(null);
-      Alert.alert('Error', 'No se pudo enviar el audio');
+      Alert.alert(t('common.error'), t('chat.audio_send_error'));
     }
   };
 
@@ -598,27 +600,27 @@ export default function ChatScreen() {
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: '🚩 Reportar contenido',
+          text: t('chat.report_content'),
           onPress: () => {
             Alert.alert(
-              'Reportar',
-              '¿Por qué quieres reportar este mensaje?',
+              t('chat.report_title'),
+              t('chat.report_prompt'),
               [
-                { text: 'Spam', onPress: () => sendReport(message, 'Spam') },
-                { text: 'Acoso', onPress: () => sendReport(message, 'Acoso') },
-                { text: 'Contenido inapropiado', onPress: () => sendReport(message, 'Contenido inapropiado') },
-                { text: 'Cancelar', style: 'cancel' }
+                { text: t('chat.report_spam'), onPress: () => sendReport(message, 'Spam') },
+                { text: t('chat.report_harassment'), onPress: () => sendReport(message, 'Acoso') },
+                { text: t('chat.report_inappropriate'), onPress: () => sendReport(message, 'Contenido inapropiado') },
+                { text: t('common.cancel'), style: 'cancel' }
               ]
             );
           }
         },
         {
-          text: '🚫 Bloquear usuario',
+          text: t('chat.block_user'),
           style: 'destructive',
           onPress: () => {
-            Alert.alert('Bloquear', `¿Seguro que quieres bloquear a ${message.senderName}? No volverás a ver sus mensajes.`, [
-              { text: 'Cancelar', style: 'cancel' },
-              { text: 'Bloquear', style: 'destructive', onPress: () => Alert.alert('Éxito', 'Usuario bloqueado localmente.') }
+            Alert.alert(t('chat.block_user'), t('chat.block_confirm', { name: message.senderName }), [
+              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('chat.block_action'), style: 'destructive', onPress: () => Alert.alert(t('common.success'), t('chat.block_success')) }
             ]);
           }
         }
@@ -634,9 +636,9 @@ export default function ChatScreen() {
         messageId: message._id,
         reason
       });
-      Alert.alert('Reportado', 'Gracias por avisar. El equipo de moderación revisará el mensaje.');
+      Alert.alert(t('chat.reported_title'), t('chat.reported_msg'));
     } catch (e) {
-      Alert.alert('Error', 'No se pudo enviar el reporte.');
+      Alert.alert(t('common.error'), t('chat.report_error'));
     }
   };
 
@@ -684,7 +686,7 @@ export default function ChatScreen() {
             <View style={styles.unreadLine} />
             <View style={styles.unreadTag}>
               <Ionicons name="arrow-down" size={12} color="#fff" style={{ marginRight: 4 }} />
-              <Text style={styles.unreadText}>{unreadCount} {unreadCount === 1 ? 'Mensaje no leído' : 'Mensajes no leídos'}</Text>
+              <Text style={styles.unreadText}>{unreadCount} {unreadCount === 1 ? t('chat.unread_single') : t('chat.unread_plural')}</Text>
             </View>
             <View style={styles.unreadLine} />
           </View>
@@ -739,14 +741,14 @@ export default function ChatScreen() {
                 <Text style={styles.audioDuration}>
                   {playingId === item._id
                     ? formatMillis(playbackStatus.position)
-                    : 'Nota'}
+                    : t('chat.voice_note')}
                 </Text>
               </TouchableOpacity>
             )}
 
             {item.isBot && item.type === 'text' && (
               <Text style={{ fontSize: 9, color: '#a78bfa', marginTop: 4, fontStyle: 'italic' }}>
-                Resumen generado por IA. Puede contener errores.
+                {t('chat.ai_disclaimer')}
               </Text>
             )}
 
@@ -799,7 +801,7 @@ export default function ChatScreen() {
         </TouchableOpacity>
       )}
 
-      {typingUsers.length > 0 && <View style={styles.typingIndicator}><Text style={styles.typingText}>{typingUsers.join(', ')} escribiendo...</Text></View>}
+      {typingUsers.length > 0 && <View style={styles.typingIndicator}><Text style={styles.typingText}>{typingUsers.join(', ')} {t('chat.typing')}</Text></View>}
 
       {showPicker && !isRecording && (
         <View style={styles.pickerContainer}>
@@ -833,7 +835,7 @@ export default function ChatScreen() {
                     <View style={styles.addStickerBox}>
                       <Ionicons name="add" size={30} color="#f5a623" />
                     </View>
-                    <Text style={styles.addStickerLabel}>Nuevo</Text>
+                    <Text style={styles.addStickerLabel}>{t('common.new')}</Text>
                   </TouchableOpacity>
 
                   {recentStickers.map((url, idx) => (
@@ -849,7 +851,7 @@ export default function ChatScreen() {
               <View style={{ flex: 1 }}>
                 <TextInput
                   style={styles.gifSearch}
-                  placeholder="Buscar GIFs en GIPHY..."
+                  placeholder={t('chat.gif_search')}
                   placeholderTextColor="#64748b"
                   value={gifSearch}
                   onChangeText={setGifSearch}
@@ -919,11 +921,11 @@ export default function ChatScreen() {
               <Animated.View style={[styles.recordingDot, { opacity: pulseAnim }]} />
               <Text style={styles.recordingTimer}>{recordingTime}s</Text>
               {isLocked ? (
-                <Text style={styles.recordingHint}>Grabando (Bloqueado)</Text>
+                <Text style={styles.recordingHint}>{t('chat.recording_locked')}</Text>
               ) : (
                 <View style={styles.lockIndicator}>
                   <Ionicons name="chevron-up" size={14} color="#64748b" />
-                  <Text style={styles.recordingHint}>Desliza para bloquear</Text>
+                  <Text style={styles.recordingHint}>{t('chat.swipe_to_lock')}</Text>
                 </View>
               )}
             </View>
@@ -944,7 +946,7 @@ export default function ChatScreen() {
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}
-                placeholder="Mensaje..."
+                placeholder={t('chat.message_placeholder')}
                 placeholderTextColor="#64748b"
                 value={text}
                 onChangeText={handleTextChange}

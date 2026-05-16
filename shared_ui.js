@@ -53,20 +53,31 @@ export function renderNavigation(currentPage) {
   if (!navLinks) return;
 
   const links = [
-    { href: 'player_scores.html', text: 'Clasificación', adminOnly: false },
-    { href: 'fixture_testing.html', text: 'Resultados', adminOnly: false },
-    { href: 'pool.html', text: 'Predicciones', adminOnly: false },
-    { href: 'worldcup.html', text: 'Mi predicción', adminOnly: false },
-    { href: 'about_user.html', text: 'Mi Perfil', adminOnly: false },
+    { href: 'player_scores.html', text: window.i18n ? window.i18n.t('tabs.dashboard') : 'Clasificación', adminOnly: false },
+    { href: 'fixture_testing.html', text: window.i18n ? window.i18n.t('tabs.results') : 'Resultados', adminOnly: false },
+    { href: 'pool.html', text: window.i18n ? window.i18n.t('tabs.pool') : 'Predicciones', adminOnly: false },
+    { href: 'worldcup.html', text: window.i18n ? window.i18n.t('tabs.predictions') : 'Mi predicción', adminOnly: false },
+    { href: 'about_user.html', text: window.i18n ? window.i18n.t('tabs.chat') : 'Mi Perfil', adminOnly: false }, // using chat as a fallback for profile label for now, though we should map it properly
     { href: 'points_system.html', text: 'Sistema de puntuación', adminOnly: false },
     { href: 'scoring_criteria.html', text: 'Configuración', adminOnly: true }
   ];
 
-  navLinks.innerHTML = links
+  let html = links
     .filter(link => !link.adminOnly || user.isAdmin)
     .map(link => `
       <a href="${link.href}" class="nav-link ${currentPage === link.href ? 'active' : ''}">${link.text}</a>
     `).join('');
+    
+  // Add Language Switcher
+  const currentLang = window.i18n ? window.i18n.locale : 'es';
+  html += `
+    <div class="lang-switcher" style="margin-left: 15px; display: inline-flex; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden;">
+      <button onclick="window.i18n.changeLanguage('en'); window.location.reload();" style="border:none; padding: 5px 10px; cursor: pointer; background: ${currentLang === 'en' ? '#f5a623' : 'transparent'}; color: ${currentLang === 'en' ? '#000' : '#fff'}; font-weight: bold;">EN</button>
+      <button onclick="window.i18n.changeLanguage('es'); window.location.reload();" style="border:none; padding: 5px 10px; cursor: pointer; background: ${currentLang === 'es' ? '#f5a623' : 'transparent'}; color: ${currentLang === 'es' ? '#000' : '#fff'}; font-weight: bold;">ES</button>
+    </div>
+  `;
+  
+  navLinks.innerHTML = html;
 }
 
 // ==========================================

@@ -2,20 +2,23 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking } 
 import { useRouter } from 'expo-router';
 import { getAuth, logout } from '../../stores/authStore';
 import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '../../i18n/i18n';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 export default function MenuScreen() {
   const router = useRouter();
   const auth = getAuth();
   const isAdmin = auth?.isAdmin || false;
+  const { t } = useTranslation();
   
   const PRIVACY_URL = 'https://tu-app.onrender.com/legal/privacy';
   const TERMS_URL = 'https://tu-app.onrender.com/legal/terms';
 
   const handleLogout = () => {
-    Alert.alert('Cerrar Sesión', '¿Estás seguro de que quieres salir?', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(t('menu.logout_confirm_title'), t('menu.logout_confirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       { 
-        text: 'Cerrar Sesión', 
+        text: t('menu.logout'), 
         style: 'destructive', 
         onPress: () => {
           logout();
@@ -41,48 +44,64 @@ export default function MenuScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.title}>Menú Principal</Text>
-        <Text style={styles.subtitle}>Gestiona tu perfil y explora más opciones</Text>
+        <Text style={styles.title}>{t('menu.title')}</Text>
+        <Text style={styles.subtitle}>{t('menu.subtitle')}</Text>
       </View>
 
       <View style={styles.section}>
         <MenuButton 
           icon="format-list-bulleted" 
-          label="El Muro" 
-          sublabel="Ver todas las predicciones del grupo"
+          label={t('menu.the_wall')} 
+          sublabel={t('menu.the_wall_sub')}
           onPress={() => router.push('/(tabs)/pool')}
           color="#3b82f6"
         />
         <MenuButton 
           icon="person" 
-          label="Mi Perfil" 
-          sublabel="Ajustes de cuenta e IA"
+          label={t('menu.my_profile')} 
+          sublabel={t('menu.my_profile_sub')}
           onPress={() => router.push('/(tabs)/profile')}
           color="#10b981"
         />
         <MenuButton 
           icon="notifications" 
-          label="Notificaciones" 
-          sublabel="Silenciar o personalizar avisos"
+          label={t('menu.notifications')} 
+          sublabel={t('menu.notifications_sub')}
           onPress={() => router.push('/(tabs)/notifications')}
           color="#f43f5e"
         />
         <MenuButton 
           icon="menu-book" 
-          label="Reglas del Juego" 
-          sublabel="Cómo puntuar y modos de juego"
+          label={t('menu.rules')} 
+          sublabel={t('menu.rules_sub')}
           onPress={() => router.push('/(tabs)/rules')}
           color="#10b981"
         />
       </View>
 
+      {/* Language Switcher */}
+      <View style={styles.section}>
+        <View style={styles.languageRow}>
+          <View style={[styles.iconBox, { backgroundColor: 'rgba(168, 85, 247, 0.08)' }]}>
+            <MaterialIcons name="language" size={24} color="#a855f7" />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.menuLabel}>{t('menu.language')}</Text>
+            <Text style={styles.menuSublabel}>{t('menu.language_sub')}</Text>
+          </View>
+        </View>
+        <View style={styles.switcherContainer}>
+          <LanguageSwitcher />
+        </View>
+      </View>
+
       {isAdmin && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Administración</Text>
+          <Text style={styles.sectionTitle}>{t('menu.admin_section')}</Text>
           <MenuButton 
             icon="admin-panel-settings" 
-            label="Panel de Control" 
-            sublabel="Gestionar miembros y reglas"
+            label={t('menu.admin_panel')} 
+            sublabel={t('menu.admin_panel_sub')}
             onPress={() => router.push('/(tabs)/admin')}
             color="#f5a623"
           />
@@ -90,18 +109,18 @@ export default function MenuScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Legal y Privacidad</Text>
+        <Text style={styles.sectionTitle}>{t('menu.legal_section')}</Text>
         <MenuButton 
           icon="security" 
-          label="Política de Privacidad" 
-          sublabel="Cómo cuidamos tus datos"
+          label={t('menu.privacy_policy')} 
+          sublabel={t('menu.privacy_sub')}
           onPress={() => Linking.openURL(PRIVACY_URL)}
           color="#94a3b8"
         />
         <MenuButton 
           icon="gavel" 
-          label="Términos de Uso" 
-          sublabel="Condiciones del servicio (EULA)"
+          label={t('menu.terms_of_use')} 
+          sublabel={t('menu.terms_sub')}
           onPress={() => Linking.openURL(TERMS_URL)}
           color="#94a3b8"
         />
@@ -110,9 +129,9 @@ export default function MenuScreen() {
       <View style={styles.footer}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <MaterialIcons name="logout" size={20} color="#ef4444" />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
+          <Text style={styles.logoutText}>{t('menu.logout')}</Text>
         </TouchableOpacity>
-        <Text style={styles.version}>Predicción Mundial v1.2.0</Text>
+        <Text style={styles.version}>{t('menu.version')}</Text>
       </View>
     </ScrollView>
   );
@@ -131,6 +150,8 @@ const styles = StyleSheet.create({
   textContainer: { flex: 1 },
   menuLabel: { color: '#fff', fontSize: 16, fontWeight: '700' },
   menuSublabel: { color: '#64748b', fontSize: 12, marginTop: 2 },
+  languageRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 16 },
+  switcherContainer: { paddingHorizontal: 16, paddingBottom: 12 },
   footer: { marginTop: 20, alignItems: 'center' },
   logoutButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, gap: 8 },
   logoutText: { color: '#ef4444', fontWeight: '800', fontSize: 15 },

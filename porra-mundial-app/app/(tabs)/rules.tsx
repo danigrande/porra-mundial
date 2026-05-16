@@ -1,9 +1,11 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function RulesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const RuleSection = ({ number, title, children, icon }: any) => (
     <View style={styles.section}>
@@ -30,64 +32,64 @@ export default function RulesScreen() {
       <Stack.Screen options={{ title: 'Reglas del Juego', headerTitleAlign: 'center' }} />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Reglas del Juego</Text>
-        <Text style={styles.headerSubtitle}>Todo lo que necesitas saber para convertirte en el Rey de la Porra</Text>
+        <Text style={styles.headerTitle}>{t('rules.title')}</Text>
+        <Text style={styles.headerSubtitle}>{t('rules.subtitle')}</Text>
       </View>
 
       {/* Sección 1: Modos de Juego */}
-      <RuleSection number="1" title="¿Cómo jugar? (Modos de Juego)">
-        <Text style={styles.text}>Dependiendo de la configuración de tu administrador, la porra se puede jugar de dos formas:</Text>
+      <RuleSection number="1" title={t('rules.modes_title')}>
+        <Text style={styles.text}>{t('rules.modes_intro')}</Text>
         
         <View style={styles.modesContainer}>
           <View style={[styles.modeCard, { borderColor: 'rgba(59, 130, 246, 0.3)', backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-            <Text style={[styles.modeTitle, { color: '#3b82f6' }]}>Opción A: Clásico</Text>
-            <Text style={styles.modeText}>Debes rellenar toda la porra (Grupos + Cuadro Completo) antes de que empiece el primer partido del Mundial.</Text>
+            <Text style={[styles.modeTitle, { color: '#3b82f6' }]}>{t('rules.mode_a_title')}</Text>
+            <Text style={styles.modeText}>{t('rules.mode_a_desc')}</Text>
           </View>
           
           <View style={[styles.modeCard, { borderColor: 'rgba(16, 185, 129, 0.3)', backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-            <Text style={[styles.modeTitle, { color: '#10b981' }]}>Opción B: Por Fases</Text>
-            <Text style={styles.modeText}>Las fases se abren ronda a ronda. Tienes 24-48h para predecir la siguiente con los clasificados reales.</Text>
+            <Text style={[styles.modeTitle, { color: '#10b981' }]}>{t('rules.mode_b_title')}</Text>
+            <Text style={styles.modeText}>{t('rules.mode_b_desc')}</Text>
           </View>
         </View>
         
         <View style={styles.noteBox}>
           <Ionicons name="location" size={16} color="#f5a623" />
           <Text style={styles.noteText}>
-            <Text style={{ fontWeight: 'bold' }}>Nota:</Text> El "Cuadro de Honor" (Campeón, Bota de Oro, etc.) se completa siempre antes del inicio del torneo.
+            <Text style={{ fontWeight: 'bold' }}>{t('rules.note_label')} </Text> {t('rules.note_desc')}
           </Text>
         </View>
       </RuleSection>
 
       {/* Sección 2: El Agente Mundial */}
-      <RuleSection icon={<MaterialCommunityIcons name="robot" size={20} color="#25D366" />} title="Notificaciones del Bot">
-        <Text style={styles.text}>Nuestro Agente Mundial te mantendrá al tanto de todo:</Text>
+      <RuleSection icon={<MaterialCommunityIcons name="robot" size={20} color="#25D366" />} title={t('rules.bot_title')}>
+        <Text style={styles.text}>{t('rules.bot_intro')}</Text>
         <View style={styles.list}>
           <View style={styles.listItem}>
             <View style={styles.bullet} />
-            <Text style={styles.listText}>Avisos cuando se abre una nueva ronda (Modo B).</Text>
+            <Text style={styles.listText}>{t('rules.bot_li1')}</Text>
           </View>
           <View style={styles.listItem}>
             <View style={styles.bullet} />
-            <Text style={styles.listText}>Alertas cuando falten 2 horas para el cierre.</Text>
+            <Text style={styles.listText}>{t('rules.bot_li2')}</Text>
           </View>
           <View style={styles.listItem}>
             <View style={styles.bullet} />
-            <Text style={styles.listText}>Resúmenes diarios y memes personalizados.</Text>
+            <Text style={styles.listText}>{t('rules.bot_li3')}</Text>
           </View>
         </View>
       </RuleSection>
 
       {/* Sección 3: Sistema de Puntuación */}
-      <RuleSection number="2" title="Sistema de Puntuación">
-        <Text style={styles.text}>Los puntos se calculan de forma acumulativa por cada partido:</Text>
+      <RuleSection number="2" title={t('rules.scoring_title')}>
+        <Text style={styles.text}>{t('rules.scoring_intro')}</Text>
         
         <View style={styles.table}>
           {[
-            { label: 'Signo (1X2)', sub: 'Ganador o empate', pts: '+10' },
-            { label: 'Diferencia Goles', sub: 'Si acertaste el signo', pts: '+10' },
-            { label: 'Resultado Exacto', sub: 'Bono marcador exacto', pts: '+10' },
-            { label: 'Posición Grupo', sub: 'Acierto posición exacta', pts: '+5' },
-            { label: 'Clasificación', sub: 'Equipo que pasa ronda', pts: '+5 a +10' },
+            { label: t('rules.score_sign'), sub: t('rules.score_sign_sub'), pts: '+10' },
+            { label: t('rules.score_diff'), sub: t('rules.score_diff_sub'), pts: '+10' },
+            { label: t('rules.score_exact'), sub: t('rules.score_exact_sub'), pts: '+10' },
+            { label: t('rules.score_pos'), sub: t('rules.score_pos_sub'), pts: '+5' },
+            { label: t('rules.score_qual'), sub: t('rules.score_qual_sub'), pts: '+5 a +10' },
           ].map((item, i) => (
             <View key={i} style={styles.tableRow}>
               <View style={{ flex: 1 }}>
@@ -102,40 +104,40 @@ export default function RulesScreen() {
         <View style={styles.exampleBox}>
           <Ionicons name="bulb" size={16} color="#f5a623" />
           <Text style={styles.exampleText}>
-            Ejemplo: Si dices 2-1 y quedan 2-1, sumas 30 puntos (10 signo + 10 diferencia + 10 bono exacto).
+            {t('rules.scoring_example')}
           </Text>
         </View>
       </RuleSection>
 
       {/* Sección 4: Eliminatorias */}
-      <RuleSection number="3" title="Rondas Eliminatorias">
-        <Text style={styles.text}>En las rondas de K.O., hay una regla vital:</Text>
+      <RuleSection number="3" title={t('rules.ko_title')}>
+        <Text style={styles.text}>{t('rules.ko_intro')}</Text>
         
         <View style={styles.penaltyBox}>
           <View style={styles.penaltyHeader}>
             <MaterialIcons name="warning" size={20} color="#ef4444" />
-            <Text style={styles.penaltyTitle}>La Regla del Empate</Text>
+            <Text style={styles.penaltyTitle}>{t('rules.tie_rule_title')}</Text>
           </View>
           <Text style={styles.penaltyText}>
-            Si predices un empate (ej: 1-1) en eliminatorias, el sistema te obligará a elegir quién gana en la tanda de penaltis.
+            {t('rules.tie_rule_1')}
           </Text>
           <Text style={[styles.penaltyText, { marginTop: 8, fontStyle: 'italic' }]}>
-            Solo pasará a la siguiente ronda de tu cuadro el equipo que elijas como ganador de los penaltis.
+            {t('rules.tie_rule_2')}
           </Text>
         </View>
       </RuleSection>
 
       {/* Sección 5: Cuadro de Honor */}
-      <RuleSection number="4" title="Premios Especiales">
-        <Text style={styles.text}>Puntos "gordos" por predicciones a largo plazo:</Text>
+      <RuleSection number="4" title={t('rules.awards_title')}>
+        <Text style={styles.text}>{t('rules.awards_intro')}</Text>
         
         <View style={styles.table}>
           {[
-            { label: 'Campeón', pts: '+50', color: '#fbbf24' },
-            { label: 'Subcampeón', pts: '+30', color: '#e2e8f0' },
-            { label: 'Bota / Balón de Oro', pts: '+25', color: '#fbbf24' },
-            { label: 'Bota / Balón de Plata', pts: '+15', color: '#94a3b8' },
-            { label: 'Bota / Balón de Bronce', pts: '+10', color: '#b45309' },
+            { label: t('rules.award_champ'), pts: '+50', color: '#fbbf24' },
+            { label: t('rules.award_runner'), pts: '+30', color: '#e2e8f0' },
+            { label: t('rules.award_gold'), pts: '+25', color: '#fbbf24' },
+            { label: t('rules.award_silver'), pts: '+15', color: '#94a3b8' },
+            { label: t('rules.award_bronze'), pts: '+10', color: '#b45309' },
           ].map((item, i) => (
             <View key={i} style={styles.tableRow}>
               <Text style={[styles.tableLabel, { color: item.color || '#fff' }]}>{item.label}</Text>
@@ -146,25 +148,25 @@ export default function RulesScreen() {
       </RuleSection>
 
       {/* Sección 6: Restricciones */}
-      <RuleSection number="5" title="Restricciones">
+      <RuleSection number="5" title={t('rules.restrictions_title')}>
         <View style={styles.list}>
           <View style={styles.listItem}>
             <Ionicons name="close-circle" size={18} color="#ef4444" />
-            <Text style={styles.listText}>No se pueden modificar predicciones una vez iniciado el partido/torneo.</Text>
+            <Text style={styles.listText}>{t('rules.restrict_1')}</Text>
           </View>
           <View style={styles.listItem}>
             <Ionicons name="checkmark-circle" size={18} color="#10b981" />
-            <Text style={styles.listText}>Puedes cambiar tus marcadores tantas veces como quieras antes del límite.</Text>
+            <Text style={styles.listText}>{t('rules.restrict_2')}</Text>
           </View>
           <View style={styles.listItem}>
             <Ionicons name="podium" size={18} color="#3b82f6" />
-            <Text style={styles.listText}>En caso de empate en la general, gana quien tenga más resultados exactos.</Text>
+            <Text style={styles.listText}>{t('rules.restrict_3')}</Text>
           </View>
         </View>
       </RuleSection>
 
       <Text style={styles.footer}>
-        Las reglas definitivas dependen de la configuración establecida por tu administrador de grupo.
+        {t('rules.footer')}
       </Text>
       
       <View style={{ height: 40 }} />

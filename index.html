@@ -127,73 +127,73 @@
   <div class="login-card">
     <div class="login-header">
       <div class="login-logo">⚽</div>
-      <h1 class="login-title">Porra Mundial 2026</h1>
-      <p class="login-subtitle" id="formSubtitle">Inicia sesión para ver tu clasificación</p>
+      <h1 class="login-title"><span data-i18n="login.welcome">Bienvenido a</span> <span data-i18n="login.title">Porra Mundial 2026</span></h1>
+      <p class="login-subtitle" id="formSubtitle" data-i18n="login.subtitle">Inicia sesión para ver tu clasificación</p>
     </div>
 
     <!-- Login Form -->
     <div id="loginForm">
       <div class="form-group">
-        <label class="form-label" for="loginPhone">Tu Teléfono Móvil</label>
+        <label class="form-label" for="loginPhone" data-i18n="login.phone_label">Tu Teléfono Móvil</label>
         <div class="phone-input-group">
           <select id="loginCountryCode" class="country-select"></select>
-          <input type="tel" id="loginPhone" class="phone-number-input" placeholder="612 345 678" autocomplete="off"
+          <input type="tel" id="loginPhone" class="phone-number-input" data-i18n-placeholder="login.phone_placeholder" placeholder="612 345 678" autocomplete="off"
             inputmode="tel">
         </div>
         <p id="playerStatus" class="group-info-msg"></p>
       </div>
       <div class="form-group">
-        <label class="form-label" for="loginGroupSelect">Selecciona tu grupo</label>
+        <label class="form-label" for="loginGroupSelect" data-i18n="login.group_label">Selecciona tu grupo</label>
         <select id="loginGroupSelect" class="login-input">
           <option value="">Primero introduce tu teléfono...</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" for="loginPin">Tu PIN de 4 dígitos</label>
+        <label class="form-label" for="loginPin" data-i18n="login.pin_label">Tu PIN de 4 dígitos</label>
         <div class="pin-container">
-          <input type="password" id="loginPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric">
+          <input type="password" id="loginPin" class="login-input" maxlength="4" data-i18n-placeholder="login.pin_placeholder" placeholder="••••" inputmode="numeric">
           <button type="button" class="pin-toggle" id="togglePinLogin">👁️</button>
         </div>
         <p id="loginPinError" class="error-msg" style="display:none;"></p>
       </div>
-      <button class="login-btn btn-primary" id="btnLogin"><span>Entrar</span><span class="icon">➜</span></button>
-      <div class="login-switch">¿Quieres crear un grupo? <span id="switchToRegister">Hazlo aquí</span></div>
+      <button class="login-btn btn-primary" id="btnLogin"><span data-i18n="login.login_btn">Entrar</span><span class="icon">➜</span></button>
+      <div class="login-switch"><span data-i18n="login.no_account">¿Quieres crear un grupo?</span> <span id="switchToRegister" data-i18n="login.create_account">Hazlo aquí</span></div>
     </div>
 
     <!-- Register Form -->
     <div id="registerForm" style="display: none;">
       <div class="form-group">
-        <label class="form-label" for="regGroup">Nombre del Grupo</label>
-        <input type="text" id="regGroup" class="login-input" placeholder="Ej: Los Sharks">
+        <label class="form-label" for="regGroup" data-i18n="login.group_label">Nombre del Grupo</label>
+        <input type="text" id="regGroup" class="login-input" data-i18n-placeholder="login.group_placeholder" placeholder="Ej: Los Sharks">
       </div>
       <div class="form-group">
-        <label class="form-label" for="regName">Tu nombre (cómo te verán los demás)</label>
-        <input type="text" id="regName" class="login-input" placeholder="Ej: Pepito Pérez">
+        <label class="form-label" for="regName" data-i18n="login.name_label">Tu nombre (cómo te verán los demás)</label>
+        <input type="text" id="regName" class="login-input" data-i18n-placeholder="login.name_placeholder" placeholder="Ej: Pepito Pérez">
       </div>
       <div class="form-group">
         <label class="form-label" for="regPhone">Tu Teléfono Móvil</label>
         <div class="phone-input-group">
           <select id="regCountryCode" class="country-select"></select>
-          <input type="tel" id="regPhone" class="phone-number-input" placeholder="612 345 678" autocomplete="off"
+          <input type="tel" id="regPhone" class="phone-number-input" data-i18n-placeholder="login.phone_placeholder" placeholder="612 345 678" autocomplete="off"
             inputmode="tel">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label" for="regPin">Crea tu PIN de 4 dígitos</label>
+        <label class="form-label" for="regPin" data-i18n="login.pin_label">Crea tu PIN de 4 dígitos</label>
         <div class="pin-container">
-          <input type="password" id="regPin" class="login-input" maxlength="4" placeholder="••••" inputmode="numeric">
+          <input type="password" id="regPin" class="login-input" maxlength="4" data-i18n-placeholder="login.pin_placeholder" placeholder="••••" inputmode="numeric">
           <button type="button" class="pin-toggle" id="togglePinReg">👁️</button>
         </div>
         <p id="regPinError" class="error-msg" style="display:none;"></p>
       </div>
-      <button class="login-btn btn-primary" id="btnRegister"><span>Crear cuenta</span><span
+      <button class="login-btn btn-primary" id="btnRegister"><span data-i18n="login.register_btn">Crear cuenta</span><span
           class="icon">✨</span></button>
-      <div class="login-switch">¿Ya tienes cuenta? <span id="switchToLogin">Inicia sesión</span></div>
+      <div class="login-switch"><span data-i18n="login.has_account">¿Ya tienes cuenta?</span> <span id="switchToLogin" data-i18n="login.login_here">Inicia sesión</span></div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-
+  <script src="i18n.js"></script>
   <script src="web_config.js"></script>
   <script type="module">
     import { showToast } from './shared_ui.js';

@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Touchable
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function PoolScreen() {
   const auth = getAuth();
   const groupName = auth?.currentGroup || '';
+  const { t } = useTranslation();
   
   const [loading, setLoading] = useState(true);
   const [cloudData, setCloudData] = useState<any>({});
@@ -30,7 +32,7 @@ export default function PoolScreen() {
     })
     .catch(e => {
       console.error(e);
-      Alert.alert('Error', 'No se pudo cargar el muro de predicciones');
+      Alert.alert(t('common.error'), t('pool.load_error'));
     })
     .finally(() => setLoading(false));
   }, [groupName]);
@@ -48,8 +50,8 @@ export default function PoolScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>El Muro</Text>
-        <Text style={styles.subtitle}>Cotillea las predicciones de todo el grupo</Text>
+        <Text style={styles.title}>{t('pool.title')}</Text>
+        <Text style={styles.subtitle}>{t('pool.subtitle')}</Text>
       </View>
 
       {/* Selector de Jugador (Horizontal) */}
@@ -77,7 +79,7 @@ export default function PoolScreen() {
           />
         ) : (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>No hay predicciones para mostrar</Text>
+            <Text style={styles.emptyText}>{t('pool.no_predictions')}</Text>
           </View>
         )}
       </ScrollView>
@@ -94,8 +96,8 @@ function PredictionList({ predictions, isMe, hasStarted }: { predictions: any, i
     return (
       <View style={styles.lockedCard}>
         <Ionicons name="lock-closed" size={48} color="#64748b" />
-        <Text style={styles.lockedTitle}>Predicciones Ocultas</Text>
-        <Text style={styles.lockedDesc}>Podrás ver lo que han votado los demás en cuanto empiece el primer partido del Mundial.</Text>
+        <Text style={styles.lockedTitle}>{t('pool.locked_title')}</Text>
+        <Text style={styles.lockedDesc}>{t('pool.locked_desc')}</Text>
       </View>
     );
   }
@@ -104,7 +106,7 @@ function PredictionList({ predictions, isMe, hasStarted }: { predictions: any, i
     <View style={styles.list}>
       {groups.map(g => (
         <View key={g} style={styles.groupSection}>
-          <Text style={styles.groupLabel}>Grupo {g}</Text>
+          <Text style={styles.groupLabel}>{t('common.group')} {g}</Text>
           <View style={styles.row}>
             <Text style={styles.matchLabel}>Partido 1:</Text>
             <Text style={styles.scoreText}>{predictions[`g${g}_m0_h`] ?? '?'} - {predictions[`g${g}_m0_a`] ?? '?'}</Text>

@@ -2,9 +2,11 @@ import { Tabs } from 'expo-router';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { getAuth, subscribeAuth } from '../../stores/authStore';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function TabLayout() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Estado inicial
@@ -37,35 +39,35 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Clasificación',
+          title: t('tabs.leaderboard'),
           tabBarIcon: ({ color }) => <MaterialIcons name="leaderboard" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
         name="results"
         options={{
-          title: 'Resultados',
+          title: t('tabs.results'),
           tabBarIcon: ({ color }) => <Ionicons name="football" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Chat',
+          title: t('tabs.chat'),
           tabBarIcon: ({ color }) => <FontAwesome5 name="comment-dots" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="predictions"
         options={{
-          title: 'Mi predicción',
+          title: t('tabs.predictions'),
           tabBarIcon: ({ color }) => <MaterialIcons name="sports-soccer" size={26} color={color} />,
         }}
       />
       <Tabs.Screen
         name="menu"
         options={{
-          title: 'Más',
+          title: t('tabs.more'),
           tabBarIcon: ({ color }) => <Ionicons name="menu" size={26} color={color} />,
         }}
       />

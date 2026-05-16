@@ -3,26 +3,28 @@ import { useRouter } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import * as api from '../../services/api';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function AdminHub() {
   const router = useRouter();
   const auth = getAuth();
+  const { t } = useTranslation();
 
   const handleReset = () => {
     Alert.alert(
-      "Resetear Grupo",
-      "¿Estás seguro? Se borrarán TODAS las predicciones y se reiniciará el torneo para este grupo. Esta acción no se puede deshacer.",
+      t('admin.reset_confirm_title'),
+      t('admin.reset_confirm_msg'),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t('common.cancel'), style: "cancel" },
         { 
-          text: "Sí, Resetear", 
+          text: t('admin.reset_yes'), 
           style: "destructive",
           onPress: async () => {
             try {
               await api.resetGroup(auth?.currentGroup || '');
-              Alert.alert("Éxito", "El grupo ha sido reseteado correctamente.");
+              Alert.alert(t('common.success'), t('admin.reset_success'));
             } catch (e) {
-              Alert.alert("Error", "No se pudo resetear el grupo.");
+              Alert.alert(t('common.error'), t('admin.reset_error'));
             }
           }
         }
@@ -34,8 +36,8 @@ export default function AdminHub() {
     return (
       <View style={styles.centered}>
         <Ionicons name="lock-closed" size={64} color="#1e2a5a" />
-        <Text style={styles.noAccess}>Acceso Restringido</Text>
-        <Text style={styles.noAccessDesc}>Solo los administradores del grupo pueden ver esta sección.</Text>
+        <Text style={styles.noAccess}>{t('admin.restricted')}</Text>
+        <Text style={styles.noAccessDesc}>{t('admin.restricted_desc')}</Text>
       </View>
     );
   }
@@ -43,8 +45,8 @@ export default function AdminHub() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.title}>Panel de Control</Text>
-        <Text style={styles.subtitle}>Gestión total de {auth.currentGroup}</Text>
+        <Text style={styles.title}>{t('admin.title')}</Text>
+        <Text style={styles.subtitle}>{t('admin.subtitle_prefix')} {auth.currentGroup}</Text>
       </View>
 
       <View style={styles.grid}>
@@ -57,8 +59,8 @@ export default function AdminHub() {
           <View style={[styles.iconContainer, {backgroundColor: 'rgba(245, 166, 35, 0.1)'}]}>
             <MaterialCommunityIcons name="calculator-variant" size={32} color="#f5a623" />
           </View>
-          <Text style={styles.menuTitle}>Reglas de Puntuación</Text>
-          <Text style={styles.menuDesc}>Configura cuánto vale cada acierto y el modo de juego.</Text>
+          <Text style={styles.menuTitle}>{t('admin.scoring_title')}</Text>
+          <Text style={styles.menuDesc}>{t('admin.scoring_desc')}</Text>
         </TouchableOpacity>
 
         {/* GESTIÓN DE MIEMBROS (scoring_criteria.html) */}
@@ -69,8 +71,8 @@ export default function AdminHub() {
           <View style={[styles.iconContainer, {backgroundColor: 'rgba(59, 130, 246, 0.1)'}]}>
             <Ionicons name="people" size={32} color="#3b82f6" />
           </View>
-          <Text style={styles.menuTitle}>Gestión de Miembros</Text>
-          <Text style={styles.menuDesc}>Añade jugadores, quita miembros o vincula WhatsApp.</Text>
+          <Text style={styles.menuTitle}>{t('admin.members_title')}</Text>
+          <Text style={styles.menuDesc}>{t('admin.members_desc')}</Text>
         </TouchableOpacity>
 
         {/* RESET DE TEST (danger zone) */}
@@ -81,14 +83,14 @@ export default function AdminHub() {
           <View style={[styles.iconContainer, {backgroundColor: 'rgba(239, 68, 68, 0.1)'}]}>
             <MaterialCommunityIcons name="refresh-circle" size={32} color="#ef4444" />
           </View>
-          <Text style={[styles.menuTitle, { color: '#ef4444' }]}>Zona de Pruebas: Reset</Text>
-          <Text style={styles.menuDesc}>Borra todas las predicciones y reinicia el Mundial (Solo para testing).</Text>
+          <Text style={[styles.menuTitle, { color: '#ef4444' }]}>{t('admin.reset_title')}</Text>
+          <Text style={styles.menuDesc}>{t('admin.reset_desc')}</Text>
         </TouchableOpacity>
 
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Eres el administrador de este grupo.</Text>
+        <Text style={styles.footerText}>{t('admin.admin_footer')}</Text>
       </View>
     </ScrollView>
   );

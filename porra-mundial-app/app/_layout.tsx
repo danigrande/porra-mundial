@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { loadAuth, getAuth, subscribeAuth } from '../stores/authStore';
 import { setupPushNotifications } from '../services/push';
 import { connect as connectSocket } from '../services/socket';
+import { initI18n } from '../i18n/i18n';
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -46,8 +47,8 @@ export default function RootLayout() {
       }
     });
 
-    // Carga inicial
-    loadAuth().then((data) => {
+    // Carga inicial (auth + i18n en paralelo)
+    Promise.all([loadAuth(), initI18n()]).then(([data]) => {
       setIsLoggedIn(!!data);
       setIsReady(true);
       if (data && data.phone && data.pin) {

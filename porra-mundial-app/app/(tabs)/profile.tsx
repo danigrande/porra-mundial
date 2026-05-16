@@ -5,10 +5,12 @@ import { getAuth, logout, setCurrentGroup } from '../../stores/authStore';
 import * as api from '../../services/api';
 import * as socketService from '../../services/socket';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const auth = getAuth();
+  const { t } = useTranslation();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,7 +67,7 @@ export default function ProfileScreen() {
         dislikes: dislikesArray,
       });
       
-      Alert.alert('¡Perfil Guardado!', 'El Agente Mundial ya conoce tus nuevos gustos.');
+      Alert.alert(t('profile.saved_title'), t('profile.saved_msg'));
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -76,18 +78,18 @@ export default function ProfileScreen() {
   async function handleChangePin() {
     if (!auth) return;
     if (newPin.length !== 4 || isNaN(Number(newPin))) {
-      Alert.alert('Error', 'El nuevo PIN debe ser de 4 números');
+      Alert.alert(t('common.error'), t('profile.pin_4_digits'));
       return;
     }
     if (newPin !== confirmPin) {
-      Alert.alert('Error', 'Los nuevos PINs no coinciden');
+      Alert.alert(t('common.error'), t('profile.pin_mismatch'));
       return;
     }
 
     setChangingPin(true);
     try {
       await api.changePin(auth.phone, auth.currentGroup, oldPin, newPin);
-      Alert.alert('Éxito', 'PIN actualizado correctamente.');
+      Alert.alert(t('common.success'), t('profile.pin_updated'));
       setOldPin('');
       setNewPin('');
       setConfirmPin('');
@@ -102,12 +104,12 @@ export default function ProfileScreen() {
     if (!auth) return;
     
     Alert.alert(
-      '⚠️ ELIMINAR CUENTA',
-      '¿Estás COMPLETAMENTE seguro? Esta acción no se puede deshacer y perderás todos tus puntos y predicciones.',
+      t('profile.delete_title'),
+      t('profile.delete_confirm'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: 'SÍ, BORRAR TODO', 
+          text: t('profile.delete_action'), 
           style: 'destructive',
           onPress: async () => {
             try {
@@ -117,7 +119,7 @@ export default function ProfileScreen() {
               router.replace('/(auth)/login');
             } catch (e: any) {
               setLoading(false);
-              Alert.alert('Error', 'No se pudo eliminar la cuenta: ' + e.message);
+              Alert.alert(t('common.error'), t('profile.delete_error') + e.message);
             }
           }
         }
@@ -156,24 +158,24 @@ export default function ProfileScreen() {
           <View style={styles.cardHeader}>
             <MaterialCommunityIcons name="robot" size={24} color="#3b82f6" />
             <View style={{marginLeft: 12}}>
-              <Text style={styles.cardTitle}>Configura tu Perfil IA</Text>
-              <Text style={styles.cardSubtitle}>Personaliza cómo interactúa el Agente contigo</Text>
+              <Text style={styles.cardTitle}>{t('profile.ai_config_title')}</Text>
+              <Text style={styles.cardSubtitle}>{t('profile.ai_config_subtitle')}</Text>
             </View>
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Nickname (Cómo te llamará la IA)</Text>
+            <Text style={styles.label}>{t('profile.nickname_label')}</Text>
             <TextInput 
               style={styles.input} 
               value={nickname} 
               onChangeText={setNickname}
-              placeholder="Ej: El Gurú del Mundial"
+              placeholder={t('profile.nickname_placeholder')}
               placeholderTextColor="#64748b"
             />
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Estilo de Humor de la IA</Text>
+            <Text style={styles.label}>{t('profile.humor_label')}</Text>
             <TouchableOpacity 
               style={styles.comboTrigger}
               onPress={() => setShowHumorMenu(!showHumorMenu)}
@@ -212,29 +214,29 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Cosas que te gustan</Text>
+            <Text style={styles.label}>{t('profile.likes_label')}</Text>
             <TextInput 
               style={[styles.input, styles.textArea]} 
               value={likes} 
               onChangeText={setLikes}
-              placeholder="Ej: Real Madrid, goles de chilena..."
+              placeholder={t('profile.likes_placeholder')}
               placeholderTextColor="#64748b"
               multiline
             />
-            <Text style={styles.hint}>La IA te felicitará cuando algo de esto ocurra.</Text>
+            <Text style={styles.hint}>{t('profile.likes_hint')}</Text>
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Cosas que NO te gustan</Text>
+            <Text style={styles.label}>{t('profile.dislikes_label')}</Text>
             <TextInput 
               style={[styles.input, styles.textArea]} 
               value={dislikes} 
               onChangeText={setDislikes}
-              placeholder="Ej: El VAR, perder tiempo..."
+              placeholder={t('profile.dislikes_placeholder')}
               placeholderTextColor="#64748b"
               multiline
             />
-            <Text style={styles.hint}>La IA se burlará de ti o te dará ánimos.</Text>
+            <Text style={styles.hint}>{t('profile.dislikes_hint')}</Text>
           </View>
 
           <TouchableOpacity 
@@ -242,7 +244,7 @@ export default function ProfileScreen() {
             onPress={handleSave} 
             disabled={saving}
           >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Guardar Perfil IA</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('profile.save_profile')}</Text>}
           </TouchableOpacity>
         </View>
 
@@ -251,13 +253,13 @@ export default function ProfileScreen() {
           <View style={styles.cardHeader}>
             <FontAwesome5 name="lock" size={20} color="#f59e0b" />
             <View style={{marginLeft: 12}}>
-              <Text style={styles.cardTitle}>Seguridad - Cambiar PIN</Text>
-              <Text style={styles.cardSubtitle}>Actualiza tu código de acceso de 4 dígitos</Text>
+              <Text style={styles.cardTitle}>{t('profile.security_title')}</Text>
+              <Text style={styles.cardSubtitle}>{t('profile.security_subtitle')}</Text>
             </View>
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>PIN Actual</Text>
+            <Text style={styles.label}>{t('profile.current_pin')}</Text>
             <TextInput 
               style={styles.input} 
               value={oldPin} 
@@ -272,7 +274,7 @@ export default function ProfileScreen() {
 
           <View style={styles.row}>
             <View style={[styles.formGroup, {flex: 1, marginRight: 8}]}>
-              <Text style={styles.label}>Nuevo PIN</Text>
+              <Text style={styles.label}>{t('profile.new_pin')}</Text>
               <TextInput 
                 style={styles.input} 
                 value={newPin} 
@@ -285,7 +287,7 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={[styles.formGroup, {flex: 1, marginLeft: 8}]}>
-              <Text style={styles.label}>Confirmar</Text>
+              <Text style={styles.label}>{t('profile.confirm_pin')}</Text>
               <TextInput 
                 style={styles.input} 
                 value={confirmPin} 
@@ -304,7 +306,7 @@ export default function ProfileScreen() {
             onPress={handleChangePin} 
             disabled={changingPin}
           >
-            {changingPin ? <ActivityIndicator color="#f59e0b" /> : <Text style={styles.pinButtonText}>Actualizar PIN</Text>}
+            {changingPin ? <ActivityIndicator color="#f59e0b" /> : <Text style={styles.pinButtonText}>{t('profile.update_pin')}</Text>}
           </TouchableOpacity>
         </View>
         
@@ -314,7 +316,7 @@ export default function ProfileScreen() {
           onPress={handleDeleteAccount}
         >
           <Ionicons name="trash-outline" size={18} color="#ef4444" />
-          <Text style={styles.deleteButtonText}>Eliminar mi cuenta definitivamente</Text>
+          <Text style={styles.deleteButtonText}>{t('profile.delete_account')}</Text>
         </TouchableOpacity>
 
         <View style={{height: 40}} />

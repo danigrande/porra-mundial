@@ -4,6 +4,7 @@ import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { FIXTURE_GROUPS, getGroupMatches } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function PredictionsScreen() {
   const auth = getAuth();
@@ -11,6 +12,7 @@ export default function PredictionsScreen() {
   const phone = auth?.phone || '';
   const playerName = auth?.name || '';
 
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [state, setState] = useState<any>(null);
@@ -30,18 +32,18 @@ export default function PredictionsScreen() {
       // Necesitaríamos calcular la clasificación del grupo según las predicciones del usuario
       // Por ahora, para simplificar y no meter todo el scoring engine aquí, 
       // si es 1A devolvemos "1º Grupo A" o el nombre si es fácil de sacar.
-      return `${pos}º Grupo ${letter}`;
+      return t('predictions.group_position', { pos, letter });
     }
 
     // Mejores terceros
-    if (code.startsWith('3')) return 'Mejor 3º';
+    if (code.startsWith('3')) return t('predictions.best_third');
 
     // Ganador/Perdedor de partido: "W73"
     const matchRef = code.match(/^([WL])(\d+)$/);
     if (matchRef) {
       const type = matchRef[1];
       const num = matchRef[2];
-      return `${type === 'W' ? 'Ganador' : 'Perdedor'} #${num}`;
+      return type === 'W' ? t('predictions.winner_of', { num }) : t('predictions.loser_of', { num });
     }
 
     return code;
@@ -61,7 +63,7 @@ export default function PredictionsScreen() {
       })
       .catch(e => {
         console.error(e);
-        Alert.alert('Error', 'No se pudieron cargar los datos');
+        Alert.alert(t('common.error'), t('predictions.load_error'));
       })
       .finally(() => {
         setLoading(false);
@@ -106,9 +108,9 @@ export default function PredictionsScreen() {
     setSaving(true);
     try {
       await api.savePredictions(playerName, groupName, predictions);
-      Alert.alert('¡Guardado!', 'Tus predicciones han sido guardadas con éxito.');
+      Alert.alert(t('predictions.saved_title'), t('predictions.saved_msg'));
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Hubo un problema al guardar');
+      Alert.alert(t('common.error'), e.message || t('predictions.save_error'));
     } finally {
       setSaving(false);
     }
@@ -137,7 +139,7 @@ export default function PredictionsScreen() {
               onPress={() => setSelectedGroup(g.letter)}
             >
               <Text style={[styles.groupTabText, selectedGroup === g.letter && styles.groupTabTextActive]}>
-                Grupo {g.letter}
+                {t('predictions.group_prefix')} {g.letter}
               </Text>
             </TouchableOpacity>
           ))}
@@ -159,7 +161,7 @@ export default function PredictionsScreen() {
             onPress={() => setSelectedGroup('PREMIOS')}
           >
             <Text style={[styles.groupTabText, selectedGroup === 'PREMIOS' && styles.groupTabTextActive, { color: '#f5a623' }]}>
-              🏆 PREMIOS
+              {t('predictions.awards_tab')}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -169,38 +171,38 @@ export default function PredictionsScreen() {
       <ScrollView contentContainerStyle={styles.matchesList} keyboardShouldPersistTaps="handled">
         {selectedGroup === 'PREMIOS' ? (
           <View style={styles.awardsContainer}>
-            <Text style={styles.awardsTitle}>Tus Pronósticos Individuales</Text>
-            <Text style={styles.awardsSubtitle}>Elige a los mejores del torneo para ganar puntos extra.</Text>
+            <Text style={styles.awardsTitle}>{t('predictions.awards_title')}</Text>
+            <Text style={styles.awardsSubtitle}>{t('predictions.awards_subtitle')}</Text>
 
             <View style={styles.awardInputBox}>
-              <Text style={styles.awardLabel}>⚽ Balón de Oro (Mejor Jugador)</Text>
+              <Text style={styles.awardLabel}>{t('predictions.golden_ball')}</Text>
               <TextInput 
                 style={styles.awardTextInput} 
                 value={predictions['ball_gold'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, ball_gold: v})}
-                placeholder="Nombre del crack..."
+                placeholder={t('predictions.golden_ball_placeholder')}
                 placeholderTextColor="#475569"
               />
             </View>
 
             <View style={styles.awardInputBox}>
-              <Text style={styles.awardLabel}>⚪ Balón de Plata</Text>
+              <Text style={styles.awardLabel}>{t('predictions.silver_ball')}</Text>
               <TextInput 
                 style={styles.awardTextInput} 
                 value={predictions['ball_silver'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, ball_silver: v})}
-                placeholder="Segundo mejor..."
+                placeholder={t('predictions.silver_ball_placeholder')}
                 placeholderTextColor="#475569"
               />
             </View>
 
             <View style={styles.awardInputBox}>
-              <Text style={styles.awardLabel}>🟤 Balón de Bronce</Text>
+              <Text style={styles.awardLabel}>{t('predictions.bronze_ball')}</Text>
               <TextInput 
                 style={styles.awardTextInput} 
                 value={predictions['ball_bronze'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, ball_bronze: v})}
-                placeholder="Tercer mejor..."
+                placeholder={t('predictions.bronze_ball_placeholder')}
                 placeholderTextColor="#475569"
               />
             </View>
@@ -208,34 +210,34 @@ export default function PredictionsScreen() {
             <View style={{ height: 30 }} />
 
             <View style={styles.awardInputBox}>
-              <Text style={styles.awardLabel}>👟 Bota de Oro (Máximo Goleador)</Text>
+              <Text style={styles.awardLabel}>{t('predictions.golden_boot')}</Text>
               <TextInput 
                 style={styles.awardTextInput} 
                 value={predictions['boot_gold'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, boot_gold: v})}
-                placeholder="Pichichi..."
+                placeholder={t('predictions.golden_boot_placeholder')}
                 placeholderTextColor="#475569"
               />
             </View>
 
             <View style={styles.awardInputBox}>
-              <Text style={styles.awardLabel}>🥈 Bota de Plata</Text>
+              <Text style={styles.awardLabel}>{t('predictions.silver_boot')}</Text>
               <TextInput 
                 style={styles.awardTextInput} 
                 value={predictions['boot_silver'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, boot_silver: v})}
-                placeholder="Segundo goleador..."
+                placeholder={t('predictions.silver_boot_placeholder')}
                 placeholderTextColor="#475569"
               />
             </View>
 
             <View style={styles.awardInputBox}>
-              <Text style={styles.awardLabel}>🥉 Bota de Bronce</Text>
+              <Text style={styles.awardLabel}>{t('predictions.bronze_boot')}</Text>
               <TextInput 
                 style={styles.awardTextInput} 
                 value={predictions['boot_bronze'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, boot_bronze: v})}
-                placeholder="Tercer goleador..."
+                placeholder={t('predictions.bronze_boot_placeholder')}
                 placeholderTextColor="#475569"
               />
             </View>
@@ -283,7 +285,7 @@ export default function PredictionsScreen() {
       {/* Footer Fijo para Guardar */}
       <View style={styles.footer}>
         <TouchableOpacity style={[styles.saveButton, saving && styles.buttonDisabled]} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>💾 Guardar Todo</Text>}
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('predictions.save_all')}</Text>}
         </TouchableOpacity>
       </View>
 

@@ -182,8 +182,8 @@
   </nav>
 
   <header class="page-header">
-    <h1><span class="header-icon">📈</span> <span class="header-text-gradient">Clasificación General</span></h1>
-    <p class="subtitle">Descubre cómo van tus predicciones comparado con la realidad</p>
+    <h1><span class="header-icon">📈</span> <span class="header-text-gradient" data-i18n="dashboard.leaderboard_title">Clasificación General</span></h1>
+    <p class="subtitle" data-i18n="login.subtitle">Descubre cómo van tus predicciones comparado con la realidad</p>
   </header>
 
   <main class="main-content">
@@ -206,13 +206,13 @@
 
     <div class="leaderboard-card" id="leaderboardContainer">
       <div class="lb-row lb-header-row">
-        <div style="text-align:center;">Pos</div>
-        <div>Jugador</div>
-        <div class="hide-mobile" style="text-align:center;">Plenos 🎯</div>
-        <div class="hide-mobile" style="text-align:center;">Grupos</div>
-        <div class="hide-mobile" style="text-align:center;">Elim.</div>
-        <div class="hide-mobile" style="text-align:center;">Honor</div>
-        <div style="text-align:right;">Puntos Totales</div>
+        <div style="text-align:center;" data-i18n="dashboard.pos">Pos</div>
+        <div data-i18n="dashboard.player">Jugador</div>
+        <div class="hide-mobile" style="text-align:center;" data-i18n="dashboard.exact">Plenos 🎯</div>
+        <div class="hide-mobile" style="text-align:center;" data-i18n="results.groups_tab">Grupos</div>
+        <div class="hide-mobile" style="text-align:center;" data-i18n="results.knockout_tab">Elim.</div>
+        <div class="hide-mobile" style="text-align:center;" data-i18n="results.honor_title">Honor</div>
+        <div style="text-align:right;" data-i18n="dashboard.points_col">Puntos Totales</div>
         <div style="text-align:center;">Trend</div>
       </div>
       <div id="lbBody">
@@ -222,7 +222,7 @@
   </main>
 
   <div class="toast" id="toast"></div>
-
+  <script src="i18n.js"></script>
   <script src="web_config.js"></script>
   <script type="module">
     import { checkAuth, handleLogout, showToast, renderNavigation, initOnboarding } from './shared_ui.js';
@@ -395,7 +395,7 @@
             <div class="hide-mobile" style="text-align:center; color: var(--text-secondary);">${r.groupPts}</div>
             <div class="hide-mobile" style="text-align:center; color: var(--text-secondary);">${r.koPts}</div>
             <div class="hide-mobile" style="text-align:center; color: var(--text-secondary);">${r.honorPts}</div>
-            <div class="lb-points">${r.totalPts}<span class="lb-pts-label">pts</span></div>
+            <div class="lb-points">${r.totalPts}<span class="lb-pts-label" data-i18n="dashboard.points">pts</span></div>
             <div class="lb-trend trend-${trend}">${trendIcon}</div>
             
             <button class="ai-btn" onclick="event.stopPropagation(); window.fetchAISummary('${r.name}', ${idx})">✨ Resumen IA</button>

@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import * as api from '../../services/api';
 import { saveAuth } from '../../stores/authStore';
 import { connect } from '../../services/socket';
+import { useTranslation } from '../../i18n/i18n';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 // URL de los términos legales (cambiar a tu dominio real)
 const TERMS_URL = 'https://tu-app.onrender.com/legal/terms';
@@ -11,6 +13,7 @@ const PRIVACY_URL = 'https://tu-app.onrender.com/legal/privacy';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   
   // Login State
@@ -32,7 +35,7 @@ export default function LoginScreen() {
 
   async function handleVerifyPhone() {
     if (!phone) {
-      Alert.alert('Error', 'Introduce tu número de teléfono');
+      Alert.alert(t('common.error'), t('auth.no_phone_error'));
       return;
     }
     setLoading(true);
@@ -41,14 +44,14 @@ export default function LoginScreen() {
       const user = await api.getUserByPhone(fullPhone);
       
       if (!user || !user.groups || user.groups.length === 0) {
-        throw new Error('No tienes ningún grupo. Ve a la pestaña Registrarse.');
+        throw new Error(t('auth.no_groups_error'));
       }
       
       setAvailableGroups(user.groups);
       setGroupName(user.groups[0]); // Auto-select the first one
       setPhoneVerified(true);
     } catch (error: any) {
-      Alert.alert('No encontrado', error.message || 'Usuario no encontrado');
+      Alert.alert(t('auth.not_found'), error.message || t('auth.user_not_found'));
     } finally {
       setLoading(false);
     }
@@ -56,7 +59,7 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     if (!pin) {
-      Alert.alert('Error', 'Introduce tu PIN');
+      Alert.alert(t('common.error'), t('auth.enter_pin_error'));
       return;
     }
     setLoading(true);
@@ -77,7 +80,7 @@ export default function LoginScreen() {
       connect(fullPhone, pin);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Credenciales incorrectas');
+      Alert.alert(t('common.error'), error.message || t('auth.bad_credentials'));
     } finally {
       setLoading(false);
     }
@@ -89,15 +92,15 @@ export default function LoginScreen() {
 
   async function handleRegister() {
     if (!phone || !pin || !name || !groupName) {
-      Alert.alert('Error', 'Rellena todos los campos');
+      Alert.alert(t('common.error'), t('auth.fill_all_fields'));
       return;
     }
     if (pin.length !== 4) {
-      Alert.alert('Error', 'El PIN debe tener 4 dígitos');
+      Alert.alert(t('common.error'), t('auth.pin_4_digits'));
       return;
     }
     if (!acceptedTerms) {
-      Alert.alert('EULA', 'Debes aceptar los términos y condiciones de uso para continuar.');
+      Alert.alert('EULA', t('auth.must_accept_terms'));
       return;
     }
     setLoading(true);
@@ -120,7 +123,7 @@ export default function LoginScreen() {
       connect(fullPhone, pin);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Error al registrarse');
+      Alert.alert(t('common.error'), error.message || t('auth.register_error'));
     } finally {
       setLoading(false);
     }
@@ -136,8 +139,11 @@ export default function LoginScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.trophy}>🏆</Text>
-          <Text style={styles.title}>Predicción Mundial</Text>
-          <Text style={styles.subtitle}>2026 — Pronósticos entre amigos</Text>
+          <Text style={styles.title}>{t('auth.title')}</Text>
+          <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
+          <View style={{ marginTop: 12 }}>
+            <LanguageSwitcher />
+          </View>
         </View>
 
         {/* Tab Switcher */}
@@ -146,13 +152,13 @@ export default function LoginScreen() {
             style={[styles.tab, mode === 'login' && styles.tabActive]}
             onPress={() => { setMode('login'); setPhoneVerified(false); }}
           >
-            <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>Entrar</Text>
+            <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>{t('auth.login')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, mode === 'register' && styles.tabActive]}
             onPress={() => setMode('register')}
           >
-            <Text style={[styles.tabText, mode === 'register' && styles.tabTextActive]}>Registrarse</Text>
+            <Text style={[styles.tabText, mode === 'register' && styles.tabTextActive]}>{t('auth.register')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -162,7 +168,7 @@ export default function LoginScreen() {
           {mode === 'register' && (
             <TextInput
               style={styles.input}
-              placeholder="Tu nombre (ej: Edu)"
+              placeholder={t('auth.name_placeholder')}
               placeholderTextColor="#666"
               value={name}
               onChangeText={setName}
@@ -183,7 +189,7 @@ export default function LoginScreen() {
             />
             <TextInput
               style={[styles.input, styles.phoneInput]}
-              placeholder="Teléfono (ej: 612345678)"
+              placeholder={t('auth.phone_placeholder')}
               placeholderTextColor="#666"
               value={phone}
               onChangeText={setPhone}
@@ -199,7 +205,7 @@ export default function LoginScreen() {
               onPress={handleVerifyPhone}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Siguiente ➔</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('auth.next_arrow')}</Text>}
             </TouchableOpacity>
           )}
 
@@ -208,7 +214,7 @@ export default function LoginScreen() {
             <>
               {availableGroups.length > 1 && (
                 <View style={styles.groupPickerContainer}>
-                  <Text style={styles.pickerLabel}>Selecciona tu grupo:</Text>
+                  <Text style={styles.pickerLabel}>{t('auth.select_group')}</Text>
                   <View style={styles.groupList}>
                     {availableGroups.map(g => (
                       <TouchableOpacity 
@@ -223,12 +229,12 @@ export default function LoginScreen() {
                 </View>
               )}
               {availableGroups.length === 1 && (
-                 <Text style={styles.singleGroupInfo}>Grupo: <Text style={styles.bold}>{availableGroups[0]}</Text></Text>
+                 <Text style={styles.singleGroupInfo}>{t('auth.single_group')} <Text style={styles.bold}>{availableGroups[0]}</Text></Text>
               )}
 
               <TextInput
                 style={styles.input}
-                placeholder="PIN (4 dígitos)"
+                placeholder={t('auth.pin_placeholder')}
                 placeholderTextColor="#666"
                 value={pin}
                 onChangeText={setPin}
@@ -240,7 +246,7 @@ export default function LoginScreen() {
 
               <View style={styles.actionRow}>
                 <TouchableOpacity style={styles.backButton} onPress={() => setPhoneVerified(false)}>
-                  <Text style={styles.backButtonText}>Atrás</Text>
+                  <Text style={styles.backButtonText}>{t('common.back')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -248,7 +254,7 @@ export default function LoginScreen() {
                   onPress={handleLogin}
                   disabled={loading}
                 >
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>⚽ Entrar</Text>}
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('auth.enter')}</Text>}
                 </TouchableOpacity>
               </View>
             </>
@@ -259,7 +265,7 @@ export default function LoginScreen() {
             <>
               <TextInput
                 style={styles.input}
-                placeholder="Nombre del grupo a unirse/crear"
+                placeholder={t('auth.group_placeholder')}
                 placeholderTextColor="#666"
                 value={groupName}
                 onChangeText={setGroupName}
@@ -267,7 +273,7 @@ export default function LoginScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Crea un PIN (4 dígitos)"
+                placeholder={t('auth.pin_create')}
                 placeholderTextColor="#666"
                 value={pin}
                 onChangeText={setPin}
@@ -283,7 +289,7 @@ export default function LoginScreen() {
                 <View style={[styles.checkbox, isNewGroup && styles.checkboxActive]}>
                   {isNewGroup && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <Text style={styles.checkLabel}>Es un grupo nuevo</Text>
+                <Text style={styles.checkLabel}>{t('auth.new_group')}</Text>
               </TouchableOpacity>
 
               {/* EULA (Apple Requirement) */}
@@ -295,13 +301,13 @@ export default function LoginScreen() {
                   {acceptedTerms && <Text style={styles.checkmark}>✓</Text>}
                 </View>
                 <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
-                  <Text style={styles.checkLabel}>Acepto los </Text>
+                  <Text style={styles.checkLabel}>{t('auth.accept_terms_prefix')} </Text>
                   <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)}>
-                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>términos de uso</Text>
+                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>{t('auth.terms_of_use')}</Text>
                   </TouchableOpacity>
-                  <Text style={styles.checkLabel}> y la </Text>
+                  <Text style={styles.checkLabel}> {t('auth.and_the')} </Text>
                   <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL)}>
-                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>política de privacidad</Text>
+                    <Text style={[styles.checkLabel, { color: '#3b82f6', textDecorationLine: 'underline' }]}>{t('auth.privacy_policy')}</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -311,19 +317,19 @@ export default function LoginScreen() {
                 onPress={handleRegister}
                 disabled={loading}
               >
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>🎉 Registrarse</Text>}
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('auth.register_button')}</Text>}
               </TouchableOpacity>
 
               <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 15, paddingHorizontal: 20 }}>
-                * Apple Inc. no es patrocinador ni está involucrado de ninguna manera en esta aplicación o sus pronósticos.
+                {t('auth.apple_disclaimer')}
               </Text>
             </>
           )}
 
         </View>
-        <Text style={styles.footer}>Predicción Mundial 🏆 — Sin dinero real</Text>
+        <Text style={styles.footer}>{t('auth.footer')}</Text>
         <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_URL)} style={{ marginTop: 8 }}>
-          <Text style={[styles.footer, { color: '#3b82f6', textDecorationLine: 'underline' }]}>Política de Privacidad</Text>
+          <Text style={[styles.footer, { color: '#3b82f6', textDecorationLine: 'underline' }]}>{t('auth.privacy_policy')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -526,4 +532,3 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
-

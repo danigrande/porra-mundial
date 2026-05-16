@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, 
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import TournamentBanner from '../../components/TournamentBanner';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function DashboardScreen() {
   const [ranking, setRanking] = useState<any[]>([]);
@@ -13,6 +14,7 @@ export default function DashboardScreen() {
   
   const auth = getAuth();
   const groupName = auth?.currentGroup || '';
+  const { t } = useTranslation();
 
   const loadData = useCallback(async () => {
     try {
@@ -64,13 +66,13 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>🏆 Clasificación General</Text>
+        <Text style={styles.cardTitle}>{t('leaderboard.title')}</Text>
         
         <View style={styles.tableHeader}>
           <Text style={[styles.th, styles.colRank]}>#</Text>
-          <Text style={[styles.th, styles.colName]}>Jugador</Text>
-          <Text style={[styles.th, styles.colPts]}>Pts</Text>
-          <Text style={[styles.th, styles.colExact]}>Exactos</Text>
+          <Text style={[styles.th, styles.colName]}>{t('leaderboard.player')}</Text>
+          <Text style={[styles.th, styles.colPts]}>{t('leaderboard.pts')}</Text>
+          <Text style={[styles.th, styles.colExact]}>{t('leaderboard.exact')}</Text>
         </View>
 
         {ranking.map((player, index) => (
@@ -95,13 +97,13 @@ export default function DashboardScreen() {
             {/* DESGLOSE EXPANDIDO */}
             {expandedPlayer === player.name && (
               <View style={styles.expandedContent}>
-                <Text style={styles.expandedTitle}>Puntos detallados</Text>
+                <Text style={styles.expandedTitle}>{t('leaderboard.detailed_points')}</Text>
                 {player.history && player.history.length > 0 ? (
                   player.history.map((h: any, i: number) => (
                     <View key={i} style={styles.historyRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.historyMatch} numberOfLines={1}>{h.match}</Text>
-                        <Text style={styles.reasonText}>{h.reason || 'Puntos'}</Text>
+                        <Text style={styles.reasonText}>{h.reason || t('leaderboard.points_label')}</Text>
                       </View>
                       <View style={styles.historyBadge}>
                         <Text style={styles.historyPts}>+{h.pts}</Text>
@@ -109,7 +111,7 @@ export default function DashboardScreen() {
                     </View>
                   ))
                 ) : (
-                  <Text style={styles.noHistory}>No hay puntos registrados aún.</Text>
+                  <Text style={styles.noHistory}>{t('leaderboard.no_history')}</Text>
                 )}
               </View>
             )}
@@ -117,14 +119,14 @@ export default function DashboardScreen() {
         ))}
         
         {ranking.length === 0 && (
-          <Text style={styles.emptyText}>Aún no hay predicciones en este grupo.</Text>
+          <Text style={styles.emptyText}>{t('leaderboard.no_predictions')}</Text>
         )}
       </View>
       
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>🤖 Resumen de IA</Text>
+        <Text style={styles.cardTitle}>{t('leaderboard.ai_summary_title')}</Text>
         <Text style={styles.aiText}>
-          Ve a la pestaña de "Chat" y menciona al @agente para pedir un resumen personalizado de tu rendimiento o insultar a tus amigos.
+          {t('leaderboard.ai_summary_desc')}
         </Text>
       </View>
 

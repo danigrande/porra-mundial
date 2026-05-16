@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { getAuth } from '../../stores/authStore';
+import { useTranslation } from '../../i18n/i18n';
 import * as api from '../../services/api';
 
 export default function NotificationsScreen() {
@@ -9,6 +10,7 @@ export default function NotificationsScreen() {
   const [saving, setSaving] = useState(false);
   const [preference, setPreference] = useState<'all' | 'mentions' | 'none'>('all');
   const auth = getAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadPreferences();
@@ -47,14 +49,14 @@ export default function NotificationsScreen() {
       await api.updateProfile(auth.phone, auth.currentGroup || '', updatedProfile);
       
       // Mostrar Toast personalizado
-      setToastMessage(`Ajustes actualizados: ${
-        newPref === 'all' ? 'Todas' : newPref === 'mentions' ? 'Solo menciones' : 'Silenciado'
+      setToastMessage(`${t('notifications.pref_updated')} ${
+        newPref === 'all' ? t('notifications.pref_all') : newPref === 'mentions' ? t('notifications.pref_mentions') : t('notifications.pref_none')
       }`);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
 
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron guardar tus preferencias');
+      Alert.alert(t('common.error'), t('notifications.save_error'));
       setPreference(preference); // Revertir si falla
     } finally {
       setSaving(false);
@@ -73,8 +75,8 @@ export default function NotificationsScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Notificaciones</Text>
-          <Text style={styles.subtitle}>Configura cómo quieres recibir los avisos del chat del grupo.</Text>
+          <Text style={styles.title}>{t('notifications.title')}</Text>
+          <Text style={styles.subtitle}>{t('notifications.subtitle')}</Text>
         </View>
 
         <View style={styles.optionsContainer}>
@@ -91,9 +93,9 @@ export default function NotificationsScreen() {
                 <Ionicons name="checkmark-circle" size={24} color="#3b82f6" />
               )}
             </View>
-            <Text style={styles.optionTitle}>Todas las notificaciones</Text>
+            <Text style={styles.optionTitle}>{t('notifications.all_title')}</Text>
             <Text style={styles.optionDescription}>
-              Recibirás un aviso push por cada mensaje que se envíe al chat de tu grupo.
+              {t('notifications.all_desc')}
             </Text>
           </TouchableOpacity>
 
@@ -110,9 +112,9 @@ export default function NotificationsScreen() {
                 <Ionicons name="checkmark-circle" size={24} color="#f5a623" />
               )}
             </View>
-            <Text style={styles.optionTitle}>Solo si me mencionan</Text>
+            <Text style={styles.optionTitle}>{t('notifications.mentions_title')}</Text>
             <Text style={styles.optionDescription}>
-              El chat se silenciará. Solo recibirás avisos si alguien usa @{auth?.name || 'tu_nombre'} o @todos.
+              {t('notifications.mentions_desc', { name: auth?.name || 'you' })}
             </Text>
           </TouchableOpacity>
 
@@ -129,9 +131,9 @@ export default function NotificationsScreen() {
                 <Ionicons name="checkmark-circle" size={24} color="#ef4444" />
               )}
             </View>
-            <Text style={styles.optionTitle}>Silenciar totalmente</Text>
+            <Text style={styles.optionTitle}>{t('notifications.none_title')}</Text>
             <Text style={styles.optionDescription}>
-              No recibirás ninguna notificación push de este chat, ni siquiera por menciones.
+              {t('notifications.none_desc')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -139,7 +141,7 @@ export default function NotificationsScreen() {
         <View style={styles.infoBox}>
           <MaterialIcons name="info-outline" size={20} color="#64748b" />
           <Text style={styles.infoText}>
-            Incluso si silencias el chat, seguirás viendo todos los mensajes nuevos al entrar en la aplicación.
+            {t('notifications.info_text')}
           </Text>
         </View>
       </ScrollView>
@@ -157,7 +159,7 @@ export default function NotificationsScreen() {
       {saving && (
         <View style={styles.savingOverlay}>
           <ActivityIndicator color="#fff" />
-          <Text style={styles.savingText}>Guardando...</Text>
+          <Text style={styles.savingText}>{t('common.saving')}</Text>
         </View>
       )}
     </View>

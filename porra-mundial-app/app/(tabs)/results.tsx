@@ -5,10 +5,12 @@ import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function ResultsScreen() {
   const auth = getAuth();
   const isAdmin = auth?.isAdmin || false;
+  const { t } = useTranslation();
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,19 +59,19 @@ export default function ResultsScreen() {
 
   async function handleReset() {
     Alert.alert(
-      'Resetear Torneo',
-      '¿Seguro que quieres borrar todos los resultados y eventos de la nube?',
+      t('results.reset_title'),
+      t('results.reset_confirm'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: 'Resetear', 
+          text: t('results.reset_action'), 
           style: 'destructive',
           onPress: async () => {
             try {
               await api.saveReality({ events: {} });
               fetchData();
             } catch (e: any) {
-              Alert.alert('Error', e.message);
+              Alert.alert(t('common.error'), e.message);
             }
           }
         }
@@ -86,7 +88,7 @@ export default function ResultsScreen() {
           fetchData(); // Recargamos para estar sincronizados
       }
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert(t('common.error'), e.message);
     }
   }
 
@@ -94,7 +96,7 @@ export default function ResultsScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#f5a623" />
-        <Text style={{ color: '#8b949e', marginTop: 10 }}>Cargando resultados...</Text>
+        <Text style={{ color: '#8b949e', marginTop: 10 }}>{t('results.loading')}</Text>
       </View>
     );
   }
@@ -155,12 +157,12 @@ export default function ResultsScreen() {
       {/* HEADER DINÁMICO */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {isTestMode ? 'Control de Resultados' : 'Resultados Oficiales'}
+          {isTestMode ? t('results.title_test') : t('results.title_official')}
         </Text>
         <Text style={styles.headerSubtitle}>
           {isTestMode 
-            ? 'Panel de simulación y gestión de fases activo.' 
-            : 'Sigue el mundial y consulta el cuadro de honor.'}
+            ? t('results.subtitle_test') 
+            : t('results.subtitle_official')}
         </Text>
       </View>
 
@@ -169,13 +171,13 @@ export default function ResultsScreen() {
           style={[styles.tab, activeTab === 'groups' && styles.tabActive]} 
           onPress={() => setActiveTab('groups')}
         >
-          <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>Grupos</Text>
+          <Text style={[styles.tabText, activeTab === 'groups' && styles.tabTextActive]}>{t('results.groups_tab')}</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'knockout' && styles.tabActive]} 
           onPress={() => setActiveTab('knockout')}
         >
-          <Text style={[styles.tabText, activeTab === 'knockout' && styles.tabTextActive]}>Eliminatorias</Text>
+          <Text style={[styles.tabText, activeTab === 'knockout' && styles.tabTextActive]}>{t('results.knockout_tab')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -242,7 +244,7 @@ export default function ResultsScreen() {
             <View key={g.letter} style={styles.groupCard}>
               <View style={styles.groupHead}>
                 <View style={styles.letterCircle}><Text style={styles.letterText}>{g.letter}</Text></View>
-                <Text style={styles.groupTitle}>Grupo {g.letter}</Text>
+                <Text style={styles.groupTitle}>{t('common.group')} {g.letter}</Text>
               </View>
               {[0, 1, 2, 3, 4, 5].map(mIdx => {
                 const matchId = `g${g.letter}_m${mIdx}`;
@@ -282,7 +284,7 @@ export default function ResultsScreen() {
             <View style={styles.awardsCard}>
               <View style={styles.awardsHeader}>
                 <MaterialCommunityIcons name="trophy-variant" size={24} color="#f5a623" />
-                <Text style={styles.awardsTitle}>Cuadro de Honor</Text>
+                <Text style={styles.awardsTitle}>{t('results.honor_title')}</Text>
               </View>
 
               <View style={styles.awardRow}>
@@ -291,7 +293,7 @@ export default function ResultsScreen() {
                   <Text style={styles.awardVal}>
                     {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
                       ? (parseInt(reality['ko_104_h']) > parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
-                      : 'Por definir'}
+                      : t('common.to_be_defined')}
                   </Text>
                 </View>
                 <MaterialCommunityIcons name="star" size={20} color="#f5a623" />
@@ -299,11 +301,11 @@ export default function ResultsScreen() {
 
               <View style={styles.awardRow}>
                 <View>
-                  <Text style={styles.awardLabel}>🥈 Subcampeón</Text>
+                  <Text style={styles.awardLabel}>{t('results.runner_up')}</Text>
                   <Text style={styles.awardVal}>
                     {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
                       ? (parseInt(reality['ko_104_h']) < parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
-                      : 'Por definir'}
+                      : t('common.to_be_defined')}
                   </Text>
                 </View>
               </View>
@@ -311,40 +313,40 @@ export default function ResultsScreen() {
               {/* BALONES DE ORO */}
               <View style={styles.awardRow}>
                 <View>
-                  <Text style={styles.awardLabel}>⚽ Balón de Oro</Text>
-                  <Text style={styles.awardVal}>{reality['ball_gold'] || 'Mejor jugador...'}</Text>
+                  <Text style={styles.awardLabel}>{t('results.golden_ball')}</Text>
+                  <Text style={styles.awardVal}>{reality['ball_gold'] || t('results.best_player_placeholder')}</Text>
                 </View>
               </View>
               <View style={styles.awardRow}>
                 <View>
-                  <Text style={styles.awardLabel}>⚪ Balón de Plata</Text>
-                  <Text style={styles.awardVal}>{reality['ball_silver'] || 'Segundo mejor...'}</Text>
+                  <Text style={styles.awardLabel}>{t('results.silver_ball')}</Text>
+                  <Text style={styles.awardVal}>{reality['ball_silver'] || t('results.second_best_placeholder')}</Text>
                 </View>
               </View>
               <View style={styles.awardRow}>
                 <View>
-                  <Text style={styles.awardLabel}>🟤 Balón de Bronce</Text>
-                  <Text style={styles.awardVal}>{reality['ball_bronze'] || 'Tercer mejor...'}</Text>
+                  <Text style={styles.awardLabel}>{t('results.bronze_ball')}</Text>
+                  <Text style={styles.awardVal}>{reality['ball_bronze'] || t('results.third_best_placeholder')}</Text>
                 </View>
               </View>
 
               {/* BOTAS DE ORO */}
               <View style={styles.awardRow}>
                 <View>
-                  <Text style={styles.awardLabel}>👟 Bota de Oro</Text>
-                  <Text style={styles.awardVal}>{reality['boot_gold'] || 'Máximo goleador...'}</Text>
+                  <Text style={styles.awardLabel}>{t('results.golden_boot')}</Text>
+                  <Text style={styles.awardVal}>{reality['boot_gold'] || t('results.top_scorer_placeholder')}</Text>
                 </View>
               </View>
               <View style={styles.awardRow}>
                 <View>
-                  <Text style={styles.awardLabel}>🥈 Bota de Plata</Text>
-                  <Text style={styles.awardVal}>{reality['boot_silver'] || 'Segundo goleador...'}</Text>
+                  <Text style={styles.awardLabel}>{t('results.silver_boot')}</Text>
+                  <Text style={styles.awardVal}>{reality['boot_silver'] || t('results.second_scorer_placeholder')}</Text>
                 </View>
               </View>
               <View style={[styles.awardRow, { borderBottomWidth: 0 }]}>
                 <View>
-                  <Text style={styles.awardLabel}>🥉 Bota de Bronce</Text>
-                  <Text style={styles.awardVal}>{reality['boot_bronze'] || 'Tercer goleador...'}</Text>
+                  <Text style={styles.awardLabel}>{t('results.bronze_boot')}</Text>
+                  <Text style={styles.awardVal}>{reality['boot_bronze'] || t('results.third_scorer_placeholder')}</Text>
                 </View>
               </View>
             </View>
