@@ -187,66 +187,33 @@
 
   <!-- Header -->
   <header class="page-header">
-    <h1><span class="header-icon">👥</span> <span class="header-text-gradient">Configuración del Grupo</span></h1>
-    <p class="subtitle" id="pageSubtitle">Gestiona los miembros de tu grupo y la administración</p>
+    <h1><span class="header-icon">👥</span> <span class="header-text-gradient" data-i18n="admin.title">Configuración del Grupo</span></h1>
+    <p class="subtitle" id="pageSubtitle" data-i18n="admin.members_desc">Gestiona los miembros de tu grupo y la administración</p>
   </header>
 
   <!-- Main Content -->
   <main class="main-content">
 
-    <!-- Agente Mundial — WhatsApp (Solo Admin) -->
-    <div id="whatsappSection" class="group-card"
-      style="display:none; margin-bottom: 2rem; border: 1px solid var(--border-color);">
-      <div class="group-header"
-        style="background: linear-gradient(135deg, #128C7E 0%, #075E54 100%); border-radius: 12px 12px 0 0;">
-        <div class="group-letter">🤖</div>
+    <!-- Configuración de Idioma -->
+    <div class="group-card" style="margin-bottom: 2rem; border: 1px solid var(--border-color);">
+      <div class="group-header" style="background: var(--gradient-primary); border-radius: 12px 12px 0 0;">
+        <div class="group-letter">🌐</div>
         <div>
-          <div class="group-name">Agente Mundial — WhatsApp</div>
-          <div class="group-teams-summary">Conecta el bot a tu grupo de WhatsApp</div>
+          <div class="group-name">Idioma / Language</div>
+          <div class="group-teams-summary">Selecciona tu idioma preferido / Select your preferred language</div>
         </div>
       </div>
-      <!-- Status -->
-      <div id="waStatus" style="padding: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span id="waStatusIcon" style="font-size: 1.5rem;">⏳</span>
-          <div>
-            <div id="waStatusText" style="font-weight: 600; color: var(--text-secondary);">Comprobando estado...</div>
-            <div id="waStatusDetail" style="font-size: 0.75rem; color: var(--text-muted);"></div>
-          </div>
-        </div>
-      </div>
-      <!-- Vincular -->
-      <div id="waLinkSection" style="padding: 1.25rem; display: none;">
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
-          📋 <strong>Instrucciones:</strong> Abre tu grupo de WhatsApp → Configuración del grupo → Invitar al grupo →
-          Copiar enlace. Pégalo aquí abajo.
-        </p>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="waInviteLink" placeholder="https://chat.whatsapp.com/LQFpzmM..."
-            style="flex: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.9rem;">
-          <button onclick="joinWhatsApp()" id="btnJoinWA" class="btn-cloud"
-            style="margin: 0; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #128C7E 0%, #25D366 100%); border: none;">
-            <span class="icon">🔗</span>
-            <span>Vincular</span>
-          </button>
-        </div>
-      </div>
-      <!-- Ya vinculado -->
-      <div id="waLinkedSection" style="padding: 1.25rem; display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
-          <div style="flex: 1;">
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Grupo vinculado:</div>
-            <div id="waGroupNameDisplay"
-              style="font-weight: 600; color: var(--text-primary); font-size: 1.1rem; margin-bottom: 4px;"></div>
-            <div style="font-size: 0.7rem; color: var(--text-muted);">
-              ID: <code id="waGroupId" style="color: var(--accent-blue); opacity: 0.8;"></code>
-            </div>
-          </div>
-          <button onclick="leaveWhatsApp()" class="btn-cloud"
-            style="margin: 0; padding: 0.6rem 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 0.8rem; white-space: nowrap;">
-            <span>🔌 Desvincular</span>
-          </button>
-        </div>
+      <div style="padding: 2rem; display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap;">
+        <button id="btnLangEs" onclick="window.i18n.changeLanguage('es'); window.location.reload();" 
+                class="btn-cloud" 
+                style="margin:0; padding: 1rem 2rem; font-size: 1.1rem; min-width: 140px;">
+          🇪🇸 Español
+        </button>
+        <button id="btnLangEn" onclick="window.i18n.changeLanguage('en'); window.location.reload();" 
+                class="btn-cloud" 
+                style="margin:0; padding: 1rem 2rem; font-size: 1.1rem; min-width: 140px;">
+          🇺🇸 English
+        </button>
       </div>
     </div>
 
@@ -256,8 +223,8 @@
       <div class="group-header" style="background: var(--gradient-secondary); border-radius: 12px 12px 0 0;">
         <div class="group-letter">👤</div>
         <div>
-          <div class="group-name">Miembros del Grupo</div>
-          <div class="group-teams-summary">Añadir o quitar jugadores y traspasar mando</div>
+          <div class="group-name" data-i18n="admin.members_title">Miembros del Grupo</div>
+          <div class="group-teams-summary" data-i18n="admin.members_desc">Añadir o quitar jugadores y traspasar mando</div>
         </div>
       </div>
       <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 10px;">
@@ -303,8 +270,6 @@
     window.addPlayerToGroup = addPlayerToGroup;
     window.removePlayerFromGroup = removePlayerFromGroup;
     window.transferAdminRole = transferAdminRole;
-    window.joinWhatsApp = joinWhatsApp;
-    window.leaveWhatsApp = leaveWhatsApp;
 
     renderNavigation('scoring_criteria.html');
     let currentUser = checkAuth();
@@ -324,101 +289,26 @@
     function enableMemberManagement() {
       if (currentUser && currentUser.isAdmin) {
         document.getElementById('memberManagement').style.display = 'block';
-        document.getElementById('whatsappSection').style.display = 'block';
         fetchMemberList();
-        loadWhatsAppStatus();
       }
     }
 
-    // ==========================================
-    // WHATSAPP — Estado, vincular, desvincular
-    // ==========================================
-
-    async function loadWhatsAppStatus() {
-      try {
-        const res = await apiCall({ action: 'getWhatsAppStatus', groupName: currentUser.groupName });
-        const icon = document.getElementById('waStatusIcon');
-        const text = document.getElementById('waStatusText');
-        const detail = document.getElementById('waStatusDetail');
-        const linkSection = document.getElementById('waLinkSection');
-        const linkedSection = document.getElementById('waLinkedSection');
-
-        if (res?.status === 'success') {
-          const { linked, whatsappGroupId, whatsappGroupName, botConnected } = res.data;
-
-          if (!botConnected) {
-            icon.textContent = '⚠️';
-            text.textContent = 'Bot desconectado';
-            detail.textContent = 'El servidor de WhatsApp no está activo. Contacta con soporte.';
-            linkSection.style.display = 'none';
-            linkedSection.style.display = 'none';
-          } else if (linked) {
-            icon.textContent = '✅';
-            text.textContent = 'WhatsApp vinculado';
-            detail.textContent = 'El bot está activo en tu grupo de WhatsApp';
-            linkSection.style.display = 'none';
-            linkedSection.style.display = 'block';
-            document.getElementById('waGroupNameDisplay').textContent = whatsappGroupName || 'Grupo de WhatsApp';
-            document.getElementById('waGroupId').textContent = whatsappGroupId;
-          } else {
-            icon.textContent = '📱';
-            text.textContent = 'Sin vincular';
-            detail.textContent = 'Pega el enlace de invitación de tu grupo para conectar el bot';
-            linkSection.style.display = 'block';
-            linkedSection.style.display = 'none';
-          }
-        }
-      } catch (e) {
-        console.error('Error cargando estado WhatsApp:', e);
+    // Highlight current language
+    (function highlightLang() {
+      const currentLang = window.i18n ? window.i18n.locale : 'es';
+      const btnEs = document.getElementById('btnLangEs');
+      const btnEn = document.getElementById('btnLangEn');
+      
+      if (currentLang === 'es') {
+        btnEs.style.background = 'var(--accent-gold)';
+        btnEs.style.color = '#000';
+        btnEs.style.borderColor = 'var(--accent-gold)';
+      } else {
+        btnEn.style.background = 'var(--accent-gold)';
+        btnEn.style.color = '#000';
+        btnEn.style.borderColor = 'var(--accent-gold)';
       }
-    }
-
-    async function joinWhatsApp() {
-      const linkInput = document.getElementById('waInviteLink');
-      const inviteLink = linkInput.value.trim();
-      if (!inviteLink) {
-        showToast('❌ Pega un enlace de invitación');
-        return;
-      }
-
-      const btn = document.getElementById('btnJoinWA');
-      const originalHTML = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Vinculando...</span>';
-
-      try {
-        const res = await apiCall({ action: 'joinWhatsApp', groupName: currentUser.groupName, inviteLink });
-        if (res?.status === 'success') {
-          const msg = res.data?.alreadyMember ? '✅ Bot ya estaba en el grupo. ¡Vinculado!' : '✅ ¡Bot unido al grupo de WhatsApp!';
-          showToast(msg);
-          linkInput.value = '';
-          loadWhatsAppStatus();
-        } else {
-          showToast('❌ ' + (res?.message || 'Error al vincular'));
-        }
-      } catch (e) {
-        showToast('❌ Error de conexión');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalHTML;
-      }
-    }
-
-    async function leaveWhatsApp() {
-      if (!confirm('¿Seguro que quieres desvincular el bot de tu grupo de WhatsApp? El bot dejará de responder en ese grupo.')) return;
-
-      try {
-        const res = await apiCall({ action: 'leaveWhatsApp', groupName: currentUser.groupName });
-        if (res?.status === 'success') {
-          showToast('👋 Bot desvinculado del grupo');
-          loadWhatsAppStatus();
-        } else {
-          showToast('❌ ' + (res?.message || 'Error'));
-        }
-      } catch (e) {
-        showToast('❌ Error de conexión');
-      }
-    }
+    })();
 
     async function fetchMemberList() {
       if (!currentUser || !currentUser.isAdmin) return;
@@ -426,7 +316,6 @@
       const container = document.getElementById('memberListContainer');
 
       try {
-        // Obtener miembros con sus datos (phone mapping)
         const [playersResult, phoneMappingResult] = await Promise.all([
           apiCall({ action: 'getPlayers', groupName: currentUser.groupName }),
           apiCall({ action: 'getPhoneMapping', groupName: currentUser.groupName })
@@ -437,7 +326,6 @@
           const players = playersResult.data;
           const phoneMap = phoneMappingResult?.status === 'success' ? phoneMappingResult.data : {};
 
-          // Invertir phone mapping: phone -> name => name -> phone
           const nameToPhone = {};
           Object.entries(phoneMap).forEach(([phone, name]) => { nameToPhone[name] = phone; });
 
@@ -510,12 +398,8 @@
 
         if (result?.status === 'success') {
           showToast(`👑 Traspaso completado. ${targetName} es el nuevo admin.`);
-
-          // Actualizar sesión local
           currentUser.isAdmin = false;
           localStorage.setItem('worldcup2026_user', JSON.stringify(currentUser));
-
-          // Redirigir ya que no tiene permisos aquí
           setTimeout(() => {
             window.location.href = 'player_scores.html';
           }, 2000);
@@ -527,7 +411,6 @@
       }
     }
 
-    // Datos de países para el selector admin
     const COUNTRIES = [
       { code: '34', flag: '🇪🇸', name: 'España' },
       { code: '44', flag: '🇬🇧', name: 'Reino Unido' },
@@ -549,7 +432,6 @@
       { code: '212', flag: '🇲🇦', name: 'Marruecos' },
     ];
 
-    // Llenar selector de país del admin
     const adminCountrySel = document.getElementById('adminCountryCode');
     if (adminCountrySel) {
       adminCountrySel.innerHTML = COUNTRIES.map(c =>
@@ -596,7 +478,6 @@
           showToast('❌ ' + (result?.message || 'Error'));
         }
       } catch (e) {
-        console.error("Error añadiendo jugador", e);
         showToast('❌ Error al conectar con el servidor');
       } finally {
         btn.disabled = false;
@@ -607,14 +488,9 @@
     checkAuthWrapper();
     enableMemberManagement();
 
-    // ==========================================
-    // SETUP MODE — Wizard post-creación de grupo
-    // ==========================================
     window.finishSetup = finishSetup;
-
     function finishSetup() {
       localStorage.removeItem('worldcup2026_setupMode');
-      // Encadenar con el onboarding de usuario (perfil → predicción → clasificación)
       localStorage.setItem('worldcup2026_onboarding', '1');
       window.location.href = 'about_user.html';
     }
@@ -622,14 +498,12 @@
     (function initSetupMode() {
       const isSetup = localStorage.getItem('worldcup2026_setupMode') === 'true';
       if (!isSetup) return;
-
       document.body.classList.add('setup-mode');
       const groupName = currentUser?.groupName || 'tu grupo';
       document.getElementById('setupGroupName').textContent = groupName;
     })();
   </script>
 
-  <!-- Finish setup bar (solo visible en modo setup) -->
   <div class="setup-finish-bar" id="setupFinishBar">
     <button class="btn-finish" onclick="finishSetup()">✅ Finalizar configuración</button>
     <span class="skip-hint">Puedes volver a esta pantalla desde el menú de Configuración</span>

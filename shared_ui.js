@@ -68,15 +68,6 @@ export function renderNavigation(currentPage) {
       <a href="${link.href}" class="nav-link ${currentPage === link.href ? 'active' : ''}">${link.text}</a>
     `).join('');
     
-  // Add Language Switcher
-  const currentLang = window.i18n ? window.i18n.locale : 'es';
-  html += `
-    <div class="lang-switcher" style="margin-left: 15px; display: inline-flex; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden;">
-      <button onclick="window.i18n.changeLanguage('en'); window.location.reload();" style="border:none; padding: 5px 10px; cursor: pointer; background: ${currentLang === 'en' ? '#f5a623' : 'transparent'}; color: ${currentLang === 'en' ? '#000' : '#fff'}; font-weight: bold;">EN</button>
-      <button onclick="window.i18n.changeLanguage('es'); window.location.reload();" style="border:none; padding: 5px 10px; cursor: pointer; background: ${currentLang === 'es' ? '#f5a623' : 'transparent'}; color: ${currentLang === 'es' ? '#000' : '#fff'}; font-weight: bold;">ES</button>
-    </div>
-  `;
-  
   navLinks.innerHTML = html;
 }
 
