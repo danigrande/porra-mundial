@@ -60,8 +60,8 @@
   </nav>
 
   <header class="page-header">
-    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient">Resultados – Control Oficial</span></h1>
-    <p class="subtitle">Control total del torneo. Lo que pongas aquí afecta a todos los rankings.</p>
+    <h1><span class="header-icon">⚙️</span> <span class="header-text-gradient" data-i18n="testing.title">Resultados – Control Oficial</span></h1>
+    <p class="subtitle" data-i18n="testing.subtitle">Control total del torneo. Lo que pongas aquí afecta a todos los rankings.</p>
   </header>
 
   <main class="main-content">
@@ -70,42 +70,42 @@
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.5rem;">🚀</span>
-            <strong style="font-size: 1.1rem; color: var(--text-primary);">Panel de Simulación "Go-Live"</strong>
+            <strong style="font-size: 1.1rem; color: var(--text-primary);" data-i18n="testing.sim_panel_title">Panel de Simulación "Go-Live"</strong>
           </div>
           <div style="font-size: 0.9rem; color: var(--text-muted);">
-            Motor de auto-población: <span id="simStatus" style="color: var(--accent-green); font-weight: 700;">🟢 ACTIVO</span>
+            <span data-i18n="testing.sim_status">Motor de auto-población:</span> <span id="simStatus" style="color: var(--accent-green); font-weight: 700;" data-i18n="testing.sim_active">🟢 ACTIVO</span>
           </div>
         </div>
         
         <div style="display: flex; gap: 30px;">
           <div style="text-align: center;">
-            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Tiempo Simulado</div>
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-i18n="testing.sim_time">Tiempo Simulado</div>
             <div id="simTime" style="font-weight: 800; color: var(--accent-gold); font-size: 1.2rem;">--:--</div>
           </div>
           <div style="text-align: center;">
-            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Fases Inyectadas</div>
+            <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-i18n="testing.sim_injected">Fases Inyectadas</div>
             <div id="simInjected" style="font-weight: 800; color: var(--accent-blue); font-size: 1.2rem;">0/7</div>
           </div>
         </div>
 
         <div style="display: flex; gap: 10px;">
-          <button class="btn-save" id="btnSave" onclick="saveReality()" style="padding: 0.5rem 1rem; font-size: 0.8rem;">💾 Guardar Manual</button>
-          <button class="btn-reset" onclick="resetAll()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444;">🗑️ Reset Test</button>
+          <button class="btn-save" id="btnSave" onclick="saveReality()" style="padding: 0.5rem 1rem; font-size: 0.8rem;" data-i18n="testing.btn_save_manual">💾 Guardar Manual</button>
+          <button class="btn-reset" onclick="resetAll()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444;" data-i18n="testing.btn_reset">🗑️ Reset Test</button>
         </div>
       </div>
-      <div id="injectedLog" style="padding: 0.75rem 1.5rem; background: rgba(0,0,0,0.2); font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05);">
+      <div id="injectedLog" style="padding: 0.75rem 1.5rem; background: rgba(0,0,0,0.2); font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05);" data-i18n="testing.waiting_data">
         Esperando datos del motor...
       </div>
       <div id="simSchedule" style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
-        <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--accent-gold); margin-bottom: 8px; font-weight: 700;">Calendario de Simulación:</div>
+        <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--accent-gold); margin-bottom: 8px; font-weight: 700;" data-i18n="testing.sim_schedule">Calendario de Simulación:</div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <div class="sim-step" data-phase="groups">📅 18 May: Grupos</div>
-          <div class="sim-step" data-phase="r32">📅 20 May: 1/16</div>
-          <div class="sim-step" data-phase="r16">📅 22 May: Octavos</div>
-          <div class="sim-step" data-phase="qf">📅 24 May: Cuartos</div>
-          <div class="sim-step" data-phase="sf">📅 26 May: Semis</div>
-          <div class="sim-step" data-phase="3rd">📅 27 May: 3º Puesto</div>
-          <div class="sim-step" data-phase="final">📅 28 May: Final</div>
+          <div class="sim-step" data-phase="groups">📅 18 May: <span data-i18n="testing.sim_groups">Grupos</span></div>
+          <div class="sim-step" data-phase="r32">📅 20 May: <span data-i18n="testing.sim_r32">1/16</span></div>
+          <div class="sim-step" data-phase="r16">📅 22 May: <span data-i18n="testing.sim_r16">Octavos</span></div>
+          <div class="sim-step" data-phase="qf">📅 24 May: <span data-i18n="testing.sim_qf">Cuartos</span></div>
+          <div class="sim-step" data-phase="sf">📅 26 May: <span data-i18n="testing.sim_sf">Semis</span></div>
+          <div class="sim-step" data-phase="3rd">📅 27 May: <span data-i18n="testing.sim_3rd">3º Puesto</span></div>
+          <div class="sim-step" data-phase="final">📅 28 May: <span data-i18n="testing.sim_final">Final</span></div>
         </div>
       </div>
     </div>
@@ -147,19 +147,19 @@
     // Restricciones para no-admins
     if (!currentUser.isAdmin) {
       document.querySelector('.admin-controls').style.display = 'none';
-      document.querySelector('.page-header h1 .header-text-gradient').textContent = 'Resultados del Torneo';
-      document.querySelector('.page-header .subtitle').textContent = 'Consulta los marcadores oficiales y el estado del torneo.';
+      document.querySelector('.header-text-gradient').textContent = (window.i18n ? window.i18n.t('testing.title_user') : 'Resultados del Torneo');
+      document.querySelector('.page-header .subtitle').textContent = (window.i18n ? window.i18n.t('testing.subtitle_user') : 'Consulta los marcadores oficiales y el estado del torneo.');
     }
 
     function getTeamHtml(name) {
       const code = TEAM_CODES[name];
-      return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${name}` : name;
+      return code ? `<img src="https://flagcdn.com/w40/${code}.png" class="flag-img"> ${window.i18n ? window.i18n.t(`teams.${name}`) : name}` : (window.i18n ? window.i18n.t(`teams.${name}`) : name);
     }
 
     // La función fillAll ha sido eliminada ya que ahora el proceso es automático.
 
     window.resetAll = async () => {
-      if(confirm('¿Seguro que quieres borrar todos los resultados y eventos (goles/tarjetas) de la nube?')) {
+      if(confirm(window.i18n ? window.i18n.t('testing.confirm_reset') : '¿Seguro que quieres borrar todos los resultados y eventos (goles/tarjetas) de la nube?')) {
         const btn = document.getElementById('btnSave');
         btn.disabled = true;
         // Enviamos objeto de eventos vacío para forzar el borrado en el backend
@@ -172,7 +172,7 @@
           // Forzamos que los inputs se vacíen visualmente
           document.querySelectorAll('.score-input').forEach(input => input.value = '');
           render(reality);
-          showToast('🗑️ Todo borrado (resultados y eventos)');
+          showToast(window.i18n ? window.i18n.t('testing.reset_success') : '🗑️ Todo borrado (resultados y eventos)');
         }
       }
     };
@@ -187,7 +187,7 @@
         // Actualizamos nuestro objeto local 'reality' con la respuesta completa
         reality = res.data.results;
         render(reality);
-        showToast('✅ Partido simulado individualmente');
+        showToast(window.i18n ? window.i18n.t('testing.sim_match_success') : '✅ Partido simulado individualmente');
       }
     };
 
@@ -195,15 +195,15 @@
       const results = collectData();
       const btn = document.getElementById('btnSave');
       btn.disabled = true;
-      btn.textContent = '⏳ Guardando...';
+      btn.textContent = '⏳ ' + (window.i18n ? window.i18n.t('common.saving') : 'Guardando...');
 
       const res = await apiCall({ action: 'saveReality', results }, { method: 'POST' });
       btn.disabled = false;
-      btn.textContent = '💾 Guardar en Nube';
+      btn.textContent = '💾 ' + (window.i18n ? window.i18n.t('testing.btn_save_cloud') : 'Guardar en Nube');
 
       if (res.status === 'success') {
         localStorage.setItem(`worldcup2026_testing_reality_${currentUser.groupName}`, JSON.stringify(results));
-        showToast('✅ Resultados oficiales actualizados');
+        showToast(window.i18n ? window.i18n.t('testing.save_success') : '✅ Resultados oficiales actualizados');
       }
     };
 
@@ -237,16 +237,16 @@
       if (stateData && stateData.isTestMode) {
         simPanel.style.display = 'block';
         const date = new Date(stateData.currentTime);
-        document.getElementById('simTime').textContent = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long' });
+        document.getElementById('simTime').textContent = date.toLocaleDateString(window.i18n?.locale === 'en' ? 'en-US' : 'es-ES', { day: '2-digit', month: 'long' });
         
         const injected = realityData.autoPopulatedPhases || [];
         document.getElementById('simInjected').textContent = `${injected.length}/7`;
         
         const log = document.getElementById('injectedLog');
         if (injected.length === 0) {
-          log.textContent = "ℹ️ Ninguna fase inyectada automáticamente todavía.";
+          log.textContent = window.i18n ? window.i18n.t('testing.no_injected') : "ℹ️ Ninguna fase inyectada automáticamente todavía.";
         } else {
-          log.innerHTML = `✅ <strong>Fases inyectadas:</strong> ${injected.join(', ')}`;
+          log.innerHTML = `✅ <strong>${window.i18n ? window.i18n.t('testing.injected_fases') : 'Fases inyectadas:'}</strong> ${injected.map(ph => window.i18n ? window.i18n.t(`testing.sim_${ph}`) : ph).join(', ')}`;
         }
 
         // Resaltar pasos del calendario
@@ -262,8 +262,8 @@
       } else {
         simPanel.style.display = 'none';
         // Si no es test mode, cambiamos el título para que sea más serio
-        document.querySelector('.header-text-gradient').textContent = 'Resultados Oficiales';
-        document.querySelector('.page-header .subtitle').textContent = 'Gestión manual de resultados para la competición real.';
+        document.querySelector('.header-text-gradient').textContent = window.i18n ? window.i18n.t('testing.official_results_title') : 'Resultados Oficiales';
+        document.querySelector('.page-header .subtitle').textContent = window.i18n ? window.i18n.t('testing.official_results_subtitle') : 'Gestión manual de resultados para la competición real.';
       }
     }
 
@@ -279,7 +279,7 @@
           <div class="group-card">
             <div class="group-header">
               <div class="group-letter">${g.letter}</div>
-              <div class="group-name">Grupo ${g.letter}</div>
+              <div class="group-name">${window.i18n ? window.i18n.t('common.group') : 'Grupo'} ${g.letter}</div>
             </div>
             <div style="padding:1rem;">
               <!-- Edición de Partidos -->
@@ -295,7 +295,7 @@
                   return `
                     <div class="match-edit" style="display:flex; flex-direction:column; margin-bottom:10px;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="Simular partido" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem;">🎲</button>
+                            <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="${window.i18n ? window.i18n.t('testing.match_sim_title') : 'Simular partido'}" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem;">🎲</button>
                             <span style="font-size:0.8rem; flex:1; text-align:right;">${hName}</span>
                             <div style="display:flex; gap:5px; margin: 0 10px;">
                                 <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
@@ -316,7 +316,7 @@
               </div>
               <!-- Tabla en tiempo real -->
               <table class="prediction-standings">
-                <thead><tr><th>Pos</th><th>Selección</th><th>Pts</th></tr></thead>
+                <thead><tr><th data-i18n="dashboard.pos">Pos</th><th data-i18n="predictions.team">Selección</th><th data-i18n="dashboard.points_col">Pts</th></tr></thead>
                 <tbody>
                   ${standings.map((s, i) => `<tr><td>${i+1}</td><td>${getTeamHtml(s.name)}</td><td>${s.pts}</td></tr>`).join('')}
                 </tbody>
@@ -330,7 +330,7 @@
       const bracketContainer = document.getElementById('fixtureBracket');
       bracketContainer.innerHTML = KNOCKOUT_BRACKET.map(round => `
         <div class="knockout-section">
-          <div class="knockout-title">${round.name}</div>
+          <div class="knockout-title">${window.i18n ? window.i18n.t('predictions.round_' + round.id) : round.name}</div>
           <div class="knockout-matches">
               ${round.matches.map(num => {
               const pairing = BRACKET_MATCHES[num];
@@ -349,7 +349,7 @@
                 <div class="knockout-match">
                   <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                       <span class="match-number">#${num}</span>
-                      <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="Simular partido" style="background:transparent; border:none; cursor:pointer; font-size:1rem;">🎲</button>
+                      <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="${window.i18n ? window.i18n.t('testing.match_sim_title') : 'Simular partido'}" style="background:transparent; border:none; cursor:pointer; font-size:1rem;">🎲</button>
                   </div>
                   <div class="km-teams">
                     <span class="team-name team-home">${getTeamHtml(hName)}</span>
@@ -389,10 +389,10 @@
       const runner = fullResolve('L104', currentData);
       awardsContainer.innerHTML = `
         <div class="group-card awards-card">
-          <div class="group-header">Cuadro de honor</div>
+          <div class="group-header">${window.i18n ? window.i18n.t('testing.honor_roll') : 'Cuadro de honor'}</div>
           <table class="awards-table">
-            <tr><td>🏆 Campeón</td><td>${getTeamHtml(champ)}</td></tr>
-            <tr><td>🥈 Subcampeón</td><td>${getTeamHtml(runner)}</td></tr>
+            <tr><td>${window.i18n ? window.i18n.t('testing.champion') : '🏆 Campeón'}</td><td>${getTeamHtml(champ)}</td></tr>
+            <tr><td>${window.i18n ? window.i18n.t('testing.runnerup') : '🥈 Subcampeón'}</td><td>${getTeamHtml(runner)}</td></tr>
           </table>
         </div>
       `;
