@@ -49,7 +49,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Conectar a MongoDB
-connectDB();
+await connectDB();
 
 // ==========================================
 // SERVIDOR EXPRESS + HTTP
