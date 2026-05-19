@@ -48,6 +48,6 @@ fi
 
 # 4. Lanzar compilación
 echo -e "\n${BLUE}🏗️ Iniciando proceso de compilación (iOS y Android)...${NC}"
-eas build --platform all --profile production $BUILD_ARGS
+npx eas build --platform all --profile production $BUILD_ARGS
 
 echo -e "\n${GREEN}🎉 Proceso completado con éxito!${NC}"
