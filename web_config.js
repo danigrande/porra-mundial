@@ -9,7 +9,9 @@ window.CONFIG = {
   // URL del bot/API
   RENDER_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'
-    : window.location.origin // Usar el propio dominio (aprovechando el proxy de render.yaml)
+    : (window.location.hostname.includes('vercel.app') || window.location.protocol === 'file:'
+        ? 'https://porra-mundial.onrender.com'
+        : window.location.origin) // Usar el propio dominio (aprovechando el proxy de render.yaml)
 };
 
 // Exponer variables globales explícitamente para los módulos
