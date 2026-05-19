@@ -19,13 +19,13 @@ async function runSimulation(groupName) {
         await axios.post(`${API_URL}/dev/reset-test`, { groupName });
 
         const steps = [
-            { date: '2026-05-15T10:00:00Z', phase: 'PRE_TOURNAMENT', label: 'Pre-Mundial' },
-            { date: '2026-05-18T11:00:00Z', phase: 'groups', label: 'Fin de Grupos' },
-            { date: '2026-05-20T11:00:00Z', phase: 'r32', label: 'Fin de 1/16' },
-            { date: '2026-05-22T11:00:00Z', phase: 'r16', label: 'Fin de Octavos' },
-            { date: '2026-05-24T11:00:00Z', phase: 'qf', label: 'Fin de Cuartos' },
-            { date: '2026-05-26T11:00:00Z', phase: 'sf', label: 'Fin de Semis' },
-            { date: '2026-05-28T11:00:00Z', phase: 'final', label: 'Fin de Final' },
+            { date: '2026-05-17T10:00:00Z', phase: 'PRE_TOURNAMENT', label: 'Pre-Mundial' },
+            { date: '2026-05-20T11:00:00Z', phase: 'groups', label: 'Fin de Grupos' },
+            { date: '2026-05-22T11:00:00Z', phase: 'r32', label: 'Fin de 1/16' },
+            { date: '2026-05-24T11:00:00Z', phase: 'r16', label: 'Fin de Octavos' },
+            { date: '2026-05-26T11:00:00Z', phase: 'qf', label: 'Fin de Cuartos' },
+            { date: '2026-05-28T11:00:00Z', phase: 'sf', label: 'Fin de Semis' },
+            { date: '2026-05-30T11:00:00Z', phase: 'final', label: 'Fin de Final' },
         ];
 
         for (const step of steps) {

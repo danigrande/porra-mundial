@@ -19,13 +19,13 @@ export default function ResultsScreen() {
   const [activeTab, setActiveTab] = useState<'groups' | 'knockout'>('groups');
 
   const simSteps = [
-    { phase: 'groups', label: '18 May: Grupos' },
-    { phase: 'r32', label: '20 May: 1/16' },
-    { phase: 'r16', label: '22 May: Octavos' },
-    { phase: 'qf', label: '24 May: Cuartos' },
-    { phase: 'sf', label: '26 May: Semis' },
-    { phase: '3rd', label: '27 May: 3º Puesto' },
-    { phase: 'final', label: '28 May: Final' },
+    { phase: 'groups', label: '20 May: Grupos' },
+    { phase: 'r32', label: '22 May: 1/16' },
+    { phase: 'r16', label: '24 May: Octavos' },
+    { phase: 'qf', label: '26 May: Cuartos' },
+    { phase: 'sf', label: '28 May: Semis' },
+    { phase: '3rd', label: '29 May: 3º Puesto' },
+    { phase: 'final', label: '30 May: Final' },
   ];
 
   useEffect(() => {
