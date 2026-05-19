@@ -5,6 +5,7 @@
 // Maneja la comunicación en tiempo real entre los usuarios y el Agente Mundial.
 
 import { Server } from 'socket.io';
+import bcrypt from 'bcryptjs';
 import { User } from './models/User.js';
 import { Group } from './models/Group.js';
 import { Message } from './models/Message.js';
@@ -54,8 +55,26 @@ export function initChatServer(httpServer) {
       }
 
       // Verificar usuario
-      const user = await User.findOne({ phone, pin });
+      const user = await User.findOne({ phone });
       if (!user) {
+        return next(new Error('Credenciales inválidas'));
+      }
+
+      // Verificar PIN con soporte para hashes bcrypt y texto plano heredado
+      let isMatch = false;
+      if (user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$')) {
+          isMatch = await bcrypt.compare(pin, user.pin);
+      } else {
+          isMatch = (user.pin === pin);
+          if (isMatch) {
+              // Si coincide en texto plano, hashear para el futuro
+              user.pin = await bcrypt.hash(pin, 10);
+              await user.save();
+              console.log(`🔐 PIN de ${user.name} actualizado a hash en conexión de socket`);
+          }
+      }
+
+      if (!isMatch) {
         return next(new Error('Credenciales inválidas'));
       }
 
