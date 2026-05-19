@@ -53,13 +53,24 @@ else
 fi
 
 # 4. Lanzar compilación
-echo -e "\n${BLUE}🏗️ Iniciando proceso de compilación (iOS y Android)...${NC}"
-npx eas-cli build --platform all --profile production $BUILD_ARGS
+echo -e "\n${BLUE}🏗️ Iniciando proceso de compilación...${NC}"
+if [ "$BUILD_ENV" == "1" ]; then
+    echo -e "${YELLOW}📱 Compilando para iOS localmente...${NC}"
+    npx eas-cli build --platform ios --profile production --local
+
+    echo -e "${YELLOW}🤖 Compilando para Android localmente...${NC}"
+    npx eas-cli build --platform android --profile production --local
+else
+    npx eas-cli build --platform all --profile production $BUILD_ARGS
+fi
 
 # 5. Si fue compilación local y se solicitó subir, ejecutar el submit por separado
 if [ "$BUILD_ENV" == "1" ] && [[ "$AUTO_SUBMIT" =~ ^[Ss]$ ]]; then
-    echo -e "\n${BLUE}📤 Enviando binarios locales a las tiendas (EAS Submit)...${NC}"
-    npx eas-cli submit --platform all
+    echo -e "\n${BLUE}📤 Enviando binario iOS local a la App Store (EAS Submit)...${NC}"
+    npx eas-cli submit --platform ios
+
+    echo -e "\n${BLUE}📤 Enviando binario Android local a Google Play (EAS Submit)...${NC}"
+    npx eas-cli submit --platform android
 fi
 
 echo -e "\n${GREEN}🎉 Proceso completado con éxito!${NC}"
