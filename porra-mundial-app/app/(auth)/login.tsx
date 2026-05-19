@@ -8,14 +8,14 @@ import { useTranslation } from '../../i18n/i18n';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 // URL de los términos legales (cambiar a tu dominio real)
-const TERMS_URL = 'https://tu-app.onrender.com/legal/terms';
-const PRIVACY_URL = 'https://tu-app.onrender.com/legal/privacy';
+const TERMS_URL = 'https://porra-mundial.onrender.com/legal/terms';
+const PRIVACY_URL = 'https://porra-mundial.onrender.com/legal/privacy';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  
+
   // Login State
   const [prefix, setPrefix] = useState('34');
   const [phone, setPhone] = useState('');
@@ -23,7 +23,7 @@ export default function LoginScreen() {
   const [name, setName] = useState('');
   const [groupName, setGroupName] = useState('');
   const [isNewGroup, setIsNewGroup] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [availableGroups, setAvailableGroups] = useState<string[]>([]);
@@ -42,11 +42,11 @@ export default function LoginScreen() {
     try {
       const fullPhone = `${prefix}${phone}`;
       const user = await api.getUserByPhone(fullPhone);
-      
+
       if (!user || !user.groups || user.groups.length === 0) {
         throw new Error(t('auth.no_groups_error'));
       }
-      
+
       setAvailableGroups(user.groups);
       setGroupName(user.groups[0]); // Auto-select the first one
       setPhoneVerified(true);
@@ -64,7 +64,7 @@ export default function LoginScreen() {
     }
     setLoading(true);
     const fullPhone = `${prefix}${phone}`;
-    
+
     try {
       const result = await api.login(fullPhone, pin, groupName);
 
@@ -164,7 +164,7 @@ export default function LoginScreen() {
 
         {/* Form */}
         <View style={styles.form}>
-          
+
           {mode === 'register' && (
             <TextInput
               style={styles.input}
@@ -217,8 +217,8 @@ export default function LoginScreen() {
                   <Text style={styles.pickerLabel}>{t('auth.select_group')}</Text>
                   <View style={styles.groupList}>
                     {availableGroups.map(g => (
-                      <TouchableOpacity 
-                        key={g} 
+                      <TouchableOpacity
+                        key={g}
                         style={[styles.groupPill, groupName === g && styles.groupPillActive]}
                         onPress={() => setGroupName(g)}
                       >
@@ -229,7 +229,7 @@ export default function LoginScreen() {
                 </View>
               )}
               {availableGroups.length === 1 && (
-                 <Text style={styles.singleGroupInfo}>{t('auth.single_group')} <Text style={styles.bold}>{availableGroups[0]}</Text></Text>
+                <Text style={styles.singleGroupInfo}>{t('auth.single_group')} <Text style={styles.bold}>{availableGroups[0]}</Text></Text>
               )}
 
               <TextInput

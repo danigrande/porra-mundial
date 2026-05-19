@@ -49,4 +49,4 @@ services:
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://agente-mundial-backend.onrender.com/api/* # Proxy a tu backend
+        destination: https://porra-mundial.onrender.com/api/* # Proxy a tu backend

@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 const LOCAL_IP = '192.168.1.138';
 const API_BASE = __DEV__
   ? (Platform.OS === 'web' ? 'http://localhost:3000' : `http://${LOCAL_IP}:3000`)
-  : 'https://tu-app.onrender.com';
+  : 'https://porra-mundial.onrender.com';
 
 export const API_URL = API_BASE;
 export const SOCKET_URL = API_BASE;
