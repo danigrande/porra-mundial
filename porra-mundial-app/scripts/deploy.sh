@@ -35,7 +35,25 @@ else
     echo -e "${GREEN}✓ Configurado para compilar en la nube de Expo (EAS Cloud).${NC}"
 fi
 
-# 3. Seleccionar auto-envío a tiendas
+# 3. Seleccionar plataforma
+echo -e "\n${BLUE}¿Para qué plataforma deseas compilar?${NC}"
+echo "1) Ambas (iOS y Android)"
+echo "2) Solo iOS"
+echo "3) Solo Android"
+read -p "Selecciona una opción (1, 2 o 3): " PLATFORM_OPT
+
+PLATFORMS="all"
+if [ "$PLATFORM_OPT" == "2" ]; then
+    PLATFORMS="ios"
+    echo -e "${GREEN}✓ Configurado para compilar solo iOS.${NC}"
+elif [ "$PLATFORM_OPT" == "3" ]; then
+    PLATFORMS="android"
+    echo -e "${GREEN}✓ Configurado para compilar solo Android.${NC}"
+else
+    echo -e "${GREEN}✓ Configurado para compilar ambas plataformas (iOS y Android).${NC}"
+fi
+
+# 4. Seleccionar auto-envío a tiendas
 echo -e "\n${BLUE}¿Deseas subir automáticamente los binarios compilados a App Store y Google Play?${NC}"
 read -p "(s/n): " AUTO_SUBMIT
 
@@ -52,25 +70,33 @@ else
     echo -e "${YELLOW}! Las compilaciones se guardarán localmente/en Expo, pero no se subirán a las tiendas.${NC}"
 fi
 
-# 4. Lanzar compilación
+# 5. Lanzar compilación
 echo -e "\n${BLUE}🏗️ Iniciando proceso de compilación...${NC}"
 if [ "$BUILD_ENV" == "1" ]; then
-    echo -e "${YELLOW}📱 Compilando para iOS localmente...${NC}"
-    npx eas-cli build --platform ios --profile production --local
+    if [ "$PLATFORMS" == "all" ] || [ "$PLATFORMS" == "ios" ]; then
+        echo -e "${YELLOW}📱 Compilando para iOS localmente...${NC}"
+        npx eas-cli build --platform ios --profile production --local
+    fi
 
-    echo -e "${YELLOW}🤖 Compilando para Android localmente...${NC}"
-    npx eas-cli build --platform android --profile production --local
+    if [ "$PLATFORMS" == "all" ] || [ "$PLATFORMS" == "android" ]; then
+        echo -e "${YELLOW}🤖 Compilando para Android localmente...${NC}"
+        npx eas-cli build --platform android --profile production --local
+    fi
 else
-    npx eas-cli build --platform all --profile production $BUILD_ARGS
+    npx eas-cli build --platform $PLATFORMS --profile production $BUILD_ARGS
 fi
 
-# 5. Si fue compilación local y se solicitó subir, ejecutar el submit por separado
+# 6. Si fue compilación local y se solicitó subir, ejecutar el submit por separado
 if [ "$BUILD_ENV" == "1" ] && [[ "$AUTO_SUBMIT" =~ ^[Ss]$ ]]; then
-    echo -e "\n${BLUE}📤 Enviando binario iOS local a la App Store (EAS Submit)...${NC}"
-    npx eas-cli submit --platform ios
+    if [ "$PLATFORMS" == "all" ] || [ "$PLATFORMS" == "ios" ]; then
+        echo -e "\n${BLUE}📤 Enviando binario iOS local a la App Store (EAS Submit)...${NC}"
+        npx eas-cli submit --platform ios
+    fi
 
-    echo -e "\n${BLUE}📤 Enviando binario Android local a Google Play (EAS Submit)...${NC}"
-    npx eas-cli submit --platform android
+    if [ "$PLATFORMS" == "all" ] || [ "$PLATFORMS" == "android" ]; then
+        echo -e "\n${BLUE}📤 Enviando binario Android local a Google Play (EAS Submit)...${NC}"
+        npx eas-cli submit --platform android
+    fi
 fi
 
 echo -e "\n${GREEN}🎉 Proceso completado con éxito!${NC}"
