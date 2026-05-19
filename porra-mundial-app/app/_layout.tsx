@@ -22,7 +22,7 @@ export default function RootLayout() {
       lastNotificationResponse.notification.request.content.data.screen === 'chat' &&
       lastNotificationResponse.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
     ) {
-      const { groupName } = lastNotificationResponse.notification.request.content.data;
+      const groupName = lastNotificationResponse.notification.request.content.data.groupName as string;
       console.log('[Push] Navegando al chat:', groupName);
       
       // Pequeño delay para asegurar que el router está listo

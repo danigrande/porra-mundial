@@ -446,7 +446,8 @@ const styles = StyleSheet.create({
   vs: { color: '#484f58', marginHorizontal: 6, fontSize: 18 },
 
   awardsCard: { backgroundColor: 'rgba(245, 166, 35, 0.05)', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(245, 166, 35, 0.2)' },
-  awardsTitle: { color: '#f5a623', fontSize: 18, fontWeight: '800', marginBottom: 20 },
+  awardsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
+  awardsTitle: { color: '#f5a623', fontSize: 18, fontWeight: '800' },
   awardRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(245, 166, 35, 0.1)' },
   awardLabel: { color: '#8b949e', fontSize: 15 },
   awardVal: { color: '#fff', fontSize: 15, fontWeight: '700' }

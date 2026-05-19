@@ -311,15 +311,19 @@ export default function ChatScreen() {
       
       // Escuchar cambios en el grupo en tiempo real
       const socket = socketService.getSocket();
-      socket.on('group-updated', (data) => {
-        if (data.groupName === groupName) {
-          console.log('🔄 Lista de miembros actualizada por socket');
-          loadGroupMembers();
-        }
-      });
+      if (socket) {
+        socket.on('group-updated', (data) => {
+          if (data.groupName === groupName) {
+            console.log('🔄 Lista de miembros actualizada por socket');
+            loadGroupMembers();
+          }
+        });
+      }
 
       return () => {
-        socket.off('group-updated');
+        if (socket) {
+          socket.off('group-updated');
+        }
       };
     }
   }, [groupName]);
@@ -411,7 +415,7 @@ export default function ChatScreen() {
   const [recordingTime, setRecordingTime] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isRecording) {
       interval = setInterval(() => {
         setRecordingTime(t => t + 1);
@@ -722,7 +726,7 @@ export default function ChatScreen() {
           >
             {!isMe && <Text style={[styles.senderName, item.isBot && { color: '#a78bfa' }]}>{item.senderName}</Text>}
 
-            {(item.type === 'text' || !item.type) && renderMessageText(item.text)}
+            {(item.type === 'text' || !item.type) && renderMessageText(item.text || '')}
 
             {item.type === 'image' && (
               <Image source={{ uri: item.mediaUrl }} style={styles.messageImage} resizeMode="cover" />
@@ -737,7 +741,7 @@ export default function ChatScreen() {
             )}
 
             {item.type === 'audio' && (
-              <TouchableOpacity style={styles.audioContainer} onPress={() => playAudio(item._id, item.mediaUrl)}>
+              <TouchableOpacity style={styles.audioContainer} onPress={() => playAudio(item._id, item.mediaUrl || '')}>
                 <Ionicons
                   name={playingId === item._id ? "pause" : "play"}
                   size={24}

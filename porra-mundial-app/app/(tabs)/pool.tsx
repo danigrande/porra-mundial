@@ -88,6 +88,7 @@ export default function PoolScreen() {
 }
 
 function PredictionList({ predictions, isMe, hasStarted }: { predictions: any, isMe: boolean, hasStarted: boolean }) {
+  const { t } = useTranslation();
   // Aquí deberíamos mapear las predicciones a nombres de partidos reales
   // Para V1, mostramos un resumen por grupos
   const groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
