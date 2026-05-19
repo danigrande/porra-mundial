@@ -74,7 +74,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 
 // Usar nuestras rutas de Node.js
 app.use('/api', apiRoutes);
-app.use('/dev', devDashboardRoutes);
+app.use('/api/dev', devDashboardRoutes);
 
 app.get('/', (req, res) => {
   res.json({

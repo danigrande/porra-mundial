@@ -2,7 +2,7 @@
 // DEV DASHBOARD — JavaScript Logic
 // ============================================
 
-const API_BASE = (window.CONFIG?.RENDER_URL || 'http://localhost:3000') + '/dev';
+const API_BASE = (window.CONFIG?.RENDER_URL || 'http://localhost:3000') + '/api/dev';
 let DEV_KEY = '';
 let currentLogsPage = 1;
 let currentRagPage = 1;
