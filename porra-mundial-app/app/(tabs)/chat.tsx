@@ -620,7 +620,19 @@ export default function ChatScreen() {
           onPress: () => {
             Alert.alert(t('chat.block_user'), t('chat.block_confirm', { name: message.senderName }), [
               { text: t('common.cancel'), style: 'cancel' },
-              { text: t('chat.block_action'), style: 'destructive', onPress: () => Alert.alert(t('common.success'), t('chat.block_success')) }
+              { 
+                text: t('chat.block_action'), 
+                style: 'destructive', 
+                onPress: async () => {
+                  try {
+                    await api.blockUser(auth?.phone || '', message.senderId, groupName);
+                    setBlockedUsers(prev => [...prev, message.senderId]);
+                    Alert.alert(t('common.success'), t('chat.block_success'));
+                  } catch (e: any) {
+                    Alert.alert(t('common.error'), e.message || 'Error');
+                  }
+                } 
+              }
             ]);
           }
         }
