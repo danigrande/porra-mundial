@@ -20,10 +20,10 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Necesitamos acceso al micrófono para enviar notas de voz en el chat del grupo.",
         "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tus fotos para compartir imágenes en el chat del grupo.",
-        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para tomar fotos y compartirlas en el chat."
+        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para tomar fotos y compartirlas en el chat.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -34,7 +34,6 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "bundler": "metro",
       "output": "static",
