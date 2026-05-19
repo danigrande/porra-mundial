@@ -40,8 +40,14 @@ echo -e "\n${BLUE}¿Deseas subir automáticamente los binarios compilados a App 
 read -p "(s/n): " AUTO_SUBMIT
 
 if [[ "$AUTO_SUBMIT" =~ ^[Ss]$ ]]; then
-    BUILD_ARGS="$BUILD_ARGS --auto-submit"
-    echo -e "${GREEN}✓ Configurado para subir automáticamente tras compilar.${NC}"
+    if [ "$BUILD_ENV" == "1" ]; then
+        # En compilaciones locales no podemos pasar --auto-submit al comando build.
+        # En su lugar, ejecutamos eas submit por separado después de terminar.
+        echo -e "${GREEN}✓ Configurado para subir a las tiendas una vez finalizada la compilación local.${NC}"
+    else
+        BUILD_ARGS="$BUILD_ARGS --auto-submit"
+        echo -e "${GREEN}✓ Configurado para subir automáticamente tras compilar en la nube.${NC}"
+    fi
 else
     echo -e "${YELLOW}! Las compilaciones se guardarán localmente/en Expo, pero no se subirán a las tiendas.${NC}"
 fi
@@ -49,5 +55,11 @@ fi
 # 4. Lanzar compilación
 echo -e "\n${BLUE}🏗️ Iniciando proceso de compilación (iOS y Android)...${NC}"
 npx eas-cli build --platform all --profile production $BUILD_ARGS
+
+# 5. Si fue compilación local y se solicitó subir, ejecutar el submit por separado
+if [ "$BUILD_ENV" == "1" ] && [[ "$AUTO_SUBMIT" =~ ^[Ss]$ ]]; then
+    echo -e "\n${BLUE}📤 Enviando binarios locales a las tiendas (EAS Submit)...${NC}"
+    npx eas-cli submit --platform all
+fi
 
 echo -e "\n${GREEN}🎉 Proceso completado con éxito!${NC}"
