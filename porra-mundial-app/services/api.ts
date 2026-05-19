@@ -1,10 +1,15 @@
 import { Platform } from 'react-native';
 
-// Cambia esta URL a tu servidor en Render cuando despliegues
+// Apuntar siempre al backend de producción en Render
+const API_BASE = 'https://porra-mundial.onrender.com';
+
+/*
+// Descomentar para desarrollo con servidor local:
 const LOCAL_IP = '192.168.1.138';
 const API_BASE = __DEV__
   ? (Platform.OS === 'web' ? 'http://localhost:3000' : `http://${LOCAL_IP}:3000`)
   : 'https://porra-mundial.onrender.com';
+*/
 
 export const API_URL = API_BASE;
 export const SOCKET_URL = API_BASE;

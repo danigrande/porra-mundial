@@ -566,7 +566,12 @@ const translations = {
 };
 
 window.i18n = {
-  locale: localStorage.getItem('language') || 'es',
+  locale: (function() {
+    const saved = localStorage.getItem('language');
+    if (saved) return saved;
+    const browserLang = (navigator.language || '').split('-')[0].toLowerCase();
+    return ['en', 'es'].includes(browserLang) ? browserLang : 'es';
+  })(),
 
   t: function(key, params = {}) {
     const keys = key.split('.');

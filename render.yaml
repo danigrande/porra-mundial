@@ -21,8 +21,6 @@ services:
         value: llama-3.3-70b-versatile
       - key: MONGODB_URI
         sync: false # Configurar manualmente en el dashboard
-      - key: GOOGLE_SCRIPT_URL
-        value: https://script.google.com/macros/s/AKfycbxqcLRNrr8eHaxll-Xwo_R56GYU_AmZoKwf4mrUvVt8YnGXZnJaJt0Tm5b_madhOX35/exec
       - key: HUGGINGFACEHUB_API_KEY
         sync: false
       - key: API_FOOTBALL_KEY
@@ -31,8 +29,6 @@ services:
         value: agente-dev-2026
       - key: TEST_MODE
         value: "true"
-      - key: PHONE_DANI
-        sync: false
 
   # ---------------------------------------------------------------------------
   # FRONTEND: Porra Mundial (Static Site)

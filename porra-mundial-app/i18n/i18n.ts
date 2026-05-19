@@ -8,6 +8,7 @@
 //   <Text>{t('auth.login')}</Text>
 
 import { useState, useEffect } from 'react';
+import { Platform, NativeModules } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import es from './es.json';
 import en from './en.json';
@@ -30,14 +31,45 @@ let isInitialized = false;
 const listeners = new Set<() => void>();
 
 /**
+ * Gets the device's default system language.
+ */
+function getSystemLanguage(): string {
+  try {
+    if (Platform.OS === 'web') {
+      const webLang = navigator.language || (navigator as any).userLanguage;
+      if (webLang) {
+        return webLang.split('-')[0].toLowerCase();
+      }
+    } else if (Platform.OS === 'ios') {
+      const settings = NativeModules.SettingsManager?.settings;
+      const locale = settings?.AppleLocale || settings?.AppleLanguages?.[0];
+      if (locale) {
+        return locale.split(/[-_]/)[0].toLowerCase();
+      }
+    } else if (Platform.OS === 'android') {
+      const locale = NativeModules.I18nManager?.localeIdentifier;
+      if (locale) {
+        return locale.split(/[-_]/)[0].toLowerCase();
+      }
+    }
+  } catch (e) {
+    console.warn('[i18n] Error getting system locale:', e);
+  }
+  return 'es'; // default fallback
+}
+
+/**
  * Initialize i18n — call once at app startup.
- * Loads the saved language from AsyncStorage.
+ * Loads the saved language from AsyncStorage, falling back to system language.
  */
 export async function initI18n(): Promise<string> {
   try {
     const saved = await AsyncStorage.getItem(STORAGE_KEY);
     if (saved && translations[saved]) {
       currentLang = saved;
+    } else {
+      const sysLang = getSystemLanguage();
+      currentLang = translations[sysLang] ? sysLang : 'es';
     }
   } catch (e) {
     console.warn('[i18n] Error loading saved language:', e);
