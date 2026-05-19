@@ -43,3 +43,11 @@ yarn-error.*
 # Store publication keys & credentials
 *credentials*.json
 google-services-key.json
+
+# Local build artifacts
+*.aab
+*.apk
+*.ipa
+build-*.aab
+build-*.apk
+build-*.ipa
