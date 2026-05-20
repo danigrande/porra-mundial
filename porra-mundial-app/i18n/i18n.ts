@@ -158,3 +158,41 @@ export function useTranslation() {
     languages: LANGUAGES,
   };
 }
+
+/**
+ * Translate a team name or bracket placeholder.
+ * If translation key "teams.Team Name" exists, returns it, otherwise returns teamName.
+ */
+export function tTeam(teamName: string): string {
+  if (!teamName) return '';
+  
+  const trimmed = teamName.trim();
+  if (trimmed === 'TBD' || trimmed === 'Por definir' || trimmed.toUpperCase() === 'TBD') {
+    return t('common.to_be_defined');
+  }
+
+  // Check if teamName is a placeholder like '1A', '2B', etc.
+  const groupMatch = trimmed.match(/^([1-2])([A-L])$/);
+  if (groupMatch) {
+    const pos = groupMatch[1];
+    const letter = groupMatch[2];
+    return t('predictions.group_position', { pos, letter });
+  }
+
+  // Check other placeholders like '3ABCDF' (best third)
+  if (/^3[A-L]+$/.test(trimmed)) {
+    return t('predictions.best_third');
+  }
+
+  // Ganador/Perdedor de partido: "W73", "L101"
+  const matchRef = trimmed.match(/^([WL])(\d+)$/);
+  if (matchRef) {
+    const type = matchRef[1];
+    const num = matchRef[2];
+    return type === 'W' ? t('predictions.winner_of', { num }) : t('predictions.loser_of', { num });
+  }
+
+  const translated = t(`teams.${trimmed}`);
+  return translated === `teams.${trimmed}` ? trimmed : translated;
+}
+

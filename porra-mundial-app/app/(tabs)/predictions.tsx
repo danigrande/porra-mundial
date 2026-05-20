@@ -4,7 +4,7 @@ import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { FIXTURE_GROUPS, getGroupMatches } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
-import { useTranslation } from '../../i18n/i18n';
+import { useTranslation, tTeam } from '../../i18n/i18n';
 
 export default function PredictionsScreen() {
   const auth = getAuth();
@@ -46,7 +46,7 @@ export default function PredictionsScreen() {
       return type === 'W' ? t('predictions.winner_of', { num }) : t('predictions.loser_of', { num });
     }
 
-    return code;
+    return tTeam(code);
   };
 
   useEffect(() => {
@@ -72,7 +72,13 @@ export default function PredictionsScreen() {
 
   const matchesToDisplay = useMemo(() => {
     const group = FIXTURE_GROUPS.find(g => g.letter === selectedGroup);
-    if (group) return getGroupMatches(group);
+    if (group) {
+      return getGroupMatches(group).map((m: any) => ({
+        ...m,
+        team1: tTeam(m.team1),
+        team2: tTeam(m.team2)
+      }));
+    }
 
     const koPhase = state?.knockoutBracket?.find((kb: any) => kb.id === selectedGroup);
     if (koPhase) {

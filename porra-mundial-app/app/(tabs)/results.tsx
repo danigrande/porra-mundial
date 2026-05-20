@@ -5,7 +5,7 @@ import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
-import { useTranslation } from '../../i18n/i18n';
+import { useTranslation, tTeam } from '../../i18n/i18n';
 
 export default function ResultsScreen() {
   const auth = getAuth();
@@ -289,10 +289,10 @@ export default function ResultsScreen() {
 
               <View style={styles.awardRow}>
                 <View>
-                  <Text style={styles.awardLabel}>🏆 Campeón del Mundo</Text>
+                  <Text style={styles.awardLabel}>{t('results.world_champion')}</Text>
                   <Text style={styles.awardVal}>
                     {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
-                      ? (parseInt(reality['ko_104_h']) > parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
+                      ? tTeam(parseInt(reality['ko_104_h']) > parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
                       : t('common.to_be_defined')}
                   </Text>
                 </View>
@@ -304,7 +304,7 @@ export default function ResultsScreen() {
                   <Text style={styles.awardLabel}>{t('results.runner_up')}</Text>
                   <Text style={styles.awardVal}>
                     {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
-                      ? (parseInt(reality['ko_104_h']) < parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
+                      ? tTeam(parseInt(reality['ko_104_h']) < parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
                       : t('common.to_be_defined')}
                   </Text>
                 </View>
@@ -378,7 +378,7 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
       <View style={styles.scoreRow}>
         <View style={styles.team}>
           {hCode && <Image source={{ uri: `https://flagcdn.com/w40/${hCode}.png` }} style={styles.miniFlag} />}
-          <Text style={styles.teamText} numberOfLines={1}>{hName}</Text>
+          <Text style={styles.teamText} numberOfLines={1}>{tTeam(hName)}</Text>
         </View>
         <View style={styles.scoreBox}>
           <Text style={styles.scoreText}>{hScore !== '' ? hScore : '-'}</Text>
@@ -386,7 +386,7 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
           <Text style={styles.scoreText}>{aScore !== '' ? aScore : '-'}</Text>
         </View>
         <View style={[styles.team, {justifyContent: 'flex-end'}]}>
-          <Text style={[styles.teamText, {textAlign: 'right'}]} numberOfLines={1}>{aName}</Text>
+          <Text style={[styles.teamText, {textAlign: 'right'}]} numberOfLines={1}>{tTeam(aName)}</Text>
           {aCode && <Image source={{ uri: `https://flagcdn.com/w40/${aCode}.png` }} style={styles.miniFlag} />}
         </View>
       </View>

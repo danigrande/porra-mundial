@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, 
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import TournamentBanner from '../../components/TournamentBanner';
-import { useTranslation } from '../../i18n/i18n';
+import { useTranslation, tTeam } from '../../i18n/i18n';
 
 export default function DashboardScreen() {
   const [ranking, setRanking] = useState<any[]>([]);
@@ -102,7 +102,9 @@ export default function DashboardScreen() {
                   player.history.map((h: any, i: number) => (
                     <View key={i} style={styles.historyRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.historyMatch} numberOfLines={1}>{h.match}</Text>
+                        <Text style={styles.historyMatch} numberOfLines={1}>
+                          {h.match ? h.match.split(/\s+vs\s+/i).map(tTeam).join(' vs ') : ''}
+                        </Text>
                         <Text style={styles.reasonText}>{h.reason || t('leaderboard.points_label')}</Text>
                       </View>
                       <View style={styles.historyBadge}>

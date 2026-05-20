@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Touchable
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTranslation } from '../../i18n/i18n';
+import { useTranslation, tTeam } from '../../i18n/i18n';
+import { FIXTURE_GROUPS, getGroupMatches } from '../../constants/tournamentData';
 
 export default function PoolScreen() {
   const auth = getAuth();
@@ -89,9 +90,6 @@ export default function PoolScreen() {
 
 function PredictionList({ predictions, isMe, hasStarted }: { predictions: any, isMe: boolean, hasStarted: boolean }) {
   const { t } = useTranslation();
-  // Aquí deberíamos mapear las predicciones a nombres de partidos reales
-  // Para V1, mostramos un resumen por grupos
-  const groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
   
   if (!isMe && !hasStarted) {
     return (
@@ -105,19 +103,20 @@ function PredictionList({ predictions, isMe, hasStarted }: { predictions: any, i
 
   return (
     <View style={styles.list}>
-      {groups.map(g => (
-        <View key={g} style={styles.groupSection}>
-          <Text style={styles.groupLabel}>{t('common.group')} {g}</Text>
-          <View style={styles.row}>
-            <Text style={styles.matchLabel}>Partido 1:</Text>
-            <Text style={styles.scoreText}>{predictions[`g${g}_m0_h`] ?? '?'} - {predictions[`g${g}_m0_a`] ?? '?'}</Text>
+      {FIXTURE_GROUPS.map(g => {
+        const matches = getGroupMatches(g);
+        return (
+          <View key={g.letter} style={styles.groupSection}>
+            <Text style={styles.groupLabel}>{t('common.group')} {g.letter}</Text>
+            {matches.map(m => (
+              <View key={m.id} style={styles.row}>
+                <Text style={styles.matchLabel}>{tTeam(m.team1)} - {tTeam(m.team2)}</Text>
+                <Text style={styles.scoreText}>{predictions[`${m.id}_h`] ?? '?'} - {predictions[`${m.id}_a`] ?? '?'}</Text>
+              </View>
+            ))}
           </View>
-          <View style={styles.row}>
-            <Text style={styles.matchLabel}>Partido 2:</Text>
-            <Text style={styles.scoreText}>{predictions[`g${g}_m1_h`] ?? '?'} - {predictions[`g${g}_m1_a`] ?? '?'}</Text>
-          </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
