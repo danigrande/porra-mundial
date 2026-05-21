@@ -256,7 +256,7 @@ export default function ChatScreen() {
   // ==========================================
   useEffect(() => {
     if (pickerTab === 'gif') {
-      searchGifs(gifSearch || 'world cup 2026');
+      searchGifs(gifSearch || 'football goals');
     }
   }, [gifSearch, pickerTab]);
 
@@ -287,7 +287,7 @@ export default function ChatScreen() {
   const searchGifs = async (query: string) => {
     setGifsLoading(true);
     try {
-      const response = await api.searchGiphy(query || 'soccer world cup');
+      const response = await api.searchGiphy(query || 'football');
       if (response && Array.isArray(response)) {
         setGifs(response);
       } else {

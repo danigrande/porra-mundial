@@ -18,7 +18,7 @@
     "to_be_defined": "To be defined"
   },
   "auth": {
-    "title": "World Cup Prediction",
+    "title": "Global Cup Prediction",
     "subtitle": "2026 — Predictions among friends",
     "login": "Log In",
     "register": "Sign Up",
@@ -47,7 +47,7 @@
     "single_group": "Group:",
     "bad_credentials": "Incorrect credentials",
     "register_error": "Error signing up",
-    "footer": "World Cup Prediction 🏆 — No real money",
+    "footer": "Global Cup Prediction 🏆 — No real money",
     "apple_disclaimer": "* Apple Inc. is not a sponsor nor is it involved in any way in this application or its predictions."
   },
   "tabs": {
@@ -124,7 +124,7 @@
     "logout": "Log Out",
     "logout_confirm_title": "Log Out",
     "logout_confirm": "Are you sure you want to log out?",
-    "version": "World Cup Prediction v1.2.0",
+    "version": "Global Cup Prediction v1.2.0",
     "language": "Language",
     "language_sub": "Change the app language"
   },
@@ -135,7 +135,7 @@
     "modes_title": "Game Modes",
     "modes_intro": "Depending on your admin's configuration, the prediction pool can be played in two ways:",
     "mode_a_title": "Option A: Classic",
-    "mode_a_desc": "You must fill in the entire bracket (Groups + Full Bracket) before the first World Cup match starts.",
+    "mode_a_desc": "You must fill in the entire bracket (Groups + Full Bracket) before the first tournament match starts.",
     "mode_b_title": "Option B: By Phases",
     "mode_b_desc": "Phases open round by round. You have 24-48h to predict the next one with the actual qualifiers.",
     "note_label": "Note:",
@@ -207,7 +207,7 @@
     "title_test": "Results Control",
     "title_official": "Official Results",
     "subtitle_test": "Simulation and phase management panel active.",
-    "subtitle_official": "Follow the World Cup and check the hall of fame.",
+    "subtitle_official": "Follow the tournament and check the hall of fame.",
     "groups_tab": "Groups",
     "knockout_tab": "Knockout",
     "loading": "Loading results...",
@@ -242,14 +242,14 @@
     "no_predictions": "No predictions to show",
     "load_error": "Could not load the prediction wall",
     "locked_title": "Hidden Predictions",
-    "locked_desc": "You'll be able to see what others have picked once the first World Cup match starts.",
+    "locked_desc": "You'll be able to see what others have picked once the first tournament match starts.",
     "match_label": "Match {{num}}:"
   },
   "profile": {
     "ai_config_title": "Configure your AI Profile",
     "ai_config_subtitle": "Customise how the Agent interacts with you",
     "nickname_label": "Nickname (What the AI will call you)",
-    "nickname_placeholder": "E.g. The World Cup Guru",
+    "nickname_placeholder": "E.g. The Football Guru",
     "humor_label": "AI Humor Style",
     "humor_sarcastic": "Sarcastic and biting",
     "humor_friendly": "Fun and friendly",
@@ -304,7 +304,7 @@
     "members_title": "Member Management",
     "members_desc": "Add players, remove members or link WhatsApp.",
     "reset_title": "Test Zone: Reset",
-    "reset_desc": "Delete all predictions and restart the World Cup (Testing only).",
+    "reset_desc": "Delete all predictions and restart the tournament (Testing only).",
     "reset_confirm_title": "Reset Group",
     "reset_confirm_msg": "Are you sure? ALL predictions will be deleted and the tournament will be reset for this group. This action cannot be undone.",
     "reset_yes": "Yes, Reset",
