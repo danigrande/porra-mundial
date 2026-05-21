@@ -11,8 +11,8 @@ export default function MenuScreen() {
   const isAdmin = auth?.isAdmin || false;
   const { t } = useTranslation();
   
-  const PRIVACY_URL = 'https://tu-app.onrender.com/legal/privacy';
-  const TERMS_URL = 'https://tu-app.onrender.com/legal/terms';
+  const PRIVACY_URL = 'https://porra-mundial.onrender.com/legal/privacy';
+  const TERMS_URL = 'https://porra-mundial.onrender.com/legal/terms';
 
   const handleLogout = () => {
     Alert.alert(t('menu.logout_confirm_title'), t('menu.logout_confirm'), [
