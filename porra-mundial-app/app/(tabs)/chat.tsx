@@ -338,8 +338,12 @@ export default function ChatScreen() {
         console.warn('[Chat] ⚠️ La API devolvió 0 jugadores para este grupo');
       }
 
-      // Añadir la opción "@todos" manualmente
-      setGroupMembers([{ name: 'todos', phone: 'all', nickname: 'Todos' }, ...players]);
+      // Añadir las opciones "@Agente" y "@Todos" manualmente
+      setGroupMembers([
+        { name: 'agente', phone: 'bot', nickname: 'Agente' },
+        { name: 'todos', phone: 'all', nickname: 'Todos' },
+        ...players
+      ]);
     } catch (e) {
       console.error('Error cargando miembros:', e);
     }

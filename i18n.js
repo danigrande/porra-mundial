@@ -279,11 +279,11 @@ const translations = {
       "confirm_pin": "Confirmar PIN",
       "update_pin_btn": "Actualizar PIN",
       "ai_personality": "Personalidad de la IA (Idioma)",
-      "personality_andres": "🇪🇸 Andrés Montes (Español - Divertido)",
-      "personality_pedrerol": "🇪🇸 Josep Pedrerol (Español - Dramático)",
-      "personality_roncero": "🇪🇸 Tomás Roncero (Español - Pasional)",
-      "personality_vader": "🇬🇧 Darth Vader (English - Imperial)",
-      "personality_trump": "🇬🇧 Donald Trump (English - Bombastic)",
+      "personality_andres": "Andrés Montes (Divertido)",
+      "personality_pedrerol": "Josep Pedrerol (Dramático)",
+      "personality_roncero": "Tomás Roncero (Pasional)",
+      "personality_vader": "Darth Vader (Imperial)",
+      "personality_trump": "Donald Trump (Bombastic)",
       "success": "¡Perfil guardado!",
       "pin_success": "PIN actualizado"
     }
@@ -566,11 +566,11 @@ const translations = {
       "confirm_pin": "Confirm PIN",
       "update_pin_btn": "Update PIN",
       "ai_personality": "AI Personality (Language)",
-      "personality_andres": "🇪🇸 Andrés Montes (Spanish - Fun)",
-      "personality_pedrerol": "🇪🇸 Josep Pedrerol (Spanish - Dramatic)",
-      "personality_roncero": "🇪🇸 Tomás Roncero (Spanish - Passionate)",
-      "personality_vader": "🇬🇧 Darth Vader (English - Imperial)",
-      "personality_trump": "🇬🇧 Donald Trump (English - Bombastic)",
+      "personality_andres": "Andrés Montes (Fun)",
+      "personality_pedrerol": "Josep Pedrerol (Dramatic)",
+      "personality_roncero": "Tomás Roncero (Passionate)",
+      "personality_vader": "Darth Vader (Imperial)",
+      "personality_trump": "Donald Trump (Bombastic)",
       "success": "Profile saved!",
       "pin_success": "PIN updated"
     }

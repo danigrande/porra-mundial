@@ -81,6 +81,16 @@
 
     .status-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); display: block; }
     .status-error { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); display: block; }
+
+    .custom-select { position: relative; width: 100%; }
+    .custom-select-trigger { width: 100%; padding: 0.8rem 1rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 1rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s; }
+    .custom-select-trigger:focus, .custom-select.open .custom-select-trigger { border-color: var(--accent-blue); outline: none; }
+    .custom-options { position: absolute; top: 100%; left: 0; right: 0; background: #151a3a; border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-md); margin-top: 4px; z-index: 10; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); max-height: 250px; overflow-y: auto; }
+    .custom-select.open .custom-options { display: block; }
+    .custom-option { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-weight: 600; transition: background 0.2s, color 0.2s; }
+    .custom-option:hover, .custom-option.selected { background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
+    .custom-option:last-child { border-bottom: none; }
+    .custom-option-icon { font-size: 1.2rem; }
   </style>
 </head>
 <body>
@@ -125,24 +135,38 @@
 
         <div class="form-group">
           <label for="humor_style" data-i18n="profile.humor_style">Estilo de Humor de la IA</label>
-          <select id="humor_style" class="form-control">
-            <option value="Sarcástico y mordaz" data-i18n="profile.humor_sarcastic">Sarcástico y mordaz (Nivel Pro)</option>
-            <option value="Divertido y amigable" data-i18n="profile.humor_friendly">Divertido y amigable</option>
-            <option value="Épico y motivador" data-i18n="profile.humor_epic">Épico y motivador</option>
-            <option value="Analítico y serio" data-i18n="profile.humor_serious">Analítico y serio</option>
-            <option value="Troll total" data-i18n="profile.humor_troll">Troll total 😈</option>
-          </select>
+          <input type="hidden" id="humor_style" value="Divertido y amigable">
+          <div class="custom-select" id="custom-humor" tabindex="0">
+            <div class="custom-select-trigger">
+              <span class="trigger-text"><span class="custom-option-icon">😊</span> <span data-i18n="profile.humor_friendly">Divertido y amigable</span></span>
+              <span>▼</span>
+            </div>
+            <div class="custom-options">
+              <div class="custom-option" data-value="Sarcástico y mordaz"><span class="custom-option-icon">🎭</span><span data-i18n="profile.humor_sarcastic">Sarcástico y mordaz</span></div>
+              <div class="custom-option selected" data-value="Divertido y amigable"><span class="custom-option-icon">😊</span><span data-i18n="profile.humor_friendly">Divertido y amigable</span></div>
+              <div class="custom-option" data-value="Épico y motivador"><span class="custom-option-icon">🔥</span><span data-i18n="profile.humor_epic">Épico y motivador</span></div>
+              <div class="custom-option" data-value="Analítico y serio"><span class="custom-option-icon">📊</span><span data-i18n="profile.humor_serious">Analítico y serio</span></div>
+              <div class="custom-option" data-value="Troll total"><span class="custom-option-icon">😈</span><span data-i18n="profile.humor_troll">Troll total 😈</span></div>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
           <label for="ai_personality" data-i18n="profile.ai_personality">Personalidad de la IA (Idioma)</label>
-          <select id="ai_personality" class="form-control">
-            <option value="andres_montes" data-i18n="profile.personality_andres">🇪🇸 Andrés Montes (Español - Divertido)</option>
-            <option value="pedrerol" data-i18n="profile.personality_pedrerol">🇪🇸 Josep Pedrerol (Español - Dramático)</option>
-            <option value="roncero" data-i18n="profile.personality_roncero">🇪🇸 Tomás Roncero (Español - Pasional)</option>
-            <option value="darth_vader" data-i18n="profile.personality_vader">🇬🇧 Darth Vader (English - Imperial)</option>
-            <option value="trump" data-i18n="profile.personality_trump">🇬🇧 Donald Trump (English - Bombastic)</option>
-          </select>
+          <input type="hidden" id="ai_personality" value="andres_montes">
+          <div class="custom-select" id="custom-personality" tabindex="0">
+            <div class="custom-select-trigger">
+              <span class="trigger-text"><span class="custom-option-icon">🇪🇸</span> <span data-i18n="profile.personality_andres">Andrés Montes (Divertido)</span></span>
+              <span>▼</span>
+            </div>
+            <div class="custom-options">
+              <div class="custom-option selected" data-value="andres_montes"><span class="custom-option-icon">🇪🇸</span><span data-i18n="profile.personality_andres">Andrés Montes (Divertido)</span></div>
+              <div class="custom-option" data-value="pedrerol"><span class="custom-option-icon">🇪🇸</span><span data-i18n="profile.personality_pedrerol">Josep Pedrerol (Dramático)</span></div>
+              <div class="custom-option" data-value="roncero"><span class="custom-option-icon">🇪🇸</span><span data-i18n="profile.personality_roncero">Tomás Roncero (Pasional)</span></div>
+              <div class="custom-option" data-value="darth_vader"><span class="custom-option-icon">🇬🇧</span><span data-i18n="profile.personality_vader">Darth Vader (Imperial)</span></div>
+              <div class="custom-option" data-value="trump"><span class="custom-option-icon">🇬🇧</span><span data-i18n="profile.personality_trump">Donald Trump (Bombastic)</span></div>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -201,6 +225,55 @@
     let currentUser = checkAuth();
     initOnboarding('about_user.html');
 
+    // Custom Select Logic
+    let syncHumor, syncPersonality;
+    function setupCustomSelect(selectId, inputId) {
+      const select = document.getElementById(selectId);
+      const input = document.getElementById(inputId);
+      if (!select || !input) return null;
+
+      const trigger = select.querySelector('.custom-select-trigger');
+      const options = select.querySelectorAll('.custom-option');
+      const triggerText = select.querySelector('.trigger-text');
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.custom-select').forEach(s => {
+          if (s !== select) s.classList.remove('open');
+        });
+        select.classList.toggle('open');
+      });
+
+      options.forEach(opt => {
+        opt.addEventListener('click', () => {
+          options.forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          input.value = opt.getAttribute('data-value');
+          triggerText.innerHTML = opt.innerHTML;
+          select.classList.remove('open');
+        });
+      });
+
+      function syncUI() {
+        const val = input.value;
+        const selectedOpt = select.querySelector(`.custom-option[data-value="${val}"]`);
+        if (selectedOpt) {
+          options.forEach(o => o.classList.remove('selected'));
+          selectedOpt.classList.add('selected');
+          triggerText.innerHTML = selectedOpt.innerHTML;
+        }
+      }
+      return syncUI;
+    }
+
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.custom-select').forEach(s => s.classList.remove('open'));
+    });
+
+    // Initialize dropdowns
+    syncHumor = setupCustomSelect('custom-humor', 'humor_style');
+    syncPersonality = setupCustomSelect('custom-personality', 'ai_personality');
+
     async function loadProfile() {
       try {
         // Mostrar el teléfono del localStorage (readonly)
@@ -220,6 +293,9 @@
           document.getElementById('ai_personality').value = info.ai_personality || 'andres_montes';
           document.getElementById('likes').value = (info.likes || []).join(', ');
           document.getElementById('dislikes').value = (info.dislikes || []).join(', ');
+          
+          if (syncHumor) syncHumor();
+          if (syncPersonality) syncPersonality();
         }
       } catch (e) {
         console.error("Error al cargar info:", e);
