@@ -4,6 +4,11 @@ import { useRouter, Stack } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+interface Member {
+  name: string;
+  phone?: string;
+  nickname?: string;
+}
 
 export default function MembersManagement() {
   const router = useRouter();
@@ -11,7 +16,7 @@ export default function MembersManagement() {
   const groupName = auth?.currentGroup || '';
 
   const [loading, setLoading] = useState(true);
-  const [members, setMembers] = useState<string[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [adding, setAdding] = useState(false);
@@ -23,7 +28,17 @@ export default function MembersManagement() {
   async function fetchMembers() {
     try {
       const res = await api.getPlayers(groupName);
-      setMembers(res || []);
+      // Ensure we store an array of Member objects
+      if (Array.isArray(res)) {
+        const normalized = res.map(item =>
+          typeof item === 'string'
+            ? { name: item }
+            : { name: item.name, phone: item.phone, nickname: item.nickname }
+        );
+        setMembers(normalized);
+      } else {
+        setMembers([]);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -104,14 +119,16 @@ export default function MembersManagement() {
           {loading ? (
             <ActivityIndicator color="#f5a623" style={{marginTop: 20}} />
           ) : (
-            members.map(m => (
-              <View key={m} style={styles.memberRow}>
+            members.map(member => (
+              <View key={member.phone || member.name} style={styles.memberRow}>
                 <View>
-                  <Text style={styles.memberName}>{m}</Text>
-                  {m === auth?.name && <Text style={styles.meTag}>Tú (Admin)</Text>}
+                  <Text style={styles.memberName}>{member.name}</Text>
+                  {member.phone && <Text style={styles.memberName}>📞 {member.phone}</Text>}
+                  {member.nickname && <Text style={styles.memberName}>"{member.nickname}"</Text>}
+                  {member.name === auth?.name && <Text style={styles.meTag}>Tú (Admin)</Text>}
                 </View>
-                {m !== auth?.name && (
-                  <TouchableOpacity onPress={() => handleRemove(m)}>
+                {member.name !== auth?.name && (
+                  <TouchableOpacity onPress={() => handleRemove(member.name)}>
                     <Ionicons name="trash-outline" size={20} color="#ef4444" />
                   </TouchableOpacity>
                 )}

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   likes: [{ type: String }],
   dislikes: [{ type: String }],
   humor_style: { type: String, default: 'Divertido y amigable' },
+  ai_personality: { type: String, default: 'andres_montes' },
   groups: [{ type: String }],
   isAdminOf: [{ type: String }], // Grupos de los que es admin
   notificationPreference: { 

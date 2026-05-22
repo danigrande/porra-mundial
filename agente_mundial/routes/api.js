@@ -387,6 +387,7 @@ router.get('/profile', async (req, res) => {
             likes: user.likes || [],
             dislikes: user.dislikes || [],
             humor_style: user.humor_style || 'Divertido y amigable',
+            ai_personality: user.ai_personality || 'andres_montes',
             nickname: user.nickname || user.name,
             notificationPreference: user.notificationPreference || 'all'
         }));
@@ -412,6 +413,7 @@ router.post('/profile', async (req, res) => {
                     likes: profile.likes || [],
                     dislikes: profile.dislikes || [],
                     humor_style: profile.humor_style || 'Divertido y amigable',
+                    ai_personality: profile.ai_personality || 'andres_montes',
                     notificationPreference: profile.notificationPreference || 'all'
                 }
             },
@@ -626,6 +628,7 @@ router.get('/groups/:groupName/profiles', async (req, res) => {
                 likes: user.likes || [],
                 dislikes: user.dislikes || [],
                 humor_style: user.humor_style || 'Divertido y amigable',
+                ai_personality: user.ai_personality || 'andres_montes',
                 nickname: user.nickname || user.name
             };
         });

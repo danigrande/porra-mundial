@@ -30,6 +30,25 @@ export default function ProfileScreen() {
     { id: 'Analítico y serio', icon: '📊' },
     { id: 'Troll total', icon: '😈' }
   ];
+  // Localized labels for each humor option (ids remain in Spanish for backend)
+  const humorLabels: Record<string, string> = {
+    'Sarcástico y mordaz': t('profile.humor_sarcastic'),
+    'Divertido y amigable': t('profile.humor_friendly'),
+    'Épico y motivador': t('profile.humor_epic'),
+    'Analítico y serio': t('profile.humor_analytical'),
+    'Troll total': t('profile.humor_troll'),
+  };
+
+  // AI Personality State
+  const [aiPersonality, setAiPersonality] = useState('andres_montes');
+  const [showPersonalityMenu, setShowPersonalityMenu] = useState(false);
+  const personalityOptions = [
+    { id: 'andres_montes', nameKey: 'profile.personality_andres', icon: '🇪🇸' },
+    { id: 'pedrerol', nameKey: 'profile.personality_pedrerol', icon: '🇪🇸' },
+    { id: 'roncero', nameKey: 'profile.personality_roncero', icon: '🇪🇸' },
+    { id: 'darth_vader', nameKey: 'profile.personality_vader', icon: '🇬🇧' },
+    { id: 'trump', nameKey: 'profile.personality_trump', icon: '🇬🇧' }
+  ];
 
   // PIN Change State
   const [oldPin, setOldPin] = useState('');
@@ -45,6 +64,7 @@ export default function ProfileScreen() {
       .then(data => {
         setNickname(data.nickname || auth.name);
         setHumorStyle(data.humor_style || 'Divertido y amigable');
+        setAiPersonality(data.ai_personality || 'andres_montes');
         setLikes((data.likes || []).join(', '));
         setDislikes((data.dislikes || []).join(', '));
       })
@@ -63,6 +83,7 @@ export default function ProfileScreen() {
       await api.updateProfile(auth.phone, auth.currentGroup, {
         nickname,
         humor_style: humorStyle,
+        ai_personality: aiPersonality,
         likes: likesArray,
         dislikes: dislikesArray,
       });
@@ -181,7 +202,7 @@ export default function ProfileScreen() {
               onPress={() => setShowHumorMenu(!showHumorMenu)}
             >
               <Text style={styles.comboTriggerText}>
-                {humorOptions.find(o => o.id === humorStyle)?.icon || '😊'} {humorStyle}
+                {humorOptions.find(o => o.id === humorStyle)?.icon || '😊'} {humorLabels[humorStyle] || humorStyle}
               </Text>
               <Ionicons name={showHumorMenu ? 'chevron-up' : 'chevron-down'} size={20} color="#64748b" />
             </TouchableOpacity>
@@ -205,7 +226,46 @@ export default function ProfileScreen() {
                       styles.comboItemText,
                       humorStyle === option.id && styles.comboItemTextActive
                     ]}>
-                      {option.id}
+                      {humorLabels[option.id] || option.id}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>{t('profile.personality_label')}</Text>
+            <TouchableOpacity 
+              style={styles.comboTrigger}
+              onPress={() => setShowPersonalityMenu(!showPersonalityMenu)}
+            >
+              <Text style={styles.comboTriggerText}>
+                {personalityOptions.find(o => o.id === aiPersonality)?.icon || '🇪🇸'} {t(personalityOptions.find(o => o.id === aiPersonality)?.nameKey || '')}
+              </Text>
+              <Ionicons name={showPersonalityMenu ? 'chevron-up' : 'chevron-down'} size={20} color="#64748b" />
+            </TouchableOpacity>
+
+            {showPersonalityMenu && (
+              <View style={styles.comboMenu}>
+                {personalityOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={[
+                      styles.comboItem,
+                      aiPersonality === option.id && styles.comboItemActive
+                    ]}
+                    onPress={() => {
+                      setAiPersonality(option.id);
+                      setShowPersonalityMenu(false);
+                    }}
+                  >
+                    <Text style={styles.comboItemIcon}>{option.icon}</Text>
+                    <Text style={[
+                      styles.comboItemText,
+                      aiPersonality === option.id && styles.comboItemTextActive
+                    ]}>
+                      {t(option.nameKey)}
                     </Text>
                   </TouchableOpacity>
                 ))}

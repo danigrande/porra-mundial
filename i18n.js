@@ -278,6 +278,12 @@ const translations = {
       "new_pin": "Nuevo PIN (4 dígitos)",
       "confirm_pin": "Confirmar PIN",
       "update_pin_btn": "Actualizar PIN",
+      "ai_personality": "Personalidad de la IA (Idioma)",
+      "personality_andres": "🇪🇸 Andrés Montes (Español - Divertido)",
+      "personality_pedrerol": "🇪🇸 Josep Pedrerol (Español - Dramático)",
+      "personality_roncero": "🇪🇸 Tomás Roncero (Español - Pasional)",
+      "personality_vader": "🇬🇧 Darth Vader (English - Imperial)",
+      "personality_trump": "🇬🇧 Donald Trump (English - Bombastic)",
       "success": "¡Perfil guardado!",
       "pin_success": "PIN actualizado"
     }
@@ -559,6 +565,12 @@ const translations = {
       "new_pin": "New PIN (4 digits)",
       "confirm_pin": "Confirm PIN",
       "update_pin_btn": "Update PIN",
+      "ai_personality": "AI Personality (Language)",
+      "personality_andres": "🇪🇸 Andrés Montes (Spanish - Fun)",
+      "personality_pedrerol": "🇪🇸 Josep Pedrerol (Spanish - Dramatic)",
+      "personality_roncero": "🇪🇸 Tomás Roncero (Spanish - Passionate)",
+      "personality_vader": "🇬🇧 Darth Vader (English - Imperial)",
+      "personality_trump": "🇬🇧 Donald Trump (English - Bombastic)",
       "success": "Profile saved!",
       "pin_success": "PIN updated"
     }

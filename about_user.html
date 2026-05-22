@@ -135,6 +135,17 @@
         </div>
 
         <div class="form-group">
+          <label for="ai_personality" data-i18n="profile.ai_personality">Personalidad de la IA (Idioma)</label>
+          <select id="ai_personality" class="form-control">
+            <option value="andres_montes" data-i18n="profile.personality_andres">🇪🇸 Andrés Montes (Español - Divertido)</option>
+            <option value="pedrerol" data-i18n="profile.personality_pedrerol">🇪🇸 Josep Pedrerol (Español - Dramático)</option>
+            <option value="roncero" data-i18n="profile.personality_roncero">🇪🇸 Tomás Roncero (Español - Pasional)</option>
+            <option value="darth_vader" data-i18n="profile.personality_vader">🇬🇧 Darth Vader (English - Imperial)</option>
+            <option value="trump" data-i18n="profile.personality_trump">🇬🇧 Donald Trump (English - Bombastic)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="likes" data-i18n="profile.likes">Cosas que te gustan</label>
           <textarea id="likes" class="form-control" rows="2" placeholder="Ej: Real Madrid..." data-i18n-placeholder="profile.likes_placeholder"></textarea>
           <p class="info-note"><span data-i18n="profile.likes_note">La IA te felicitará cuando algo de esto ocurra.</span></p>
@@ -206,6 +217,7 @@
           const info = res.data;
           document.getElementById('nickname').value = info.nickname || '';
           document.getElementById('humor_style').value = info.humor_style || 'Divertido y amigable';
+          document.getElementById('ai_personality').value = info.ai_personality || 'andres_montes';
           document.getElementById('likes').value = (info.likes || []).join(', ');
           document.getElementById('dislikes').value = (info.dislikes || []).join(', ');
         }
@@ -226,6 +238,7 @@
       const profileData = {
         nickname: document.getElementById('nickname').value,
         humor_style: document.getElementById('humor_style').value,
+        ai_personality: document.getElementById('ai_personality').value,
         likes: document.getElementById('likes').value.split(',').map(s => s.trim()).filter(s => s),
         dislikes: document.getElementById('dislikes').value.split(',').map(s => s.trim()).filter(s => s)
       };
