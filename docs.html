@@ -190,13 +190,14 @@
     </div>
 
     <div class="diagram-box">
-      <div class="node node-arrow" style="border-color: #25D366;">WhatsApp (Usuario envía mensaje)</div>
-      <div class="node node-arrow">Bot en Render (Baileys)</div>
-      <div class="node node-arrow" style="border-color: var(--accent-ai);">Groq API (La IA procesa y genera respuesta)</div>
-      <div class="node" style="border-color: #25D366;">WhatsApp (Bot responde en el grupo)</div>
+      <div class="node node-arrow" style="border-color: #38bdf8;">Web / App iOS / Android (Usuario envía mensaje en el chat)</div>
+      <div class="node node-arrow">API en Render (Node.js + WebSockets)</div>
+      <div class="node node-arrow" style="border-color: var(--accent-db);">Sistema RAG (Extrae historial del chat de MongoDB)</div>
+      <div class="node node-arrow" style="border-color: var(--accent-ai);">Groq API (La IA procesa mensaje + contexto y genera respuesta)</div>
+      <div class="node" style="border-color: #38bdf8;">Web / App iOS / Android (Actualización en tiempo real)</div>
       
-      <div style="margin-top: 20px; font-size: 0.75rem; color: var(--text-muted);">
-        * En cada paso, el Bot consulta a <strong>MongoDB</strong> para saber quién eres y cuántos puntos tienes.
+      <div style="margin-top: 20px; font-size: 0.75rem; color: #94a3b8;">
+        * Todos los mensajes se guardan en <strong>MongoDB</strong>. El RAG consulta la base de datos para darle memoria a la IA.
       </div>
     </div>
 
@@ -206,15 +207,15 @@
 
     <div class="tech-grid">
       <div class="tech-card">
-        <span class="tech-badge badge-core">WhatsApp Socket</span>
-        <h3>Baileys Engine</h3>
-        <p>A diferencia de otras soluciones que usan navegadores ocultos (muy lentos), Baileys se conecta directamente a los servidores de WhatsApp mediante WebSockets.</p>
+        <span class="tech-badge badge-core">Cross-Platform Apps</span>
+        <h3>React Native (Expo)</h3>
+        <p>Aplicaciones multiplataforma para Web, iOS y Android que ofrecen la mejor experiencia de usuario y un chat integrado fluido.</p>
         <div class="tech-details">
           <strong>¿Por qué es clave?</strong>
           <ul class="check-list">
-            <li>Soporta multi-dispositivo (el bot es un "PC" más).</li>
-            <li>Es extremadamente ligero y rápido.</li>
-            <li>Gestiona el cifrado de extremo a extremo automáticamente.</li>
+            <li>Un solo código base para todas las plataformas.</li>
+            <li>Conexión por WebSockets para el chat en tiempo real.</li>
+            <li>Experiencia de usuario premium e inmersiva en cualquier dispositivo.</li>
           </ul>
         </div>
       </div>
@@ -266,13 +267,13 @@
       <div class="tech-card">
         <span class="tech-badge badge-core">Backend Hosting</span>
         <h3>Render.com</h3>
-        <p>Aquí reside el "motor" Node.js. A diferencia de Vercel (que es para webs estáticas), Render permite procesos continuos como la conexión de WhatsApp.</p>
+        <p>Aquí reside el "motor" Node.js. Provee la API REST y los WebSockets necesarios para que las apps móviles funcionen en tiempo real.</p>
         <div class="tech-details">
           <strong>¿Por qué es clave?</strong>
           <ul class="check-list">
-            <li>Mantiene al bot escuchando 24/7.</li>
-            <li>Gestiona el servidor de la API que usa la web.</li>
-            <li>Manejo de variables de entorno para la sesión de WhatsApp.</li>
+            <li>Mantiene el servicio online 24/7.</li>
+            <li>Gestiona las conexiones WebSocket de los usuarios.</li>
+            <li>Conecta la base de datos con la IA y las apps móviles.</li>
           </ul>
         </div>
       </div>
@@ -280,7 +281,7 @@
       <div class="tech-card">
         <span class="tech-badge badge-ai">Memoria Semántica</span>
         <h3>Sistema RAG</h3>
-        <p>RAG significa "Generación Aumentada por Recuperación". Evita que la IA "alucine" sobre lo que ha pasado en el grupo de WhatsApp.</p>
+        <p>RAG significa "Generación Aumentada por Recuperación". Evita que la IA "alucine" sobre lo que ha pasado en los chats de la aplicación.</p>
         <div class="tech-details">
           <strong>¿Cómo funciona?</strong>
           <ul class="check-list">
@@ -349,11 +350,11 @@
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 1rem;">
           <div>
-            <strong>Calendario de Mayo (Pruebas)</strong>
+            <strong>Calendario de Mayo/Junio (Pruebas)</strong>
             <ul class="check-list">
-              <li><strong>Compresión Temporal:</strong> El mundial se simula en 10 días (18-28 de Mayo).</li>
+              <li><strong>Compresión Temporal:</strong> El torneo se simula en 11 días (25 de Mayo al 5 de Junio).</li>
               <li><strong>Auto-Populate:</strong> Los resultados se inyectan solos según el calendario.</li>
-              <li><strong>WhatsApp Dry-Run:</strong> Los bots lanzan avisos reales para validar el timing.</li>
+              <li><strong>Simulación de Eventos:</strong> El sistema genera notificaciones push y mensajes simulados para validar el timing.</li>
             </ul>
           </div>
           <div>
@@ -377,9 +378,9 @@
       <p>Para la tranquilidad de todos, el sistema sigue estas reglas de privacidad:</p>
       <ul style="padding-left: 1.5rem; font-size: 0.9rem; color: #cbd5e1;">
         <li><strong>No Entrenamiento:</strong> Groq y Hugging Face NO usan nuestros mensajes para entrenar sus modelos.</li>
-        <li><strong>Aislamiento por Grupo:</strong> Aunque el bot está en varios grupos, los datos de un grupo jamás se mezclan con los de otro.</li>
+        <li><strong>Aislamiento por Grupo:</strong> Los datos y predicciones de un grupo jamás se mezclan con los de otro.</li>
         <li><strong>Logs Efímeros:</strong> Los logs de mensajes en los proveedores de IA se borran automáticamente tras 30 días.</li>
-        <li><strong>Seguridad en Tránsito:</strong> Toda comunicación entre el Bot y las APIs externas está cifrada (SSL/TLS).</li>
+        <li><strong>Seguridad en Tránsito:</strong> Toda comunicación entre las apps y el backend está cifrada (SSL/TLS).</li>
       </ul>
     </div>
 
@@ -388,9 +389,9 @@
     </div>
 
     <div style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 16px; font-size: 0.9rem;">
-      <p><strong>Node.js:</strong> El cerebro del servidor que une la base de datos, la IA y WhatsApp.</p>
+      <p><strong>Node.js:</strong> El cerebro del servidor que une la base de datos, la IA y las aplicaciones móviles.</p>
       <p><strong>Variable de Entorno:</strong> "Secretos" (como API Keys) guardados en el servidor, fuera del código visible.</p>
-      <p><strong>Render:</strong> La plataforma que mantiene el bot encendido y funcionando 24/7.</p>
+      <p><strong>Render:</strong> La plataforma que mantiene el backend encendido y funcionando 24/7.</p>
     </div>
 
     <footer style="margin-top: 5rem; text-align: center; color: #475569; font-size: 0.8rem;">
