@@ -260,6 +260,7 @@
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/libphonenumber-js/1.11.1/libphonenumber-js.min.js"></script>
   <script src="i18n.js"></script>
   <script src="web_config.js"></script>
   <script type="module">
@@ -446,12 +447,13 @@
       const playerName = nameInput.value.trim();
       const rawPhone = phoneInput.value.replace(/[^0-9]/g, '');
       const fullPhone = countryCode + rawPhone;
+      const fullPhoneWithPlus = '+' + fullPhone;
 
       if (!playerName) {
         showToast('❌ Por favor, introduce un nombre');
         return;
       }
-      if (rawPhone.length < 6) {
+      if (rawPhone.length < 5 || (typeof libphonenumber !== 'undefined' && !libphonenumber.isValidPhoneNumber(fullPhoneWithPlus))) {
         showToast('❌ Por favor, introduce un teléfono válido');
         return;
       }

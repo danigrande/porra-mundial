@@ -4,6 +4,29 @@ import { useRouter, Stack } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { isValidPhoneNumber } from 'libphonenumber-js';
+
+const COUNTRIES = [
+  { code: '34', flag: '🇪🇸', name: 'España' },
+  { code: '44', flag: '🇬🇧', name: 'Reino Unido' },
+  { code: '1', flag: '🇺🇸', name: 'EE.UU.' },
+  { code: '52', flag: '🇲🇽', name: 'México' },
+  { code: '54', flag: '🇦🇷', name: 'Argentina' },
+  { code: '55', flag: '🇧🇷', name: 'Brasil' },
+  { code: '56', flag: '🇨🇱', name: 'Chile' },
+  { code: '57', flag: '🇨🇴', name: 'Colombia' },
+  { code: '51', flag: '🇵🇪', name: 'Perú' },
+  { code: '58', flag: '🇻🇪', name: 'Venezuela' },
+  { code: '593', flag: '🇪🇨', name: 'Ecuador' },
+  { code: '598', flag: '🇺🇾', name: 'Uruguay' },
+  { code: '33', flag: '🇫🇷', name: 'Francia' },
+  { code: '49', flag: '🇩🇪', name: 'Alemania' },
+  { code: '39', flag: '🇮🇹', name: 'Italia' },
+  { code: '351', flag: '🇵🇹', name: 'Portugal' },
+  { code: '31', flag: '🇳🇱', name: 'Países Bajos' },
+  { code: '212', flag: '🇲🇦', name: 'Marruecos' },
+];
 interface Member {
   name: string;
   phone?: string;
@@ -19,6 +42,7 @@ export default function MembersManagement() {
   const [members, setMembers] = useState<Member[]>([]);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('34');
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -47,13 +71,23 @@ export default function MembersManagement() {
   }
 
   async function handleAdd() {
-    if (!newName || !newPhone) {
+    const rawPhone = newPhone.replace(/[^0-9]/g, '');
+    const fullPhone = countryCode + rawPhone;
+    const fullPhoneWithPlus = '+' + fullPhone;
+
+    if (!newName || !rawPhone) {
       Alert.alert('Error', 'Nombre y teléfono son obligatorios');
       return;
     }
+    
+    if (rawPhone.length < 5 || !isValidPhoneNumber(fullPhoneWithPlus)) {
+      Alert.alert('Error', 'Por favor, introduce un teléfono válido');
+      return;
+    }
+
     setAdding(true);
     try {
-      await api.addPlayer(groupName, newName, newPhone);
+      await api.addPlayer(groupName, newName, fullPhone);
       Alert.alert('Éxito', `Jugador ${newName} añadido.`);
       setNewName('');
       setNewPhone('');
@@ -101,14 +135,28 @@ export default function MembersManagement() {
             value={newName}
             onChangeText={setNewName}
           />
-          <TextInput 
-            style={styles.input} 
-            placeholder="Teléfono (ej: 34612345678)" 
-            placeholderTextColor="#64748b"
-            keyboardType="phone-pad"
-            value={newPhone}
-            onChangeText={setNewPhone}
-          />
+          <View style={styles.phoneInputContainer}>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={countryCode}
+                onValueChange={(itemValue) => setCountryCode(itemValue)}
+                style={styles.picker}
+                dropdownIconColor="#fff"
+              >
+                {COUNTRIES.map(c => (
+                  <Picker.Item key={c.code} label={`${c.flag} +${c.code}`} value={c.code} />
+                ))}
+              </Picker>
+            </View>
+            <TextInput 
+              style={[styles.input, { flex: 1, marginBottom: 0, height: 50 }]} 
+              placeholder="Teléfono (ej: 612345678)" 
+              placeholderTextColor="#64748b"
+              keyboardType="phone-pad"
+              value={newPhone}
+              onChangeText={setNewPhone}
+            />
+          </View>
           <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={adding}>
             {adding ? <ActivityIndicator color="#fff" /> : <Text style={styles.addButtonText}>Añadir al Grupo</Text>}
           </TouchableOpacity>
@@ -147,6 +195,9 @@ const styles = StyleSheet.create({
   card: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   cardTitle: { color: '#f5a623', fontSize: 18, fontWeight: '700', marginBottom: 16 },
   input: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 12, color: '#fff', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  phoneInputContainer: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  pickerContainer: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', minWidth: 120, height: 50, overflow: 'hidden' },
+  picker: { color: '#fff', backgroundColor: 'transparent' },
   addButton: { backgroundColor: '#3b82f6', padding: 14, borderRadius: 12, alignItems: 'center' },
   addButtonText: { color: '#fff', fontWeight: '700' },
   section: { marginTop: 10 },
