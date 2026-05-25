@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, FlatList, Platform } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 
 const COUNTRIES = [
@@ -27,6 +26,7 @@ const COUNTRIES = [
   { code: '31', flag: '🇳🇱', name: 'Países Bajos' },
   { code: '212', flag: '🇲🇦', name: 'Marruecos' },
 ];
+
 interface Member {
   name: string;
   phone?: string;
@@ -44,6 +44,9 @@ export default function MembersManagement() {
   const [newPhone, setNewPhone] = useState('');
   const [countryCode, setCountryCode] = useState('34');
   const [adding, setAdding] = useState(false);
+  const [showCountryModal, setShowCountryModal] = useState(false);
+
+  const selectedCountry = COUNTRIES.find(c => c.code === countryCode) || COUNTRIES[0];
 
   useEffect(() => {
     fetchMembers();
@@ -136,20 +139,18 @@ export default function MembersManagement() {
             onChangeText={setNewName}
           />
           <View style={styles.phoneInputContainer}>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={countryCode}
-                onValueChange={(itemValue) => setCountryCode(itemValue)}
-                style={styles.picker}
-                dropdownIconColor="#fff"
-              >
-                {COUNTRIES.map(c => (
-                  <Picker.Item key={c.code} label={`${c.flag} +${c.code}`} value={c.code} />
-                ))}
-              </Picker>
-            </View>
+            <TouchableOpacity 
+              style={styles.countryButton} 
+              onPress={() => setShowCountryModal(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.countryButtonText}>
+                {selectedCountry.flag} +{selectedCountry.code}
+              </Text>
+              <Ionicons name="chevron-down" size={14} color="#94a3b8" />
+            </TouchableOpacity>
             <TextInput 
-              style={[styles.input, { flex: 1, marginBottom: 0, height: 50 }]} 
+              style={[styles.input, styles.phoneInput]} 
               placeholder="Teléfono (ej: 612345678)" 
               placeholderTextColor="#64748b"
               keyboardType="phone-pad"
@@ -185,6 +186,48 @@ export default function MembersManagement() {
           )}
         </View>
       </ScrollView>
+
+      {/* Country Selector Modal */}
+      <Modal
+        visible={showCountryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCountryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar País</Text>
+              <TouchableOpacity onPress={() => setShowCountryModal(false)}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={COUNTRIES}
+              keyExtractor={item => item.code}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.countryRow,
+                    item.code === countryCode && styles.countryRowSelected,
+                  ]}
+                  onPress={() => {
+                    setCountryCode(item.code);
+                    setShowCountryModal(false);
+                  }}
+                >
+                  <Text style={styles.countryRowFlag}>{item.flag}</Text>
+                  <Text style={styles.countryRowName}>{item.name}</Text>
+                  <Text style={styles.countryRowCode}>+{item.code}</Text>
+                  {item.code === countryCode && (
+                    <Ionicons name="checkmark-circle" size={20} color="#3b82f6" style={{ marginLeft: 'auto' }} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -195,14 +238,35 @@ const styles = StyleSheet.create({
   card: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   cardTitle: { color: '#f5a623', fontSize: 18, fontWeight: '700', marginBottom: 16 },
   input: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, padding: 12, color: '#fff', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  phoneInputContainer: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  pickerContainer: { backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', minWidth: 120, height: 50, overflow: 'hidden' },
-  picker: { color: '#fff', backgroundColor: 'transparent' },
-  addButton: { backgroundColor: '#3b82f6', padding: 14, borderRadius: 12, alignItems: 'center' },
+  phoneInputContainer: { flexDirection: 'row', gap: 10, marginBottom: 4 },
+  countryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  countryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  phoneInput: { flex: 1, marginBottom: 0, height: 48 },
+  addButton: { backgroundColor: '#3b82f6', padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 4 },
   addButtonText: { color: '#fff', fontWeight: '700' },
   section: { marginTop: 10 },
   sectionTitle: { color: '#94a3b8', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', marginBottom: 12, marginLeft: 4 },
   memberRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   memberName: { color: '#fff', fontSize: 16, fontWeight: '600' },
   meTag: { color: '#f5a623', fontSize: 12, marginTop: 2 },
+  // Modal styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#151932', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '70%', paddingBottom: Platform.OS === 'ios' ? 34 : 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  countryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20, gap: 12 },
+  countryRowSelected: { backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+  countryRowFlag: { fontSize: 22 },
+  countryRowName: { color: '#fff', fontSize: 16, flex: 1 },
+  countryRowCode: { color: '#94a3b8', fontSize: 15, fontWeight: '600' },
 });
