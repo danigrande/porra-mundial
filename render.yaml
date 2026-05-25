@@ -26,7 +26,7 @@ services:
       - key: API_FOOTBALL_KEY
         sync: false
       - key: DEV_DASHBOARD_KEY
-        value: Lalo1234
+        value: agente-dev-2026
       - key: TEST_MODE
         value: "true"
 
