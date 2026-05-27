@@ -71,11 +71,19 @@ export default function TournamentBanner({ state }: TournamentBannerProps) {
 
         <View style={styles.countdownBox}>
           <Text style={styles.countdownLabel}>
-            {isFinished ? 'ESTADO:' : isClosed ? 'PRÓXIMA VENTANA EN:' : 'CIERRE EN:'}
+            {isFinished ? 'ESTADO:' : isClosed ? 'PRÓXIMA VENTANA:' : 'CIERRE EN:'}
           </Text>
           <Text style={[styles.timerText, isFinished && { color: '#8b949e' }]}>
             {isFinished ? 'FINALIZADO' : timeLeft}
           </Text>
+          {!isFinished && state.deadline && (
+            <Text style={styles.deadlineDate}>
+              {new Date(state.deadline).toLocaleString([], { 
+                day: '2-digit', month: '2-digit', 
+                hour: '2-digit', minute: '2-digit' 
+              })}
+            </Text>
+          )}
         </View>
       </View>
     </View>
@@ -111,26 +119,29 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   phaseInfo: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginRight: 10,
   },
   phaseIcon: {
     fontSize: 28,
   },
   phaseName: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
   },
   phaseStatus: {
     color: '#8b949e',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     marginTop: 2,
   },
   countdownBox: {
     alignItems: 'flex-end',
+    flexShrink: 0,
   },
   countdownLabel: {
     color: '#64748b',
@@ -141,8 +152,14 @@ const styles = StyleSheet.create({
   },
   timerText: {
     color: '#3b82f6',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
+  },
+  deadlineDate: {
+    color: '#8b949e',
+    fontSize: 10,
+    marginTop: 2,
+    fontWeight: '700',
   }
 });

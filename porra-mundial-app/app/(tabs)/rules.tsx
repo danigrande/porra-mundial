@@ -1,11 +1,49 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from '../../i18n/i18n';
+import { getAuth } from '../../stores/authStore';
+import * as api from '../../services/api';
 
 export default function RulesScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const auth = getAuth();
+  const groupName = auth?.currentGroup || '';
+
+  const [rules, setRules] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!groupName) return;
+    
+    api.getGroupRules(groupName)
+      .then(data => {
+        const rulesData = data || {};
+        const parsedRules: Record<string, number> = {};
+        const ruleKeys = [
+          'pts_group_sign', 'pts_group_diff', 'pts_group_exact', 'pts_group_pos', 'pts_group_qualify',
+          'pts_ko_sign', 'pts_ko_diff', 'pts_ko_exact', 'pts_ko_qualify',
+          'pts_honor_champ', 'pts_honor_runner', 'pts_honor_third',
+          'pts_award_gold', 'pts_award_silver', 'pts_award_bronze'
+        ];
+
+        ruleKeys.forEach(key => {
+          parsedRules[key] = rulesData[key] !== undefined ? Number(rulesData[key]) : 10;
+        });
+        
+        setRules(parsedRules);
+      })
+      .catch(e => {
+        console.error("Error loading rules in rules.tsx", e);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [groupName]);
+
+  const formatPts = (val: number | undefined) => val !== undefined ? `+${val}` : '?';
 
   const RuleSection = ({ number, title, children, icon }: any) => (
     <View style={styles.section}>
@@ -26,6 +64,14 @@ export default function RulesScreen() {
       </View>
     </View>
   );
+
+  if (loading) {
+     return (
+       <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
+         <ActivityIndicator size="large" color="#10b981" />
+       </View>
+     );
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -79,24 +125,60 @@ export default function RulesScreen() {
         </View>
       </RuleSection>
 
-      {/* Sección 3: Sistema de Puntuación */}
+      {/* Sección 3: Sistema de Puntuación Combinado */}
       <RuleSection number="2" title={t('rules.scoring_title')}>
-        <Text style={styles.text}>{t('rules.scoring_intro')}</Text>
+        <Text style={styles.text}>A continuación se detallan los puntos configurados para el grupo <Text style={{fontWeight: 'bold', color: '#fff'}}>{groupName}</Text>:</Text>
         
+        <Text style={styles.subHeading}>Fase de Grupos</Text>
         <View style={styles.table}>
           {[
-            { label: t('rules.score_sign'), sub: t('rules.score_sign_sub'), pts: '+10' },
-            { label: t('rules.score_diff'), sub: t('rules.score_diff_sub'), pts: '+10' },
-            { label: t('rules.score_exact'), sub: t('rules.score_exact_sub'), pts: '+10' },
-            { label: t('rules.score_pos'), sub: t('rules.score_pos_sub'), pts: '+5' },
-            { label: t('rules.score_qual'), sub: t('rules.score_qual_sub'), pts: '+5 a +10' },
+            { label: t('rules.score_sign'), sub: t('rules.score_sign_sub'), pts: rules.pts_group_sign },
+            { label: t('rules.score_diff'), sub: t('rules.score_diff_sub'), pts: rules.pts_group_diff },
+            { label: t('rules.score_exact'), sub: t('rules.score_exact_sub'), pts: rules.pts_group_exact },
+            { label: t('rules.score_pos'), sub: t('rules.score_pos_sub'), pts: rules.pts_group_pos },
+            { label: t('rules.score_qual'), sub: t('rules.score_qual_sub'), pts: rules.pts_group_qualify },
           ].map((item, i) => (
             <View key={i} style={styles.tableRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.tableLabel}>{item.label}</Text>
                 <Text style={styles.tableSub}>{item.sub}</Text>
               </View>
-              <Text style={styles.tablePts}>{item.pts} pts</Text>
+              <Text style={styles.tablePts}>{formatPts(item.pts)} pts</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={[styles.subHeading, { marginTop: 20 }]}>Eliminatorias</Text>
+        <View style={styles.table}>
+          {[
+            { label: 'Signo 1X2 KO', sub: 'Acertar ganador o empate', pts: rules.pts_ko_sign },
+            { label: 'Diferencia de Goles KO', sub: 'Acertar diferencia exacta', pts: rules.pts_ko_diff },
+            { label: 'Resultado Exacto KO', sub: 'Acertar resultado completo', pts: rules.pts_ko_exact },
+            { label: 'Pasar de Ronda', sub: 'Acertar quién avanza', pts: rules.pts_ko_qualify },
+          ].map((item, i) => (
+            <View key={i} style={styles.tableRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.tableLabel}>{item.label}</Text>
+                <Text style={styles.tableSub}>{item.sub}</Text>
+              </View>
+              <Text style={styles.tablePts}>{formatPts(item.pts)} pts</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={[styles.subHeading, { marginTop: 20 }]}>{t('rules.awards_title')}</Text>
+        <View style={styles.table}>
+          {[
+            { label: t('rules.award_champ'), pts: rules.pts_honor_champ, color: '#fbbf24' },
+            { label: t('rules.award_runner'), pts: rules.pts_honor_runner, color: '#e2e8f0' },
+            { label: '3º Puesto', pts: rules.pts_honor_third, color: '#b45309' },
+            { label: t('rules.award_gold'), pts: rules.pts_award_gold, color: '#fbbf24' },
+            { label: t('rules.award_silver'), pts: rules.pts_award_silver, color: '#94a3b8' },
+            { label: t('rules.award_bronze'), pts: rules.pts_award_bronze, color: '#b45309' },
+          ].map((item, i) => (
+            <View key={i} style={styles.tableRow}>
+              <Text style={[styles.tableLabel, { color: item.color || '#fff' }]}>{item.label}</Text>
+              <Text style={[styles.tablePts, { color: item.color || '#10b981' }]}>{formatPts(item.pts)} pts</Text>
             </View>
           ))}
         </View>
@@ -109,7 +191,7 @@ export default function RulesScreen() {
         </View>
       </RuleSection>
 
-      {/* Sección 4: Eliminatorias */}
+      {/* Sección 4: Desempates */}
       <RuleSection number="3" title={t('rules.ko_title')}>
         <Text style={styles.text}>{t('rules.ko_intro')}</Text>
         
@@ -127,28 +209,8 @@ export default function RulesScreen() {
         </View>
       </RuleSection>
 
-      {/* Sección 5: Cuadro de Honor */}
-      <RuleSection number="4" title={t('rules.awards_title')}>
-        <Text style={styles.text}>{t('rules.awards_intro')}</Text>
-        
-        <View style={styles.table}>
-          {[
-            { label: t('rules.award_champ'), pts: '+50', color: '#fbbf24' },
-            { label: t('rules.award_runner'), pts: '+30', color: '#e2e8f0' },
-            { label: t('rules.award_gold'), pts: '+25', color: '#fbbf24' },
-            { label: t('rules.award_silver'), pts: '+15', color: '#94a3b8' },
-            { label: t('rules.award_bronze'), pts: '+10', color: '#b45309' },
-          ].map((item, i) => (
-            <View key={i} style={styles.tableRow}>
-              <Text style={[styles.tableLabel, { color: item.color || '#fff' }]}>{item.label}</Text>
-              <Text style={[styles.tablePts, { color: item.color || '#10b981' }]}>{item.pts} pts</Text>
-            </View>
-          ))}
-        </View>
-      </RuleSection>
-
-      {/* Sección 6: Restricciones */}
-      <RuleSection number="5" title={t('rules.restrictions_title')}>
+      {/* Sección 5: Restricciones */}
+      <RuleSection number="4" title={t('rules.restrictions_title')}>
         <View style={styles.list}>
           <View style={styles.listItem}>
             <Ionicons name="close-circle" size={18} color="#ef4444" />
@@ -180,6 +242,15 @@ const styles = StyleSheet.create({
   header: { marginBottom: 30, alignItems: 'center' },
   headerTitle: { fontSize: 32, fontWeight: '900', color: '#fff', textAlign: 'center' },
   headerSubtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', marginTop: 8 },
+  subHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#3b82f6',
+    textTransform: 'uppercase',
+    marginTop: 10,
+    marginBottom: 5,
+    letterSpacing: 1
+  },
   section: { 
     backgroundColor: 'rgba(255,255,255,0.03)', 
     borderRadius: 24, 

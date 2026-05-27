@@ -22,19 +22,19 @@ const REAL_PHASES = [
 ];
 
 const TEST_PHASES = [
-  { id: 'PRE_TOURNAMENT', name: 'Pre-Mundial (TEST)', start: '2026-01-03T00:00:00Z', end: '2026-05-27T10:00:00Z', unlocks: ['groups', 'honor'] },
-  { id: 'GROUP_STAGE', name: 'Fase de Grupos (TEST)', start: '2026-05-27T10:00:00Z', end: '2026-05-28T10:00:00Z', unlocks: [] },
-  { id: 'WAITING_R32', name: 'Ventana 1/16 (TEST)', start: '2026-05-28T10:00:00Z', end: '2026-05-29T10:00:00Z', unlocks: ['r32'] },
-  { id: 'R32_ACTIVE', name: '1/16 Final (TEST)', start: '2026-05-29T10:00:00Z', end: '2026-05-30T10:00:00Z', unlocks: [] },
-  { id: 'WAITING_R16', name: 'Ventana Octavos (TEST)', start: '2026-05-30T10:00:00Z', end: '2026-05-31T10:00:00Z', unlocks: ['r16'] },
-  { id: 'R16_ACTIVE', name: 'Octavos Final (TEST)', start: '2026-05-31T10:00:00Z', end: '2026-06-01T10:00:00Z', unlocks: [] },
-  { id: 'WAITING_QF', name: 'Ventana Cuartos (TEST)', start: '2026-06-01T10:00:00Z', end: '2026-06-02T10:00:00Z', unlocks: ['qf'] },
-  { id: 'QF_ACTIVE', name: 'Cuartos Final (TEST)', start: '2026-06-02T10:00:00Z', end: '2026-06-03T10:00:00Z', unlocks: [] },
-  { id: 'WAITING_SF', name: 'Ventana Semis (TEST)', start: '2026-06-03T10:00:00Z', end: '2026-06-04T10:00:00Z', unlocks: ['sf'] },
-  { id: 'SF_ACTIVE', name: 'Semifinales (TEST)', start: '2026-06-04T10:00:00Z', end: '2026-06-04T22:00:00Z', unlocks: [] },
-  { id: 'WAITING_FINALS', name: 'Ventana Finales (TEST)', start: '2026-06-04T22:00:00Z', end: '2026-06-06T10:00:00Z', unlocks: ['3rd', 'final'] },
-  { id: 'FINALS_ACTIVE', name: 'Final (TEST)', start: '2026-06-06T10:00:00Z', end: '2026-06-07T10:00:00Z', unlocks: [] },
-  { id: 'POST_TOURNAMENT', name: 'Finalizado (TEST)', start: '2026-06-05T10:00:00Z', end: '2030-01-01T00:00:00Z', unlocks: [] },
+  { id: 'PRE_TOURNAMENT', name: 'Pre-Mundial (TEST)', start: '2026-01-03T00:00:00Z', end: '2026-05-28T10:00:00Z', unlocks: ['groups', 'honor'] },
+  { id: 'GROUP_STAGE', name: 'Fase de Grupos (TEST)', start: '2026-05-28T10:00:00Z', end: '2026-05-29T10:00:00Z', unlocks: [] },
+  { id: 'WAITING_R32', name: 'Ventana 1/16 (TEST)', start: '2026-05-29T10:00:00Z', end: '2026-05-30T10:00:00Z', unlocks: ['r32'] },
+  { id: 'R32_ACTIVE', name: '1/16 Final (TEST)', start: '2026-05-30T10:00:00Z', end: '2026-05-31T10:00:00Z', unlocks: [] },
+  { id: 'WAITING_R16', name: 'Ventana Octavos (TEST)', start: '2026-05-31T10:00:00Z', end: '2026-06-01T10:00:00Z', unlocks: ['r16'] },
+  { id: 'R16_ACTIVE', name: 'Octavos Final (TEST)', start: '2026-06-01T10:00:00Z', end: '2026-06-02T10:00:00Z', unlocks: [] },
+  { id: 'WAITING_QF', name: 'Ventana Cuartos (TEST)', start: '2026-06-02T10:00:00Z', end: '2026-06-03T10:00:00Z', unlocks: ['qf'] },
+  { id: 'QF_ACTIVE', name: 'Cuartos Final (TEST)', start: '2026-06-03T10:00:00Z', end: '2026-06-04T10:00:00Z', unlocks: [] },
+  { id: 'WAITING_SF', name: 'Ventana Semis (TEST)', start: '2026-06-04T10:00:00Z', end: '2026-06-05T10:00:00Z', unlocks: ['sf'] },
+  { id: 'SF_ACTIVE', name: 'Semifinales (TEST)', start: '2026-06-05T10:00:00Z', end: '2026-06-05T22:00:00Z', unlocks: [] },
+  { id: 'WAITING_FINALS', name: 'Ventana Finales (TEST)', start: '2026-06-05T22:00:00Z', end: '2026-06-07T10:00:00Z', unlocks: ['3rd', 'final'] },
+  { id: 'FINALS_ACTIVE', name: 'Final (TEST)', start: '2026-06-07T10:00:00Z', end: '2026-06-08T10:00:00Z', unlocks: [] },
+  { id: 'POST_TOURNAMENT', name: 'Finalizado (TEST)', start: '2026-06-08T10:00:00Z', end: '2030-01-01T00:00:00Z', unlocks: [] },
 ];
 
 export const TOURNAMENT_PHASES = process.env.TEST_MODE === 'true' ? TEST_PHASES : REAL_PHASES;
