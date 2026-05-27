@@ -433,8 +433,8 @@ export default function ChatScreen() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.5,
+        allowsEditing: false,
+        quality: 0.8,
       });
 
       if (!result.canceled && result.assets[0].uri) {
@@ -464,6 +464,7 @@ export default function ChatScreen() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [playbackStatus, setPlaybackStatus] = useState({ position: 0, duration: 1 });
   const [soundObject, setSoundObject] = useState<Audio.Sound | null>(null);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const playAudio = async (messageId: string, uri: string) => {
     try {
@@ -764,7 +765,9 @@ export default function ChatScreen() {
             {(item.type === 'text' || !item.type) && renderMessageText(item.text || '')}
 
             {item.type === 'image' && (
-              <Image source={{ uri: item.mediaUrl }} style={styles.messageImage} resizeMode="cover" />
+              <TouchableOpacity onPress={() => setSelectedImageUrl(item.mediaUrl || null)} activeOpacity={0.9}>
+                <Image source={{ uri: item.mediaUrl }} style={styles.messageImage} resizeMode="cover" />
+              </TouchableOpacity>
             )}
 
             {item.type === 'sticker' && (
@@ -821,6 +824,29 @@ export default function ChatScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+
+      {/* Visor de imagen a pantalla completa */}
+      <Modal visible={!!selectedImageUrl} transparent animationType="fade" onRequestClose={() => setSelectedImageUrl(null)}>
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' }}
+          activeOpacity={1}
+          onPress={() => setSelectedImageUrl(null)}
+        >
+          {selectedImageUrl && (
+            <Image
+              source={{ uri: selectedImageUrl }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="contain"
+            />
+          )}
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 8 }}
+            onPress={() => setSelectedImageUrl(null)}
+          >
+            <Ionicons name="close" size={24} color="#fff" />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
       <FlatList
         ref={flatListRef}
         data={uniqueMessages}

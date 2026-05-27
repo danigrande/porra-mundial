@@ -132,6 +132,10 @@ export async function getLeaderboard(groupName: string) {
 export async function resetGroup(groupName: string) {
   return apiFetch('/dev/reset-test', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-key': 'dev_secret_key_123'
+    },
     body: JSON.stringify({ groupName }),
   });
 }
@@ -185,6 +189,10 @@ export async function saveReality(results: any) {
 export async function simulateMatch(matchId: string | number, homeTeam: string, awayTeam: string) {
   return apiFetch('/admin/simulate-match', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-key': 'dev_secret_key_123'
+    },
     body: JSON.stringify({ matchId, homeTeam, awayTeam }),
   });
 }
