@@ -7,6 +7,9 @@ import { SOCKET_URL } from './api';
 
 let socket: Socket | null = null;
 
+// Grupo activo al que hay que re-unirse tras reconexión
+let currentGroup: string | null = null;
+
 export type ChatMessage = {
   _id: string;
   chatId: string;
@@ -23,8 +26,16 @@ export type ChatMessage = {
  * Conecta al servidor de chat con las credenciales del usuario.
  */
 export function connect(phone: string, pin: string): Socket {
-  if (socket?.connected) {
+  // Si ya hay socket activo (conectado o en proceso de reconexión), reutilizarlo
+  if (socket && (socket.connected || socket.active)) {
     return socket;
+  }
+
+  // Si hay un socket en estado inválido, limpiarlo antes de crear uno nuevo
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
   }
 
   socket = io(SOCKET_URL, {
@@ -37,6 +48,11 @@ export function connect(phone: string, pin: string): Socket {
 
   socket.on('connect', () => {
     console.log('✅ Socket.IO conectado');
+    // Bug fix: re-unirse al grupo automáticamente tras cada (re)conexión
+    if (currentGroup) {
+      console.log('[Socket] Re-uniéndose al grupo tras (re)conexión:', currentGroup);
+      socket?.emit('join-group', currentGroup);
+    }
   });
 
   socket.on('connect_error', (err) => {
@@ -55,9 +71,11 @@ export function connect(phone: string, pin: string): Socket {
  */
 export function disconnect() {
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
     socket = null;
   }
+  currentGroup = null;
 }
 
 /**
@@ -69,16 +87,29 @@ export function getSocket(): Socket | null {
 
 /**
  * Unirse a la sala de un grupo para recibir mensajes.
+ * Guarda el grupo actual para poder re-unirse tras reconexiones.
  */
 export function joinGroup(groupName: string) {
+  currentGroup = groupName;
   socket?.emit('join-group', groupName);
 }
 
 /**
  * Enviar un mensaje al grupo (Texto, Imagen, Audio, Sticker o GIF).
+ * Devuelve true si el mensaje se envió, false si el socket no estaba disponible.
  */
-export function sendMessage(groupName: string, text?: string, type: 'text' | 'image' | 'audio' | 'sticker' | 'gif' = 'text', mediaUrl?: string) {
-  socket?.emit('send-message', { groupName, text, type, mediaUrl });
+export function sendMessage(
+  groupName: string,
+  text?: string,
+  type: 'text' | 'image' | 'audio' | 'sticker' | 'gif' = 'text',
+  mediaUrl?: string
+): boolean {
+  if (!socket?.connected) {
+    console.warn('[Socket] sendMessage: socket no conectado, mensaje descartado');
+    return false;
+  }
+  socket.emit('send-message', { groupName, text, type, mediaUrl });
+  return true;
 }
 
 /**

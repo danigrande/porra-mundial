@@ -207,15 +207,24 @@ export function initChatServer(httpServer) {
         }
         
         // 3. Notificación Push a los miembros desconectados
+        const pushText = type === 'sticker' ? '🏷️ Sticker'
+          : type === 'gif' ? '🎉 GIF'
+          : type === 'image' ? '📸 Imagen'
+          : type === 'audio' ? '🎤 Nota de voz'
+          : text?.trim();
         pushService.sendToGroup(
           groupName,
           userName, // Título: nombre de quien escribe
-          text?.trim() || '📸 Imagen/Media',
+          pushText || '📎 Media',
           { screen: 'chat', groupName },
           userId // Excluir al que envía el mensaje
         );
 
-        // 4. Detectar si el mensaje va dirigido al bot
+        // 4. Detectar si el mensaje va dirigido al bot (solo para mensajes de texto)
+        if (type !== 'text' || !text) {
+          return; // Los stickers, gifs, imágenes y audios no se pasan al bot
+        }
+
         const textLower = text.toLowerCase();
         const isBotMention = textLower.includes('@agente') || 
                             textLower.includes('@bot') ||
@@ -223,7 +232,6 @@ export function initChatServer(httpServer) {
                             textLower.startsWith('bot ');
 
         // En grupos: solo responder si se menciona al bot
-        // En chat directo (futuro): siempre responder
         if (isBotMention) {
           // Emitir indicador de "escribiendo..."
           io.to(`group:${groupName}`).emit('bot-typing', { groupName });
@@ -283,10 +291,13 @@ export function initChatServer(httpServer) {
           }
         }
 
-        // 8. Guardar embedding para RAG (fire-and-forget)
-        import('./ragService.js').then(rag => {
-          rag.vectorizeMessage(userMessage._id, text.trim());
-        }).catch(e => console.error('[Chat] Error RAG:', e.message));
+        // 8. Guardar embedding para RAG (fire-and-forget, solo si hay texto)
+        if (text?.trim()) {
+          import('./ragService.js').then(rag => {
+            rag.vectorizeMessage(userMessage._id, text.trim());
+          }).catch(e => console.error('[Chat] Error RAG:', e.message));
+        }
+
 
       } catch (error) {
         console.error('[Chat] Error procesando mensaje:', error);

@@ -93,9 +93,17 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!auth || !groupName) return;
-    // Ya no llamamos a loadHistory() aquí porque el socket nos enviará el historial al unirse
     const socket = socketService.getSocket();
-    if (!socket) return;
+
+    // Bug fix: si el socket no existe todavía, no podemos registrar listeners.
+    // Esto puede ocurrir si la app se relanza sin pasar por el login.
+    // _layout.tsx ya llama a connectSocket() con los datos guardados, así que
+    // en la práctica getSocket() debería devolver algo. Pero por seguridad, salimos
+    // si es nulo (el usuario sería redirigido a login por el guard de _layout.tsx).
+    if (!socket) {
+      console.warn('[Chat] Socket no disponible al montar. El layout debería reconectar.');
+      return;
+    }
 
     const onNewMessage = (msg: socketService.ChatMessage) => {
       setMessagesSafe(prev => {
@@ -118,6 +126,18 @@ export default function ChatScreen() {
       if (msg.senderId === auth.phone) {
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       }
+    };
+
+    // Bug fix: si el socket se reconecta mientras el chat está abierto (p.ej. tras
+    // pérdida de red), socket.ts ya re-emite join-group automáticamente. Aquí
+    // escuchamos el evento 'connect' para resetear el estado de carga y esperar
+    // el nuevo chat-history que mandará el servidor.
+    const onSocketReconnect = () => {
+      console.log('[Chat] Socket reconectado mientras el chat estaba abierto. Re-solicitando historial...');
+      setLoading(true);
+      // join-group ya se emite en socket.ts en el handler de 'connect',
+      // lo que disparará chat-history en el servidor. Solo necesitamos ponernos
+      // en estado loading para mostrar el spinner hasta que llegue.
     };
 
     const onChatHistory = async (data: any) => {
@@ -184,6 +204,7 @@ export default function ChatScreen() {
     };
 
     // 1. Registrar listeners PRIMERO
+    socket.on('connect', onSocketReconnect);
     socket.on('new-message', onNewMessage);
     socket.on('chat-history', onChatHistory);
     socket.on('user-typing', onUserTyping);
@@ -196,6 +217,7 @@ export default function ChatScreen() {
     socketService.joinGroup(groupName);
 
     return () => {
+      socket.off('connect', onSocketReconnect);
       socket.off('new-message', onNewMessage);
       socket.off('chat-history', onChatHistory);
       socket.off('user-typing', onUserTyping);
@@ -386,7 +408,16 @@ export default function ChatScreen() {
 
   const handleSend = () => {
     if (!text.trim() || !auth) return;
-    socketService.sendMessage(groupName, text, 'text');
+    // Bug fix: sendMessage devuelve false si el socket no está conectado
+    const sent = socketService.sendMessage(groupName, text, 'text');
+    if (!sent) {
+      Alert.alert(
+        'Sin conexión',
+        'No se pudo enviar el mensaje. Comprueba tu conexión a internet e inténtalo de nuevo.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     setText('');
     socketService.sendStopTyping(groupName);
     setIsTyping(false);
