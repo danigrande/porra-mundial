@@ -53,6 +53,7 @@ export default function TournamentBanner({ state }: TournamentBannerProps) {
   };
 
   const isClosed = !state.isPredictionWindow;
+  const isFinished = state.id === 'POST_TOURNAMENT';
 
   return (
     <View style={styles.banner}>
@@ -69,9 +70,11 @@ export default function TournamentBanner({ state }: TournamentBannerProps) {
         </View>
 
         <View style={styles.countdownBox}>
-          <Text style={styles.countdownLabel}>{isClosed ? 'ESTADO:' : 'CIERRE EN:'}</Text>
-          <Text style={[styles.timerText, isClosed && { color: '#8b949e' }]}>
-            {isClosed ? 'FINALIZADO' : timeLeft}
+          <Text style={styles.countdownLabel}>
+            {isFinished ? 'ESTADO:' : isClosed ? 'PRÓXIMA VENTANA EN:' : 'CIERRE EN:'}
+          </Text>
+          <Text style={[styles.timerText, isFinished && { color: '#8b949e' }]}>
+            {isFinished ? 'FINALIZADO' : timeLeft}
           </Text>
         </View>
       </View>

@@ -17,6 +17,7 @@ import { adminAuth } from './middleware.js';
 import { Reality } from './models/Reality.js';
 import { getTournamentState, getCurrentTime } from './tournamentState.js';
 import * as apiFootballService from './apiFootballService.js';
+import { triggerAutoSimulationIfNeeded } from './autoSimulator.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from './shared_data.js';
 import { connectDB } from './db.js';
 import path from 'path';
@@ -348,57 +349,10 @@ async function initProactiveNotifications() {
 async function initAutoSimulation() {
   if (process.env.TEST_MODE !== 'true') return;
   
-  console.log('🧪 MODO TEST: Iniciando motor de auto-simulación de resultados...');
+  console.log('🧪 MODO TEST: Iniciando motor de auto-simulación de resultados (Background)...');
   
   setInterval(async () => {
-    try {
-      const state = await getTournamentState();
-      if (!state) return;
-
-      const mapping = {
-        'GROUP_STAGE': 'groups',
-        'R32_ACTIVE': 'r32',
-        'R16_ACTIVE': 'r16',
-        'QF_ACTIVE': 'qf',
-        'SF_ACTIVE': 'sf',
-        'WAITING_FINALS': '3rd',
-        'FINALS_ACTIVE': 'final'
-      };
-
-      const phaseToPopulate = mapping[state.id];
-      if (!phaseToPopulate) return;
-
-      const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
-      const currentReality = realityDoc ? realityDoc.results : {};
-      const autoPopulated = realityDoc ? (realityDoc.autoPopulatedPhases || []) : [];
-
-      if (!autoPopulated.includes(phaseToPopulate)) {
-        console.log(`🤖 [AUTO-SIM] Generando resultados para la fase: ${phaseToPopulate}`);
-        
-        const updatedResults = apiFootballService.simulatePhaseResults(
-          phaseToPopulate,
-          currentReality,
-          FIXTURE_GROUPS,
-          BRACKET_MATCHES,
-          KNOCKOUT_BRACKET
-        );
-
-        await Reality.findOneAndUpdate(
-          { tournament: 'worldcup2026' },
-          { 
-            results: updatedResults, 
-            $addToSet: { autoPopulatedPhases: phaseToPopulate },
-            updatedAt: new Date() 
-          },
-          { upsert: true }
-        );
-        
-        console.log(`✅ [AUTO-SIM] Resultados de ${phaseToPopulate} inyectados correctamente.`);
-      }
-
-    } catch (error) {
-      console.error('❌ Error en motor de auto-simulación:', error.message);
-    }
+    await triggerAutoSimulationIfNeeded();
   }, 30000); // Comprobar cada 30 segundos
 }
 

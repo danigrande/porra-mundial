@@ -15,6 +15,7 @@ import * as groqEngine from '../groqEngine.js';
 import * as apiFootballService from '../apiFootballService.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from '../shared_data.js';
 import { getTournamentState } from '../tournamentState.js';
+import { triggerAutoSimulationIfNeeded } from '../autoSimulator.js';
 import { adminAuth } from '../middleware.js';
 
 const router = express.Router();
@@ -29,6 +30,7 @@ const createResponse = (status, data = null, message = null) => {
 // ==========================================
 router.get('/tournament-state', async (req, res) => {
   const { groupName } = req.query;
+  await triggerAutoSimulationIfNeeded();
   res.json(createResponse('success', await getTournamentState(groupName)));
 });
 
@@ -47,6 +49,7 @@ router.use((req, res, next) => {
 
 router.get('/reality', async (req, res) => {
     try {
+        await triggerAutoSimulationIfNeeded();
         const reality = await Reality.findOne({ tournament: 'worldcup2026' });
         res.json(createResponse('success', reality ? reality.results : {}));
     } catch (error) {
