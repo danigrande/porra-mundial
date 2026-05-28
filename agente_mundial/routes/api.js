@@ -1053,7 +1053,7 @@ router.get('/predictions', async (req, res) => {
             const preds = await Prediction.find({ group: group._id }).populate('user', 'name');
             const result = {};
             preds.forEach(p => {
-                if (p.user) result[p.user.name] = p.predictions;
+                if (p.user) result[p.user.name] = { predictions: p.predictions };
             });
             return res.json(createResponse('success', result));
         }
