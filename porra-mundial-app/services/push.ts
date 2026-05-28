@@ -67,8 +67,8 @@ export async function setupPushNotifications(phone: string) {
     // Enviar el token al backend
     await registerPushToken(phone, token, Platform.OS);
     return token;
-  } catch (error) {
-    console.error('[Push] Error configurando notificaciones:', error);
+  } catch (error: any) {
+    console.log('[Push] Error configurando notificaciones (problema de Expo):', error?.message || error);
     return null;
   }
 }

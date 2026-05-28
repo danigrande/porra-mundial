@@ -134,7 +134,7 @@ export async function resetGroup(groupName: string) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-admin-key': 'dev_secret_key_123'
+      'x-admin-key': 'agente-dev-2026'
     },
     body: JSON.stringify({ groupName }),
   });
@@ -191,7 +191,7 @@ export async function simulateMatch(matchId: string | number, homeTeam: string, 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-admin-key': 'dev_secret_key_123'
+      'x-admin-key': 'agente-dev-2026'
     },
     body: JSON.stringify({ matchId, homeTeam, awayTeam }),
   });
