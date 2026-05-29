@@ -210,8 +210,9 @@ export async function generateGroupSummary(groupName, force = false) {
     return '📊 No hay datos suficientes para el grupo ' + resolvedName;
   }
 
-  // Comprobar si hubo partidos hoy (a menos que se force el resumen)
-  if (!force) {
+  // Comprobar si hubo partidos hoy (a menos que se force el resumen o estemos en TEST_MODE)
+  const isTestMode = process.env.TEST_MODE === 'true';
+  if (!force && !isTestMode) {
     const today = new Date().toISOString().split('T')[0];
     const reality = cache.reality || {};
     const hasMatchesToday = Object.entries(reality).some(([key, val]) => 
