@@ -309,7 +309,7 @@ async function initProactiveNotifications() {
 
       for (const group of groups) {
         const rules = group.rules || {};
-        const isEligible = rules.prediction_mode === 'B' || state.id === 'PRE_TOURNAMENT';
+        const isEligible = group.predictionMode === 'B' || state.id === 'PRE_TOURNAMENT';
 
         if (!isEligible) continue;
 
