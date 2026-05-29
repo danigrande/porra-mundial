@@ -49,14 +49,41 @@ export const KNOCKOUT_BRACKET = [
 ];
 
 export function getGroupMatches(group: { letter: string, teams: string[] }) {
-  const matches = [];
+  // Pairings MUST match scoringEngine.js: [[0,1],[2,3],[3,1],[0,2],[3,0],[1,2]]
+  const pairings = [[0,1],[2,3],[3,1],[0,2],[3,0],[1,2]];
   const t = group.teams;
   const L = group.letter;
-  matches.push({ id: `g${L}_m0`, team1: t[0], team2: t[1] });
-  matches.push({ id: `g${L}_m1`, team1: t[2], team2: t[3] });
-  matches.push({ id: `g${L}_m2`, team1: t[0], team2: t[2] });
-  matches.push({ id: `g${L}_m3`, team1: t[1], team2: t[3] });
-  matches.push({ id: `g${L}_m4`, team1: t[3], team2: t[0] });
-  matches.push({ id: `g${L}_m5`, team1: t[1], team2: t[2] });
-  return matches;
+  return pairings.map((p, i) => ({
+    id: `g${L}_m${i}`,
+    team1: t[p[0]],
+    team2: t[p[1]],
+  }));
+}
+
+/** Calculates group standings from reality data, matching scoringEngine.js logic */
+export function getGroupStandings(letter: string, reality: Record<string, any>) {
+  const group = FIXTURE_GROUPS.find(g => g.letter === letter);
+  if (!group) return [];
+
+  const pairings = [[0,1],[2,3],[3,1],[0,2],[3,0],[1,2]];
+  const stats: Record<string, { name: string; pts: number; gf: number; ga: number; gd: number; w: number; d: number; l: number }> = {};
+  group.teams.forEach(t => { stats[t] = { name: t, pts: 0, gf: 0, ga: 0, gd: 0, w: 0, d: 0, l: 0 }; });
+
+  for (let i = 0; i < 6; i++) {
+    const gh = parseInt(reality[`g${letter}_m${i}_h`]);
+    const ga = parseInt(reality[`g${letter}_m${i}_a`]);
+    if (isNaN(gh) || isNaN(ga)) continue;
+    const p = pairings[i];
+    const hName = group.teams[p[0]];
+    const aName = group.teams[p[1]];
+    stats[hName].gf += gh; stats[hName].ga += ga;
+    stats[aName].gf += ga; stats[aName].ga += gh;
+    if (gh > ga) { stats[hName].pts += 3; stats[hName].w += 1; stats[aName].l += 1; }
+    else if (ga > gh) { stats[aName].pts += 3; stats[aName].w += 1; stats[hName].l += 1; }
+    else { stats[hName].pts += 1; stats[hName].d += 1; stats[aName].pts += 1; stats[aName].d += 1; }
+  }
+
+  return Object.values(stats)
+    .map(s => ({ ...s, gd: s.gf - s.ga }))
+    .sort((a, b) => (b.pts - a.pts) || (b.gd - a.gd) || (b.gf - a.gf));
 }

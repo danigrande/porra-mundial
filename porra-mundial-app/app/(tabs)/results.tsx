@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET } from '../../constants/tournamentData';
+import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET, getGroupMatches, getGroupStandings } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
 import { useTranslation, tTeam } from '../../i18n/i18n';
 
@@ -246,18 +246,18 @@ export default function ResultsScreen() {
                 <View style={styles.letterCircle}><Text style={styles.letterText}>{g.letter}</Text></View>
                 <Text style={styles.groupTitle}>{t('common.group')} {g.letter}</Text>
               </View>
-              {[0, 1, 2, 3, 4, 5].map(mIdx => {
-                const matchId = `g${g.letter}_m${mIdx}`;
-                const hName = reality[`${matchId}_h_team`] || g.teams[mIdx % 4];
-                const aName = reality[`${matchId}_a_team`] || g.teams[(mIdx + 1) % 4];
+              {getGroupMatches(g).map(m => {
+                const hName = reality[`${m.id}_h_team`] || m.team1;
+                const aName = reality[`${m.id}_a_team`] || m.team2;
                 return (
-                  <MatchRow 
-                    key={matchId}
-                    matchId={matchId} hName={hName} aName={aName} 
+                  <MatchRow
+                    key={m.id}
+                    matchId={m.id} hName={hName} aName={aName}
                     reality={reality} onSimulate={handleSimulate} isAdmin={isAdmin}
                   />
                 );
               })}
+              <StandingsTable letter={g.letter} reality={reality} />
             </View>
           ))
         ) : (
@@ -375,6 +375,7 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
           </TouchableOpacity>
         )}
       </View>
+      {/* Score row */}
       <View style={styles.scoreRow}>
         <View style={styles.team}>
           {hCode && <Image source={{ uri: `https://flagcdn.com/w40/${hCode}.png` }} style={styles.miniFlag} />}
@@ -385,11 +386,94 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
           <Text style={styles.vs}>-</Text>
           <Text style={styles.scoreText}>{aScore !== '' ? aScore : '-'}</Text>
         </View>
-        <View style={[styles.team, {justifyContent: 'flex-end'}]}>
-          <Text style={[styles.teamText, {textAlign: 'right'}]} numberOfLines={1}>{tTeam(aName)}</Text>
+        <View style={[styles.team, { justifyContent: 'flex-end' }]}>
+          <Text style={[styles.teamText, { textAlign: 'right' }]} numberOfLines={1}>{tTeam(aName)}</Text>
           {aCode && <Image source={{ uri: `https://flagcdn.com/w40/${aCode}.png` }} style={styles.miniFlag} />}
         </View>
       </View>
+
+      {/* Events two-column layout */}
+      {reality.events && reality.events[matchId] && reality.events[matchId].length > 0 && (() => {
+        const allEvents: any[] = reality.events[matchId];
+        const hNorm = hName?.toLowerCase() ?? '';
+        const aNorm = aName?.toLowerCase() ?? '';
+        const homeEvts = allEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
+        const awayEvts = allEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
+        // fallback: if no team.name matches, show all on both sides empty and center
+        const getIcon = (e: any) => e.type === 'Goal' ? '\u26bd' : (e.detail === 'Red Card' ? '\ud83d\udfe5' : '\ud83d\udfe8');
+        return (
+          <View style={styles.eventsRow}>
+            {/* Home side - left aligned */}
+            <View style={styles.eventsCol}>
+              {homeEvts.map((e: any, i: number) => (
+                <Text key={i} style={styles.eventItemHome}>
+                  {e.time.elapsed}' {getIcon(e)} {e.player.name}
+                </Text>
+              ))}
+            </View>
+            {/* Away side - right aligned */}
+            <View style={[styles.eventsCol, { alignItems: 'flex-end' }]}>
+              {awayEvts.map((e: any, i: number) => (
+                <Text key={i} style={styles.eventItemAway}>
+                  {e.player.name} {getIcon(e)} {e.time.elapsed}'
+                </Text>
+              ))}
+            </View>
+          </View>
+        );
+      })()}
+    </View>
+  );
+}
+
+function StandingsTable({ letter, reality }: { letter: string; reality: any }) {
+  const rows = getGroupStandings(letter, reality);
+  const hasAnyData = rows.some(r => r.pts > 0 || r.w > 0 || r.d > 0 || r.l > 0);
+  if (!hasAnyData) return null;
+
+  return (
+    <View style={styles.standingsContainer}>
+      <Text style={styles.standingsTitle}>CLASIFICACIÓN</Text>
+      {/* Header */}
+      <View style={styles.standingsHeader}>
+        <Text style={[styles.standingsCell, styles.standingsCellPos]}>#</Text>
+        <Text style={[styles.standingsCell, { flex: 1 }]}>Equipo</Text>
+        <Text style={styles.standingsCell}>Pts</Text>
+        <Text style={styles.standingsCell}>G</Text>
+        <Text style={styles.standingsCell}>E</Text>
+        <Text style={styles.standingsCell}>P</Text>
+        <Text style={styles.standingsCell}>DG</Text>
+      </View>
+      {rows.map((row, i) => {
+        const code = TEAM_CODES[row.name];
+        const isQualifier = i < 2;
+        return (
+          <View
+            key={row.name}
+            style={[
+              styles.standingsRow,
+              isQualifier && styles.standingsRowQualifier,
+            ]}
+          >
+            <Text style={[styles.standingsCell, styles.standingsCellPos, isQualifier && styles.standingsQualifierText]}>
+              {i === 0 ? '🥇' : i === 1 ? '🥈' : `${i + 1}`}
+            </Text>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {code && <Image source={{ uri: `https://flagcdn.com/w40/${code}.png` }} style={styles.miniFlag} />}
+              <Text style={[styles.standingsTeamText, isQualifier && styles.standingsQualifierText]} numberOfLines={1}>
+                {tTeam(row.name)}
+              </Text>
+            </View>
+            <Text style={[styles.standingsCell, styles.standingsPts, isQualifier && styles.standingsQualifierText]}>{row.pts}</Text>
+            <Text style={styles.standingsCell}>{row.w}</Text>
+            <Text style={styles.standingsCell}>{row.d}</Text>
+            <Text style={styles.standingsCell}>{row.l}</Text>
+            <Text style={[styles.standingsCell, row.gd > 0 ? styles.gdPositive : row.gd < 0 ? styles.gdNegative : {}]}>
+              {row.gd > 0 ? `+${row.gd}` : row.gd}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -406,7 +490,6 @@ const styles = StyleSheet.create({
   tabText: { color: '#8b949e', fontWeight: '700', fontSize: 13 },
   tabTextActive: { color: '#f5a623' },
   content: { paddingHorizontal: 20 },
-  
   simPanel: { backgroundColor: 'rgba(245, 166, 35, 0.05)', borderRadius: 24, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(245, 166, 35, 0.2)' },
   simHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   simBadge: { backgroundColor: 'rgba(245, 166, 35, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginBottom: 6 },
@@ -426,7 +509,6 @@ const styles = StyleSheet.create({
   timelineStepActive: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10b981' },
   timelineStepText: { color: '#8b949e', fontSize: 12, fontWeight: '600' },
   timelineStepTextActive: { color: '#10b981', fontWeight: '700' },
-
   groupCard: { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   groupHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   letterCircle: { backgroundColor: '#f5a623', width: 24, height: 24, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
@@ -441,14 +523,32 @@ const styles = StyleSheet.create({
   team: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   teamText: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1 },
   miniFlag: { width: 24, height: 16, borderRadius: 3 },
+  eventContainer: { paddingVertical: 5 },
+  eventText: { color: 'rgba(255,255,255,0.6)', fontSize: 12, textAlign: 'center' },
+  eventsRow: { flexDirection: 'row', marginTop: 10, gap: 8 },
+  eventsCol: { flex: 1 },
+  eventItemHome: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 2 },
+  eventItemAway: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 2, textAlign: 'right' },
   scoreBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 90 },
   scoreText: { color: '#f5a623', fontSize: 24, fontWeight: '900', width: 34, textAlign: 'center' },
   vs: { color: '#484f58', marginHorizontal: 6, fontSize: 18 },
-
   awardsCard: { backgroundColor: 'rgba(245, 166, 35, 0.05)', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(245, 166, 35, 0.2)' },
   awardsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
   awardsTitle: { color: '#f5a623', fontSize: 18, fontWeight: '800' },
   awardRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(245, 166, 35, 0.1)' },
   awardLabel: { color: '#8b949e', fontSize: 15 },
-  awardVal: { color: '#fff', fontSize: 15, fontWeight: '700' }
+  awardVal: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  standingsContainer: { marginTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingTop: 12 },
+  standingsTitle: { color: '#f5a623', fontSize: 9, fontWeight: '800', letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase' },
+  standingsHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.03)' },
+  standingsRowQualifier: { backgroundColor: 'rgba(245,166,35,0.04)', borderRadius: 6 },
+  standingsCell: { color: '#8b949e', fontSize: 12, fontWeight: '600', width: 28, textAlign: 'center' },
+  standingsCellPos: { width: 26 },
+  standingsTeamText: { color: '#ccc', fontSize: 12, fontWeight: '600', flex: 1 },
+  standingsPts: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  standingsQualifierText: { color: '#f5a623' },
+  gdPositive: { color: '#10b981' },
+  gdNegative: { color: '#ef4444' }
 });
+

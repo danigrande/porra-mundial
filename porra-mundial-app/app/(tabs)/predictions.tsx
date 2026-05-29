@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
-import { FIXTURE_GROUPS, getGroupMatches } from '../../constants/tournamentData';
+import { FIXTURE_GROUPS, getGroupMatches, getGroupStandings, TEAM_CODES } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
 import { useTranslation, tTeam } from '../../i18n/i18n';
 
@@ -249,42 +249,48 @@ export default function PredictionsScreen() {
             </View>
           </View>
         ) : (
-          matchesToDisplay.map((match: any) => {
-            const score1 = predictions[`${match.id}_h`] || '';
-            const score2 = predictions[`${match.id}_a`] || '';
+          <>
+            {matchesToDisplay.map((match: any) => {
+              const score1 = predictions[`${match.id}_h`] || '';
+              const score2 = predictions[`${match.id}_a`] || '';
 
-            return (
-              <View key={match.id} style={styles.matchCard}>
-                <View style={styles.teamContainer}>
-                  <Text style={styles.teamText} numberOfLines={2}>{match.team1}</Text>
-                </View>
-                
-                <View style={styles.scoreContainer}>
-                  <TextInput
-                    style={styles.scoreInput}
-                    keyboardType="number-pad"
-                    value={score1}
-                    onChangeText={(text) => handleScoreChange(match.id, 1, text)}
-                    placeholder="-"
-                    placeholderTextColor="#666"
-                  />
-                  <Text style={styles.vsText}>-</Text>
-                  <TextInput
-                    style={styles.scoreInput}
-                    keyboardType="number-pad"
-                    value={score2}
-                    onChangeText={(text) => handleScoreChange(match.id, 2, text)}
-                    placeholder="-"
-                    placeholderTextColor="#666"
-                  />
-                </View>
+              return (
+                <View key={match.id} style={styles.matchCard}>
+                  <View style={styles.teamContainer}>
+                    <Text style={styles.teamText} numberOfLines={2}>{match.team1}</Text>
+                  </View>
+                  
+                  <View style={styles.scoreContainer}>
+                    <TextInput
+                      style={styles.scoreInput}
+                      keyboardType="number-pad"
+                      value={score1}
+                      onChangeText={(text) => handleScoreChange(match.id, 1, text)}
+                      placeholder="-"
+                      placeholderTextColor="#666"
+                    />
+                    <Text style={styles.vsText}>-</Text>
+                    <TextInput
+                      style={styles.scoreInput}
+                      keyboardType="number-pad"
+                      value={score2}
+                      onChangeText={(text) => handleScoreChange(match.id, 2, text)}
+                      placeholder="-"
+                      placeholderTextColor="#666"
+                    />
+                  </View>
 
-                <View style={styles.teamContainerRight}>
-                  <Text style={styles.teamTextRight} numberOfLines={2}>{match.team2}</Text>
+                  <View style={styles.teamContainerRight}>
+                    <Text style={styles.teamTextRight} numberOfLines={2}>{match.team2}</Text>
+                  </View>
                 </View>
-              </View>
-            );
-          })
+              );
+            })}
+            
+            {FIXTURE_GROUPS.some(g => g.letter === selectedGroup) && (
+              <StandingsTable letter={selectedGroup} reality={predictions} />
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -296,6 +302,58 @@ export default function PredictionsScreen() {
       </View>
 
     </KeyboardAvoidingView>
+  );
+}
+
+function StandingsTable({ letter, reality }: { letter: string; reality: any }) {
+  const rows = getGroupStandings(letter, reality);
+  const hasAnyData = rows.some(r => r.pts > 0 || r.w > 0 || r.d > 0 || r.l > 0);
+  if (!hasAnyData) return null;
+
+  return (
+    <View style={styles.standingsContainer}>
+      <Text style={styles.standingsTitle}>CLASIFICACIÓN PROYECTADA</Text>
+      {/* Header */}
+      <View style={styles.standingsHeader}>
+        <Text style={[styles.standingsCell, styles.standingsCellPos]}>#</Text>
+        <Text style={[styles.standingsCell, { flex: 1 }]}>Equipo</Text>
+        <Text style={styles.standingsCell}>Pts</Text>
+        <Text style={styles.standingsCell}>G</Text>
+        <Text style={styles.standingsCell}>E</Text>
+        <Text style={styles.standingsCell}>P</Text>
+        <Text style={styles.standingsCell}>DG</Text>
+      </View>
+      {rows.map((row, i) => {
+        const code = TEAM_CODES[row.name];
+        const isQualifier = i < 2;
+        return (
+          <View
+            key={row.name}
+            style={[
+              styles.standingsRow,
+              isQualifier && styles.standingsRowQualifier,
+            ]}
+          >
+            <Text style={[styles.standingsCell, styles.standingsCellPos, isQualifier && styles.standingsQualifierText]}>
+              {i === 0 ? '🥇' : i === 1 ? '🥈' : `${i + 1}`}
+            </Text>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {code && <Image source={{ uri: `https://flagcdn.com/w40/${code}.png` }} style={styles.miniFlag} />}
+              <Text style={[styles.standingsTeamText, isQualifier && styles.standingsQualifierText]} numberOfLines={1}>
+                {tTeam(row.name)}
+              </Text>
+            </View>
+            <Text style={[styles.standingsCell, styles.standingsPts, isQualifier && styles.standingsQualifierText]}>{row.pts}</Text>
+            <Text style={styles.standingsCell}>{row.w}</Text>
+            <Text style={styles.standingsCell}>{row.d}</Text>
+            <Text style={styles.standingsCell}>{row.l}</Text>
+            <Text style={[styles.standingsCell, row.gd > 0 ? styles.gdPositive : row.gd < 0 ? styles.gdNegative : {}]}>
+              {row.gd > 0 ? `+${row.gd}` : row.gd}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -457,5 +515,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     borderWidth: 1,
     borderColor: '#1e2a5a',
-  }
+  },
+  miniFlag: { width: 24, height: 16, borderRadius: 3 },
+  standingsContainer: { marginTop: 16, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  standingsTitle: { color: '#f5a623', fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 12, textTransform: 'uppercase', textAlign: 'center' },
+  standingsHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.03)' },
+  standingsRowQualifier: { backgroundColor: 'rgba(245,166,35,0.04)', borderRadius: 6 },
+  standingsCell: { color: '#8b949e', fontSize: 12, fontWeight: '600', width: 28, textAlign: 'center' },
+  standingsCellPos: { width: 26 },
+  standingsTeamText: { color: '#ccc', fontSize: 12, fontWeight: '600', flex: 1 },
+  standingsPts: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  standingsQualifierText: { color: '#f5a623' },
+  gdPositive: { color: '#10b981' },
+  gdNegative: { color: '#ef4444' }
 });

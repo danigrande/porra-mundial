@@ -288,8 +288,10 @@
                   const matchId = `g${g.letter}_m${mIdx}`;
                   const hId = `${matchId}_h`;
                   const aId = `${matchId}_a`;
-                  const hName = g.teams[mIdx % 4];
-                  const aName = g.teams[(mIdx+1) % 4];
+                  const pairings = [[0,1],[2,3],[3,1],[0,2],[3,0],[1,2]];
+                  const p = pairings[mIdx];
+                  const hName = g.teams[p[0]];
+                  const aName = g.teams[p[1]];
                   const matchEvents = (currentData.events && currentData.events[matchId]) || [];
                   
                   return `
@@ -303,13 +305,23 @@
                             </div>
                             <span style="font-size:0.8rem; flex:1;">${aName}</span>
                         </div>
-                        ${matchEvents.length > 0 ? `
-                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.6); text-align:center; margin-top:5px;">
-                            ${matchEvents.map(e => `
-                                <span>${e.time.elapsed}' ${e.player.name} (${e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨')})</span>
-                            `).join(' | ')}
-                        </div>
-                        ` : ''}
+                        ${matchEvents.length > 0 ? (() => {
+                          const hNorm = hName?.toLowerCase() ?? '';
+                          const aNorm = aName?.toLowerCase() ?? '';
+                          const homeEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
+                          const awayEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
+                          const getIcon = (e) => e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨');
+                          return `
+                            <div style="display:flex; margin-top:5px; gap:8px;">
+                                <div style="flex:1; text-align:left;">
+                                    ${homeEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.time.elapsed}' ${getIcon(e)} ${e.player.name}</div>`).join('')}
+                                </div>
+                                <div style="flex:1; text-align:right;">
+                                    ${awayEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.player.name} ${getIcon(e)} ${e.time.elapsed}'</div>`).join('')}
+                                </div>
+                            </div>
+                          `;
+                        })() : ''}
                     </div>
                   `;
                 }).join('')}
@@ -369,13 +381,23 @@
                     </div>
                     <span class="team-name team-away">${getTeamHtml(aName)}</span>
                   </div>
-                  ${matchEvents.length > 0 ? `
-                  <div style="font-size:0.65rem; color:rgba(255,255,255,0.6); text-align:center; margin-top:8px;">
-                      ${matchEvents.map(e => `
-                          <div>${e.time.elapsed}' ${e.player.name} (${e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨')})</div>
-                      `).join('')}
-                  </div>
-                  ` : ''}
+                  ${matchEvents.length > 0 ? (() => {
+                      const hNorm = hName?.toLowerCase() ?? '';
+                      const aNorm = aName?.toLowerCase() ?? '';
+                      const homeEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
+                      const awayEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
+                      const getIcon = (e) => e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨');
+                      return `
+                        <div style="display:flex; margin-top:8px; gap:8px;">
+                            <div style="flex:1; text-align:left;">
+                                ${homeEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.time.elapsed}' ${getIcon(e)} ${e.player.name}</div>`).join('')}
+                            </div>
+                            <div style="flex:1; text-align:right;">
+                                ${awayEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.player.name} ${getIcon(e)} ${e.time.elapsed}'</div>`).join('')}
+                            </div>
+                        </div>
+                      `;
+                  })() : ''}
                 </div>
               `;
             }).join('')}
