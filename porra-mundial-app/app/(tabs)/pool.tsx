@@ -76,7 +76,7 @@ export default function PoolScreen() {
           <PredictionList 
             predictions={cloudData[selectedPlayer].predictions || {}} 
             isMe={selectedPlayer === auth?.name}
-            hasStarted={tournamentState?.hasStarted}
+            tournamentState={tournamentState}
           />
         ) : (
           <View style={styles.empty}>
@@ -88,9 +88,12 @@ export default function PoolScreen() {
   );
 }
 
-function PredictionList({ predictions, isMe, hasStarted }: { predictions: any, isMe: boolean, hasStarted: boolean }) {
+function PredictionList({ predictions, isMe, tournamentState }: { predictions: any, isMe: boolean, tournamentState: any }) {
   const { t } = useTranslation();
   
+  const hasStarted = tournamentState?.hasStarted;
+  const unlocks = tournamentState?.unlocks || [];
+
   if (!isMe && !hasStarted) {
     return (
       <View style={styles.lockedCard}>
@@ -101,22 +104,55 @@ function PredictionList({ predictions, isMe, hasStarted }: { predictions: any, i
     );
   }
 
+  // Helper para mostrar un partido
+  const renderMatchRow = (matchId: string, team1: string, team2: string, phaseId: string) => {
+    // Si la fase está actualmente abierta (en unlocks) y no soy yo, ocultamos el resultado
+    const isHidden = !isMe && unlocks.includes(phaseId);
+    
+    let scoreText = '? - ?';
+    if (!isHidden) {
+      const sH = predictions[`${matchId}_h`];
+      const sA = predictions[`${matchId}_a`];
+      if (sH !== undefined && sA !== undefined) {
+        scoreText = `${sH} - ${sA}`;
+      } else {
+        scoreText = '-'; // No lo rellenó
+      }
+    }
+
+    return (
+      <View key={matchId} style={styles.row}>
+        <Text style={styles.matchLabel}>{team1} - {team2}</Text>
+        <Text style={styles.scoreText}>{scoreText}</Text>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.list}>
+      {/* Fase de Grupos */}
       {FIXTURE_GROUPS.map(g => {
         const matches = getGroupMatches(g);
         return (
           <View key={g.letter} style={styles.groupSection}>
             <Text style={styles.groupLabel}>{t('common.group')} {g.letter}</Text>
-            {matches.map(m => (
-              <View key={m.id} style={styles.row}>
-                <Text style={styles.matchLabel}>{tTeam(m.team1)} - {tTeam(m.team2)}</Text>
-                <Text style={styles.scoreText}>{predictions[`${m.id}_h`] ?? '?'} - {predictions[`${m.id}_a`] ?? '?'}</Text>
-              </View>
-            ))}
+            {matches.map(m => renderMatchRow(m.id, tTeam(m.team1), tTeam(m.team2), 'groups'))}
           </View>
         );
       })}
+
+      {/* Fases Eliminatorias */}
+      {tournamentState?.knockoutBracket?.map((kb: any) => (
+        <View key={kb.id} style={styles.groupSection}>
+          <Text style={styles.groupLabel}>{kb.name}</Text>
+          {kb.matches.map((mId: number) => {
+            const teams = tournamentState?.bracketMatches?.[mId] || ['TBD', 'TBD'];
+            const team1Name = teams[0].match(/^[1-3][A-Z]+$/) ? t('predictions.best_third') : tTeam(teams[0]);
+            const team2Name = teams[1].match(/^[1-3][A-Z]+$/) ? t('predictions.best_third') : tTeam(teams[1]);
+            return renderMatchRow(`ko_${mId}`, team1Name, team2Name, kb.id);
+          })}
+        </View>
+      ))}
     </View>
   );
 }
