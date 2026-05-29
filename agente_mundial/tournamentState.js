@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Group } from './models/Group.js';
+import { KNOCKOUT_BRACKET, BRACKET_MATCHES } from './shared_data.js';
 
 // ============================================
 // TOURNAMENT STATE — Máquina de Estados (Opción B)
@@ -81,11 +82,16 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
     console.error(`Error fetching predictionMode for ${groupName}:`, e.message);
   }
 
+  // Filtrar los brackets de eliminatoria que ya están visibles
+  const visibleKnockoutBrackets = KNOCKOUT_BRACKET.filter(kb => visiblePhases.includes(kb.id));
+
   return {
     id: currentPhase.id,
     name: currentPhase.name,
     unlocks: currentPhase.unlocks || [], // CRÍTICO: Para habilitar inputs
     visiblePhases: visiblePhases,       // CRÍTICO: Para mostrar rondas
+    knockoutBracket: visibleKnockoutBrackets, // Necesario para pintar las pestañas de eliminatorias
+    bracketMatches: BRACKET_MATCHES,          // Necesario para saber qué equipos juegan cada partido de eliminatoria
     deadline: currentPhase.end,
     nextDeadline: nextPhase ? nextPhase.end : null,
     timeRemainingMs,
