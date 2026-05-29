@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import { Group } from './models/Group.js';
+import { Reality } from './models/Reality.js';
+import { fullResolve } from './scoringEngine.js';
 import { KNOCKOUT_BRACKET, BRACKET_MATCHES } from './shared_data.js';
 
 // ============================================
@@ -82,6 +84,24 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
     console.error(`Error fetching predictionMode for ${groupName}:`, e.message);
   }
 
+  // Obtener los resultados reales para calcular las clasificaciones
+  let realityResults = {};
+  try {
+    const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+    if (realityDoc) realityResults = realityDoc.results || {};
+  } catch (e) {
+    console.error('Error fetching Reality for tournament state:', e.message);
+  }
+
+  // Resolver los nombres de los equipos en los cruces eliminatorios
+  const resolvedBracketMatches = {};
+  for (const [matchId, teams] of Object.entries(BRACKET_MATCHES)) {
+    resolvedBracketMatches[matchId] = [
+      fullResolve(teams[0], realityResults),
+      fullResolve(teams[1], realityResults)
+    ];
+  }
+
   // Filtrar los brackets de eliminatoria que ya están visibles
   const visibleKnockoutBrackets = KNOCKOUT_BRACKET.filter(kb => visiblePhases.includes(kb.id));
 
@@ -91,7 +111,7 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
     unlocks: currentPhase.unlocks || [], // CRÍTICO: Para habilitar inputs
     visiblePhases: visiblePhases,       // CRÍTICO: Para mostrar rondas
     knockoutBracket: visibleKnockoutBrackets, // Necesario para pintar las pestañas de eliminatorias
-    bracketMatches: BRACKET_MATCHES,          // Necesario para saber qué equipos juegan cada partido de eliminatoria
+    bracketMatches: resolvedBracketMatches,   // Con los nombres de los países ya resueltos
     deadline: currentPhase.end,
     nextDeadline: nextPhase ? nextPhase.end : null,
     timeRemainingMs,
