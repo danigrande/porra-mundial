@@ -110,7 +110,42 @@ export default function PredictionsScreen() {
     });
   };
 
+  const handlePenaltyChange = (matchNum: string, teamIndex: 1 | 2, text: string) => {
+    const value = text.replace(/[^0-9]/g, '').substring(0, 2);
+    const key = `pen_${matchNum}_${teamIndex === 1 ? 'h' : 'a'}`;
+    
+    setPredictions(prev => {
+      const next = { ...prev };
+      if (value === '') {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
+      return next;
+    });
+  };
+
   const handleSave = async () => {
+    // Validar que los penaltis no sean empate
+    for (const [key, value] of Object.entries(predictions)) {
+      if (key.startsWith('pen_') && key.endsWith('_h')) {
+        const matchNum = key.split('_')[1];
+        const penH = value;
+        const penA = predictions[`pen_${matchNum}_a`];
+        
+        const mainH = predictions[`ko_${matchNum}_h`];
+        const mainA = predictions[`ko_${matchNum}_a`];
+        
+        // Solo validar si el partido principal es un empate y están definidos
+        if (mainH !== undefined && mainA !== undefined && mainH !== '' && mainA !== '' && mainH === mainA) {
+           if (penH !== undefined && penA !== undefined && penH !== '' && penA !== '' && penH === penA) {
+             Alert.alert('Error', 'Los penaltis no pueden terminar en empate.');
+             return;
+           }
+        }
+      }
+    }
+
     setSaving(true);
     try {
       await api.savePredictions(playerName, groupName, predictions);
@@ -253,36 +288,76 @@ export default function PredictionsScreen() {
             {matchesToDisplay.map((match: any) => {
               const score1 = predictions[`${match.id}_h`] || '';
               const score2 = predictions[`${match.id}_a`] || '';
+              
+              const isKnockout = match.id.startsWith('ko_');
+              const isTie = score1 !== '' && score2 !== '' && score1 === score2;
+              const matchNum = isKnockout ? match.id.split('_')[1] : '';
+
+              const pen1 = predictions[`pen_${matchNum}_h`] || '';
+              const pen2 = predictions[`pen_${matchNum}_a`] || '';
+              const isPenTieError = pen1 !== '' && pen2 !== '' && pen1 === pen2;
 
               return (
-                <View key={match.id} style={styles.matchCard}>
-                  <View style={styles.teamContainer}>
-                    <Text style={styles.teamText} numberOfLines={2}>{match.team1}</Text>
-                  </View>
-                  
-                  <View style={styles.scoreContainer}>
-                    <TextInput
-                      style={styles.scoreInput}
-                      keyboardType="number-pad"
-                      value={score1}
-                      onChangeText={(text) => handleScoreChange(match.id, 1, text)}
-                      placeholder="-"
-                      placeholderTextColor="#666"
-                    />
-                    <Text style={styles.vsText}>-</Text>
-                    <TextInput
-                      style={styles.scoreInput}
-                      keyboardType="number-pad"
-                      value={score2}
-                      onChangeText={(text) => handleScoreChange(match.id, 2, text)}
-                      placeholder="-"
-                      placeholderTextColor="#666"
-                    />
+                <View key={match.id} style={styles.matchCardWrapper}>
+                  <View style={styles.matchCard}>
+                    <View style={styles.teamContainer}>
+                      <Text style={styles.teamText} numberOfLines={2}>{match.team1}</Text>
+                    </View>
+                    
+                    <View style={styles.scoreContainer}>
+                      <TextInput
+                        style={styles.scoreInput}
+                        keyboardType="number-pad"
+                        value={score1}
+                        onChangeText={(text) => handleScoreChange(match.id, 1, text)}
+                        placeholder="-"
+                        placeholderTextColor="#666"
+                      />
+                      <Text style={styles.vsText}>-</Text>
+                      <TextInput
+                        style={styles.scoreInput}
+                        keyboardType="number-pad"
+                        value={score2}
+                        onChangeText={(text) => handleScoreChange(match.id, 2, text)}
+                        placeholder="-"
+                        placeholderTextColor="#666"
+                      />
+                    </View>
+
+                    <View style={styles.teamContainerRight}>
+                      <Text style={styles.teamTextRight} numberOfLines={2}>{match.team2}</Text>
+                    </View>
                   </View>
 
-                  <View style={styles.teamContainerRight}>
-                    <Text style={styles.teamTextRight} numberOfLines={2}>{match.team2}</Text>
-                  </View>
+                  {isKnockout && isTie && (
+                    <View style={styles.penaltiesCard}>
+                      <View style={styles.teamContainer}>
+                        <Text style={[styles.teamText, styles.penaltiesText]}>Penaltis</Text>
+                      </View>
+                      
+                      <View style={styles.scoreContainer}>
+                        <TextInput
+                          style={[styles.scoreInput, isPenTieError && styles.scoreInputError]}
+                          keyboardType="number-pad"
+                          value={pen1}
+                          onChangeText={(text) => handlePenaltyChange(matchNum, 1, text)}
+                          placeholder="-"
+                          placeholderTextColor="#666"
+                        />
+                        <Text style={styles.vsText}>-</Text>
+                        <TextInput
+                          style={[styles.scoreInput, isPenTieError && styles.scoreInputError]}
+                          keyboardType="number-pad"
+                          value={pen2}
+                          onChangeText={(text) => handlePenaltyChange(matchNum, 2, text)}
+                          placeholder="-"
+                          placeholderTextColor="#666"
+                        />
+                      </View>
+
+                      <View style={styles.teamContainerRight} />
+                    </View>
+                  )}
                 </View>
               );
             })}
@@ -403,14 +478,31 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // Espacio para el footer
     gap: 12,
   },
-  matchCard: {
-    flexDirection: 'row',
+  matchCardWrapper: {
     backgroundColor: '#151a3a',
     borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#1e2a5a',
+    overflow: 'hidden',
+  },
+  matchCard: {
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'center',
+  },
+  penaltiesCard: {
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'center',
+    backgroundColor: '#1e2a5a44',
+    borderTopWidth: 1,
+    borderTopColor: '#1e2a5a',
+  },
+  penaltiesText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
   teamContainer: {
     flex: 1,
