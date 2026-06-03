@@ -71,26 +71,32 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
 // AUTENTICACIÓN
 // ==========================================
 
-export async function login(phone: string, pin: string, groupName: string) {
+export async function login(email: string, password: string, groupName: string) {
   return apiFetch('/login', {
     method: 'POST',
-    body: JSON.stringify({ phone, playerPin: pin, groupName }),
+    body: JSON.stringify({ email, password, groupName }),
   });
 }
 
-export async function register(playerName: string, phone: string, pin: string, groupName: string, isNewGroup: boolean = false) {
+export async function register(
+  playerName: string,
+  email: string,
+  password: string,
+  groupName: string,
+  isNewGroup: boolean = false,
+) {
   return apiFetch('/register', {
     method: 'POST',
-    body: JSON.stringify({ playerName, phone, playerPin: pin, groupName, isNewGroup }),
+    body: JSON.stringify({ playerName, email, password, groupName, isNewGroup }),
   });
 }
 
-export async function getUserByPhone(phone: string) {
-  return apiFetch(`/user/by-phone/${phone}`);
+export async function getUserByEmail(email: string) {
+  return apiFetch(`/user/by-email/${encodeURIComponent(email)}`);
 }
 
-export async function getUserGroups(phone: string) {
-  return apiFetch(`/groups?phone=${phone}`);
+export async function getUserGroups(email: string) {
+  return apiFetch(`/groups?email=${encodeURIComponent(email)}`);
 }
 
 // ==========================================
@@ -101,10 +107,10 @@ export async function getPlayers(groupName: string) {
   return apiFetch(`/groups/${encodeURIComponent(groupName)}/players`);
 }
 
-export async function addPlayer(groupName: string, playerName: string, phone: string) {
+export async function addPlayer(groupName: string, playerName: string, email: string) {
   return apiFetch(`/groups/${encodeURIComponent(groupName)}/players`, {
     method: 'POST',
-    body: JSON.stringify({ playerName, phone }),
+    body: JSON.stringify({ playerName, email }),
   });
 }
 
@@ -148,8 +154,8 @@ export async function getPredictions(groupName: string) {
   return apiFetch(`/predictions?groupName=${encodeURIComponent(groupName)}`);
 }
 
-export async function getMyPredictions(groupName: string, phone: string) {
-  return apiFetch(`/predictions?groupName=${encodeURIComponent(groupName)}&phone=${encodeURIComponent(phone)}`);
+export async function getMyPredictions(groupName: string, userId: string) {
+  return apiFetch(`/predictions?groupName=${encodeURIComponent(groupName)}&userId=${encodeURIComponent(userId)}`);
 }
 
 export async function savePredictions(playerName: string, groupName: string, predictions: any) {
@@ -159,10 +165,10 @@ export async function savePredictions(playerName: string, groupName: string, pre
   });
 }
 
-export async function registerPushToken(phone: string, token: string, platform: string) {
+export async function registerPushToken(userId: string, token: string, platform: string) {
   return apiFetch('/push-token', {
     method: 'POST',
-    body: JSON.stringify({ phone, token, platform }),
+    body: JSON.stringify({ userId, token, platform }),
   });
 }
 
@@ -220,61 +226,67 @@ export async function getChatHistory(groupName: string, before: string | null = 
 }
 
 // ==========================================
-
-// ==========================================
 // PERFIL
 // ==========================================
 
-export async function getProfile(phone: string) {
-  return apiFetch(`/profile?phone=${phone}`);
+export async function getProfile(userId: string) {
+  return apiFetch(`/profile?userId=${encodeURIComponent(userId)}`);
 }
 
-export async function updateProfile(phone: string, groupName: string, profile: any) {
+export async function updateProfile(userId: string, groupName: string, profile: any) {
   return apiFetch('/profile', {
     method: 'POST',
-    body: JSON.stringify({ phone, groupName, profile }),
+    body: JSON.stringify({ userId, groupName, profile }),
   });
 }
 
-export async function changePin(phone: string, groupName: string, oldPin: string, newPin: string) {
-  return apiFetch('/profile/change-pin', {
+export async function changePassword(
+  userId: string,
+  oldPassword: string,
+  newPassword: string,
+) {
+  return apiFetch('/profile/change-password', {
     method: 'POST',
-    body: JSON.stringify({ phone, groupName, oldPin, newPin }),
+    body: JSON.stringify({ userId, oldPassword, newPassword }),
   });
 }
 
-export async function deleteAccount(phone: string) {
-  return apiFetch(`/profile?phone=${encodeURIComponent(phone)}`, {
+export async function deleteAccount(userId: string) {
+  return apiFetch(`/profile?userId=${encodeURIComponent(userId)}`, {
     method: 'DELETE',
   });
 }
 
-export async function reportContent(data: { reporterPhone: string, reportedUser: string, messageId?: string, reason: string }) {
+export async function reportContent(data: {
+  reporterId: string;
+  reportedId: string;
+  messageId?: string;
+  reason: string;
+}) {
   return apiFetch('/report', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-export async function blockUser(blockerPhone: string, blockedPhone: string, groupName?: string) {
+export async function blockUser(blockerId: string, blockedId: string, groupName?: string) {
   return apiFetch('/block', {
     method: 'POST',
-    body: JSON.stringify({ blockerPhone, blockedPhone, groupName }),
+    body: JSON.stringify({ blockerId, blockedId, groupName }),
   });
 }
 
-export async function unblockUser(blockerPhone: string, blockedPhone: string) {
+export async function unblockUser(blockerId: string, blockedId: string) {
   return apiFetch('/unblock', {
     method: 'POST',
-    body: JSON.stringify({ blockerPhone, blockedPhone }),
+    body: JSON.stringify({ blockerId, blockedId }),
   });
 }
 
-export async function getBlockedUsers(phone: string): Promise<string[]> {
-  return apiFetch(`/blocked?phone=${encodeURIComponent(phone)}`);
+export async function getBlockedUsers(userId: string): Promise<string[]> {
+  return apiFetch(`/blocked?userId=${encodeURIComponent(userId)}`);
 }
 
 export async function searchGiphy(query: string) {
   return apiFetch(`/giphy/search?q=${encodeURIComponent(query)}`);
 }
-

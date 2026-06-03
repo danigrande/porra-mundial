@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getAuth, logout, setCurrentGroup } from '../../stores/authStore';
+import { getAuth, saveAuth, logout, setCurrentGroup } from '../../stores/authStore';
 import * as api from '../../services/api';
 import * as socketService from '../../services/socket';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
@@ -50,17 +50,17 @@ export default function ProfileScreen() {
     { id: 'trump', nameKey: 'profile.personality_trump', icon: '🇬🇧' }
   ];
 
-  // PIN Change State
-  const [oldPin, setOldPin] = useState('');
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [changingPin, setChangingPin] = useState(false);
+  // Password Change State
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (!auth) return;
     
     setLoading(true);
-    api.getProfile(auth.phone)
+    api.getProfile(auth.userId)
       .then(data => {
         setNickname(data.nickname || auth.name);
         setHumorStyle(data.humor_style || 'Divertido y amigable');
@@ -80,7 +80,7 @@ export default function ProfileScreen() {
       const likesArray = likes.split(',').map(s => s.trim()).filter(Boolean);
       const dislikesArray = dislikes.split(',').map(s => s.trim()).filter(Boolean);
       
-      await api.updateProfile(auth.phone, auth.currentGroup, {
+      await api.updateProfile(auth.userId, auth.currentGroup, {
         nickname,
         humor_style: humorStyle,
         ai_personality: aiPersonality,
@@ -96,28 +96,30 @@ export default function ProfileScreen() {
     }
   }
 
-  async function handleChangePin() {
+  async function handleChangePassword() {
     if (!auth) return;
-    if (newPin.length !== 4 || isNaN(Number(newPin))) {
-      Alert.alert(t('common.error'), t('profile.pin_4_digits'));
+    if (newPassword.length < 8) {
+      Alert.alert(t('common.error'), t('profile.password_min_length') || 'La contraseña debe tener al menos 8 caracteres');
       return;
     }
-    if (newPin !== confirmPin) {
-      Alert.alert(t('common.error'), t('profile.pin_mismatch'));
+    if (newPassword !== confirmPassword) {
+      Alert.alert(t('common.error'), t('profile.password_mismatch') || 'Las contraseñas no coinciden');
       return;
     }
 
-    setChangingPin(true);
+    setChangingPassword(true);
     try {
-      await api.changePin(auth.phone, auth.currentGroup, oldPin, newPin);
-      Alert.alert(t('common.success'), t('profile.pin_updated'));
-      setOldPin('');
-      setNewPin('');
-      setConfirmPin('');
+      await api.changePassword(auth.userId, oldPassword, newPassword);
+      // Update persisted password so socket can re-auth
+      await saveAuth({ ...auth, password: newPassword });
+      Alert.alert(t('common.success'), t('profile.password_updated') || '¡Contraseña actualizada!');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
-      setChangingPin(false);
+      setChangingPassword(false);
     }
   }
 
@@ -135,7 +137,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               setLoading(true);
-              await api.deleteAccount(auth.phone);
+              await api.deleteAccount(auth.userId);
               await logout();
               router.replace('/(auth)/login');
             } catch (e: any) {
@@ -171,7 +173,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <Text style={styles.userName}>{auth?.name}</Text>
-          <Text style={styles.userPhone}>+{auth?.phone}</Text>
+          <Text style={styles.userPhone}>{auth?.email}</Text>
         </View>
 
         {/* CONFIGURACIÓN IA */}
@@ -308,7 +310,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* CAMBIO DE PIN */}
+        {/* CAMBIO DE CONTRASEÑA */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <FontAwesome5 name="lock" size={20} color="#f59e0b" />
@@ -319,54 +321,48 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>{t('profile.current_pin')}</Text>
+            <Text style={styles.label}>{t('profile.current_password') || 'Contraseña actual'}</Text>
             <TextInput 
               style={styles.input} 
-              value={oldPin} 
-              onChangeText={setOldPin}
-              keyboardType="number-pad"
+              value={oldPassword} 
+              onChangeText={setOldPassword}
               secureTextEntry
-              maxLength={4}
-              placeholder="••••"
+              placeholder="••••••••"
               placeholderTextColor="#64748b"
             />
           </View>
 
           <View style={styles.row}>
             <View style={[styles.formGroup, {flex: 1, marginRight: 8}]}>
-              <Text style={styles.label}>{t('profile.new_pin')}</Text>
+              <Text style={styles.label}>{t('profile.new_password') || 'Nueva contraseña'}</Text>
               <TextInput 
                 style={styles.input} 
-                value={newPin} 
-                onChangeText={setNewPin}
-                keyboardType="number-pad"
+                value={newPassword} 
+                onChangeText={setNewPassword}
                 secureTextEntry
-                maxLength={4}
-                placeholder="••••"
+                placeholder="••••••••"
                 placeholderTextColor="#64748b"
               />
             </View>
             <View style={[styles.formGroup, {flex: 1, marginLeft: 8}]}>
-              <Text style={styles.label}>{t('profile.confirm_pin')}</Text>
+              <Text style={styles.label}>{t('profile.confirm_password') || 'Confirmar'}</Text>
               <TextInput 
                 style={styles.input} 
-                value={confirmPin} 
-                onChangeText={setConfirmPin}
-                keyboardType="number-pad"
+                value={confirmPassword} 
+                onChangeText={setConfirmPassword}
                 secureTextEntry
-                maxLength={4}
-                placeholder="••••"
+                placeholder="••••••••"
                 placeholderTextColor="#64748b"
               />
             </View>
           </View>
 
           <TouchableOpacity 
-            style={[styles.pinButton, changingPin && styles.buttonDisabled]} 
-            onPress={handleChangePin} 
-            disabled={changingPin}
+            style={[styles.pinButton, changingPassword && styles.buttonDisabled]} 
+            onPress={handleChangePassword} 
+            disabled={changingPassword}
           >
-            {changingPin ? <ActivityIndicator color="#f59e0b" /> : <Text style={styles.pinButtonText}>{t('profile.update_pin')}</Text>}
+            {changingPassword ? <ActivityIndicator color="#f59e0b" /> : <Text style={styles.pinButtonText}>{t('profile.update_password') || 'Actualizar contraseña'}</Text>}
           </TouchableOpacity>
         </View>
         

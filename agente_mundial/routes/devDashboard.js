@@ -4,12 +4,16 @@
 
 import express from 'express';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { AILog } from '../models/AILog.js';
 import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
 import { Group } from '../models/Group.js';
 import { Summary } from '../models/Summary.js';
 import { Prediction } from '../models/Prediction.js';
+import { BlockedUser } from '../models/BlockedUser.js';
+import { Report } from '../models/Report.js';
+import { PushToken } from '../models/PushToken.js';
 import config from '../config.js';
 
 const router = express.Router();
@@ -352,7 +356,7 @@ router.get('/groups', async (req, res) => {
 router.get('/groups/:name/details', async (req, res) => {
   try {
     const { name } = req.params;
-    const group = await Group.findOne({ name }).populate('members', 'name phone');
+    const group = await Group.findOne({ name }).populate('members', 'name email');
     if (!group) return res.status(404).json({ error: 'Grupo no encontrado' });
 
     const [predictions, summaries] = await Promise.all([
@@ -486,19 +490,117 @@ router.post('/groups/:groupName/admin', async (req, res) => {
   }
 });
 
-// Resetear PIN de un usuario (Forzar a 1234)
-router.post('/users/:userName/reset-pin', async (req, res) => {
+// Listar todos los usuarios
+router.get('/users', async (req, res) => {
+  try {
+    const users = await User.find().select('name email nickname groups isAdminOf createdAt').lean();
+    const usersWithStats = await Promise.all(users.map(async (u) => {
+      const [predictionCount, messageCount] = await Promise.all([
+        Prediction.countDocuments({ user: u._id }),
+        Message.countDocuments({ senderId: u._id.toString() })
+      ]);
+      return {
+        _id: u._id,
+        name: u.name,
+        email: u.email || '',
+        nickname: u.nickname || '',
+        groups: u.groups || [],
+        isAdminOf: u.isAdminOf || [],
+        predictionCount,
+        messageCount,
+        createdAt: u.createdAt
+      };
+    }));
+    res.json(usersWithStats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Resetear contraseña de un usuario (Forzar a 'PrediccionMundial')
+router.post('/users/:userName/reset-password', async (req, res) => {
   try {
     const { userName } = req.params;
     const user = await User.findOne({ name: userName });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    user.pin = '1234';
+    user.password = await bcrypt.hash('PrediccionMundial', 10);
     await user.save();
     
-    console.log(`🔧 PIN reseteado a 1234 para ${userName}`);
+    console.log(`🔧 Contraseña reseteada a PrediccionMundial para ${userName}`);
     res.json({ status: 'ok' });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Borrar usuario de la base de datos (borrado en cascada)
+router.delete('/users/:userName', async (req, res) => {
+  try {
+    const { userName } = req.params;
+    const userId = req.query.userId;
+    
+    let user;
+    if (userId) {
+      user = await User.findById(userId);
+    } else {
+      user = await User.findOne({ name: userName });
+    }
+    
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const userIdStr = user._id.toString();
+    
+    // 1. Borrar predicciones
+    const delPredictions = await Prediction.deleteMany({ user: user._id });
+    
+    // 2. Borrar mensajes del chat
+    const delMessages = await Message.deleteMany({ senderId: userIdStr });
+    
+    // 3. Borrar tokens de push
+    const delTokens = await PushToken.deleteMany({ user: userIdStr });
+    
+    // 4. Borrar bloqueos (como blocker y como blocked)
+    const delBlocks = await BlockedUser.deleteMany({
+      $or: [{ blockerId: userIdStr }, { blockedId: userIdStr }]
+    });
+    
+    // 5. Borrar reports (como reporter y como reported)
+    const delReports = await Report.deleteMany({
+      $or: [{ reporterId: userIdStr }, { reportedId: userIdStr }]
+    });
+    
+    // 6. Eliminar de todos los grupos
+    await Group.updateMany(
+      { members: user._id },
+      { $pull: { members: user._id } }
+    );
+    
+    // 7. Si era admin de algún grupo, asignar nuevo admin o dejar sin admin
+    await Group.updateMany(
+      { admin: user._id },
+      { $set: { admin: null } }
+    );
+    
+    // 8. Borrar el usuario
+    await User.findByIdAndDelete(user._id);
+    
+    console.log(`🗑️ Usuario "${userName}" (${userIdStr}) borrado en cascada:`);
+    console.log(`   - ${delPredictions.deletedCount} predicciones`);
+    console.log(`   - ${delMessages.deletedCount} mensajes`);
+    console.log(`   - ${delTokens.deletedCount} push tokens`);
+    console.log(`   - ${delBlocks.deletedCount} bloqueos`);
+    console.log(`   - ${delReports.deletedCount} reports`);
+    
+    res.json({ status: 'ok', deleted: {
+      predictions: delPredictions.deletedCount,
+      messages: delMessages.deletedCount,
+      tokens: delTokens.deletedCount,
+      blocks: delBlocks.deletedCount,
+      reports: delReports.deletedCount
+    }});
+  } catch (error) {
+    console.error('Error borrando usuario:', error);
     res.status(500).json({ error: error.message });
   }
 });

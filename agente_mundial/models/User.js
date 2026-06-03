@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  phone: { type: String, required: true, unique: true }, // Identificador único del usuario
-  pin: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true }, // Identificador único del usuario (email)
+  password: { type: String, required: true },
   nickname: { type: String },
   likes: [{ type: String }],
   dislikes: [{ type: String }],

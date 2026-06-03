@@ -9,7 +9,7 @@ import { useTranslation, tTeam } from '../../i18n/i18n';
 export default function PredictionsScreen() {
   const auth = getAuth();
   const groupName = auth?.currentGroup || '';
-  const phone = auth?.phone || '';
+  const userId = auth?.userId || '';
   const playerName = auth?.name || '';
 
   const { t } = useTranslation();
@@ -50,11 +50,11 @@ export default function PredictionsScreen() {
   };
 
   useEffect(() => {
-    if (!groupName || !phone) return;
+    if (!groupName || !userId) return;
     
     setLoading(true);
     Promise.all([
-      api.getMyPredictions(groupName, phone),
+      api.getMyPredictions(groupName, userId),
       api.getTournamentState(groupName)
     ])
       .then(([predData, stateData]) => {
@@ -68,26 +68,37 @@ export default function PredictionsScreen() {
       .finally(() => {
         setLoading(false);
       });
-  }, [groupName, phone]);
+  }, [groupName, userId]);
 
   const matchesToDisplay = useMemo(() => {
+    const now = new Date();
     const group = FIXTURE_GROUPS.find(g => g.letter === selectedGroup);
     if (group) {
-      return getGroupMatches(group).map((m: any) => ({
-        ...m,
-        team1: tTeam(m.team1),
-        team2: tTeam(m.team2)
-      }));
+      return getGroupMatches(group).map((m: any) => {
+        // Asumimos que m.endDate o similar existe, si no, usaremos la lógica de fase
+        const isEditable = !m.endDate || new Date(m.endDate) > now;
+        return {
+          ...m,
+          team1: tTeam(m.team1),
+          team2: tTeam(m.team2),
+          isEditable
+        };
+      });
     }
 
     const koPhase = state?.knockoutBracket?.find((kb: any) => kb.id === selectedGroup);
     if (koPhase) {
       return koPhase.matches.map((mId: number) => {
         const teams = state?.bracketMatches?.[mId] || ['TBD', 'TBD'];
+        // Para KO, la validación es más compleja ya que depende de la fase. 
+        // Pero para este MVP, usaremos el estado de la fase actual.
+        const isEditable = state?.isPredictionWindow ?? true; 
+
         return {
           id: `ko_${mId}`,
           team1: resolveTeamName(teams[0]),
-          team2: resolveTeamName(teams[1])
+          team2: resolveTeamName(teams[1]),
+          isEditable
         };
       });
     }
@@ -306,28 +317,29 @@ export default function PredictionsScreen() {
                     
                     <View style={styles.scoreContainer}>
                       <TextInput
-                        style={styles.scoreInput}
+                        style={[styles.scoreInput, !match.isEditable && styles.scoreInputDisabled]}
                         keyboardType="number-pad"
                         value={score1}
                         onChangeText={(text) => handleScoreChange(match.id, 1, text)}
                         placeholder="-"
                         placeholderTextColor="#666"
+                        editable={match.isEditable}
                       />
                       <Text style={styles.vsText}>-</Text>
                       <TextInput
-                        style={styles.scoreInput}
+                        style={[styles.scoreInput, !match.isEditable && styles.scoreInputDisabled]}
                         keyboardType="number-pad"
                         value={score2}
                         onChangeText={(text) => handleScoreChange(match.id, 2, text)}
                         placeholder="-"
                         placeholderTextColor="#666"
+                        editable={match.isEditable}
                       />
                     </View>
 
                     <View style={styles.teamContainerRight}>
                       <Text style={styles.teamTextRight} numberOfLines={2}>{match.team2}</Text>
                     </View>
-                  </View>
 
                   {isKnockout && isTie && (
                     <View style={styles.penaltiesCard}>
@@ -543,6 +555,11 @@ const styles = StyleSheet.create({
     width: 32,
     textAlign: 'center',
     paddingVertical: 4,
+  },
+  scoreInputDisabled: {
+    color: '#666',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
   vsText: {
     color: '#666',

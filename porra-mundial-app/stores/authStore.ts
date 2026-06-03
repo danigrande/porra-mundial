@@ -7,8 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const AUTH_KEY = 'porra_mundial_auth';
 
 export type AuthData = {
-  phone: string;
-  pin: string;
+  userId: string;
+  email: string;
+  password: string; // kept in memory for socket re-auth
   name: string;
   currentGroup: string;
   groups: string[];

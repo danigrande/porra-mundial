@@ -32,6 +32,7 @@
     <div class="tab" onclick="switchTab('logs')">📋 AI Logs</div>
     <div class="tab" onclick="switchTab('rag')">🧠 RAG Explorer</div>
     <div class="tab" onclick="switchTab('groups')">👥 Manage Groups</div>
+    <div class="tab" onclick="switchTab('users')">👤 Manage Users</div>
     <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
   </div>
 
@@ -94,6 +95,17 @@
           <button onclick="loadGroups()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
         </div>
         <div id="groups-table-body"><div class="loading"><span class="spinner"></span> Cargando grupos...</div></div>
+      </div>
+    </div>
+
+    <!-- USERS PANEL -->
+    <div class="panel" id="panel-users">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>👤 Gestión de Usuarios</h3>
+          <button onclick="loadUsers()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
+        </div>
+        <div id="users-table-body"><div class="loading"><span class="spinner"></span> Cargando usuarios...</div></div>
       </div>
     </div>
 

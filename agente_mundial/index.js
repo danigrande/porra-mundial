@@ -26,6 +26,7 @@ import multer from 'multer';
 import apiRoutes from './routes/api.js';
 import devDashboardRoutes from './routes/devDashboard.js';
 import { initChatServer, sendBotMessage } from './chatService.js';
+import { startRssService } from './rssFeedService.js';
 import * as pushService from './pushService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -121,7 +122,7 @@ app.get('/legal/privacy', (req, res) => {
   const content = `
     <p>Última actualización: 12 de mayo de 2026</p>
     <h2>1. Datos que recopilamos</h2>
-    <p>Recopilamos su número de teléfono únicamente para fines de autenticación y vinculación con su grupo de amigos. No compartimos estos datos con terceros.</p>
+    <p>Recopilamos su dirección de correo electrónico únicamente para fines de autenticación y vinculación con su grupo de amigos. No compartimos estos datos con terceros.</p>
     <h2>2. Uso de la Información</h2>
     <p>Sus datos se utilizan para gestionar sus pronósticos, mostrar su posición en el ranking del grupo e interactuar en el chat del grupo.</p>
     <h2>3. Derechos del Usuario</h2>
@@ -236,6 +237,11 @@ app.get('/api/summary/:player', async (req, res) => {
 // ==========================================
 const io = initChatServer(server);
 app.set('io', io);
+
+// ==========================================
+// INICIAR RSS BREAKING NEWS SERVICE
+// ==========================================
+startRssService(io);
 
 // ==========================================
 // ARRANCAR SERVIDOR

@@ -48,32 +48,20 @@ export function initChatServer(httpServer) {
   // ==========================================
   io.use(async (socket, next) => {
     try {
-      const { phone, pin, groupName } = socket.handshake.auth;
+      const { email, password } = socket.handshake.auth;
       
-      if (!phone || !pin) {
-        return next(new Error('Credenciales requeridas (phone + pin)'));
+      if (!email || !password) {
+        return next(new Error('Credenciales requeridas (email + password)'));
       }
 
       // Verificar usuario
-      const user = await User.findOne({ phone });
+      const user = await User.findOne({ email: email.toLowerCase().trim() });
       if (!user) {
         return next(new Error('Credenciales inválidas'));
       }
 
-      // Verificar PIN con soporte para hashes bcrypt y texto plano heredado
-      let isMatch = false;
-      if (user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$')) {
-          isMatch = await bcrypt.compare(pin, user.pin);
-      } else {
-          isMatch = (user.pin === pin);
-          if (isMatch) {
-              // Si coincide en texto plano, hashear para el futuro
-              user.pin = await bcrypt.hash(pin, 10);
-              await user.save();
-              console.log(`🔐 PIN de ${user.name} actualizado a hash en conexión de socket`);
-          }
-      }
-
+      // Verificar contraseña
+      const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         return next(new Error('Credenciales inválidas'));
       }
@@ -82,7 +70,7 @@ export function initChatServer(httpServer) {
       socket.userData = {
         userId: user._id.toString(),
         userName: user.name,
-        phone: user.phone,
+        email: user.email,
         groups: user.groups || []
       };
 
@@ -103,7 +91,7 @@ export function initChatServer(httpServer) {
       return;
     }
 
-    const { userName, userId, groups, phone } = socket.userData;
+    const { userName, userId, groups } = socket.userData;
     console.log(`💬 ${userName} conectado al chat (${groups?.length || 0} grupos)`);
 
     // Unir automáticamente a las salas de sus grupos
@@ -113,7 +101,8 @@ export function initChatServer(httpServer) {
 
     // --- UNIRSE A UN GRUPO ESPECÍFICO ---
     socket.on('join-group', async (groupName) => {
-      if (!socket.userData.groups.includes(groupName)) {
+      const { userName, userId, groups } = socket.userData;
+      if (!groups.includes(groupName)) {
         socket.emit('error', { message: 'No eres miembro de este grupo' });
         return;
       }
@@ -128,12 +117,12 @@ export function initChatServer(httpServer) {
           .lean();
         
         // Obtener lista de usuarios que el usuario ha bloqueado
-        const blockedByMe = await BlockedUser.find({ blockerPhone: phone }).lean();
-        const blockedPhones = blockedByMe.map(b => b.blockedPhone);
+        const blockedByMe = await BlockedUser.find({ blockerId: userId }).lean();
+        const blockedIds = blockedByMe.map(b => b.blockedId);
 
         // Filtrar mensajes de usuarios bloqueados
         const filteredMessages = messages
-          .filter(m => !blockedPhones.includes(m.senderId))
+          .filter(m => !blockedIds.includes(m.senderId))
           .reverse(); // Orden cronológico
         
         socket.emit('chat-history', {
@@ -159,19 +148,19 @@ export function initChatServer(httpServer) {
           return;
       }
 
-      const { userName, userId, phone } = socket.userData;
+      const { userName, userId, email } = socket.userData;
       const cleanGroupName = groupName.trim();
 
       try {
         // Asegurar que el caché esté fresco para la identificación
         await refreshCache(cleanGroupName);
-        const identifiedName = identifyPlayer(phone, cleanGroupName);
+        const identifiedName = identifyPlayer(userId, cleanGroupName);
         const senderNameForDb = identifiedName || userName;
 
         // 1. Guardar mensaje del usuario en MongoDB
         const userMessage = await Message.create({
           chatId: cleanGroupName,
-          senderId: phone,
+          senderId: userId,
           senderName: senderNameForDb,
           text: text?.trim(),
           type,
@@ -187,7 +176,7 @@ export function initChatServer(httpServer) {
           _id: userMessage._id.toString(),
           chatId: cleanGroupName,
           senderName: senderNameForDb,
-          senderId: phone,
+          senderId: userId,
           text: text?.trim(),
           type,
           mediaUrl,
@@ -200,7 +189,7 @@ export function initChatServer(httpServer) {
         for (const s of socketsInRoom) {
             // No enviar si el destinatario ha bloqueado al remitente
             // Nota: Para optimizar, podríamos cachear los bloqueos en el socket
-            const isBlocked = await BlockedUser.findOne({ blockerPhone: s.userData.phone, blockedPhone: phone });
+            const isBlocked = await BlockedUser.findOne({ blockerId: s.userData.userId, blockedId: userId });
             if (!isBlocked) {
                 s.emit('new-message', messagePayload);
             }
@@ -244,7 +233,7 @@ export function initChatServer(httpServer) {
           
           const botResponse = await processMessage(
             cleanText, 
-            phone,
+            userId,
             groupName
           );
 

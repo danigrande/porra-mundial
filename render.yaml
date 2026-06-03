@@ -27,6 +27,8 @@ services:
         sync: false
       - key: DEV_DASHBOARD_KEY
         value: agente-dev-2026
+      - key: TAVILY_API_KEY
+        sync: false # Configurar manualmente en el dashboard (obtener gratis en tavily.com)
       - key: TEST_MODE
         value: "true"
 

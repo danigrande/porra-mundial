@@ -25,7 +25,7 @@ export type ChatMessage = {
 /**
  * Conecta al servidor de chat con las credenciales del usuario.
  */
-export function connect(phone: string, pin: string): Socket {
+export function connect(email: string, password: string): Socket {
   // Si ya hay socket activo (conectado o en proceso de reconexión), reutilizarlo
   if (socket && (socket.connected || socket.active)) {
     return socket;
@@ -39,7 +39,7 @@ export function connect(phone: string, pin: string): Socket {
   }
 
   socket = io(SOCKET_URL, {
-    auth: { phone, pin },
+    auth: { email, password },
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: 10,

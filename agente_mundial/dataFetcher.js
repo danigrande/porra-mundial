@@ -23,7 +23,8 @@ export async function apiCall(params = {}, options = {}) {
     const stored = JSON.parse(localStorage.getItem('worldcup2026_user') || '{}');
     if (!playerName && stored.name) playerName = stored.name;
     if (!groupName && stored.groupName) groupName = stored.groupName;
-    if (!params.phone && stored.phone) params.phone = stored.phone;
+    if (!params.email && stored.email) params.email = stored.email;
+    if (!params.userId && stored.userId) params.userId = stored.userId;
   }
   
   let endpoint = '';
@@ -37,20 +38,24 @@ export async function apiCall(params = {}, options = {}) {
     case 'login':
       endpoint = `/login`;
       method = 'POST';
-      body = { phone: params.phone, playerPin: params.playerPin, groupName };
+      body = { email: params.email, password: params.password, groupName };
       break;
     case 'register':
       endpoint = `/register`;
       method = 'POST';
-      body = { playerName, phone: params.phone, playerPin: params.playerPin, groupName, isNewGroup: params.isNewGroup };
+      body = { playerName, email: params.email, password: params.password, groupName, isNewGroup: params.isNewGroup };
       break;
     case 'listGroups':
       endpoint = `/groups`;
       break;
     case 'getGroupsForPlayer':
-      endpoint = params.phone 
-        ? `/groups?phone=${encodeURIComponent(params.phone)}` 
-        : `/groups?playerName=${encodeURIComponent(playerName)}`;
+      if (params.userId) {
+        endpoint = `/groups?userId=${encodeURIComponent(params.userId)}`;
+      } else if (params.email) {
+        endpoint = `/groups?email=${encodeURIComponent(params.email)}`;
+      } else {
+        endpoint = `/groups?playerName=${encodeURIComponent(playerName)}`;
+      }
       break;
     case 'getRules':
       endpoint = `/groups/${encodeURIComponent(groupName)}/rules`;
@@ -91,28 +96,25 @@ export async function apiCall(params = {}, options = {}) {
     case 'saveInfo':
       endpoint = `/profile`;
       method = 'POST';
-      body = { playerName, phone: params.phone, groupName, profile: params.data }; // <-- Cambiado de params.profile a params.data
+      body = { playerName, userId: params.userId, email: params.email, groupName, profile: params.data }; // <-- Cambiado de params.profile a params.data
       break;
     case 'getInfo':
-      endpoint = params.phone 
-        ? `/profile?phone=${encodeURIComponent(params.phone)}` 
+      endpoint = params.userId 
+        ? `/profile?userId=${encodeURIComponent(params.userId)}` 
         : `/profile?playerName=${encodeURIComponent(playerName)}`;
       break;
-    case 'changePin':
-      endpoint = `/profile/change-pin`;
+    case 'changePassword':
+      endpoint = `/profile/change-password`;
       method = 'POST';
-      body = { playerName, phone: params.phone, groupName, oldPin: params.oldPin, newPin: params.newPin };
+      body = { userId: params.userId, oldPassword: params.oldPassword, newPassword: params.newPassword };
       break;
-    case 'getSummary':
-      endpoint = `/summary/${encodeURIComponent(playerName)}?groupName=${encodeURIComponent(groupName)}`;
-      break;
-    case 'getPhoneMapping':
-      endpoint = `/groups/${encodeURIComponent(groupName)}/phone-mapping`;
+    case 'getUserMapping':
+      endpoint = `/groups/${encodeURIComponent(groupName)}/user-mapping`;
       break;
     case 'addPlayer':
       endpoint = `/groups/${encodeURIComponent(groupName)}/players`;
       method = 'POST';
-      body = { playerName, phone: params.phone };
+      body = { playerName, email: params.email };
       break;
     case 'getPlayers':
       endpoint = `/groups/${encodeURIComponent(groupName)}/players`;
@@ -195,8 +197,8 @@ export const getAllSummaries = async (groupName) => {
   return res?.status === 'success' ? res.data : {};
 };
 
-export const getPhoneMapping = async (groupName) => {
-  const res = await apiCall({ action: 'getPhoneMapping', groupName });
+export const getUserMapping = async (groupName) => {
+  const res = await apiCall({ action: 'getUserMapping', groupName });
   return res?.status === 'success' ? res.data : {};
 };
 

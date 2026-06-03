@@ -15,7 +15,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function setupPushNotifications(phone: string) {
+export async function setupPushNotifications(userId: string) {
   if (!Device.isDevice) {
     console.log('[Push] Must use physical device for Push Notifications');
     return null;
@@ -35,7 +35,6 @@ export async function setupPushNotifications(phone: string) {
       return null;
     }
 
-    // Obtener el projectId desde la configuración de Expo
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ??
       Constants?.easConfig?.projectId;
@@ -65,7 +64,7 @@ export async function setupPushNotifications(phone: string) {
     }
 
     // Enviar el token al backend
-    await registerPushToken(phone, token, Platform.OS);
+    await registerPushToken(userId, token, Platform.OS);
     return token;
   } catch (error: any) {
     console.log('[Push] Error configurando notificaciones (problema de Expo):', error?.message || error);

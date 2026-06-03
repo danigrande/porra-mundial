@@ -14,6 +14,21 @@ const groq = new Groq({
   apiKey: config.groq.apiKey,
 });
 
+// Track last N bot responses per personality to avoid catchphrase repetition
+const recentBotOutputs = new Map();
+const MAX_RECENT_OUTPUTS = 3;
+
+function getRecentOutputs(personalityId) {
+  return recentBotOutputs.get(personalityId) || [];
+}
+
+function addRecentOutput(personalityId, text) {
+  const outputs = recentBotOutputs.get(personalityId) || [];
+  outputs.push(text);
+  if (outputs.length > MAX_RECENT_OUTPUTS) outputs.shift();
+  recentBotOutputs.set(personalityId, outputs);
+}
+
 /**
  * Map of AI personality prompts.
  * Each personality has a unique speaking style and language.
@@ -27,7 +42,7 @@ const PERSONALITY_PROMPTS = {
  Reglas:
  - Responde SIEMPRE en español
  - Sé breve (máximo 3-4 frases) a menos que te pidan detalles
- - Usa frases típicas de Andrés Montes como "¡Ráfaga!", "¡Toma, toma, toma!", "¡Eso es magia!"
+ - VARIEDAD CRÍTICA: NO repitas las mismas frases hechas en todos los mensajes. Tienes un repertorio amplio — rotación natural. Si usaste "¡Ráfaga!" o "¡Toma, toma, toma!" recientemente, elige expresiones diferentes esta vez.
  - Destaca quien va primer y quien va ultimo y quienes estan cerca de ser el primero o el ultimo de una manera graciosa.  
  - Utiliza el termino "faroliyo" para referirte a el
  - Mantén un tono divertido pero respetuoso, sin groserías ni contenido ofensivo
@@ -38,13 +53,13 @@ const PERSONALITY_PROMPTS = {
  - No uses markdown complejo ni formateo especial, mantén un estilo limpio para el chat.`,
 
   pedrerol: `Eres el "Agente Mundial" 🏆, un chatbot para varios grupos de amigos que participan en una "Predicción del Mundial 2026" (pronósticos de resultados de fútbol entre amigos, sin dinero real).
- 
+  
  Tu personalidad es como la de JOSEP PEDREROL, presentador de El Chiringuito de Jugones: dramático, intenso, siempre con exclusivas, creando expectación máxima.
  
  Reglas:
  - Responde SIEMPRE en español
  - Sé breve (máximo 3-4 frases) a menos que te pidan detalles
- - Usa frases típicas de Pedrerol: "¡ATENTOS!", "Os lo vengo diciendo", "¡EXCLUSIVA!", "Esto es lo que hay", "¡Se queda!"
+ - VARIEDAD CRÍTICA: NO repitas las mismas frases hechas en todos los mensajes. Si ya soltaste un "¡ATENTOS!" o una "EXCLUSIVA" hace poco, cambia el registro — sé creativo con las transiciones.
  - Trata cada dato de la clasificación como si fuera una EXCLUSIVA del programa
  - Genera tensión dramática, con pausas tipo "Y el líder... es..."
  - Destaca al primero como un fichaje estrella y al último como alguien que necesita un "fichaje de invierno"
@@ -56,13 +71,13 @@ const PERSONALITY_PROMPTS = {
  - No uses markdown complejo ni formateo especial, mantén un estilo limpio para el chat.`,
 
   roncero: `Eres el "Agente Mundial" 🏆, un chatbot para varios grupos de amigos que participan en una "Predicción del Mundial 2026" (pronósticos de resultados de fútbol entre amigos, sin dinero real).
- 
+  
  Tu personalidad es como la de TOMÁS RONCERO, periodista ultra-pasional de AS: exageradamente entusiasta, siempre al borde del llanto de emoción, dramático en las derrotas.
  
  Reglas:
  - Responde SIEMPRE en español
  - Sé breve (máximo 3-4 frases) a menos que te pidan detalles
- - Usa frases típicas de Roncero: "¡Esto es HISTÓRICO!", "¡VAMOS!", "Yo ya lo dije", "¡Estoy llorando de emoción!", "¡Es para levantarse y aplaudir!"
+ - VARIEDAD CRÍTICA: NO repitas las mismas frases hechas en todos los mensajes. Si soltaste un "¡ESTO ES HISTÓRICO!" o un "¡ESTOY LLORANDO!" recientemente, busca otra forma de expresar la emoción.
  - Si alguien va primero, celébralo como si hubiera ganado un Mundial
  - Si alguien va último, llora por él como si hubiera descendido
  - Exagera TODO: una diferencia de 2 puntos es "un ABISMO insalvable"
@@ -80,7 +95,7 @@ const PERSONALITY_PROMPTS = {
  Rules:
  - ALWAYS respond in English
  - Be brief (max 3-4 sentences) unless asked for details
- - Use Vader-like phrases: "I find your lack of faith disturbing", "The Force is strong with this one", "You underestimate the power of the Dark Side", "Impressive. Most impressive."
+ - CRITICAL VARIETY: DO NOT reuse the same catchphrases in every message. Rotate naturally. If you recently said "I find your lack of faith disturbing" or "Impressive, most impressive", express yourself differently this time.
  - Treat the leaderboard as the Galactic Empire hierarchy: the leader is the Emperor's chosen, the last place is "frozen in carbonite"
  - Refer to predictions as "sensing the future through the Force"
  - Make references to Star Wars lore when commenting on results
@@ -98,7 +113,7 @@ const PERSONALITY_PROMPTS = {
  Rules:
  - ALWAYS respond in English
  - Be brief (max 3-4 sentences) unless asked for details
- - Use Trump-like phrases: "Tremendous!", "Believe me", "Nobody knows more about predictions than me", "It's going to be HUGE", "Fake stats!", "You're fired!" (for last place)
+ - CRITICAL VARIETY: DO NOT reuse the same catchphrases every time. If you recently called something "Tremendous!" or "HUGE", find a different superlative. The best vocabulary is varied vocabulary.
  - Treat the leader as "a winner, a real winner" and the last place as "a total disaster"
  - Rate everything: "This prediction? 10 out of 10. The best prediction in the history of predictions."
  - Keep a comedic tone, never mean-spirited or actually offensive
@@ -185,18 +200,27 @@ export async function generateResponse(playerName, question, context, meta = {})
     : 'No hay datos de clasificación disponibles todavía.';
 
   const instruction = lang === 'es'
-    ? `Responde como ${personalityName}, personaliza la respuesta para ${profile?.nickname || playerName}. Si hay historial de chat, úsalo para hacer una broma o referencia a algo que se haya dicho recientemente.`
-    : `Respond as ${personalityName}, personalize the response for ${profile?.nickname || playerName}. If there is recent chat history, use it to make a joke or reference to something said recently.`;
+    ? `Responde como ${personalityName}, personaliza la respuesta para ${profile?.nickname || playerName}. Si hay historial de chat, úsalo para hacer una broma o referencia a algo que se haya dicho recientemente. Si se ha proporcionado 'INFORMACIÓN ACTUALIZADA DE INTERNET', úsala como fuente verídica y actual para responder.`
+    : `Respond as ${personalityName}, personalize the response for ${profile?.nickname || playerName}. If there is recent chat history, use it to make a joke or reference to something said recently. If 'UPDATED INTERNET INFORMATION' is provided, use it as a truthful and current source to answer.`;
+
+  // Retrieve recent bot messages for this personality to avoid catchphrase repetition
+  const recentOutputs = getRecentOutputs(personalityId);
+  const recentContext = recentOutputs.length > 0
+    ? (lang === 'es'
+        ? `TUS MENSAJES RECIENTES (no te repitas ni uses las mismas frases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`
+        : `YOUR RECENT MESSAGES (do not repeat yourself or reuse the same catchphrases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`)
+    : '';
 
   const userMessage = `DATOS DEL GRUPO: ${groupName || 'Privado'}
- 
+  
  DATOS DEL JUGADOR QUE PREGUNTA:
  ${playerContext}
 
 CLASIFICACIÓN GENERAL:
 ${rankingContext}
 
-${context.chatContext ? `HISTORIAL DE CHAT RECIENTE SOBRE EL JUGADOR (RAG):\n${context.chatContext}\n` : ''}
+${recentContext}${context.rulesContext ? `CONTEXTO DEL TORNEO:\n${context.rulesContext}\n\n` : ''}${context.matchDrama ? `${context.matchDrama}\n\n` : ''}${context.chatContext ? `HISTORIAL DE CHAT RECIENTE SOBRE EL JUGADOR (RAG):\n${context.chatContext}\n` : ''}
+${context.webContext ? `INFORMACIÓN ACTUALIZADA DE INTERNET:\n${context.webContext}\n` : ''}
 PREGUNTA: "${question}"
 
 ${instruction}`;
@@ -217,6 +241,9 @@ ${instruction}`;
     const latencyMs = Date.now() - startTime;
     const responseText = completion.choices[0]?.message?.content || '¡Jugón! Algo ha fallado en mi cabeza. Inténtalo de nuevo. 🤯';
     const usage = completion.usage || {};
+
+    // Store this response to avoid catchphrase repetition on next call
+    addRecentOutput(personalityId, responseText);
 
     // 📊 Log de la interacción
     saveAILog({

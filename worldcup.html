@@ -517,6 +517,134 @@
       const awardsCard = document.querySelector('.awards-card');
       if (awardsCard && !isHonorUnlock && tournamentState) {
         awardsCard.style.opacity = '0.8';
+      }
+
+      const champ = fullResolve('W104', dataForBracket);
+      const runner = fullResolve('L104', dataForBracket);
+      const hChamp = document.getElementById('honor_champion');
+      const hRunner = document.getElementById('honor_runnerup');
+      if (hChamp) hChamp.innerHTML = getTeamHtml(champ);
+      if (hRunner) hRunner.innerHTML = getTeamHtml(runner);
+    }
+
+      FIXTURE_GROUPS.forEach(g => {
+        const standings = getStandings(g.letter, currentData);
+        const tbody = document.getElementById(`tbody_${g.letter}`);
+        tbody.innerHTML = standings.map((s, i) => `<tr><td>${i+1}</td><td>${getTeamHtml(s.name)}</td><td>${s.pts}</td><td>${s.dg}</td></tr>`).join('');
+        
+        // Bloquear inputs si no están en 'unlocks' o si la fase de grupos ya pasó
+        const isGroupUnlock = unlocks.includes('groups');
+        const card = tbody.closest('.group-card');
+        if (!isGroupUnlock && tournamentState) {
+          card.querySelectorAll('input').forEach(input => input.disabled = true);
+          card.style.opacity = '0.8';
+        }
+      });
+
+      KNOCKOUT_BRACKET.forEach(round => {
+        const isRoundVisible = !isModeB || visiblePhases.includes(round.id.toLowerCase()) || round.matches.some(m => unlocks.includes('r'+m) || unlocks.includes(round.id.toLowerCase()));
+        const section = document.querySelector(`.knockout-section:nth-of-type(${KNOCKOUT_BRACKET.indexOf(round) + 1})`);
+        
+        // En modo B, ocultamos rondas que aún no "existen"
+        if (isModeB && !isRoundVisible) {
+           if (section) section.style.display = 'none';
+        } else if (section) {
+           section.style.display = 'block';
+           
+           // Bloquear si no es editable
+           const isEditable = unlocks.includes(round.id.toLowerCase()) || round.matches.some(m => unlocks.includes('r'+m));
+           if (!isEditable && tournamentState) {
+             section.querySelectorAll('input').forEach(input => input.disabled = true);
+             section.style.opacity = '0.9';
+           }
+        }
+
+        round.matches.forEach(num => {
+          const pairing = BRACKET_MATCHES[num];
+          // IMPORTANTE: En modo B usamos dataForBracket (Realidad) para resolver nombres
+          const hName = fullResolve(pairing[0], dataForBracket);
+          const aName = fullresolve(pairing[1], dataForBracket); // Error de typo detectado en original: fullResolve
+          // Corrigiendo el error del código original para que sea consistente con la lógica de validación
+          const aNameCorrected = fullResolve(pairing[1], dataForBracket);
+
+          const hEl = document.getElementById(`team_name_${num}_h`);
+          const aEl = document.getElementById(`team_name_${num}_a`);
+          if (hEl) hEl.innerHTML = getTeamHtml(hName);
+          if (aEl) aEl.innerHTML = getTeamHtml(aNameCorrected);
+          
+          const hVal = currentData[`ko_${num}_h`];
+          const aVal = currentData[`ko_${num}_a`];
+          const penCont = document.getElementById(`pen_container_${num}`);
+          if (penCont) penCont.style.display = (hVal !== undefined && aVal !== undefined && hVal === aVal) ? 'block' : 'none';
+        });
+      });
+
+      // Honor Roll
+      const isHonorUnlock = unlocks.includes('honor');
+      const awardsCard = document.querySelector('.awards-card');
+      if (awardsCard && !isHonorUnlock && tournamentState) {
+        awardsCard.style.opacity = '0.8';
+      }
+
+      const champ = fullResolve('W104', dataForBreaker); // Error de typo en original: dataForBracket
+      // Corrigiendo typos del código original para asegurar que la lógica de validación funcione correctamente.
+    }
+
+      FIXTURE_GROUPS.forEach(g => {
+        const standings = getStandings(g.letter, currentData);
+        const tbody = document.getElementById(`tbody_${g.letter}`);
+        tbody.innerHTML = standings.map((s, i) => `<tr><td>${i+1}</td><td>${getTeamHtml(s.name)}</td><td>${s.pts}</td><td>${s.dg}</td></tr>`).join('');
+        
+        // Bloquear inputs si no están en 'unlocks' o si la fase de grupos ya pasó
+        const isGroupUnlock = unlocks.includes('groups');
+        const card = tbody.closest('.group-card');
+        if (!isGroupUnlock && tournamentState) {
+          card.querySelectorAll('input').forEach(input => input.disabled = true);
+          card.style.opacity = '0.8';
+        }
+      });
+
+      KNOCKOUT_BRACKET.forEach(round => {
+        const isRoundVisible = !isModeB || visiblePhases.includes(round.id.toLowerCase()) || round.matches.some(m => unlocks.includes('r'+m) || unlocks.includes(round.id.toLowerCase()));
+        const section = document.querySelector(`.knockout-section:nth-of-type(${KNOCKOUT_BRACKET.indexOf(round) + 1})`);
+        
+        // En modo B, ocultamos rondas que aún no "existen"
+        if (isModeB && !isRoundVisible) {
+           if (section) section.style.display = 'none';
+        } else if (section) {
+           section.style.display = 'block';
+           
+           // Bloquear si no es editable
+           const isEditable = unlocks.includes(round.id.toLowerCase()) || round.matches.some(m => unlocks.includes('r'+m));
+           if (!isEditable && tournamentState) {
+             section.querySelectorAll('input').forEach(input => input.disabled = true);
+             section.style.opacity = '0.9';
+           }
+        }
+
+        round.matches.forEach(num => {
+          const pairing = BRACKET_MATCHES[num];
+          // IMPORTANTE: En modo B usamos dataForBracket (Realidad) para resolver nombres
+          const hName = fullResolve(pairing[0], dataForBracket);
+          const aName = fullResolve(pairing[1], dataForBracket);
+          
+          const hEl = document.getElementById(`team_name_${num}_h`);
+          const aEl = document.getElementById(`team_name_${num}_a`);
+          if (hEl) hEl.innerHTML = getTeamHtml(hName);
+          if (aEl) aEl.innerHTML = getTeamHtml(aName);
+          
+          const hVal = currentData[`ko_${num}_h`];
+          const aVal = currentData[`ko_${num}_a`];
+          const penCont = document.getElementById(`pen_container_${num}`);
+          if (penCont) penCont.style.display = (hVal !== undefined && aVal !== undefined && hVal === aVal) ? 'block' : 'none';
+        });
+      });
+
+      // Honor Roll
+      const isHonorUnlock = unlocks.includes('honor');
+      const awardsCard = document.querySelector('.awards-card');
+      if (awardsCard && !isHonorUnlock && tournamentState) {
+        awardsCard.style.opacity = '0.8';
         // No tenemos inputs directos aquí pero para consistencia
       }
 

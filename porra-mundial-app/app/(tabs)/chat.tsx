@@ -57,7 +57,7 @@ export default function ChatScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [recentStickers, setRecentStickers] = useState<string[]>([]);
-  const [groupMembers, setGroupMembers] = useState<{name: string, phone: string, nickname?: string}[]>([]);
+  const [groupMembers, setGroupMembers] = useState<{name: string, userId: string, nickname?: string}[]>([]);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   
@@ -86,8 +86,8 @@ export default function ChatScreen() {
   }, [messages, showUnreadMarker]);
 
   useEffect(() => {
-    if (auth?.phone) {
-        api.getBlockedUsers(auth.phone).then(setBlockedUsers).catch(console.error);
+    if (auth?.userId) {
+        api.getBlockedUsers(auth.userId).then(setBlockedUsers).catch(console.error);
     }
   }, [auth]);
 
@@ -109,7 +109,7 @@ export default function ChatScreen() {
       setMessagesSafe(prev => {
         const newMsgs = [...prev, msg];
         
-        if (msg.senderId === auth.phone || isAtBottomRef.current) {
+        if (msg.senderId === auth?.userId || isAtBottomRef.current) {
           updateLastRead(msg._id);
           setShowUnreadMarker(false);
           setUnreadCount(0);
@@ -123,7 +123,7 @@ export default function ChatScreen() {
         }
         return newMsgs;
       });
-      if (msg.senderId === auth.phone) {
+      if (msg.senderId === auth?.userId) {
         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       }
     };
@@ -362,8 +362,8 @@ export default function ChatScreen() {
 
       // Añadir las opciones "@Agente" y "@Todos" manualmente
       setGroupMembers([
-        { name: 'agente', phone: 'bot', nickname: 'Agente' },
-        { name: 'todos', phone: 'all', nickname: 'Todos' },
+        { name: 'agente', userId: 'bot', nickname: 'Agente' },
+        { name: 'todos', userId: 'all', nickname: 'Todos' },
         ...players
       ]);
     } catch (e) {
@@ -631,7 +631,7 @@ export default function ChatScreen() {
   };
 
   const handleMessageAction = (message: socketService.ChatMessage) => {
-    const isMe = message.senderId === auth?.phone;
+    const isMe = message.senderId === auth?.userId;
     if (isMe) return; // No te puedes reportar a ti mismo
 
     Alert.alert(
@@ -665,7 +665,7 @@ export default function ChatScreen() {
                 style: 'destructive', 
                 onPress: async () => {
                   try {
-                    await api.blockUser(auth?.phone || '', message.senderId, groupName);
+                    await api.blockUser(auth?.userId || '', message.senderId, groupName);
                     setBlockedUsers(prev => [...prev, message.senderId]);
                     Alert.alert(t('common.success'), t('chat.block_success'));
                   } catch (e: any) {
@@ -683,8 +683,8 @@ export default function ChatScreen() {
   const sendReport = async (message: socketService.ChatMessage, reason: string) => {
     try {
       await api.reportContent({
-        reporterPhone: auth?.phone || '',
-        reportedUser: message.senderName,
+        reporterId: auth?.userId || '',
+        reportedId: message.senderId,
         messageId: message._id,
         reason
       });
@@ -718,7 +718,7 @@ export default function ChatScreen() {
   };
 
   const renderMessage = ({ item, index }: { item: socketService.ChatMessage, index: number }) => {
-    const isMe = item.senderId === auth?.phone;
+    const isMe = item.senderId === auth?.userId;
     const showDate = index === 0 || new Date(messages[index - 1].timestamp).toDateString() !== new Date(item.timestamp).toDateString();
     const dateLabel = new Date(item.timestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
     

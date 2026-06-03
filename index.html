@@ -68,60 +68,7 @@
       margin-top: 4px;
     }
 
-    /* Phone input with country selector */
-    .phone-input-group {
-      display: flex;
-      gap: 0;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border-color);
-      transition: border-color 0.2s;
-    }
-
-    .phone-input-group:focus-within {
-      border-color: var(--accent-blue);
-    }
-
-    .country-select {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-primary);
-      border: none;
-      padding: 0.8rem 0.5rem 0.8rem 0.8rem;
-      font-size: 0.95rem;
-      cursor: pointer;
-      min-width: 110px;
-      max-width: 130px;
-      border-right: 1px solid var(--border-color);
-      appearance: none;
-      -webkit-appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 8px center;
-      padding-right: 24px;
-    }
-
-    .country-select option {
-      background: #1a1a2e;
-      color: #fff;
-    }
-
-    .phone-number-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      padding: 0.8rem 1rem;
-      color: var(--text-primary);
-      font-size: 1rem;
-      outline: none;
-      min-width: 0;
-    }
-
-    .phone-number-input::placeholder {
-      color: var(--text-muted);
-      opacity: 0.6;
-    }
-
-    /* Floating language switcher */
+    /* Language switcher */
     .lang-selector-floating {
       position: absolute;
       top: 20px;
@@ -171,30 +118,23 @@
     <div class="login-header">
       <div class="login-logo">⚽</div>
       <h1 class="login-title"><span data-i18n="login.welcome">Bienvenido a</span> <span data-i18n="login.title">Porra Mundial 2026</span></h1>
-      <p class="login-subtitle" id="formSubtitle" data-i18n="login.subtitle">Inicia sesión para ver tu clasificación</p>
-    </div>
-
-    <!-- Login Form -->
+      <p class="login-subtitle" id="formSubtitle" data-i18n="login.subtitle">Inicia sesión para ver tu clasificación    <!-- Login Form -->
     <div id="loginForm">
       <div class="form-group">
-        <label class="form-label" for="loginPhone" data-i18n="login.phone_label">Tu Teléfono Móvil</label>
-        <div class="phone-input-group">
-          <select id="loginCountryCode" class="country-select"></select>
-          <input type="tel" id="loginPhone" class="phone-number-input" data-i18n-placeholder="login.phone_placeholder" placeholder="612 345 678" autocomplete="off"
-            inputmode="tel">
-        </div>
+        <label class="form-label" for="loginEmail" data-i18n="login.email_label">Tu Correo Electrónico</label>
+        <input type="email" id="loginEmail" class="login-input" data-i18n-placeholder="login.email_placeholder" placeholder="ejemplo@email.com" autocomplete="on">
         <p id="playerStatus" class="group-info-msg"></p>
       </div>
       <div class="form-group">
         <label class="form-label" for="loginGroupSelect" data-i18n="login.group_label">Selecciona tu grupo</label>
         <select id="loginGroupSelect" class="login-input">
-          <option value=""><span data-i18n="admin.group_prompt">Primero introduce tu teléfono...</span></option>
+          <option value=""><span data-i18n="admin.group_prompt">Primero introduce tu email...</span></option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" for="loginPin" data-i18n="login.pin_label">Tu PIN de 4 dígitos</label>
+        <label class="form-label" for="loginPassword" data-i18n="login.password_label">Tu contraseña</label>
         <div class="pin-container">
-          <input type="password" id="loginPin" class="login-input" maxlength="4" data-i18n-placeholder="login.pin_placeholder" placeholder="••••" inputmode="numeric">
+          <input type="password" id="loginPassword" class="login-input" data-i18n-placeholder="login.password_placeholder" placeholder="••••••••">
           <button type="button" class="pin-toggle" id="togglePinLogin">👁️</button>
         </div>
         <p id="loginPinError" class="error-msg" style="display:none;"></p>
@@ -214,17 +154,13 @@
         <input type="text" id="regName" class="login-input" data-i18n-placeholder="login.name_placeholder" placeholder="Ej: Pepito Pérez">
       </div>
       <div class="form-group">
-        <label class="form-label" for="regPhone" data-i18n="login.phone_label">Tu Teléfono Móvil</label>
-        <div class="phone-input-group">
-          <select id="regCountryCode" class="country-select"></select>
-          <input type="tel" id="regPhone" class="phone-number-input" data-i18n-placeholder="login.phone_placeholder" placeholder="612 345 678" autocomplete="off"
-            inputmode="tel">
-        </div>
+        <label class="form-label" for="regEmail" data-i18n="login.email_label">Tu Correo Electrónico</label>
+        <input type="email" id="regEmail" class="login-input" data-i18n-placeholder="login.email_placeholder" placeholder="ejemplo@email.com" autocomplete="on">
       </div>
       <div class="form-group">
-        <label class="form-label" for="regPin" data-i18n="login.pin_label">Crea tu PIN de 4 dígitos</label>
+        <label class="form-label" for="regPassword" data-i18n="login.password_label">Contraseña (Mínimo 8 caracteres)</label>
         <div class="pin-container">
-          <input type="password" id="regPin" class="login-input" maxlength="4" data-i18n-placeholder="login.pin_placeholder" placeholder="••••" inputmode="numeric">
+          <input type="password" id="regPassword" class="login-input" data-i18n-placeholder="login.password_placeholder" placeholder="••••••••">
           <button type="button" class="pin-toggle" id="togglePinReg">👁️</button>
         </div>
         <p id="regPinError" class="error-msg" style="display:none;"></p>
@@ -243,111 +179,29 @@
     import { apiCall } from './agente_mundial/dataFetcher.js';
 
     // ==========================================
-    // DATOS DE PAÍSES CON CÓDIGO TELEFÓNICO
+    // LOGIN — Buscar grupos por email
     // ==========================================
-    const COUNTRIES = [
-      { code: '34', flag: '🇪🇸', name: 'España' },
-      { code: '44', flag: '🇬🇧', name: 'Reino Unido' },
-      { code: '1', flag: '🇺🇸', name: 'EE.UU.' },
-      { code: '52', flag: '🇲🇽', name: 'México' },
-      { code: '54', flag: '🇦🇷', name: 'Argentina' },
-      { code: '55', flag: '🇧🇷', name: 'Brasil' },
-      { code: '56', flag: '🇨🇱', name: 'Chile' },
-      { code: '57', flag: '🇨🇴', name: 'Colombia' },
-      { code: '51', flag: '🇵🇪', name: 'Perú' },
-      { code: '58', flag: '🇻🇪', name: 'Venezuela' },
-      { code: '593', flag: '🇪🇨', name: 'Ecuador' },
-      { code: '598', flag: '🇺🇾', name: 'Uruguay' },
-      { code: '595', flag: '🇵🇾', name: 'Paraguay' },
-      { code: '591', flag: '🇧🇴', name: 'Bolivia' },
-      { code: '506', flag: '🇨🇷', name: 'Costa Rica' },
-      { code: '507', flag: '🇵🇦', name: 'Panamá' },
-      { code: '503', flag: '🇸🇻', name: 'El Salvador' },
-      { code: '502', flag: '🇬🇹', name: 'Guatemala' },
-      { code: '504', flag: '🇭🇳', name: 'Honduras' },
-      { code: '505', flag: '🇳🇮', name: 'Nicaragua' },
-      { code: '53', flag: '🇨🇺', name: 'Cuba' },
-      { code: '1809', flag: '🇩🇴', name: 'Rep. Dominicana' },
-      { code: '33', flag: '🇫🇷', name: 'Francia' },
-      { code: '49', flag: '🇩🇪', name: 'Alemania' },
-      { code: '39', flag: '🇮🇹', name: 'Italia' },
-      { code: '351', flag: '🇵🇹', name: 'Portugal' },
-      { code: '31', flag: '🇳🇱', name: 'Países Bajos' },
-      { code: '32', flag: '🇧🇪', name: 'Bélgica' },
-      { code: '41', flag: '🇨🇭', name: 'Suiza' },
-      { code: '43', flag: '🇦🇹', name: 'Austria' },
-      { code: '46', flag: '🇸🇪', name: 'Suecia' },
-      { code: '47', flag: '🇳🇴', name: 'Noruega' },
-      { code: '45', flag: '🇩🇰', name: 'Dinamarca' },
-      { code: '48', flag: '🇵🇱', name: 'Polonia' },
-      { code: '90', flag: '🇹🇷', name: 'Turquía' },
-      { code: '7', flag: '🇷🇺', name: 'Rusia' },
-      { code: '81', flag: '🇯🇵', name: 'Japón' },
-      { code: '82', flag: '🇰🇷', name: 'Corea del Sur' },
-      { code: '86', flag: '🇨🇳', name: 'China' },
-      { code: '91', flag: '🇮🇳', name: 'India' },
-      { code: '61', flag: '🇦🇺', name: 'Australia' },
-      { code: '212', flag: '🇲🇦', name: 'Marruecos' },
-      { code: '213', flag: '🇩🇿', name: 'Argelia' },
-      { code: '216', flag: '🇹🇳', name: 'Túnez' },
-      { code: '20', flag: '🇪🇬', name: 'Egipto' },
-      { code: '234', flag: '🇳🇬', name: 'Nigeria' },
-      { code: '27', flag: '🇿🇦', name: 'Sudáfrica' },
-      { code: '966', flag: '🇸🇦', name: 'Arabia Saudí' },
-      { code: '971', flag: '🇦🇪', name: 'Emiratos Árabes' },
-      { code: '972', flag: '🇮🇱', name: 'Israel' },
-      { code: '353', flag: '🇮🇪', name: 'Irlanda' },
-      { code: '358', flag: '🇫🇮', name: 'Finlandia' },
-      { code: '30', flag: '🇬🇷', name: 'Grecia' },
-      { code: '36', flag: '🇭🇺', name: 'Hungría' },
-      { code: '40', flag: '🇷🇴', name: 'Rumanía' },
-      { code: '420', flag: '🇨🇿', name: 'Chequia' },
-      { code: '380', flag: '🇺🇦', name: 'Ucrania' },
-    ];
-
-    // Llenar selectores de país
-    function populateCountrySelects() {
-      const selects = [document.getElementById('loginCountryCode'), document.getElementById('regCountryCode')];
-      selects.forEach(sel => {
-        sel.innerHTML = COUNTRIES.map(c =>
-          `<option value="${c.code}" ${c.code === '34' ? 'selected' : ''}>${c.flag} +${c.code}</option>`
-        ).join('');
-      });
-    }
-    populateCountrySelects();
-
-    // Helper: Construir teléfono completo (código + número)
-    function buildFullPhone(countrySelectId, phoneInputId) {
-      const code = document.getElementById(countrySelectId).value;
-      const number = document.getElementById(phoneInputId).value.replace(/[^0-9]/g, '');
-      return code + number;
-    }
-
-    // ==========================================
-    // LOGIN — Buscar grupos por teléfono
-    // ==========================================
-    const loginPhone = document.getElementById('loginPhone');
+    const loginEmail = document.getElementById('loginEmail');
     const loginGroup = document.getElementById('loginGroupSelect');
-    const loginPin = document.getElementById('loginPin');
+    const loginPassword = document.getElementById('loginPassword');
     const playerStatus = document.getElementById('playerStatus');
 
     let debounceTimer;
-    loginPhone.addEventListener('input', () => {
+    loginEmail.addEventListener('input', () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(async () => {
-        const fullPhone = buildFullPhone('loginCountryCode', 'loginPhone');
-        const rawNumber = document.getElementById('loginPhone').value.replace(/[^0-9]/g, '');
-        if (rawNumber.length < 6) {
-          loginGroup.innerHTML = '<option value=""><span data-i18n="admin.group_prompt">Primero introduce tu teléfono...</span></option>';
+        const email = loginEmail.value.trim().toLowerCase();
+        if (!email || !email.includes('@')) {
+          loginGroup.innerHTML = '<option value=""><span data-i18n="admin.group_prompt">Primero introduce tu email...</span></option>';
           playerStatus.textContent = '';
           return;
         }
         playerStatus.textContent = '🔍 Buscando tus grupos...';
-        const res = await apiCall({ action: 'getGroupsForPlayer', phone: fullPhone });
+        const res = await apiCall({ action: 'getGroupsForPlayer', email });
         if (res?.status === 'success') {
           if (res.data.length === 0) {
-            loginGroup.innerHTML = '<option value="">Teléfono no encontrado</option>';
-            playerStatus.textContent = '⚠️ No encuentro ningún grupo con ese teléfono.';
+            loginGroup.innerHTML = '<option value="">Email no encontrado</option>';
+            playerStatus.textContent = '⚠️ No encuentro ningún grupo con ese email.';
           } else {
             loginGroup.innerHTML = res.data.length > 1 ? '<option value="">-- Selecciona tu grupo --</option>' : '';
             res.data.forEach(g => loginGroup.add(new Option(g, g)));
@@ -359,31 +213,28 @@
       }, 500);
     });
 
-    // También buscar al cambiar de país
-    document.getElementById('loginCountryCode').addEventListener('change', () => {
-      const rawNumber = document.getElementById('loginPhone').value.replace(/[^0-9]/g, '');
-      if (rawNumber.length >= 6) loginPhone.dispatchEvent(new Event('input'));
-    });
-
     // ==========================================
     // LOGIN — Enviar
     // ==========================================
     document.getElementById('btnLogin').onclick = async () => {
-      const fullPhone = buildFullPhone('loginCountryCode', 'loginPhone');
+      const email = loginEmail.value.trim().toLowerCase();
       const group = loginGroup.value;
-      const pin = loginPin.value;
-      const rawNumber = document.getElementById('loginPhone').value.replace(/[^0-9]/g, '');
+      const password = loginPassword.value;
 
-      if (rawNumber.length < 6 || !group || pin.length !== 4) {
+      if (!email || !group || !password) {
         showToast('⚠️ Completa todos los campos', true);
         return;
       }
-      const res = await apiCall({ action: 'login', phone: fullPhone, playerPin: pin, groupName: group }, { method: 'POST' });
+      if (password.length < 8) {
+        showToast('⚠️ La contraseña debe tener al menos 8 caracteres', true);
+        return;
+      }
+      const res = await apiCall({ action: 'login', email, password, groupName: group }, { method: 'POST' });
       if (res?.status === 'success') {
         localStorage.setItem('worldcup2026_user', JSON.stringify({
-          phone: fullPhone,
+          email,
           name: res.data.name,
-          pin,
+          userId: res.data.userId,
           groupName: group,
           isAdmin: res.data.isAdmin
         }));
@@ -402,13 +253,13 @@
       }
     };
 
-    // Toggle Pin Visibility
+    // Toggle Password Visibility
     const toggle = (id) => {
       const el = document.getElementById(id);
       el.type = el.type === 'password' ? 'text' : 'password';
     };
-    document.getElementById('togglePinLogin').onclick = () => toggle('loginPin');
-    document.getElementById('togglePinReg').onclick = () => toggle('regPin');
+    document.getElementById('togglePinLogin').onclick = () => toggle('loginPassword');
+    document.getElementById('togglePinReg').onclick = () => toggle('regPassword');
 
     // Switch Forms
     const switchF = (type) => {
@@ -420,23 +271,26 @@
     document.getElementById('switchToLogin').onclick = () => switchF('login');
 
     // ==========================================
-    // REGISTRO — Crear cuenta con teléfono
+    // REGISTRO — Crear cuenta con email
     // ==========================================
     document.getElementById('btnRegister').onclick = async () => {
       const g = document.getElementById('regGroup').value.trim();
       const n = document.getElementById('regName').value.trim();
-      const fullPhone = buildFullPhone('regCountryCode', 'regPhone');
-      const rawNumber = document.getElementById('regPhone').value.replace(/[^0-9]/g, '');
-      const p = document.getElementById('regPin').value;
+      const email = document.getElementById('regEmail').value.trim().toLowerCase();
+      const password = document.getElementById('regPassword').value;
 
-      if (!g || !n || rawNumber.length < 6 || p.length !== 4) {
+      if (!g || !n || !email || !password) {
         showToast('⚠️ Datos incompletos', true);
         return;
       }
-      const res = await apiCall({ action: 'register', playerName: n, phone: fullPhone, playerPin: p, groupName: g, isNewGroup: true }, { method: 'POST' });
+      if (password.length < 8) {
+        showToast('⚠️ La contraseña debe tener al menos 8 caracteres', true);
+        return;
+      }
+      const res = await apiCall({ action: 'register', playerName: n, email, password, groupName: g, isNewGroup: true }, { method: 'POST' });
       if (res?.status === 'success') {
         const userName = res.data?.name || n;
-        localStorage.setItem('worldcup2026_user', JSON.stringify({ phone: fullPhone, name: userName, pin: p, groupName: g, isAdmin: true }));
+        localStorage.setItem('worldcup2026_user', JSON.stringify({ email, name: userName, userId: res.data.userId, groupName: g, isAdmin: true }));
         localStorage.setItem('worldcup2026_setupMode', 'true');
         showToast('✨ Registro completado');
         setTimeout(() => window.location.href = 'scoring_criteria.html', 1500);
@@ -463,5 +317,4 @@
     updateLangButtons();
   </script>
 </body>
-
 </html>

@@ -41,9 +41,9 @@ export default function RootLayout() {
     // Escuchar cambios de autenticación (login/logout)
     const unsubscribe = subscribeAuth((data) => {
       setIsLoggedIn(!!data);
-      if (data && data.phone && data.pin) {
-        setupPushNotifications(data.phone);
-        connectSocket(data.phone, data.pin);
+      if (data && data.email && data.password) {
+        setupPushNotifications(data.userId);
+        connectSocket(data.email, data.password);
       }
     });
 
@@ -51,9 +51,9 @@ export default function RootLayout() {
     Promise.all([loadAuth(), initI18n()]).then(([data]) => {
       setIsLoggedIn(!!data);
       setIsReady(true);
-      if (data && data.phone && data.pin) {
-        setupPushNotifications(data.phone);
-        connectSocket(data.phone, data.pin);
+      if (data && data.email && data.password) {
+        setupPushNotifications(data.userId);
+        connectSocket(data.email, data.password);
       }
     });
 

@@ -128,9 +128,9 @@
         </div>
 
         <div class="form-group">
-          <label for="phone" data-i18n="login.phone_label">Tu Teléfono Móvil</label>
-          <input type="text" id="phone" class="form-control" readonly style="opacity: 0.7; cursor: not-allowed;">
-          <p class="info-note"><span data-i18n="profile.phone_note">Tu teléfono es tu identificador único y no se puede cambiar desde aquí.</span></p>
+          <label for="email" data-i18n="login.email_label">Tu Correo Electrónico</label>
+          <input type="text" id="email" class="form-control" readonly style="opacity: 0.7; cursor: not-allowed;">
+          <p class="info-note"><span data-i18n="profile.email_note">Tu correo es tu identificador único y no se puede cambiar desde aquí.</span></p>
         </div>
 
         <div class="form-group">
@@ -184,31 +184,31 @@
         <button type="submit" id="saveBtn" class="btn-save"><span data-i18n="common.save">Guardar Configuración</span></button>
       </form>
 
-      <!-- SECCIÓN CAMBIO PIN -->
+      <!-- SECCIÓN CAMBIO CONTRASEÑA -->
       <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
         <h3 style="margin-bottom: 1.5rem; color: var(--accent-gold); display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 1.2rem;">🔐</span> Seguridad - Cambiar PIN
+          <span style="font-size: 1.2rem;">🔐</span> Seguridad - Cambiar Contraseña
         </h3>
-        <div id="pinStatusMsg" class="status-msg"></div>
+        <div id="passwordStatusMsg" class="status-msg"></div>
         
         <div class="form-group">
-          <label for="oldPin" data-i18n="profile.old_pin">PIN Actual</label>
-          <input type="password" id="oldPin" class="form-control" maxlength="4" placeholder="••••">
+          <label for="oldPassword" data-i18n="profile.old_password">Contraseña Actual</label>
+          <input type="password" id="oldPassword" class="form-control" placeholder="••••••••">
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
-            <label for="newPin" data-i18n="profile.new_pin">Nuevo PIN (4 dígitos)</label>
-            <input type="password" id="newPin" class="form-control" maxlength="4" placeholder="••••">
+            <label for="newPassword" data-i18n="profile.new_password">Nueva Contraseña (min 8 caracteres)</label>
+            <input type="password" id="newPassword" class="form-control" placeholder="••••••••">
           </div>
           <div class="form-group">
-            <label for="confirmPin" data-i18n="profile.confirm_pin">Confirmar Nuevo PIN</label>
-            <input type="password" id="confirmPin" class="form-control" maxlength="4" placeholder="••••">
+            <label for="confirmPassword" data-i18n="profile.confirm_password">Confirmar Nueva Contraseña</label>
+            <input type="password" id="confirmPassword" class="form-control" placeholder="••••••••">
           </div>
         </div>
         
-        <button type="button" id="changePinBtn" class="btn-save" style="background: var(--bg-card); border: 1px solid var(--accent-gold); color: var(--accent-gold);">
-          <span data-i18n="profile.update_pin_btn">Actualizar PIN</span>
+        <button type="button" id="changePasswordBtn" class="btn-save" style="background: var(--bg-card); border: 1px solid var(--accent-gold); color: var(--accent-gold);">
+          <span data-i18n="profile.update_password_btn">Actualizar Contraseña</span>
         </button>
       </div>
     </div>
@@ -276,15 +276,13 @@
 
     async function loadProfile() {
       try {
-        // Mostrar el teléfono del localStorage (readonly)
-        const phoneDisplay = currentUser.phone || '';
-        if (phoneDisplay) {
-          // Formatear: +34 612 345 678
-          const formatted = '+' + phoneDisplay;
-          document.getElementById('phone').value = formatted;
+        // Mostrar el email del localStorage (readonly)
+        const emailDisplay = currentUser.email || '';
+        if (emailDisplay) {
+          document.getElementById('email').value = emailDisplay;
         }
 
-        const res = await apiCall({ action: 'getInfo', phone: currentUser.phone });
+        const res = await apiCall({ action: 'getInfo', userId: currentUser.userId });
         
         if (res.status === 'success' && res.data) {
           const info = res.data;
@@ -323,7 +321,8 @@
         const result = await apiCall({
             action: 'saveInfo',
             playerName: currentUser.name,
-            phone: currentUser.phone,
+            userId: currentUser.userId,
+            email: currentUser.email,
             groupName: currentUser.groupName,
             data: profileData
         });
@@ -339,26 +338,26 @@
         statusMsg.classList.add('status-error');
       } finally {
         saveBtn.disabled = false;
-        saveBtn.textContent = '<span data-i18n="common.save">Guardar Configuración</span>';
+        saveBtn.textContent = 'Guardar Configuración';
       }
     };
 
-    // Lógica Cambio PIN
-    document.getElementById('changePinBtn').onclick = async () => {
-      const oldPin = document.getElementById('oldPin').value;
-      const newPin = document.getElementById('newPin').value;
-      const confirmPin = document.getElementById('confirmPin').value;
-      const btn = document.getElementById('changePinBtn');
-      const status = document.getElementById('pinStatusMsg');
+    // Lógica Cambio Contraseña
+    document.getElementById('changePasswordBtn').onclick = async () => {
+      const oldPassword = document.getElementById('oldPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const btn = document.getElementById('changePasswordBtn');
+      const status = document.getElementById('passwordStatusMsg');
 
-      if (newPin.length !== 4 || isNaN(newPin)) {
-        status.textContent = '⚠️ El nuevo PIN debe ser de 4 números';
+      if (newPassword.length < 8) {
+        status.textContent = '⚠️ La nueva contraseña debe tener al menos 8 caracteres';
         status.className = 'status-msg status-error';
         return;
       }
 
-      if (newPin !== confirmPin) {
-        status.textContent = '⚠️ Los nuevos PINs no coinciden';
+      if (newPassword !== confirmPassword) {
+        status.textContent = '⚠️ Las nuevas contraseñas no coinciden';
         status.className = 'status-msg status-error';
         return;
       }
@@ -369,26 +368,20 @@
 
       try {
         const res = await apiCall({
-          action: 'changePin',
-          playerName: currentUser.name,
-          phone: currentUser.phone,
-          groupName: currentUser.groupName,
-          oldPin,
-          newPin
+          action: 'changePassword',
+          userId: currentUser.userId,
+          oldPassword,
+          newPassword
         });
 
         if (res.status === 'success') {
-          status.textContent = '✅ ' + (window.i18n ? window.i18n.t('profile.pin_success') : 'PIN actualizado con éxito');
+          status.textContent = '✅ Contraseña actualizada con éxito';
           status.className = 'status-msg status-success';
           
-          // Actualizar localStorage para no perder la sesión
-          currentUser.pin = newPin;
-          localStorage.setItem('worldcup2026_user', JSON.stringify(currentUser));
-          
           // Limpiar campos
-          document.getElementById('oldPin').value = '';
-          document.getElementById('newPin').value = '';
-          document.getElementById('confirmPin').value = '';
+          document.getElementById('oldPassword').value = '';
+          document.getElementById('newPassword').value = '';
+          document.getElementById('confirmPassword').value = '';
         } else {
           throw new Error(res.message);
         }
@@ -397,7 +390,7 @@
         status.className = 'status-msg status-error';
       } finally {
         btn.disabled = false;
-        btn.textContent = '<span data-i18n="profile.update_pin_btn">Actualizar PIN</span>';
+        btn.textContent = 'Actualizar Contraseña';
       }
     };
 

@@ -85,10 +85,10 @@ router.post('/reality', async (req, res) => {
 
 router.delete('/profile', async (req, res) => {
     try {
-        const { phone } = req.query;
-        if (!phone) return res.status(400).json(createResponse('error', null, 'Falta phone'));
+        const { userId } = req.query;
+        if (!userId) return res.status(400).json(createResponse('error', null, 'Falta userId'));
 
-        const user = await User.findOne({ phone });
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
 
         // Eliminar predicciones, mensajes y el usuario
@@ -105,8 +105,8 @@ router.delete('/profile', async (req, res) => {
 
 router.post('/report', async (req, res) => {
     try {
-        const { reporterPhone, reportedUser, messageId, reason } = req.body;
-        if (!reporterPhone || !reportedUser || !reason) {
+        const { reporterId, reportedId, messageId, reason } = req.body;
+        if (!reporterId || !reportedId || !reason) {
             return res.status(400).json(createResponse('error', null, 'Faltan campos obligatorios'));
         }
 
@@ -122,15 +122,15 @@ router.post('/report', async (req, res) => {
         }
 
         const report = await Report.create({
-            reporterPhone,
-            reportedUser,
+            reporterId,
+            reportedId,
             messageId,
             messageText,
             reason,
             groupName
         });
 
-        console.log(`🚩 REPORTE #${report._id}: De ${reporterPhone} contra ${reportedUser}. Motivo: ${reason}`);
+        console.log(`🚩 REPORTE #${report._id}: De ${reporterId} contra ${reportedId}. Motivo: ${reason}`);
         res.json(createResponse('success', { reportId: report._id }, 'Reporte enviado a moderación'));
     } catch (error) {
         console.error('❌ Error en POST /report:', error);
@@ -141,16 +141,16 @@ router.post('/report', async (req, res) => {
 // --- Bloquear usuario (server-side) ---
 router.post('/block', async (req, res) => {
     try {
-        const { blockerPhone, blockedPhone, groupName } = req.body;
-        if (!blockerPhone || !blockedPhone) {
+        const { blockerId, blockedId, groupName } = req.body;
+        if (!blockerId || !blockedId) {
             return res.status(400).json(createResponse('error', null, 'Faltan campos obligatorios'));
         }
         await BlockedUser.findOneAndUpdate(
-            { blockerPhone, blockedPhone },
-            { blockerPhone, blockedPhone, groupName, createdAt: new Date() },
+            { blockerId, blockedId },
+            { blockerId, blockedId, groupName, createdAt: new Date() },
             { upsert: true }
         );
-        console.log(`🚫 BLOQUEO: ${blockerPhone} bloqueó a ${blockedPhone}`);
+        console.log(`🚫 BLOQUEO: ${blockerId} bloqueó a ${blockedId}`);
         res.json(createResponse('success', null, 'Usuario bloqueado'));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
@@ -160,8 +160,8 @@ router.post('/block', async (req, res) => {
 // --- Desbloquear usuario ---
 router.post('/unblock', async (req, res) => {
     try {
-        const { blockerPhone, blockedPhone } = req.body;
-        await BlockedUser.deleteOne({ blockerPhone, blockedPhone });
+        const { blockerId, blockedId } = req.body;
+        await BlockedUser.deleteOne({ blockerId, blockedId });
         res.json(createResponse('success', null, 'Usuario desbloqueado'));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
@@ -171,10 +171,10 @@ router.post('/unblock', async (req, res) => {
 // --- Obtener lista de bloqueados ---
 router.get('/blocked', async (req, res) => {
     try {
-        const { phone } = req.query;
-        if (!phone) return res.status(400).json(createResponse('error', null, 'Falta phone'));
-        const blocked = await BlockedUser.find({ blockerPhone: phone }).lean();
-        res.json(createResponse('success', blocked.map(b => b.blockedPhone)));
+        const { userId } = req.query;
+        if (!userId) return res.status(400).json(createResponse('error', null, 'Falta userId'));
+        const blocked = await BlockedUser.find({ blockerId: userId }).lean();
+        res.json(createResponse('success', blocked.map(b => b.blockedId)));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
     }
@@ -377,22 +377,26 @@ router.get('/summary/:player', async (req, res) => {
 
 router.get('/profile', async (req, res) => {
     try {
-        const { playerName, phone } = req.query;
-        // Buscar por phone primero, fallback a name
-        const user = phone 
-            ? await User.findOne({ phone }) 
-            : await User.findOne({ name: playerName });
+        const { playerName, userId, email } = req.query;
+        let query = {};
+        if (userId) query = { _id: userId };
+        else if (email) query = { email: email.toLowerCase().trim() };
+        else if (playerName) query = { name: playerName };
+        else return res.status(400).json(createResponse('error', null, 'Falta identificador (userId, email o playerName)'));
+
+        const user = await User.findOne(query);
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
         
         res.json(createResponse('success', {
             name: user.name,
-            phone: user.phone,
+            email: user.email,
             likes: user.likes || [],
             dislikes: user.dislikes || [],
             humor_style: user.humor_style || 'Divertido y amigable',
             ai_personality: user.ai_personality || 'andres_montes',
             nickname: user.nickname || user.name,
-            notificationPreference: user.notificationPreference || 'all'
+            notificationPreference: user.notificationPreference || 'all',
+            userId: user._id.toString()
         }));
     } catch (error) {
         console.error('❌ Error en GET /profile:', error);
@@ -402,12 +406,16 @@ router.get('/profile', async (req, res) => {
 
 router.post('/profile', async (req, res) => {
     try {
-        const { playerName, phone, groupName, profile } = req.body;
+        const { playerName, userId, email, groupName, profile } = req.body;
         if (!profile) throw new Error('El perfil es requerido');
 
-        // Buscar por phone primero, fallback a name
-        const query = phone ? { phone } : { name: playerName };
-        console.log(`👤 [Profile] Actualizando preferencias para ${phone || playerName}:`, profile.notificationPreference);
+        let query = {};
+        if (userId) query = { _id: userId };
+        else if (email) query = { email: email.toLowerCase().trim() };
+        else if (playerName) query = { name: playerName };
+        else throw new Error('Falta identificador para actualizar perfil');
+
+        console.log(`👤 [Profile] Actualizando preferencias para ${userId || email || playerName}:`, profile.notificationPreference);
         const user = await User.findOneAndUpdate(
             query,
             { 
@@ -422,6 +430,40 @@ router.post('/profile', async (req, res) => {
             },
             { new: true }
         );
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+        res.json(createResponse('success', { notificationPreference: user.notificationPreference }));
+    } catch (error) {
+        console.error('❌ Error en POST /profile:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/profile', async (req, res) => {
+    try {
+        const { playerName, userId, email, groupName, profile } = req.body;
+        if (!profile) throw new Error('El perfil es requerido');
+
+        let query = {};
+        if (userId) query = { _id: userId };
+        else if (email) query = { email: email.toLowerCase().trim() };
+        else query = { name: playerName };
+
+        console.log(`👤 [Profile] Actualizando preferencias para ${userId || email || playerName}:`, profile.notificationPreference);
+        const user = await User.findOneAndUpdate(
+            query,
+            { 
+                $set: { 
+                    nickname: profile.nickname || playerName,
+                    likes: profile.likes || [],
+                    dislikes: profile.dislikes || [],
+                    humor_style: profile.humor_style || 'Divertido y amigable',
+                    ai_personality: profile.ai_personality || 'andres_montes',
+                    notificationPreference: profile.notificationPreference || 'all'
+                }
+            },
+            { new: true }
+        );
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
         res.json(createResponse('success', { notificationPreference: user.notificationPreference }));
     } catch (error) {
         console.error('❌ Error en POST /profile:', error);
@@ -475,68 +517,139 @@ router.post('/groups/:groupName/rules', async (req, res) => {
 // ==========================================
 
 
-// Login — ahora con PIN hasheado
+// Login — ahora con email y password hasheado
 router.post('/login', async (req, res) => {
   try {
-    const { phone, playerPin, groupName } = req.body;
+    const { email, password, groupName } = req.body;
     
-    const group = await Group.findOne({ name: groupName });
-    if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
-
-    const user = await User.findOne({ phone, groups: groupName });
-    if (!user) return res.status(401).json(createResponse('error', null, 'Teléfono o Grupo incorrecto'));
-
-    // Verificar PIN (con fallback a texto plano para usuarios antiguos)
-    let isMatch = false;
-    if (user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$')) {
-        isMatch = await bcrypt.compare(playerPin, user.pin);
-    } else {
-        isMatch = (user.pin === playerPin);
-        // Si coincide en texto plano, lo hasheamos ahora
-        if (isMatch) {
-            user.pin = await bcrypt.hash(playerPin, 10);
-            await user.save();
-            console.log(`🔐 PIN de ${user.name} actualizado a hash automáticamente`);
-        }
+    if (!email || !password) {
+      return res.status(400).json(createResponse('error', null, 'Email y contraseña son obligatorios'));
     }
 
-    if (!isMatch) return res.status(401).json(createResponse('error', null, 'PIN incorrecto'));
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
 
-    const isAdmin = group.admin && group.admin.toString() === user._id.toString();
+    if (!user) {
+      return res.status(401).json(createResponse('error', null, 'Usuario no encontrado'));
+    }
+
+    // Verificar si el usuario pertenece al grupo solicitado (opcional, según lógica de negocio)
+    if (groupName && (!user.groups || !user.groups.includes(groupName))) {
+        return res.status(401).json(createResponse('error', null, 'El usuario no pertenece a este grupo'));
+    }
+
+    // Verificar password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json(createResponse('error', null, 'Contraseña incorrecta'));
+    }
+
+    const isAdmin = user.isAdminOf && user.isAdminOf.includes(groupName);
     
-    console.log(`🔐 Login exitoso: ${user.name} (📱${phone}) en ${groupName}`);
-
-    res.json(createResponse('success', { isAdmin, name: user.name }));
+    console.log(`🔐 Login exitoso: ${user.name} (📧${user.email})`);
+    
+    res.json(createResponse('success', { 
+        isAdmin, 
+        name: user.name, 
+        userId: user._id.toString(), 
+        email: user.email,
+        groups: user.groups || []
+    }));
   } catch (error) {
     console.error('❌ Error en POST /login:', error);
     res.status(500).json(createResponse('error', null, error.message));
   }
 });
 
-// Registro — con PIN hasheado
 router.post('/register', async (req, res) => {
   try {
-    const { playerName, phone, playerPin, groupName, isNewGroup } = req.body;
+    const { playerName, email, password, groupName, isNewGroup } = req.body;
     
-    if (!phone || phone.length < 7) {
-      return res.status(400).json(createResponse('error', null, 'El número de teléfono es obligatorio'));
+    if (!email || !email.includes('@')) {
+      return res.status(400).json(createResponse('error', null, 'El correo electrónico no es válido'));
+    }
+    if (!password || password.length < 8) {
+      return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
     }
 
-    // Hashear PIN
-    const hashedPin = await bcrypt.hash(playerPin, 10);
+    const normalizedEmail = email.toLowerCase().trim();
+    let user = await User.findOne({ email: normalizedEmail });
 
-    // Buscar por teléfono (identificador único)
-    let user = await User.findOne({ phone });
     if (!user) {
-       console.log(`✨ Creando nuevo usuario: ${playerName} (📱${phone})`);
+      console.log(`✨ Creando nuevo usuario: ${playerName} (📧${normalizedEmail})`);
+      user = await User.create({ 
+        name: playerName, 
+        password: await bcrypt.hash(password, 10), 
+        email: normalizedEmail, 
+        groups: [groupName] 
+      });
+    } else {
+      // Si el usuario ya existe, asegurar que tenga el grupo
+      if (!user.groups || !user.groups.includes(groupName)) {
+        user.groups.push(groupName);
+        await user.save();
+      }
+    }
+
+    if (isNewGroup) {
+      const existingGroup = await Group.findOne({ name: groupName });
+      if (existingGroup) return res.status(400).json(createResponse('error', null, 'El grupo ya existe'));
+      
+      const newGroup = await Group.create({ name: groupName, admin: user._id, members: [user._id] });
+      if (!user.isAdminOf) user.isAdminOf = [];
+      user.isAdminOf.push(groupName);
+      await user.save();
+    } else {
+      const group = await Group.findOne({ name: groupName });
+      if (group) {
+        if (!group.members.includes(user._id)) {
+          group.members.push(user._id);
+          await group.save();
+        }
+      }
+    }
+
+    const io = req.app.get('io');
+    if (io) io.emit('group-updated', { groupName });
+
+    res.json(createResponse('success', { name: user.name, userId: user._id.toString(), email: user.email }, 'Usuario registrado con éxito'));
+  } catch (error) {
+    console.error('❌ Error en POST /register:', error);
+    if (error.code === 11000) {
+      return res.status(400).json(createResponse('error', null, 'Este correo electrónico ya está registrado'));
+    }
+    res.status(500).json(createResponse('error', null, error.message));
+  }
+});
+
+// Registro — con email y password
+router.post('/register', async (req, res) => {
+  try {
+    const { playerName, email, password, groupName, isNewGroup } = req.body;
+    
+    if (!email || !email.includes('@')) {
+      return res.status(400).json(createResponse('error', null, 'El correo electrónico no es válido'));
+    }
+    if (!password || password.length < 8) {
+      return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
+    }
+
+    // Hashear password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Buscar por email (identificador único)
+    const normalizedEmail = email.toLowerCase().trim();
+    let user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+       console.log(`✨ Creando nuevo usuario: ${playerName} (📧${normalizedEmail})`);
        user = await User.create({ 
          name: playerName, 
-         pin: hashedPin, 
-         phone, 
+         password: hashedPassword, 
+         email: normalizedEmail, 
          groups: [groupName] 
        });
     } else {
-       // El teléfono ya existe — añadir al nuevo grupo si no está
+       // El email ya existe — añadir al nuevo grupo si no está
        if (!user.groups.includes(groupName)) {
            user.groups.push(groupName);
            await user.save();
@@ -564,11 +677,11 @@ router.post('/register', async (req, res) => {
       io.emit('group-updated', { groupName });
     }
 
-    res.json(createResponse('success', { name: user.name }, 'Usuario registrado con éxito'));
+    res.json(createResponse('success', { name: user.name, userId: user._id.toString(), email: user.email }, 'Usuario registrado con éxito'));
   } catch (error) {
     console.error('❌ Error en POST /register:', error);
     if (error.code === 11000) {
-      return res.status(400).json(createResponse('error', null, 'Este número de teléfono ya está registrado'));
+      return res.status(400).json(createResponse('error', null, 'Este correo electrónico ya está registrado'));
     }
     res.status(500).json(createResponse('error', null, error.message));
   }
@@ -581,10 +694,13 @@ router.post('/register', async (req, res) => {
 
 router.get('/groups', async (req, res) => {
     try {
-        const { playerName, phone } = req.query;
-        // Buscar por phone primero, fallback a name
-        if (phone || playerName) {
-            const query = phone ? { phone } : { name: playerName };
+        const { playerName, email, userId } = req.query;
+        let query = {};
+        if (userId) query = { _id: userId };
+        else if (email) query = { email: email.toLowerCase().trim() };
+        else if (playerName) query = { name: playerName };
+
+        if (userId || email || playerName) {
             const user = await User.findOne(query);
             return res.json(createResponse('success', (user && user.groups) ? user.groups : []));
         }
@@ -598,8 +714,7 @@ router.get('/groups', async (req, res) => {
 
 router.get('/groups/:groupName/players', async (req, res) => {
     try {
-        // Búsqueda insensible a mayúsculas/minúsculas
-        const group = await Group.findOne({ name: { $regex: new RegExp(`^${req.params.groupName}$`, 'i') } }).populate('members', 'name phone nickname');
+        const group = await Group.findOne({ name: { $regex: new RegExp(`^${req.params.groupName}$`, 'i') } }).populate('members', 'name email nickname');
         if (!group) {
             console.warn(`[API] Grupo no encontrado: ${req.params.groupName}`);
             return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
@@ -607,14 +722,15 @@ router.get('/groups/:groupName/players', async (req, res) => {
 
         console.log(`[API] Enviando ${group.members?.length || 0} jugadores para el grupo ${group.name}`);
 
-        console.log(`[API] Raw members first element type: ${typeof group.members[0]}, value:`, group.members[0]);
         const players = group.members.map(m => ({
             name: m.name,
-            phone: m.phone,
-            nickname: m.nickname || m.name
+            email: m.email,
+            nickname: m.nickname || m.name,
+            userId: m._id.toString()
         }));
         res.json(createResponse('success', players, 'DEBUG_OBJECTS_ACTIVE'));
     } catch (error) {
+        console.error('❌ Error en GET /groups/:groupName/players:', error);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
@@ -627,12 +743,117 @@ router.get('/groups/:groupName/profiles', async (req, res) => {
         const profiles = {};
         group.members.forEach(user => {
             profiles[user.name] = {
-                phone: user.phone,
+                email: user.email,
                 likes: user.likes || [],
                 dislikes: user.dislikes || [],
                 humor_style: user.humor_style || 'Divertido y amigable',
                 ai_personality: user.ai_personality || 'andres_montes',
-                nickname: user.nickname || user.name
+                nickname: user.nickname || user.name,
+                userId: user._id.toString()
+            };
+        });
+        res.json(createResponse('success', profiles));
+    } catch (error) {
+        console.error('❌ Error en GET /groups/:groupName/profiles:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.get('/groups/:groupName/user-mapping', async (req, res) => {
+    try {
+        const group = await Group.findOne({ name: req.params.groupName }).populate('members', 'name email');
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        const mapping = {};
+        group.members.forEach(m => {
+            if (m._id) {
+                mapping[m._id.toString()] = m.name;
+            }
+        });
+        res.json(createResponse('success', mapping));
+    } catch (error) {
+        console.error('❌ Error en GET /groups/:groupName/user-mapping:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.post('/groups/:groupName/players', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const { playerName, email } = req.body;
+        
+        console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" (📧${email}) al grupo: "${groupName}"`);
+
+        if (!playerName || !email) return res.status(400).json(createResponse('error', null, 'El nombre y email del jugador son requeridos'));
+
+        // Hashear password por defecto
+        const hashedPassword = await bcrypt.hash('PrediccionMundial', 10);
+
+        // Buscar por email (identificador único)
+        const normalizedEmail = email.toLowerCase().trim();
+        let user = await User.findOne({ email: normalizedEmail });
+        if (!user) {
+            console.log(`✨ Creando nuevo usuario: ${playerName} (📧${normalizedEmail})`);
+            user = await User.create({ 
+                name: playerName, 
+                password: hashedPassword, 
+                email: normalizedEmail, 
+                groups: [groupName] 
+            });
+        } else {
+            // Si el usuario ya existe, actualizar nombre si se proporcionó uno diferente
+            if (playerName && user.name !== playerName) {
+                user.name = playerName;
+            }
+            if (!user.groups || !user.groups.includes(groupName)) {
+                user.groups.push(groupName);
+            }
+            await user.save();
+        }
+
+        const group = await Group.findOne({ name: groupName });
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+
+        // Evitar duplicados de forma robusta comparando strings de IDs
+        const isAlreadyMember = group.members.some(mId => mId.toString() === user._id.toString());
+        
+        if (!isAlreadyMember) {
+            console.log(`🔗 Vinculando usuario ${user._id} al grupo ${group._id}`);
+            group.members.push(user._id);
+            await group.save();
+        } else {
+            console.log(`ℹ️ El usuario ya es miembro del grupo`);
+        }
+
+        // Notificar cambios en el grupo por Socket.IO
+        const io = req.app.get('io');
+        if (io) io.emit('group-updated', { groupName });
+
+        res.json(createResponse('success'));
+    } catch (error) {
+        console.error('❌ Error en POST /groups/:groupName/players:', error);
+        if (error.code === 11000) {
+            return res.status(400).json(createResponse('error', null, 'Este correo electrónico ya está registrado con otro nombre'));
+        }
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.get('/groups/:groupName/profiles', async (req, res) => {
+    try {
+        const group = await Group.findOne({ name: req.params.groupName }).populate('members');
+        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
+        
+        const profiles = {};
+        group.members.forEach(user => {
+            profiles[user.name] = {
+                email: user.email,
+                likes: user.likes || [],
+                dislikes: user.dislikes || [],
+                humor_style: user.humor_style || 'Divertido y amigable',
+                ai_personality: user.ai_personality || 'andres_montes',
+                nickname: user.nickname || user.name,
+                userId: user._id.toString()
             };
         });
         res.json(createResponse('success', profiles));
@@ -641,15 +862,15 @@ router.get('/groups/:groupName/profiles', async (req, res) => {
     }
 });
 
-router.get('/groups/:groupName/phone-mapping', async (req, res) => {
+router.get('/groups/:groupName/user-mapping', async (req, res) => {
     try {
-        const group = await Group.findOne({ name: req.params.groupName }).populate('members', 'name phone');
+        const group = await Group.findOne({ name: req.params.groupName }).populate('members', 'name email');
         if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
         
         const mapping = {};
         group.members.forEach(m => {
-            if (m.phone && m.phone !== '000000') {
-                mapping[m.phone] = m.name;
+            if (m._id) {
+                mapping[m._id.toString()] = m.name;
             }
         });
         res.json(createResponse('success', mapping));
@@ -661,23 +882,24 @@ router.get('/groups/:groupName/phone-mapping', async (req, res) => {
 router.post('/groups/:groupName/players', async (req, res) => {
     try {
         const { groupName } = req.params;
-        const { playerName, phone } = req.body;
+        const { playerName, email } = req.body;
         
-        console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" (📱${phone}) al grupo: "${groupName}"`);
+        console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" (📧${email}) al grupo: "${groupName}"`);
 
-        if (!playerName || !phone) return res.status(400).json(createResponse('error', null, 'El nombre y teléfono del jugador son requeridos'));
+        if (!playerName || !email) return res.status(400).json(createResponse('error', null, 'El nombre y email del jugador son requeridos'));
 
-        // Hashear PIN
-        const hashedPin = await bcrypt.hash('1234', 10);
+        // Hashear password por defecto
+        const hashedPassword = await bcrypt.hash('PrediccionMundial', 10);
 
-        // Buscar por teléfono (identificador único)
-        let user = await User.findOne({ phone });
+        // Buscar por email (identificador único)
+        const normalizedEmail = email.toLowerCase().trim();
+        let user = await User.findOne({ email: normalizedEmail });
         if (!user) {
-            console.log(`✨ Creando nuevo usuario: ${playerName} (📱${phone})`);
+            console.log(`✨ Creando nuevo usuario: ${playerName} (📧${normalizedEmail})`);
             user = await User.create({ 
                 name: playerName, 
-                pin: hashedPin, 
-                phone, 
+                password: hashedPassword, 
+                email: normalizedEmail, 
                 groups: [groupName] 
             });
         } else {
@@ -714,7 +936,7 @@ router.post('/groups/:groupName/players', async (req, res) => {
     } catch (error) {
         console.error('❌ Error en POST /groups/:groupName/players:', error);
         if (error.code === 11000) {
-            return res.status(400).json(createResponse('error', null, 'Este número de teléfono ya está registrado con otro nombre'));
+            return res.status(400).json(createResponse('error', null, 'Este correo electrónico ya está registrado con otro nombre'));
         }
         res.status(500).json(createResponse('error', null, error.message));
     }
@@ -816,39 +1038,31 @@ router.post('/groups/:groupName/rules', async (req, res) => {
     }
 });
 
-// Cambiar PIN — ahora busca por teléfono
-router.post('/profile/change-pin', async (req, res) => {
+// Cambiar contraseña — busca por userId
+router.post('/profile/change-password', async (req, res) => {
     try {
-        const { playerName, phone, groupName, oldPin, newPin } = req.body;
+        const { userId, oldPassword, newPassword } = req.body;
         
-        if (!newPin || newPin.length !== 4) {
-            return res.status(400).json(createResponse('error', null, 'El nuevo PIN debe tener 4 dígitos'));
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json(createResponse('error', null, 'La nueva contraseña debe tener al menos 8 caracteres'));
         }
 
-        // Buscar por phone primero, fallback a name
-        const query = phone ? { phone, groups: groupName } : { name: playerName, groups: groupName };
-        const user = await User.findOne(query);
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
 
-        // Verificar PIN actual (con fallback)
-        let isMatch = false;
-        if (user.pin.startsWith('$2a$') || user.pin.startsWith('$2b$')) {
-            isMatch = await bcrypt.compare(oldPin, user.pin);
-        } else {
-            isMatch = (user.pin === oldPin);
-        }
-        
+        // Verificar contraseña actual
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
         if (!isMatch) {
-            return res.status(401).json(createResponse('error', null, 'El PIN actual es incorrecto'));
+            return res.status(401).json(createResponse('error', null, 'La contraseña actual es incorrecta'));
         }
         
-        user.pin = await bcrypt.hash(newPin, 10);
+        user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
         
-        console.log(`🔐 PIN actualizado para ${user.name} (📱${user.phone}) en ${groupName}`);
+        console.log(`🔐 Contraseña actualizada para ${user.name} (📧${user.email})`);
         res.json(createResponse('success'));
     } catch (error) {
-        console.error('❌ Error en POST /profile/change-pin:', error);
+        console.error('❌ Error en POST /profile/change-password:', error);
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
@@ -925,12 +1139,12 @@ router.get('/chat/:groupName/messages', async (req, res) => {
 // Registrar token de push notification
 router.post('/push-token', async (req, res) => {
     try {
-        const { phone, token, platform } = req.body;
-        if (!phone || !token) {
-            return res.status(400).json(createResponse('error', null, 'phone y token son requeridos'));
+        const { userId, token, platform } = req.body;
+        if (!userId || !token) {
+            return res.status(400).json(createResponse('error', null, 'userId y token son requeridos'));
         }
         
-        const user = await User.findOne({ phone });
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
         
         const pushService = await import('../pushService.js');
@@ -979,19 +1193,38 @@ router.get('/test-push/:groupName', async (req, res) => {
 });
 
 // ==========================================
-// BUSCAR USUARIO POR TELÉFONO (para la app)
+// BUSCAR USUARIO POR EMAIL O ID (para la app)
 // ==========================================
-router.get('/user/by-phone/:phone', async (req, res) => {
+router.get('/user/by-email/:email', async (req, res) => {
     try {
-        const user = await User.findOne({ phone: req.params.phone });
+        const user = await User.findOne({ email: req.params.email.toLowerCase().trim() });
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
         
         res.json(createResponse('success', {
             name: user.name,
-            phone: user.phone,
+            email: user.email,
             groups: user.groups,
             isAdminOf: user.isAdminOf || [],
             nickname: user.nickname || user.name,
+            userId: user._id.toString()
+        }));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+router.get('/user/by-id/:userId', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
+        
+        res.json(createResponse('success', {
+            name: user.name,
+            email: user.email,
+            groups: user.groups,
+            isAdminOf: user.isAdminOf || [],
+            nickname: user.nickname || user.name,
+            userId: user._id.toString()
         }));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
@@ -1035,15 +1268,15 @@ router.post('/groups/:groupName/rules', async (req, res) => {
 
 router.get('/predictions', async (req, res) => {
     try {
-        const { groupName, phone } = req.query;
+        const { groupName, userId } = req.query;
         if (!groupName) return res.status(400).json(createResponse('error', null, 'Falta groupName'));
 
         const group = await Group.findOne({ name: groupName });
         if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
 
-        if (phone) {
+        if (userId) {
             // Predicciones de un solo usuario
-            const user = await User.findOne({ phone });
+            const user = await User.findById(userId);
             if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
             
             const pred = await Prediction.findOne({ user: user._id, group: group._id });
@@ -1065,8 +1298,7 @@ router.get('/predictions', async (req, res) => {
 
 router.post('/predictions', async (req, res) => {
     try {
-        // En la app mandamos playerName (que en realidad no es phone). Ah no, api.ts manda playerName.
-        // Mejor cambiamos el backend para usar playerName o phone.
+        // En la app mandamos playerName.
         const { playerName, groupName, predictions } = req.body;
         if (!playerName || !groupName || !predictions) {
             return res.status(400).json(createResponse('error', null, 'Faltan datos'));

@@ -59,13 +59,10 @@ export async function sendToGroup(groupName, title, body, data = {}, excludeUser
     }
 
     // --- BLOQUEOS ---
-    let blockedMePhones = [];
+    let blockedMeIds = [];
     if (excludeUserId) {
-        const sender = await User.findById(excludeUserId).select('phone');
-        if (sender) {
-            const blocks = await BlockedUser.find({ blockedPhone: sender.phone }).select('blockerPhone');
-            blockedMePhones = blocks.map(b => b.blockerPhone);
-        }
+        const blocks = await BlockedUser.find({ blockedId: excludeUserId }).select('blockerId');
+        blockedMeIds = blocks.map(b => b.blockerId);
     }
 
     const messages = [];
@@ -76,7 +73,7 @@ export async function sendToGroup(groupName, title, body, data = {}, excludeUser
       if (!user || user._id.toString() === excludeUserId) continue;
 
       // No enviar si el destinatario ha bloqueado al remitente
-      if (blockedMePhones.includes(user.phone)) {
+      if (blockedMeIds.includes(user._id.toString())) {
           console.log(`[Push] 🚫 Saltando a ${user.name} (ha bloqueado al remitente)`);
           continue;
       }

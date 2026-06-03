@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView, Linking } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  ScrollView, Linking,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import * as api from '../../services/api';
 import { saveAuth } from '../../stores/authStore';
@@ -7,7 +11,6 @@ import { connect } from '../../services/socket';
 import { useTranslation } from '../../i18n/i18n';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
 
-// URL de los términos legales (cambiar a tu dominio real)
 const TERMS_URL = 'https://porra-mundial.onrender.com/legal/terms';
 const PRIVACY_URL = 'https://porra-mundial.onrender.com/legal/privacy';
 
@@ -16,71 +19,70 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
 
-  // Login State
-  const [prefix, setPrefix] = useState('34');
-  const [phone, setPhone] = useState('');
-  const [pin, setPin] = useState('');
-  const [name, setName] = useState('');
+  // Shared fields
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName]         = useState('');
   const [groupName, setGroupName] = useState('');
   const [isNewGroup, setIsNewGroup] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // Login multi-step
+  const [emailVerified, setEmailVerified]     = useState(false);
+  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // ==========================================
   // LOGIN LOGIC
   // ==========================================
 
-  async function handleVerifyPhone() {
-    if (!phone) {
-      Alert.alert(t('common.error'), t('auth.no_phone_error'));
+  async function handleVerifyEmail() {
+    if (!email.trim()) {
+      Alert.alert(t('common.error'), t('auth.no_email_error') || 'Por favor, introduce tu email');
       return;
     }
     setLoading(true);
     try {
-      const fullPhone = `${prefix}${phone}`;
-      const user = await api.getUserByPhone(fullPhone);
+      const user = await api.getUserByEmail(email.trim().toLowerCase());
 
       if (!user || !user.groups || user.groups.length === 0) {
-        throw new Error(t('auth.no_groups_error'));
+        throw new Error(t('auth.no_groups_error') || 'No se encontró ningún grupo para este usuario');
       }
 
       setAvailableGroups(user.groups);
-      setGroupName(user.groups[0]); // Auto-select the first one
-      setPhoneVerified(true);
+      setGroupName(user.groups[0]);
+      setEmailVerified(true);
     } catch (error: any) {
-      Alert.alert(t('auth.not_found'), error.message || t('auth.user_not_found'));
+      Alert.alert(t('auth.not_found') || 'No encontrado', error.message || t('auth.user_not_found') || 'Usuario no encontrado');
     } finally {
       setLoading(false);
     }
   }
 
   async function handleLogin() {
-    if (!pin) {
-      Alert.alert(t('common.error'), t('auth.enter_pin_error'));
+    if (!password) {
+      Alert.alert(t('common.error'), t('auth.enter_password_error') || 'Por favor, introduce tu contraseña');
       return;
     }
     setLoading(true);
-    const fullPhone = `${prefix}${phone}`;
-
     try {
-      const result = await api.login(fullPhone, pin, groupName);
+      const result = await api.login(email.trim().toLowerCase(), password, groupName);
 
       await saveAuth({
-        phone: fullPhone,
-        pin,
+        userId: result.userId,
+        email: email.trim().toLowerCase(),
+        password,
         name: result.name,
         currentGroup: groupName,
         groups: availableGroups,
         isAdmin: result.isAdmin,
       });
 
-      connect(fullPhone, pin);
+      connect(email.trim().toLowerCase(), password);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.message || t('auth.bad_credentials'));
+      Alert.alert(t('common.error'), error.message || t('auth.bad_credentials') || 'Credenciales incorrectas');
     } finally {
       setLoading(false);
     }
@@ -91,39 +93,40 @@ export default function LoginScreen() {
   // ==========================================
 
   async function handleRegister() {
-    if (!phone || !pin || !name || !groupName) {
-      Alert.alert(t('common.error'), t('auth.fill_all_fields'));
+    if (!email || !password || !name || !groupName) {
+      Alert.alert(t('common.error'), t('auth.fill_all_fields') || 'Por favor, rellena todos los campos');
       return;
     }
-    if (pin.length !== 4) {
-      Alert.alert(t('common.error'), t('auth.pin_4_digits'));
+    if (password.length < 8) {
+      Alert.alert(t('common.error'), t('auth.password_min_length') || 'La contraseña debe tener al menos 8 caracteres');
       return;
     }
     if (!acceptedTerms) {
-      Alert.alert('EULA', t('auth.must_accept_terms'));
+      Alert.alert('EULA', t('auth.must_accept_terms') || 'Debes aceptar los términos y condiciones');
       return;
     }
     setLoading(true);
-    const fullPhone = `${prefix}${phone}`;
+    const cleanEmail = email.trim().toLowerCase();
 
     try {
-      await api.register(name, fullPhone, pin, groupName, isNewGroup);
-      const result = await api.login(fullPhone, pin, groupName);
-      const user = await api.getUserByPhone(fullPhone);
+      await api.register(name, cleanEmail, password, groupName, isNewGroup);
+      const result = await api.login(cleanEmail, password, groupName);
+      const user   = await api.getUserByEmail(cleanEmail);
 
       await saveAuth({
-        phone: fullPhone,
-        pin,
+        userId: result.userId,
+        email: cleanEmail,
+        password,
         name: result.name || name,
         currentGroup: groupName,
         groups: user.groups || [groupName],
         isAdmin: result.isAdmin || isNewGroup,
       });
 
-      connect(fullPhone, pin);
+      connect(cleanEmail, password);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert(t('common.error'), error.message || t('auth.register_error'));
+      Alert.alert(t('common.error'), error.message || t('auth.register_error') || 'Error al registrarse');
     } finally {
       setLoading(false);
     }
@@ -136,6 +139,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.trophy}>🏆</Text>
@@ -150,7 +154,7 @@ export default function LoginScreen() {
         <View style={styles.tabRow}>
           <TouchableOpacity
             style={[styles.tab, mode === 'login' && styles.tabActive]}
-            onPress={() => { setMode('login'); setPhoneVerified(false); }}
+            onPress={() => { setMode('login'); setEmailVerified(false); }}
           >
             <Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>{t('auth.login')}</Text>
           </TouchableOpacity>
@@ -176,45 +180,38 @@ export default function LoginScreen() {
             />
           )}
 
-          {/* Phone Input with Prefix */}
-          <View style={styles.phoneContainer}>
-            <Text style={styles.plusSign}>+</Text>
-            <TextInput
-              style={[styles.input, styles.prefixInput]}
-              value={prefix}
-              onChangeText={setPrefix}
-              keyboardType="number-pad"
-              maxLength={3}
-              editable={!phoneVerified || mode === 'register'}
-            />
-            <TextInput
-              style={[styles.input, styles.phoneInput]}
-              placeholder={t('auth.phone_placeholder')}
-              placeholderTextColor="#666"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              editable={!phoneVerified || mode === 'register'}
-            />
-          </View>
+          {/* Email Input */}
+          <TextInput
+            style={styles.input}
+            placeholder={t('auth.email_placeholder') || 'Email'}
+            placeholderTextColor="#666"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!emailVerified || mode === 'register'}
+          />
 
-          {/* LOGIN FLOW - STEP 1 (Verify Phone) */}
-          {mode === 'login' && !phoneVerified && (
+          {/* LOGIN FLOW - STEP 1 (Verify Email) */}
+          {mode === 'login' && !emailVerified && (
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleVerifyPhone}
+              onPress={handleVerifyEmail}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('auth.next_arrow')}</Text>}
+              {loading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.buttonText}>{t('auth.next_arrow') || 'Siguiente →'}</Text>}
             </TouchableOpacity>
           )}
 
-          {/* LOGIN FLOW - STEP 2 (Select Group & Enter PIN) */}
-          {mode === 'login' && phoneVerified && (
+          {/* LOGIN FLOW - STEP 2 (Select Group & Enter Password) */}
+          {mode === 'login' && emailVerified && (
             <>
               {availableGroups.length > 1 && (
                 <View style={styles.groupPickerContainer}>
-                  <Text style={styles.pickerLabel}>{t('auth.select_group')}</Text>
+                  <Text style={styles.pickerLabel}>{t('auth.select_group') || 'Selecciona tu grupo'}</Text>
                   <View style={styles.groupList}>
                     {availableGroups.map(g => (
                       <TouchableOpacity
@@ -229,24 +226,24 @@ export default function LoginScreen() {
                 </View>
               )}
               {availableGroups.length === 1 && (
-                <Text style={styles.singleGroupInfo}>{t('auth.single_group')} <Text style={styles.bold}>{availableGroups[0]}</Text></Text>
+                <Text style={styles.singleGroupInfo}>
+                  {t('auth.single_group') || 'Grupo:'} <Text style={styles.bold}>{availableGroups[0]}</Text>
+                </Text>
               )}
 
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.pin_placeholder')}
+                placeholder={t('auth.password_placeholder') || 'Contraseña'}
                 placeholderTextColor="#666"
-                value={pin}
-                onChangeText={setPin}
-                keyboardType="number-pad"
-                maxLength={4}
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry
                 autoFocus
               />
 
               <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.backButton} onPress={() => setPhoneVerified(false)}>
-                  <Text style={styles.backButtonText}>{t('common.back')}</Text>
+                <TouchableOpacity style={styles.backButton} onPress={() => setEmailVerified(false)}>
+                  <Text style={styles.backButtonText}>{t('common.back') || '← Volver'}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -254,7 +251,9 @@ export default function LoginScreen() {
                   onPress={handleLogin}
                   disabled={loading}
                 >
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('auth.enter')}</Text>}
+                  {loading
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.buttonText}>{t('auth.enter') || 'Entrar'}</Text>}
                 </TouchableOpacity>
               </View>
             </>
@@ -265,7 +264,7 @@ export default function LoginScreen() {
             <>
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.group_placeholder')}
+                placeholder={t('auth.group_placeholder') || 'Nombre del grupo'}
                 placeholderTextColor="#666"
                 value={groupName}
                 onChangeText={setGroupName}
@@ -273,12 +272,10 @@ export default function LoginScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.pin_create')}
+                placeholder={t('auth.password_create') || 'Contraseña (mín. 8 caracteres)'}
                 placeholderTextColor="#666"
-                value={pin}
-                onChangeText={setPin}
-                keyboardType="number-pad"
-                maxLength={4}
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry
               />
 
@@ -289,7 +286,7 @@ export default function LoginScreen() {
                 <View style={[styles.checkbox, isNewGroup && styles.checkboxActive]}>
                   {isNewGroup && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <Text style={styles.checkLabel}>{t('auth.new_group')}</Text>
+                <Text style={styles.checkLabel}>{t('auth.new_group') || 'Crear grupo nuevo'}</Text>
               </TouchableOpacity>
 
               {/* EULA (Apple Requirement) */}
@@ -317,7 +314,9 @@ export default function LoginScreen() {
                 onPress={handleRegister}
                 disabled={loading}
               >
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('auth.register_button')}</Text>}
+                {loading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.buttonText}>{t('auth.register_button')}</Text>}
               </TouchableOpacity>
 
               <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 15, paddingHorizontal: 20 }}>
@@ -392,24 +391,6 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 14,
-  },
-  phoneContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  plusSign: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  prefixInput: {
-    width: 60,
-    textAlign: 'center',
-    paddingHorizontal: 0,
-  },
-  phoneInput: {
-    flex: 1,
   },
   input: {
     backgroundColor: '#151a3a',

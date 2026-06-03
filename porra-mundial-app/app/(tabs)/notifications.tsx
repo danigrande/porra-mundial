@@ -19,7 +19,7 @@ export default function NotificationsScreen() {
   const loadPreferences = async () => {
     if (!auth) return;
     try {
-      const response = await api.getProfile(auth.phone);
+      const response = await api.getProfile(auth.userId);
       if (response && response.notificationPreference) {
         setPreference(response.notificationPreference);
       }
@@ -39,14 +39,14 @@ export default function NotificationsScreen() {
     setPreference(newPref);
 
     try {
-      const currentProfile = await api.getProfile(auth.phone);
+      const currentProfile = await api.getProfile(auth.userId);
       
       const updatedProfile = {
         ...currentProfile,
         notificationPreference: newPref
       };
 
-      await api.updateProfile(auth.phone, auth.currentGroup || '', updatedProfile);
+      await api.updateProfile(auth.userId, auth.currentGroup || '', updatedProfile);
       
       // Mostrar Toast personalizado
       setToastMessage(`${t('notifications.pref_updated')} ${

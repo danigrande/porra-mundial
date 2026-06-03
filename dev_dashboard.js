@@ -55,7 +55,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-  const tabs = ['health', 'logs', 'rag', 'usage'];
+  const tabs = ['health', 'logs', 'rag', 'groups', 'users', 'usage'];
   const idx = tabs.indexOf(name);
   document.querySelectorAll('.tab')[idx]?.classList.add('active');
   document.getElementById(`panel-${name}`)?.classList.add('active');
@@ -64,6 +64,7 @@ function switchTab(name) {
   if (name === 'logs') loadLogs();
   if (name === 'rag') { loadRagStats(); loadRagMessages(); }
   if (name === 'groups') loadGroups();
+  if (name === 'users') loadUsers();
   if (name === 'usage') loadUsage();
 }
 
@@ -379,6 +380,75 @@ async function loadGroups() {
   }
 }
 
+// ==========================================
+// USERS MANAGEMENT
+// ==========================================
+
+async function loadUsers() {
+  const container = document.getElementById('users-table-body');
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando usuarios...</div>';
+
+  try {
+    const users = await devFetch('/users');
+    
+    if (!users.length) {
+      container.innerHTML = '<div class="loading">No hay usuarios en la base de datos.</div>';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Nombre</th><th>Email</th><th>Nickname</th><th>Grupos</th><th>Admin de</th><th>Predicciones</th><th>Mensajes</th><th>Acciones</th></tr></thead><tbody>';
+    
+    users.forEach(u => {
+      const grupos = (u.groups || []).join(', ') || '<span style="color:var(--text-muted)">ninguno</span>';
+      const adminDe = (u.isAdminOf || []).join(', ') || '<span style="color:var(--text-muted)">-</span>';
+      const created = new Date(u.createdAt).toLocaleDateString('es-ES');
+      html += `<tr>
+        <td><strong>${u.name}</strong><br><small style="color:var(--text-muted)">${created}</small></td>
+        <td>${u.email || '<span style="color:var(--text-muted)">sin email</span>'}</td>
+        <td>${u.nickname || '-'}</td>
+        <td style="font-size:0.8rem">${grupos}</td>
+        <td style="font-size:0.8rem">${adminDe}</td>
+        <td>${u.predictionCount}</td>
+        <td>${u.messageCount}</td>
+        <td>
+          <button class="btn-sm" onclick="deleteUser('${u.name}', '${u._id}')" style="background:var(--accent-red)">🗑️ Borrar</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function deleteUser(userName, userId) {
+  const msg = `⚠️ ¿ESTÁS SEGURO? Esto borrará a "${userName}" de la base de datos completa.\n\nConsecuencias:\n• Todas sus predicciones\n• Todos sus mensajes\n• Sus tokens de push\n• Sus bloqueos y reports\n• Será eliminado de todos los grupos\n• Si era admin de algún grupo, ese grupo se quedará sin admin`;
+
+  if (!confirm(msg)) return;
+  if (!confirm(`Última confirmación: ¿Borrar permanentemente a "${userName}" y todos sus datos? Esta acción NO se puede deshacer.`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userName)}?userId=${userId}`, {
+      method: 'DELETE',
+      headers: { 'x-dev-key': DEV_KEY }
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Error al borrar usuario');
+    }
+    
+    const result = await res.json();
+    const d = result.deleted;
+    alert(`✅ Usuario "${userName}" eliminado.\n\n• ${d.predictions} predicciones borradas\n• ${d.messages} mensajes borrados\n• ${d.tokens} push tokens eliminados\n• ${d.blocks} bloqueos eliminados\n• ${d.reports} reports eliminados`);
+    loadUsers();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
 async function openGroupDetails(name) {
   const modal = document.getElementById('log-modal');
   const body = document.getElementById('modal-body');
@@ -399,10 +469,10 @@ async function openGroupDetails(name) {
           <div style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:0.5rem; border-radius:8px;">
             ${group.members.map(m => `
               <div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
-                <span>${m.name} <small style="color:var(--text-muted)">(${m.phone})</small></span>
+                <span>${m.name} <small style="color:var(--text-muted)">(${m.email || ''})</small></span>
                 <div style="display:flex; gap:5px;">
                   <button class="btn-sm" onclick="setGroupAdmin('${m.name}', '${name}')" title="Hacer Administrador" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-gold); padding:2px 6px">👑</button>
-                  <button class="btn-sm" onclick="resetUserPin('${m.name}', '${name}')" title="Reset PIN a 1234" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-gold); padding:2px 6px">🔑</button>
+                  <button class="btn-sm" onclick="resetUserPassword('${m.name}', '${name}')" title="Reset Contraseña a PrediccionMundial" style="background:rgba(234, 179, 8, 0.2); color:var(--accent-gold); padding:2px 6px">🔑</button>
                   <button class="btn-sm" onclick="removeMember('${name}', '${m.name}')" title="Quitar del grupo" style="background:rgba(239, 68, 68, 0.2); color:var(--accent-red); padding:2px 6px">Quitar</button>
                 </div>
               </div>
@@ -482,15 +552,15 @@ async function deleteGroup(name) {
   }
 }
 
-async function resetUserPin(userName, groupName) {
-  if (confirm(`¿Seguro que quieres resetear el PIN de ${userName} a "1234"?`)) {
+async function resetUserPassword(userName, groupName) {
+  if (confirm(`¿Seguro que quieres resetear la contraseña de ${userName} a "PrediccionMundial"?`)) {
     try {
-      const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userName)}/reset-pin`, {
+      const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userName)}/reset-password`, {
         method: 'POST',
         headers: { 'x-dev-key': DEV_KEY }
       });
       if (res.ok) {
-        alert(`✅ PIN de ${userName} reseteado a "1234"`);
+        alert(`✅ Contraseña de ${userName} reseteada a "PrediccionMundial"`);
         openGroupDetails(groupName);
       } else {
         const err = await res.json();
