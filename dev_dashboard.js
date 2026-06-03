@@ -733,9 +733,17 @@ async function loadRssStats() {
         <div class="card-sub">${data.pushNotificationsSent} push · ${data.errors} errores</div>
       </div>
       <div class="card">
-        <div class="card-label">Artículos en Memoria</div>
-        <div class="card-value green">${data.seenArticlesCount}</div>
-        <div class="card-sub">Rotación cada 7 días</div>
+        <div class="card-label">Resumen Diario 23:59</div>
+        <div class="card-value purple">${data.summariesSent} enviados</div>
+        <div class="card-sub">${data.summaryArticles} artículos en total · ${data.dailyArticlesPending} pendientes hoy</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Filtros</div>
+        <div class="card-value cyan" style="font-size:0.7rem; line-height:1.3">
+          ⚡ Breaking: ${data.breakingFilter}<br>
+          📋 Resumen: ${data.summaryFilter}
+        </div>
+        <div class="card-sub">Resumen: ${data.summaryTime}</div>
       </div>
       <div class="card" style="grid-column: span 2">
         <div class="card-label">Feeds Configurados</div>
