@@ -45,7 +45,7 @@ export async function sendToUser(userId, title, body, data = {}) {
  * @param {Object} data - Datos adicionales
  * @param {string} excludeUserId - ID de usuario a excluir (ej: el que envió el mensaje)
  */
-export async function sendToGroup(groupName, title, body, data = {}, excludeUserId = null) {
+export async function sendToGroup(groupName, title, body, data = {}, excludeUserId = null, isAgent = false) {
   try {
     const group = await Group.findOne({ name: groupName }).populate('members');
     if (!group) return;
@@ -87,15 +87,21 @@ export async function sendToGroup(groupName, title, body, data = {}, excludeUser
         continue;
       }
 
-      if (pref === 'mentions') {
-        const nameMention = `@${user.name.toLowerCase()}`;
-        const nickMention = user.nickname ? `@${user.nickname.toLowerCase()}` : null;
-        
-        const isMentioned = textLower.includes(nameMention) || 
-                           (nickMention && textLower.includes(nickMention)) ||
-                           textLower.includes('@todos') || 
-                           textLower.includes('@all');
+      const nameMention = `@${user.name.toLowerCase()}`;
+      const nickMention = user.nickname ? `@${user.nickname.toLowerCase()}` : null;
+      const isMentioned = textLower.includes(nameMention) || 
+                         (nickMention && textLower.includes(nickMention)) ||
+                         textLower.includes('@todos') || 
+                         textLower.includes('@all');
 
+      if (pref === 'agent-mentions') {
+        if (!isAgent && !isMentioned) {
+          console.log(`[Push] 🔇 Saltando a ${user.name} (solo agente+menciones, no es agente ni mención)`);
+          continue;
+        }
+      }
+
+      if (pref === 'mentions') {
         if (!isMentioned) {
           console.log(`[Push] 🔇 Saltando a ${user.name} (solo menciones, no detectada)`);
           continue;

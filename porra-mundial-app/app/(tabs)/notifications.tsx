@@ -8,7 +8,7 @@ import * as api from '../../services/api';
 export default function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [preference, setPreference] = useState<'all' | 'mentions' | 'none'>('all');
+  const [preference, setPreference] = useState<'all' | 'agent-mentions' | 'mentions' | 'none'>('all');
   const auth = getAuth();
   const { t } = useTranslation();
 
@@ -33,7 +33,7 @@ export default function NotificationsScreen() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const handleUpdatePreference = async (newPref: 'all' | 'mentions' | 'none') => {
+  const handleUpdatePreference = async (newPref: 'all' | 'agent-mentions' | 'mentions' | 'none') => {
     if (!auth || !auth.userId || saving) return;
     setSaving(true);
     setPreference(newPref);
@@ -50,7 +50,10 @@ export default function NotificationsScreen() {
       
       // Mostrar Toast personalizado
       setToastMessage(`${t('notifications.pref_updated')} ${
-        newPref === 'all' ? t('notifications.pref_all') : newPref === 'mentions' ? t('notifications.pref_mentions') : t('notifications.pref_none')
+        newPref === 'all' ? t('notifications.pref_all')
+        : newPref === 'agent-mentions' ? t('notifications.pref_agent_mentions')
+        : newPref === 'mentions' ? t('notifications.pref_mentions')
+        : t('notifications.pref_none')
       }`);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
@@ -96,6 +99,25 @@ export default function NotificationsScreen() {
             <Text style={styles.optionTitle}>{t('notifications.all_title')}</Text>
             <Text style={styles.optionDescription}>
               {t('notifications.all_desc')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.optionCard, preference === 'agent-mentions' && styles.selectedCard]}
+            onPress={() => handleUpdatePreference('agent-mentions')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.optionHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: '#8b5cf620' }]}>
+                <MaterialIcons name="smart-toy" size={24} color="#8b5cf6" />
+              </View>
+              {preference === 'agent-mentions' && (
+                <Ionicons name="checkmark-circle" size={24} color="#8b5cf6" />
+              )}
+            </View>
+            <Text style={styles.optionTitle}>{t('notifications.agent_mentions_title')}</Text>
+            <Text style={styles.optionDescription}>
+              {t('notifications.agent_mentions_desc', { name: auth?.name || 'you' })}
             </Text>
           </TouchableOpacity>
 

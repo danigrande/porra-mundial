@@ -1150,7 +1150,9 @@ router.get('/test-push/:groupName', async (req, res) => {
             groupName, 
             '🏆 Agente Mundial (Test)', 
             'Esta es una notificación de prueba para verificar tus ajustes de silencio.', 
-            { screen: 'chat', groupName }
+            { screen: 'chat', groupName },
+            null,
+            true // es el agente
         );
         
         res.json(createResponse('success', { message: `Notificación de prueba enviada al grupo ${groupName}` }));

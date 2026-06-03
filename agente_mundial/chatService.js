@@ -203,10 +203,11 @@ export function initChatServer(httpServer) {
           : text?.trim();
         pushService.sendToGroup(
           groupName,
-          userName, // Título: nombre de quien escribe
+          userName,
           pushText || '📎 Media',
           { screen: 'chat', groupName },
-          userId // Excluir al que envía el mensaje
+          userId,
+          false // no es el agente
         );
 
         // 4. Detectar si el mensaje va dirigido al bot (solo para mensajes de texto)
@@ -275,7 +276,8 @@ export function initChatServer(httpServer) {
               'Agente Mundial 🏆',
               botResponse.substring(0, 100) + (botResponse.length > 100 ? '...' : ''),
               { screen: 'chat', groupName },
-              userId // Excluir al remitente
+              userId,
+              true // es el agente
             );
           }
         }
@@ -385,7 +387,9 @@ export async function sendBotMessage(groupName, text) {
       groupName,
       'Agente Mundial 🏆',
       text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-      { screen: 'chat', groupName }
+      { screen: 'chat', groupName },
+      null,
+      true // es el agente
     );
 
     console.log(`[Chat] Mensaje del bot enviado a ${groupName}`);

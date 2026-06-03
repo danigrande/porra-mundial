@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   isAdminOf: [{ type: String }], // Grupos de los que es admin
   notificationPreference: { 
     type: String, 
-    enum: ['all', 'mentions', 'none'], 
+    enum: ['all', 'agent-mentions', 'mentions', 'none'], 
     default: 'all' 
   },
   createdAt: { type: Date, default: Date.now }

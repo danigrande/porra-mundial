@@ -184,7 +184,9 @@ async function broadcastBreakingNews(article) {
           groupName,
           '🚨 Noticia de Última Hora',
           article.title.substring(0, 150),
-          { screen: 'chat', groupName }
+          { screen: 'chat', groupName },
+          null,
+          true // es el agente (RSS)
         );
         stats.pushNotificationsSent++;
       } catch (err) {
