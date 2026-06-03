@@ -238,6 +238,7 @@
         if (diff <= 0) {
           clearInterval(timer);
           document.getElementById('countdownTimer').textContent = "CERRADO";
+          updateAll();
           return;
         }
         
@@ -467,12 +468,13 @@
         const tbody = document.getElementById(`tbody_${g.letter}`);
         tbody.innerHTML = standings.map((s, i) => `<tr><td>${i+1}</td><td>${getTeamHtml(s.name)}</td><td>${s.pts}</td><td>${s.dg}</td></tr>`).join('');
         
-        // Bloquear inputs si no están en 'unlocks' o si la fase de grupos ya pasó
         const isGroupUnlock = unlocks.includes('groups');
         const card = tbody.closest('.group-card');
-        if (!isGroupUnlock && tournamentState) {
-          card.querySelectorAll('input').forEach(input => input.disabled = true);
-          card.style.opacity = '0.8';
+        if (card) {
+          card.querySelectorAll('input').forEach(input => {
+            input.disabled = !isGroupUnlock || !tournamentState;
+          });
+          card.style.opacity = (!isGroupUnlock && tournamentState) ? '0.8' : '1';
         }
       });
 
@@ -486,12 +488,11 @@
         } else if (section) {
            section.style.display = 'block';
            
-           // Bloquear si no es editable
-           const isEditable = unlocks.includes(round.id.toLowerCase()) || round.matches.some(m => unlocks.includes('r'+m));
-           if (!isEditable && tournamentState) {
-             section.querySelectorAll('input').forEach(input => input.disabled = true);
-             section.style.opacity = '0.9';
-           }
+           const isEditable = unlocks.includes(round.id.toLowerCase());
+           section.querySelectorAll('input').forEach(input => {
+             input.disabled = !isEditable || !tournamentState;
+           });
+           section.style.opacity = (!isEditable && tournamentState) ? '0.9' : '1';
         }
 
         round.matches.forEach(num => {
@@ -515,8 +516,11 @@
       // Honor Roll
       const isHonorUnlock = unlocks.includes('honor');
       const awardsCard = document.querySelector('.awards-card');
-      if (awardsCard && !isHonorUnlock && tournamentState) {
-        awardsCard.style.opacity = '0.8';
+      if (awardsCard) {
+        awardsCard.querySelectorAll('input').forEach(input => {
+          input.disabled = !isHonorUnlock || !tournamentState;
+        });
+        awardsCard.style.opacity = (!isHonorUnlock && tournamentState) ? '0.8' : '1';
       }
 
       const champ = fullResolve('W104', dataForBracket);

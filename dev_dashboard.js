@@ -55,7 +55,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-  const tabs = ['health', 'logs', 'rag', 'groups', 'users', 'usage'];
+  const tabs = ['health', 'logs', 'rag', 'rss', 'websearch', 'groups', 'users', 'usage'];
   const idx = tabs.indexOf(name);
   document.querySelectorAll('.tab')[idx]?.classList.add('active');
   document.getElementById(`panel-${name}`)?.classList.add('active');
@@ -65,6 +65,8 @@ function switchTab(name) {
   if (name === 'rag') { loadRagStats(); loadRagMessages(); }
   if (name === 'groups') loadGroups();
   if (name === 'users') loadUsers();
+  if (name === 'rss') loadRssStats();
+  if (name === 'websearch') loadWebSearchStats();
   if (name === 'usage') loadUsage();
 }
 
@@ -92,6 +94,8 @@ async function loadHealth() {
       <span><span class="status-dot ${s.socketio?.active ? 'green' : 'red'}"></span><span class="status-label">Socket.IO</span></span>
       <span><span class="status-dot ${s.groq.configured ? 'green' : 'red'}"></span><span class="status-label">Groq</span></span>
       <span><span class="status-dot ${s.huggingface.configured ? 'green' : 'amber'}"></span><span class="status-label">HF Embed</span></span>
+      <span><span class="status-dot ${s.rss?.enabled ? 'green' : 'red'}"></span><span class="status-label">RSS</span></span>
+      <span><span class="status-dot ${s.tavily?.configured ? 'green' : 'red'}"></span><span class="status-label">Tavily</span></span>
     `;
 
     // Health cards
@@ -115,6 +119,16 @@ async function loadHealth() {
         <div class="card-label">Socket.IO Chat</div>
         <div class="card-value ${s.socketio?.active ? 'green' : 'red'}">${s.socketio?.active ? 'ACTIVE' : 'DOWN'}</div>
         <div class="card-sub">${s.socketio?.clients || 0} clientes conectados</div>
+      </div>
+      <div class="card">
+        <div class="card-label">RSS Feeds</div>
+        <div class="card-value ${s.rss?.enabled ? 'green' : 'red'}">${s.rss?.enabled ? `${s.rss.feeds} feeds / ${s.rss.pollIntervalMinutes}min` : 'DISABLED'}</div>
+        <div class="card-sub"><a href="#" onclick="switchTab('rss'); return false;" style="color:var(--accent-cyan)">Ver detalles →</a></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Tavily Web Search</div>
+        <div class="card-value ${s.tavily?.configured ? 'green' : 'red'}">${s.tavily?.configured ? 'CONNECTED' : 'NO KEY'}</div>
+        <div class="card-sub"><a href="#" onclick="switchTab('websearch'); return false;" style="color:var(--accent-cyan)">Ver detalles →</a></div>
       </div>
       <div class="card">
         <div class="card-label">Server Uptime</div>
@@ -686,6 +700,127 @@ function renderBarChart(byDay) {
       <div class="bar-label">${day}</div>
     </div>`;
   }).join('');
+}
+
+// ==========================================
+// RSS STATS
+// ==========================================
+
+async function loadRssStats() {
+  try {
+    const data = await devFetch('/rss-stats');
+
+    // Top cards
+    document.getElementById('rss-cards').innerHTML = `
+      <div class="card">
+        <div class="card-label">Estado</div>
+        <div class="card-value ${data.enabled ? 'green' : 'red'}">${data.enabled ? 'ACTIVO' : 'DESHABILITADO'}</div>
+        <div class="card-sub">${data.feeds.length} feeds · cada ${data.pollIntervalMinutes} min</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Poll Count</div>
+        <div class="card-value cyan">${data.pollCount}</div>
+        <div class="card-sub">Último: ${data.lastPollTime ? new Date(data.lastPollTime).toLocaleString('es-ES') : 'nunca'}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Artículos Parseados</div>
+        <div class="card-value amber">${data.articlesParsed}</div>
+        <div class="card-sub">${data.worldCupArticles} relacionados con el Mundial · ${data.breakingNews} breaking</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Broadcast</div>
+        <div class="card-value purple">${data.broadcastsSent} msgs</div>
+        <div class="card-sub">${data.pushNotificationsSent} push · ${data.errors} errores</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Artículos en Memoria</div>
+        <div class="card-value green">${data.seenArticlesCount}</div>
+        <div class="card-sub">Rotación cada 7 días</div>
+      </div>
+      <div class="card" style="grid-column: span 2">
+        <div class="card-label">Feeds Configurados</div>
+        <div class="card-sub" style="font-family:var(--mono); font-size:0.7rem; margin-top:0.5rem">
+          ${data.feeds.map((f, i) => `${i + 1}. <a href="${f.trim()}" target="_blank" style="color:var(--accent-cyan)">${escapeHtml(f.trim())}</a>`).join('<br>')}
+        </div>
+      </div>
+    `;
+
+    // Recent breaking news
+    const articlesBody = document.getElementById('rss-articles-body');
+    if (!data.recentBreaking || data.recentBreaking.length === 0) {
+      articlesBody.innerHTML = '<div class="loading">No se han detectado noticias de última hora todavía.</div>';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Hora</th><th>Fuente</th><th>Título</th><th>Enlace</th></tr></thead><tbody>';
+    data.recentBreaking.forEach(a => {
+      const time = new Date(a.time).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      html += `<tr>
+        <td style="white-space:nowrap">${time}</td>
+        <td style="font-size:0.7rem">${escapeHtml(a.source)}</td>
+        <td>${escapeHtml(a.title)}</td>
+        <td><a href="${a.link}" target="_blank" style="color:var(--accent-cyan)">🔗</a></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    articlesBody.innerHTML = html;
+  } catch (e) {
+    document.getElementById('rss-cards').innerHTML = `<div class="card"><div class="card-value red">ERROR</div><div class="card-sub">${e.message}</div></div>`;
+  }
+}
+
+// ==========================================
+// WEB SEARCH (TAVILY) STATS
+// ==========================================
+
+async function loadWebSearchStats() {
+  try {
+    const data = await devFetch('/websearch-stats');
+
+    document.getElementById('websearch-cards').innerHTML = `
+      <div class="card">
+        <div class="card-label">Estado</div>
+        <div class="card-value ${data.configured ? 'green' : 'red'}">${data.configured ? 'CONECTADO' : 'SIN API KEY'}</div>
+        <div class="card-sub">${data.enabled ? 'Habilitado' : 'Deshabilitado en config'}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Consultas Realizadas</div>
+        <div class="card-value cyan">${data.searchCount}</div>
+        <div class="card-sub">${data.totalResults} resultados totales</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Última Consulta</div>
+        <div class="card-value amber" style="font-size:0.8rem">${data.lastQuery ? escapeHtml(data.lastQuery.substring(0, 60)) : '—'}</div>
+        <div class="card-sub">${data.lastQueryTime ? new Date(data.lastQueryTime).toLocaleString('es-ES') : 'nunca'}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Errores</div>
+        <div class="card-value ${data.errors > 0 ? 'red' : 'green'}">${data.errors}</div>
+        <div class="card-sub">maxResults: ${data.maxResults}</div>
+      </div>
+    `;
+
+    // Recent queries
+    const queriesBody = document.getElementById('websearch-queries-body');
+    if (!data.recentQueries || data.recentQueries.length === 0) {
+      queriesBody.innerHTML = '<div class="loading">No hay consultas registradas todavía.</div>';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Hora</th><th>Query</th><th>Resultados</th></tr></thead><tbody>';
+    data.recentQueries.forEach(q => {
+      const time = new Date(q.time).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      html += `<tr>
+        <td style="white-space:nowrap">${time}</td>
+        <td style="font-family:var(--mono); font-size:0.8rem">${escapeHtml(q.query)}</td>
+        <td>${q.results}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    queriesBody.innerHTML = html;
+  } catch (e) {
+    document.getElementById('websearch-cards').innerHTML = `<div class="card"><div class="card-value red">ERROR</div><div class="card-sub">${e.message}</div></div>`;
+  }
 }
 
 // ==========================================

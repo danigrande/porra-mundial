@@ -11,6 +11,19 @@ const groq = new Groq({ apiKey: config.groq.apiKey });
 const seenArticles = new Map();
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// Stats for dev dashboard
+const stats = {
+  pollCount: 0,
+  lastPollTime: null,
+  articlesParsed: 0,
+  worldCupArticles: 0,
+  breakingNews: 0,
+  broadcastsSent: 0,
+  pushNotificationsSent: 0,
+  errors: 0,
+  recentBreaking: [], // last 10
+};
+
 let io = null;
 
 export function startRssService(socketIo) {
@@ -27,18 +40,32 @@ export function startRssService(socketIo) {
 }
 
 async function pollFeeds() {
+  stats.pollCount++;
+  stats.lastPollTime = new Date().toISOString();
+
   for (const feedUrl of config.rss.feeds) {
     try {
       const articles = await parseRSS(feedUrl);
+      stats.articlesParsed += articles.length;
+
       const newArticles = articles.filter(a => !seenArticles.has(a.guid));
 
       for (const article of newArticles) {
         seenArticles.set(article.guid, Date.now());
 
         if (!isWorldCupRelated(article)) continue;
+        stats.worldCupArticles++;
 
         const isBreaking = await isBreakingNews(article);
         if (isBreaking) {
+          stats.breakingNews++;
+          stats.recentBreaking.unshift({
+            title: article.title,
+            link: article.link,
+            source: feedUrl.substring(0, 40),
+            time: new Date().toISOString(),
+          });
+          if (stats.recentBreaking.length > 10) stats.recentBreaking.pop();
           await broadcastBreakingNews(article);
         }
       }
@@ -47,6 +74,7 @@ async function pollFeeds() {
         console.log(`[RSS] ${newArticles.length} artículos nuevos de ${feedUrl.substring(0, 60)}...`);
       }
     } catch (err) {
+      stats.errors++;
       console.error(`[RSS] Error en feed ${feedUrl.substring(0, 60)}:`, err.message);
     }
   }
@@ -116,6 +144,7 @@ async function broadcastBreakingNews(article) {
 
   if (!io) {
     console.warn('[RSS] Socket.IO no disponible para broadcast');
+    stats.errors++;
     return;
   }
 
@@ -126,8 +155,10 @@ async function broadcastBreakingNews(article) {
       const groupName = roomName.replace('group:', '');
       try {
         await sendBotMessage(groupName, message);
+        stats.broadcastsSent++;
         console.log(`[RSS] Mensaje enviado al grupo ${groupName}`);
       } catch (err) {
+        stats.errors++;
         console.error(`[RSS] Error enviando a grupo ${groupName}:`, err.message);
       }
 
@@ -139,11 +170,24 @@ async function broadcastBreakingNews(article) {
           article.title.substring(0, 150),
           { screen: 'chat', groupName }
         );
+        stats.pushNotificationsSent++;
       } catch (err) {
+        stats.errors++;
         console.error(`[RSS] Error push a grupo ${groupName}:`, err.message);
       }
     }
   }
 
   console.log(`📢 Breaking news broadcast complete: "${article.title.substring(0, 60)}"`);
+}
+
+export function getRssStats() {
+  return {
+    enabled: config.rss.enabled,
+    feeds: config.rss.feeds.map(url => url.substring(0, 60)),
+    pollIntervalMinutes: config.rss.pollIntervalMs / 60000,
+    keywords: config.rss.worldCupKeywords,
+    ...stats,
+    seenArticlesCount: seenArticles.size,
+  };
 }

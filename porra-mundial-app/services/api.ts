@@ -230,13 +230,14 @@ export async function getChatHistory(groupName: string, before: string | null = 
 // ==========================================
 
 export async function getProfile(userId: string) {
+  if (!userId) throw new Error('Usuario no autenticado');
   return apiFetch(`/profile?userId=${encodeURIComponent(userId)}`);
 }
 
-export async function updateProfile(userId: string, groupName: string, profile: any) {
+export async function updateProfile(userId: string, groupName: string, profile: any, email?: string) {
   return apiFetch('/profile', {
     method: 'POST',
-    body: JSON.stringify({ userId, groupName, profile }),
+    body: JSON.stringify({ userId, groupName, profile, email }),
   });
 }
 

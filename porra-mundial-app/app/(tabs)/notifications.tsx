@@ -17,7 +17,7 @@ export default function NotificationsScreen() {
   }, []);
 
   const loadPreferences = async () => {
-    if (!auth) return;
+    if (!auth || !auth.userId) return;
     try {
       const response = await api.getProfile(auth.userId);
       if (response && response.notificationPreference) {
@@ -34,7 +34,7 @@ export default function NotificationsScreen() {
   const [toastMessage, setToastMessage] = useState('');
 
   const handleUpdatePreference = async (newPref: 'all' | 'mentions' | 'none') => {
-    if (!auth || saving) return;
+    if (!auth || !auth.userId || saving) return;
     setSaving(true);
     setPreference(newPref);
 

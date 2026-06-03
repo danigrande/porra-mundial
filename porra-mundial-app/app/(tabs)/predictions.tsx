@@ -50,7 +50,10 @@ export default function PredictionsScreen() {
   };
 
   useEffect(() => {
-    if (!groupName || !userId) return;
+    if (!groupName || !userId) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     Promise.all([
@@ -71,34 +74,25 @@ export default function PredictionsScreen() {
   }, [groupName, userId]);
 
   const matchesToDisplay = useMemo(() => {
-    const now = new Date();
     const group = FIXTURE_GROUPS.find(g => g.letter === selectedGroup);
     if (group) {
-      return getGroupMatches(group).map((m: any) => {
-        // Asumimos que m.endDate o similar existe, si no, usaremos la lógica de fase
-        const isEditable = !m.endDate || new Date(m.endDate) > now;
-        return {
-          ...m,
-          team1: tTeam(m.team1),
-          team2: tTeam(m.team2),
-          isEditable
-        };
-      });
+      return getGroupMatches(group).map((m: any) => ({
+        ...m,
+        team1: tTeam(m.team1),
+        team2: tTeam(m.team2),
+        isEditable: state?.unlocks?.includes('groups') ?? false
+      }));
     }
 
     const koPhase = state?.knockoutBracket?.find((kb: any) => kb.id === selectedGroup);
     if (koPhase) {
       return koPhase.matches.map((mId: number) => {
         const teams = state?.bracketMatches?.[mId] || ['TBD', 'TBD'];
-        // Para KO, la validación es más compleja ya que depende de la fase. 
-        // Pero para este MVP, usaremos el estado de la fase actual.
-        const isEditable = state?.isPredictionWindow ?? true; 
-
         return {
           id: `ko_${mId}`,
           team1: resolveTeamName(teams[0]),
           team2: resolveTeamName(teams[1]),
-          isEditable
+          isEditable: state?.unlocks?.includes(koPhase.id) ?? false
         };
       });
     }
@@ -225,37 +219,39 @@ export default function PredictionsScreen() {
           <View style={styles.awardsContainer}>
             <Text style={styles.awardsTitle}>{t('predictions.awards_title')}</Text>
             <Text style={styles.awardsSubtitle}>{t('predictions.awards_subtitle')}</Text>
-
             <View style={styles.awardInputBox}>
               <Text style={styles.awardLabel}>{t('predictions.golden_ball')}</Text>
               <TextInput 
-                style={styles.awardTextInput} 
+                style={[styles.awardTextInput, !(state?.unlocks?.includes('honor') ?? false) && styles.scoreInputDisabled]} 
                 value={predictions['ball_gold'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, ball_gold: v})}
                 placeholder={t('predictions.golden_ball_placeholder')}
                 placeholderTextColor="#475569"
+                editable={state?.unlocks?.includes('honor') ?? false}
               />
             </View>
 
             <View style={styles.awardInputBox}>
               <Text style={styles.awardLabel}>{t('predictions.silver_ball')}</Text>
               <TextInput 
-                style={styles.awardTextInput} 
+                style={[styles.awardTextInput, !(state?.unlocks?.includes('honor') ?? false) && styles.scoreInputDisabled]} 
                 value={predictions['ball_silver'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, ball_silver: v})}
                 placeholder={t('predictions.silver_ball_placeholder')}
                 placeholderTextColor="#475569"
+                editable={state?.unlocks?.includes('honor') ?? false}
               />
             </View>
 
             <View style={styles.awardInputBox}>
               <Text style={styles.awardLabel}>{t('predictions.bronze_ball')}</Text>
               <TextInput 
-                style={styles.awardTextInput} 
+                style={[styles.awardTextInput, !(state?.unlocks?.includes('honor') ?? false) && styles.scoreInputDisabled]} 
                 value={predictions['ball_bronze'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, ball_bronze: v})}
                 placeholder={t('predictions.bronze_ball_placeholder')}
                 placeholderTextColor="#475569"
+                editable={state?.unlocks?.includes('honor') ?? false}
               />
             </View>
 
@@ -264,33 +260,36 @@ export default function PredictionsScreen() {
             <View style={styles.awardInputBox}>
               <Text style={styles.awardLabel}>{t('predictions.golden_boot')}</Text>
               <TextInput 
-                style={styles.awardTextInput} 
+                style={[styles.awardTextInput, !(state?.unlocks?.includes('honor') ?? false) && styles.scoreInputDisabled]} 
                 value={predictions['boot_gold'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, boot_gold: v})}
                 placeholder={t('predictions.golden_boot_placeholder')}
                 placeholderTextColor="#475569"
+                editable={state?.unlocks?.includes('honor') ?? false}
               />
             </View>
 
             <View style={styles.awardInputBox}>
               <Text style={styles.awardLabel}>{t('predictions.silver_boot')}</Text>
               <TextInput 
-                style={styles.awardTextInput} 
+                style={[styles.awardTextInput, !(state?.unlocks?.includes('honor') ?? false) && styles.scoreInputDisabled]} 
                 value={predictions['boot_silver'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, boot_silver: v})}
                 placeholder={t('predictions.silver_boot_placeholder')}
                 placeholderTextColor="#475569"
+                editable={state?.unlocks?.includes('honor') ?? false}
               />
             </View>
 
             <View style={styles.awardInputBox}>
               <Text style={styles.awardLabel}>{t('predictions.bronze_boot')}</Text>
               <TextInput 
-                style={styles.awardTextInput} 
+                style={[styles.awardTextInput, !(state?.unlocks?.includes('honor') ?? false) && styles.scoreInputDisabled]} 
                 value={predictions['boot_bronze'] || ''} 
                 onChangeText={(v) => setPredictions({...predictions, boot_bronze: v})}
                 placeholder={t('predictions.bronze_boot_placeholder')}
                 placeholderTextColor="#475569"
+                editable={state?.unlocks?.includes('honor') ?? false}
               />
             </View>
           </View>
@@ -371,6 +370,7 @@ export default function PredictionsScreen() {
                     </View>
                   )}
                 </View>
+              </View>
               );
             })}
             

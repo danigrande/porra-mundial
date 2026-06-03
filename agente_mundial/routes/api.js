@@ -379,7 +379,7 @@ router.get('/profile', async (req, res) => {
     try {
         const { playerName, userId, email } = req.query;
         let query = {};
-        if (userId) query = { _id: userId };
+        if (userId && userId !== 'undefined') query = { _id: userId };
         else if (email) query = { email: email.toLowerCase().trim() };
         else if (playerName) query = { name: playerName };
         else return res.status(400).json(createResponse('error', null, 'Falta identificador (userId, email o playerName)'));
@@ -410,43 +410,10 @@ router.post('/profile', async (req, res) => {
         if (!profile) throw new Error('El perfil es requerido');
 
         let query = {};
-        if (userId) query = { _id: userId };
+        if (userId && userId !== 'undefined') query = { _id: userId };
         else if (email) query = { email: email.toLowerCase().trim() };
         else if (playerName) query = { name: playerName };
         else throw new Error('Falta identificador para actualizar perfil');
-
-        console.log(`👤 [Profile] Actualizando preferencias para ${userId || email || playerName}:`, profile.notificationPreference);
-        const user = await User.findOneAndUpdate(
-            query,
-            { 
-                $set: { 
-                    nickname: profile.nickname || playerName,
-                    likes: profile.likes || [],
-                    dislikes: profile.dislikes || [],
-                    humor_style: profile.humor_style || 'Divertido y amigable',
-                    ai_personality: profile.ai_personality || 'andres_montes',
-                    notificationPreference: profile.notificationPreference || 'all'
-                }
-            },
-            { new: true }
-        );
-        if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado'));
-        res.json(createResponse('success', { notificationPreference: user.notificationPreference }));
-    } catch (error) {
-        console.error('❌ Error en POST /profile:', error);
-        res.status(500).json(createResponse('error', null, error.message));
-    }
-});
-
-router.post('/profile', async (req, res) => {
-    try {
-        const { playerName, userId, email, groupName, profile } = req.body;
-        if (!profile) throw new Error('El perfil es requerido');
-
-        let query = {};
-        if (userId) query = { _id: userId };
-        else if (email) query = { email: email.toLowerCase().trim() };
-        else query = { name: playerName };
 
         console.log(`👤 [Profile] Actualizando preferencias para ${userId || email || playerName}:`, profile.notificationPreference);
         const user = await User.findOneAndUpdate(

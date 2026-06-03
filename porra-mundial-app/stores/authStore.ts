@@ -40,7 +40,17 @@ export async function loadAuth(): Promise<AuthData | null> {
   try {
     const stored = await AsyncStorage.getItem(AUTH_KEY);
     if (stored) {
-      authData = JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Migración: si el dato persistido no tiene userId/email/password
+      // (formato anterior a migración email+password), se invalida
+      if (!parsed.userId || !parsed.email || !parsed.password) {
+        console.warn('[Auth] Formato antiguo detectado, limpiando y forzando re-login');
+        await AsyncStorage.removeItem(AUTH_KEY);
+        authData = null;
+        notifyListeners();
+        return null;
+      }
+      authData = parsed;
       notifyListeners();
       return authData;
     }

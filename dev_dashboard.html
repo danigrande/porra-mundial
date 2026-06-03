@@ -27,14 +27,16 @@
     <div class="header-status" id="header-status"></div>
   </header>
 
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('health')">📡 Health</div>
-    <div class="tab" onclick="switchTab('logs')">📋 AI Logs</div>
-    <div class="tab" onclick="switchTab('rag')">🧠 RAG Explorer</div>
-    <div class="tab" onclick="switchTab('groups')">👥 Manage Groups</div>
-    <div class="tab" onclick="switchTab('users')">👤 Manage Users</div>
-    <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
-  </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('health')">📡 Health</div>
+      <div class="tab" onclick="switchTab('logs')">📋 AI Logs</div>
+      <div class="tab" onclick="switchTab('rag')">🧠 RAG Explorer</div>
+      <div class="tab" onclick="switchTab('rss')">📰 RSS Feeds</div>
+      <div class="tab" onclick="switchTab('websearch')">🔍 Web Search</div>
+      <div class="tab" onclick="switchTab('groups')">👥 Manage Groups</div>
+      <div class="tab" onclick="switchTab('users')">👤 Manage Users</div>
+      <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
+    </div>
 
   <div class="content">
     <!-- HEALTH PANEL -->
@@ -84,6 +86,30 @@
         </div>
         <div id="rag-messages-body"><div class="loading"><span class="spinner"></span> Cargando mensajes...</div></div>
         <div class="pagination" id="rag-pagination"></div>
+      </div>
+    </div>
+
+    <!-- RSS FEEDS PANEL -->
+    <div class="panel" id="panel-rss">
+      <div class="cards" id="rss-cards"></div>
+      <div class="table-wrap" style="margin-top:1.5rem;">
+        <div class="table-header">
+          <h3>📰 Artículos Recientes Detectados</h3>
+          <button onclick="loadRssStats()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
+        </div>
+        <div id="rss-articles-body"><div class="loading"><span class="spinner"></span> Cargando actividad RSS...</div></div>
+      </div>
+    </div>
+
+    <!-- WEB SEARCH (TAVILY) PANEL -->
+    <div class="panel" id="panel-websearch">
+      <div class="cards" id="websearch-cards"></div>
+      <div class="table-wrap" style="margin-top:1.5rem;">
+        <div class="table-header">
+          <h3>🔍 Últimas Consultas Web</h3>
+          <button onclick="loadWebSearchStats()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
+        </div>
+        <div id="websearch-queries-body"><div class="loading"><span class="spinner"></span> Cargando consultas...</div></div>
       </div>
     </div>
 

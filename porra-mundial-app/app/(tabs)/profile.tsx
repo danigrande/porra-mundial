@@ -57,7 +57,10 @@ export default function ProfileScreen() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
-    if (!auth) return;
+    if (!auth || !auth.userId) {
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
     api.getProfile(auth.userId)
@@ -74,6 +77,11 @@ export default function ProfileScreen() {
 
   async function handleSave() {
     if (!auth) return;
+    if (!auth.userId) {
+      Alert.alert('Sesión expirada', 'Por favor, inicia sesión de nuevo');
+      router.replace('/(auth)/login');
+      return;
+    }
     setSaving(true);
     
     try {
@@ -86,11 +94,16 @@ export default function ProfileScreen() {
         ai_personality: aiPersonality,
         likes: likesArray,
         dislikes: dislikesArray,
-      });
+      }, auth.email);
       
       Alert.alert(t('profile.saved_title'), t('profile.saved_msg'));
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      if (e.message?.includes('Falta identificador')) {
+        Alert.alert('Sesión expirada', 'Por favor, inicia sesión de nuevo');
+        router.replace('/(auth)/login');
+      } else {
+        Alert.alert('Error', e.message);
+      }
     } finally {
       setSaving(false);
     }

@@ -77,6 +77,7 @@ export default function ChatScreen() {
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
   const showUnreadMarkerRef = useRef(showUnreadMarker);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const auth = getAuth();
   const groupName = paramGroupName || auth?.currentGroup || '';
 
@@ -92,7 +93,10 @@ export default function ChatScreen() {
   }, [auth]);
 
   useEffect(() => {
-    if (!auth || !groupName) return;
+    if (!auth || !groupName) {
+      setLoading(false);
+      return;
+    }
     const socket = socketService.getSocket();
 
     // Bug fix: si el socket no existe todavía, no podemos registrar listeners.
@@ -101,9 +105,16 @@ export default function ChatScreen() {
     // en la práctica getSocket() debería devolver algo. Pero por seguridad, salimos
     // si es nulo (el usuario sería redirigido a login por el guard de _layout.tsx).
     if (!socket) {
-      console.warn('[Chat] Socket no disponible al montar. El layout debería reconectar.');
+      console.warn('[Chat] Socket no disponible al montar. Se intentará la reconexión automática.');
+      socketService.joinGroup(groupName);
+      setLoading(false);
       return;
     }
+
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.warn('[Chat] Timeout de carga, forzando setLoading(false)');
+      setLoading(false);
+    }, 15000);
 
     const onNewMessage = (msg: socketService.ChatMessage) => {
       setMessagesSafe(prev => {
@@ -135,14 +146,17 @@ export default function ChatScreen() {
     const onSocketReconnect = () => {
       console.log('[Chat] Socket reconectado mientras el chat estaba abierto. Re-solicitando historial...');
       setLoading(true);
-      // join-group ya se emite en socket.ts en el handler de 'connect',
-      // lo que disparará chat-history en el servidor. Solo necesitamos ponernos
-      // en estado loading para mostrar el spinner hasta que llegue.
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('[Chat] Timeout de carga tras reconexión, forzando setLoading(false)');
+        setLoading(false);
+      }, 15000);
     };
 
     const onChatHistory = async (data: any) => {
       console.log('[Chat] Historial recibido:', data.messages?.length, 'mensajes');
       if (data.groupName === groupName) {
+        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
         setMessagesSafe(data.messages);
         setLoading(false);
         
@@ -213,10 +227,13 @@ export default function ChatScreen() {
     socket.on('bot-stopped-typing', onBotStoppedTyping);
 
     // 2. Emitir join-group DESPUÉS de registrar listeners
-    setLoading(true);
+    // Nota: loading ya está en true desde el estado inicial, no lo reseteamos aquí
+    // para evitar una race condition donde chat-history llegue entre el registro
+    // de listeners y este setLoading(true), dejando el spinner para siempre.
     socketService.joinGroup(groupName);
 
     return () => {
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
       socket.off('connect', onSocketReconnect);
       socket.off('new-message', onNewMessage);
       socket.off('chat-history', onChatHistory);

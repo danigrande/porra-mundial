@@ -82,6 +82,15 @@ router.get('/health', async (req, res) => {
           active: !!req.app.get('io'),
           clients: req.app.get('io')?.engine?.clientsCount || 0
         },
+        rss: {
+          enabled: config.rss.enabled,
+          pollIntervalMinutes: config.rss.pollIntervalMs / 60000,
+          feeds: config.rss.feeds.length
+        },
+        tavily: {
+          enabled: config.webSearch.enabled,
+          configured: !!config.webSearch.apiKey
+        },
         server: {
           uptime: Math.floor(process.uptime()),
           uptimeFormatted: formatUptime(process.uptime()),
@@ -609,6 +618,8 @@ router.delete('/users/:userName', async (req, res) => {
 // SIMULATE TIME (Para Testing Opción B)
 // ==========================================
 import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
+import { getRssStats } from '../rssFeedService.js';
+import { getWebSearchStats } from '../webSearchService.js';
 
 router.post('/simulate-time', async (req, res) => {
   try {
@@ -621,6 +632,28 @@ router.post('/simulate-time', async (req, res) => {
       message: timeStr ? `Tiempo simulado a ${timeStr}` : 'Simulación de tiempo desactivada',
       newState: await getTournamentState()
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// RSS FEED STATS
+// ==========================================
+router.get('/rss-stats', async (req, res) => {
+  try {
+    res.json(getRssStats());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// WEB SEARCH (TAVILY) STATS
+// ==========================================
+router.get('/websearch-stats', async (req, res) => {
+  try {
+    res.json(getWebSearchStats());
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
