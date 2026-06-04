@@ -16,9 +16,20 @@ export type ChatMessage = {
   senderName: string;
   senderId: string;
   text?: string;
-  type: 'text' | 'image' | 'audio' | 'sticker' | 'gif';
+  type: 'text' | 'image' | 'audio' | 'sticker' | 'gif' | 'file';
   mediaUrl?: string;
   isBot: boolean;
+  replyTo?: {
+    messageId: string;
+    senderName: string;
+    text?: string;
+    type?: string;
+    mediaUrl?: string;
+  };
+  reactions?: { [emoji: string]: string[] };
+  edited?: boolean;
+  editedAt?: string;
+  deletedFor?: string[];
   timestamp: string;
 };
 
@@ -101,15 +112,37 @@ export function joinGroup(groupName: string) {
 export function sendMessage(
   groupName: string,
   text?: string,
-  type: 'text' | 'image' | 'audio' | 'sticker' | 'gif' = 'text',
-  mediaUrl?: string
+  type: 'text' | 'image' | 'audio' | 'sticker' | 'gif' | 'file' = 'text',
+  mediaUrl?: string,
+  replyTo?: ChatMessage['replyTo']
 ): boolean {
   if (!socket?.connected) {
     console.warn('[Socket] sendMessage: socket no conectado, mensaje descartado');
     return false;
   }
-  socket.emit('send-message', { groupName, text, type, mediaUrl });
+  socket.emit('send-message', { groupName, text, type, mediaUrl, replyTo });
   return true;
+}
+
+/**
+ * Emitir reacción a un mensaje.
+ */
+export function reactToMessage(messageId: string, emoji: string, add: boolean) {
+  socket?.emit('react-message', { messageId, emoji, add });
+}
+
+/**
+ * Emitir edición de mensaje.
+ */
+export function editMessage(messageId: string, newText: string, groupName: string) {
+  socket?.emit('edit-message', { messageId, newText, groupName });
+}
+
+/**
+ * Emitir eliminación de mensaje.
+ */
+export function deleteMessage(messageId: string, deleteFor: 'me' | 'everyone', groupName: string) {
+  socket?.emit('delete-message', { messageId, deleteFor, groupName });
 }
 
 /**

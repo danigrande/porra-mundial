@@ -106,9 +106,9 @@ async function parseRSS(feedUrl) {
   const feed = await rssParser.parseURL(feedUrl);
   return (feed.items || []).map(item => ({
     guid: item.guid || item.link || item.title,
-    title: item.title || '',
-    content: item.contentSnippet || item.content || item.description || '',
-    link: item.link || '',
+    title: (item.title || '').trim(),
+    content: (item.contentSnippet || item.content || item.description || '').trim(),
+    link: (item.link || '').trim(),
     pubDate: item.pubDate || item.isoDate || null,
   }));
 }
@@ -283,7 +283,7 @@ async function sendDailySummary() {
   const dateStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
   let message = `📰 *RESUMEN INFORMATIVO — ${dateStr}* 📰\n\nLas noticias más relevantes del día sobre el Mundial:\n\n`;
   top.forEach((a, i) => {
-    message += `${i + 1}. *${a.title}*\n   ${a.link}\n\n`;
+    message += `${i + 1}. *${a.title}*\n${a.link}\n\n`;
   });
   message += `🤖 Generado automáticamente por el bot de la porra`;
 

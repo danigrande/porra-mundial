@@ -17,14 +17,27 @@ export const SOCKET_URL = API_BASE;
 /**
  * Subir un archivo al servidor.
  */
-export async function uploadFile(fileUri: string, type: 'image' | 'audio') {
+export async function uploadFile(fileUri: string, type: string = 'image') {
   const formData = new FormData();
-  const filename = fileUri.split('/').pop() || (type === 'image' ? 'photo.jpg' : 'voice.m4a');
+  const filename = fileUri.split('/').pop() || 'file';
+
+  const mimeMap: Record<string, string> = {
+    image: 'image/jpeg',
+    audio: 'audio/m4a',
+    file: 'application/octet-stream',
+    pdf: 'application/pdf',
+    'application/pdf': 'application/pdf',
+    'image/jpeg': 'image/jpeg',
+    'image/png': 'image/png',
+    'audio/m4a': 'audio/m4a',
+    'audio/mpeg': 'audio/mpeg',
+    'audio/mp3': 'audio/mpeg',
+  };
 
   formData.append('file', {
     uri: Platform.OS === 'ios' ? fileUri.replace('file://', '') : fileUri,
     name: filename,
-    type: type === 'image' ? 'image/jpeg' : 'audio/m4a',
+    type: mimeMap[type] || type || 'application/octet-stream',
   } as any);
 
   const response = await fetch(`${API_URL}/api/upload`, {
@@ -38,7 +51,6 @@ export async function uploadFile(fileUri: string, type: 'image' | 'audio') {
   const data = await response.json();
   if (data.status === 'error') throw new Error(data.message);
 
-  // Devolver URL completa
   return `${API_URL}${data.data.url}`;
 }
 
@@ -223,6 +235,27 @@ export async function getChatHistory(groupName: string, before: string | null = 
   let url = `/chat/${encodeURIComponent(groupName)}/messages?limit=${limit}`;
   if (before) url += `&before=${before}`;
   return apiFetch(url);
+}
+
+export async function searchChat(groupName: string, q: string, before?: string, limit?: number) {
+  let url = `/chat/${encodeURIComponent(groupName)}/search?q=${encodeURIComponent(q)}`;
+  if (before) url += `&before=${before}`;
+  if (limit) url += `&limit=${limit}`;
+  return apiFetch(url);
+}
+
+export async function getLinkPreview(url: string): Promise<{ title: string; description: string; image: string }> {
+  try {
+    const response = await fetch(`${API_URL}/api/link-preview?url=${encodeURIComponent(url)}`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    const text = await response.text();
+    const data = JSON.parse(text);
+    if (data.status === 'error') return { title: '', description: '', image: '' };
+    return data.data || { title: '', description: '', image: '' };
+  } catch {
+    return { title: '', description: '', image: '' };
+  }
 }
 
 // ==========================================

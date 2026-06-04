@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 import { loadAuth, getAuth, saveAuth, subscribeAuth } from '../stores/authStore';
 import { setupPushNotifications } from '../services/push';
@@ -133,7 +134,7 @@ export default function RootLayout() {
   if (!isReady) return null;
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -146,6 +147,6 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
-    </>
+    </GestureHandlerRootView>
   );
 }

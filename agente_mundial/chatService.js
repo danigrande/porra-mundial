@@ -129,7 +129,7 @@ export function initChatServer(httpServer) {
 
     // --- ENVIAR MENSAJE ---
     socket.on('send-message', async (data) => {
-      const { groupName, text, type = 'text', mediaUrl } = data;
+      const { groupName, text, type = 'text', mediaUrl, replyTo } = data;
       
       if (!groupName) return;
       if (type === 'text' && (!text || !text.trim())) return;
@@ -151,7 +151,8 @@ export function initChatServer(httpServer) {
           text: text?.trim(),
           type,
           mediaUrl,
-          isBot: false
+          isBot: false,
+          replyTo: replyTo || null,
         });
 
         // 1.1 Vectorizar mensaje para el RAG
@@ -167,6 +168,7 @@ export function initChatServer(httpServer) {
           type,
           mediaUrl,
           isBot: false,
+          replyTo: replyTo || null,
           timestamp: userMessage.timestamp
         };
 
@@ -318,6 +320,91 @@ export function initChatServer(httpServer) {
         groupName,
         userName: socket.userData.userName
       });
+    });
+
+    // --- REACCIONAR A MENSAJE ---
+    socket.on('react-message', async (data) => {
+      const { messageId, emoji, add } = data;
+      if (!messageId || !emoji) return;
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) return;
+
+        const reactions = message.reactions || {};
+        const users = reactions[emoji] || [];
+        if (add) {
+          if (!users.includes(userId)) {
+            reactions[emoji] = [...users, userId];
+          }
+        } else {
+          reactions[emoji] = users.filter(id => id !== userId);
+          if (reactions[emoji].length === 0) {
+            delete reactions[emoji];
+          }
+        }
+        message.reactions = reactions;
+        await message.save();
+
+        io.to(`group:${message.chatId}`).emit('message-reacted', {
+          messageId,
+          reactions: Object.fromEntries(message.reactions),
+        });
+      } catch (e) {
+        console.error('[Chat] Error en react-message:', e.message);
+      }
+    });
+
+    // --- EDITAR MENSAJE ---
+    socket.on('edit-message', async (data) => {
+      const { messageId, newText, groupName } = data;
+      if (!messageId || !newText?.trim()) return;
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) return;
+        if (message.senderId !== userId) return;
+        if (Date.now() - new Date(message.timestamp).getTime() > 15 * 60 * 1000) {
+          socket.emit('error', { message: 'Ya no puedes editar este mensaje (más de 15 min)' });
+          return;
+        }
+        message.text = newText.trim();
+        message.edited = true;
+        message.editedAt = new Date();
+        await message.save();
+
+        io.to(`group:${groupName}`).emit('message-edited', {
+          messageId,
+          newText: message.text,
+          edited: true,
+          editedAt: message.editedAt,
+        });
+      } catch (e) {
+        console.error('[Chat] Error en edit-message:', e.message);
+      }
+    });
+
+    // --- ELIMINAR MENSAJE ---
+    socket.on('delete-message', async (data) => {
+      const { messageId, deleteFor, groupName } = data;
+      if (!messageId || !deleteFor) return;
+      try {
+        if (deleteFor === 'everyone') {
+          const message = await Message.findById(messageId);
+          if (!message) return;
+          if (message.senderId !== userId) return;
+          await Message.findByIdAndDelete(messageId);
+          io.to(`group:${groupName}`).emit('message-deleted', { messageId, deleteFor: 'everyone' });
+        } else if (deleteFor === 'me') {
+          const message = await Message.findById(messageId);
+          if (!message) return;
+          if (!message.deletedFor.includes(userId)) {
+            message.deletedFor.push(userId);
+            await message.save();
+          }
+          socket.emit('message-deleted', { messageId, deleteFor: 'me', userId });
+        }
+      } catch (e) {
+        console.error('[Chat] Error en delete-message:', e.message);
+      }
     });
 
     // --- DESCONEXIÓN ---

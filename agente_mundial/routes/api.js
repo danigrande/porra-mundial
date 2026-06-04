@@ -1120,6 +1120,178 @@ router.get('/chat/:groupName/messages', async (req, res) => {
     }
 });
 
+// Reaccionar a un mensaje
+router.post('/chat/:messageId/react', async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { emoji, userId: uid, add } = req.body;
+        if (!messageId || !emoji) {
+            return res.status(400).json(createResponse('error', null, 'messageId y emoji requeridos'));
+        }
+        const message = await Message.findById(messageId);
+        if (!message) {
+            return res.status(404).json(createResponse('error', null, 'Mensaje no encontrado'));
+        }
+        const reactions = message.reactions || {};
+        const users = reactions[emoji] || [];
+        if (add) {
+            if (!users.includes(uid)) {
+                reactions[emoji] = [...users, uid];
+            }
+        } else {
+            reactions[emoji] = users.filter(id => id !== uid);
+            if (reactions[emoji].length === 0) delete reactions[emoji];
+        }
+        message.reactions = reactions;
+        await message.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`group:${message.chatId}`).emit('message-reacted', {
+                messageId,
+                reactions: Object.fromEntries(message.reactions),
+            });
+        }
+        res.json(createResponse('success', Object.fromEntries(message.reactions)));
+    } catch (error) {
+        console.error('❌ Error en POST /chat/react:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// Editar un mensaje
+router.put('/chat/:messageId', async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { newText, userId: uid } = req.body;
+        if (!messageId || !newText?.trim()) {
+            return res.status(400).json(createResponse('error', null, 'messageId y newText requeridos'));
+        }
+        const message = await Message.findById(messageId);
+        if (!message) {
+            return res.status(404).json(createResponse('error', null, 'Mensaje no encontrado'));
+        }
+        if (message.senderId !== uid) {
+            return res.status(403).json(createResponse('error', null, 'No puedes editar este mensaje'));
+        }
+        if (Date.now() - new Date(message.timestamp).getTime() > 15 * 60 * 1000) {
+            return res.status(400).json(createResponse('error', null, 'Ya no puedes editar este mensaje (más de 15 min)'));
+        }
+        message.text = newText.trim();
+        message.edited = true;
+        message.editedAt = new Date();
+        await message.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`group:${message.chatId}`).emit('message-edited', {
+                messageId,
+                newText: message.text,
+                edited: true,
+                editedAt: message.editedAt,
+            });
+        }
+        res.json(createResponse('success', { text: message.text, edited: true, editedAt: message.editedAt }));
+    } catch (error) {
+        console.error('❌ Error en PUT /chat/message:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// Eliminar un mensaje
+router.delete('/chat/:messageId', async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { deleteFor, userId: uid } = req.query;
+        if (!messageId || !deleteFor) {
+            return res.status(400).json(createResponse('error', null, 'messageId y deleteFor requeridos'));
+        }
+        const message = await Message.findById(messageId);
+        if (!message) {
+            return res.status(404).json(createResponse('error', null, 'Mensaje no encontrado'));
+        }
+        const io = req.app.get('io');
+
+        if (deleteFor === 'everyone') {
+            if (message.senderId !== uid) {
+                return res.status(403).json(createResponse('error', null, 'No puedes eliminar este mensaje para todos'));
+            }
+            const chatId = message.chatId;
+            await Message.findByIdAndDelete(messageId);
+            if (io) {
+                io.to(`group:${chatId}`).emit('message-deleted', { messageId, deleteFor: 'everyone' });
+            }
+            res.json(createResponse('success', { deleted: true }));
+        } else if (deleteFor === 'me') {
+            if (!message.deletedFor.includes(uid)) {
+                message.deletedFor.push(uid);
+                await message.save();
+            }
+            res.json(createResponse('success', { deletedForMe: true }));
+        } else {
+            res.status(400).json(createResponse('error', null, 'deleteFor debe ser "me" o "everyone"'));
+        }
+    } catch (error) {
+        console.error('❌ Error en DELETE /chat/message:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// Previsualización de links (Open Graph)
+router.get('/link-preview', async (req, res) => {
+    try {
+        const { url } = req.query;
+        if (!url) {
+            return res.status(400).json(createResponse('error', null, 'url requerida'));
+        }
+        const response = await axios.get(url, {
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+        });
+        const html = response.data;
+        const og = {};
+        const ogRegex = /<meta\s+(?:property|name)=["'](?:og:)?(\w+)["']\s+content=["']([^"']+)["']/gi;
+        let match;
+        while ((match = ogRegex.exec(html)) !== null) {
+            og[match[1]] = match[2];
+        }
+        res.json(createResponse('success', {
+            title: og.title || og.site_name || '',
+            description: og.description || '',
+            image: og.image || '',
+        }));
+    } catch (error) {
+        console.error('❌ Error en GET /link-preview:', error);
+        res.json(createResponse('success', { title: '', description: '', image: '' }));
+    }
+});
+
+// Buscar mensajes en el chat
+router.get('/chat/:groupName/search', async (req, res) => {
+    try {
+        const { groupName } = req.params;
+        const { q, before, limit = 50 } = req.query;
+        if (!q?.trim()) {
+            return res.status(400).json(createResponse('error', null, 'q requerido'));
+        }
+        const query = {
+            chatId: groupName,
+            text: { $regex: q.trim(), $options: 'i' },
+        };
+        if (before) {
+            query.timestamp = { $lt: new Date(before) };
+        }
+        const results = await Message.find(query)
+            .sort({ timestamp: -1 })
+            .limit(parseInt(limit))
+            .lean();
+        res.json(createResponse('success', results.reverse()));
+    } catch (error) {
+        console.error('❌ Error en GET /chat/search:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 // ==========================================
 // RUTAS DE PUSH NOTIFICATIONS
 // ==========================================
