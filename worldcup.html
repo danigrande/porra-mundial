@@ -229,7 +229,7 @@
     }
 
     function startCountdown() {
-      const deadline = new Date(tournamentState.nextDeadline).getTime();
+        const deadline = new Date(tournamentState.deadline).getTime();
       
       const timer = setInterval(() => {
         const now = Date.now();
