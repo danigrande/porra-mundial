@@ -55,22 +55,38 @@ export default function PredictionsScreen() {
       return;
     }
     
-    setLoading(true);
-    Promise.all([
-      api.getMyPredictions(groupName, userId),
-      api.getTournamentState(groupName)
-    ])
-      .then(([predData, stateData]) => {
+    let refreshTimer: NodeJS.Timeout;
+    let isInitial = true;
+    
+    const loadData = async () => {
+      try {
+        const [predData, stateData] = await Promise.all([
+          api.getMyPredictions(groupName, userId),
+          api.getTournamentState(groupName)
+        ]);
         setPredictions(predData || {});
         setState(stateData);
-      })
-      .catch(e => {
+        
+        // Programar refresco automático cuando expire la fase actual
+        if (stateData?.deadline) {
+          const deadlineMs = new Date(stateData.deadline).getTime();
+          const now = Date.now();
+          const msUntilDeadline = Math.max(0, deadlineMs - now) + 1000;
+          if (msUntilDeadline > 0 && msUntilDeadline < 86400000) {
+            refreshTimer = setTimeout(loadData, msUntilDeadline);
+          }
+        }
+      } catch (e) {
         console.error(e);
-        Alert.alert(t('common.error'), t('predictions.load_error'));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+        if (isInitial) Alert.alert(t('common.error'), t('predictions.load_error'));
+      } finally {
+        if (isInitial) setLoading(false);
+        isInitial = false;
+      }
+    };
+    
+    loadData();
+    return () => clearTimeout(refreshTimer);
   }, [groupName, userId]);
 
   const matchesToDisplay = useMemo(() => {
