@@ -25,6 +25,8 @@
     "phone_placeholder": "Teléfono (ej: 612345678)",
     "pin_placeholder": "PIN (4 dígitos)",
     "pin_create": "Crea un PIN (4 dígitos)",
+    "email_placeholder": "Correo electrónico",
+    "password_create": "Contraseña (mín. 8 caracteres)",
     "name_placeholder": "Tu nombre (ej: Edu)",
     "group_placeholder": "Nombre del grupo a unirse/crear",
     "new_group": "Es un grupo nuevo",
