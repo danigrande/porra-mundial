@@ -236,6 +236,26 @@ router.post('/admin/simulate-all', adminAuth, async (req, res) => {
     }
 });
 
+router.post('/admin/regenerate-events', adminAuth, async (req, res) => {
+    try {
+        const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+        const currentReality = realityDoc ? realityDoc.results : {};
+
+        const updatedResults = apiFootballService.regenerateEvents(currentReality, FIXTURE_GROUPS, BRACKET_MATCHES);
+
+        await Reality.findOneAndUpdate(
+            { tournament: 'worldcup2026' },
+            { results: updatedResults, updatedAt: new Date() },
+            { upsert: true }
+        );
+
+        res.json(createResponse('success', { message: 'Eventos regenerados manteniendo resultados originales' }));
+    } catch (error) {
+        console.error("Error regenerando eventos:", error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 // ==========================================
 // RUTAS DE DESARROLLO (Testing Go-Live)
 // ==========================================

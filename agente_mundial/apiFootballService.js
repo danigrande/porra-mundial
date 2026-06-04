@@ -291,3 +291,88 @@ export function simulateAllMatches(groups, bracket) {
 
     return results;
 }
+
+/**
+ * Regenera eventos (goles/tarjetas) para todos los partidos con resultado,
+ * preservando los marcadores exactos pero actualizando los nombres de equipo,
+ * minutos y jugadores.
+ */
+export function regenerateEvents(results, groups, bracket) {
+    const updated = { ...results };
+    if (!updated.events) updated.events = {};
+
+    const matchIds = new Set();
+    for (const key of Object.keys(updated)) {
+        if (/^g[A-L]_m\d_h$/.test(key) || /^ko_\d+_h$/.test(key)) {
+            matchIds.add(key.replace(/_h$/, ''));
+        }
+    }
+
+    const pairings = [[0,1],[2,3],[3,1],[0,2],[3,0],[1,2]];
+
+    for (const matchId of matchIds) {
+        const hScore = parseInt(updated[`${matchId}_h`]);
+        const aScore = parseInt(updated[`${matchId}_a`]);
+        if (isNaN(hScore) || isNaN(aScore)) continue;
+
+        let hName, aName;
+        if (matchId.startsWith('ko_')) {
+            const matchNum = matchId.replace('ko_', '');
+            const pairing = bracket[matchNum];
+            if (pairing) {
+                hName = fullResolve(pairing[0], updated);
+                aName = fullResolve(pairing[1], updated);
+            } else {
+                hName = updated[`${matchId}_h_team`] || "Local";
+                aName = updated[`${matchId}_a_team`] || "Visitante";
+            }
+        } else {
+            const m = matchId.match(/^g([A-L])_m(\d)$/);
+            if (m) {
+                const g = groups.find(g => g.letter === m[1]);
+                if (g) {
+                    const p = pairings[parseInt(m[2])];
+                    hName = g.teams[p[0]];
+                    aName = g.teams[p[1]];
+                }
+            }
+        }
+        if (!hName || !aName) continue;
+
+        const events = [];
+        for (let i = 0; i < hScore; i++) {
+            events.push({
+                time: { elapsed: Math.floor(Math.random() * 90) + 1 },
+                team: { name: hName },
+                player: { name: getRandomPlayer() },
+                type: "Goal",
+                detail: "Normal Goal"
+            });
+        }
+        for (let i = 0; i < aScore; i++) {
+            events.push({
+                time: { elapsed: Math.floor(Math.random() * 90) + 1 },
+                team: { name: aName },
+                player: { name: getRandomPlayer() },
+                type: "Goal",
+                detail: "Normal Goal"
+            });
+        }
+        const numCards = Math.floor(Math.random() * 4);
+        for (let i = 0; i < numCards; i++) {
+            const isHome = Math.random() > 0.5;
+            const isRed = Math.random() > 0.8;
+            events.push({
+                time: { elapsed: Math.floor(Math.random() * 90) + 1 },
+                team: { name: isHome ? hName : aName },
+                player: { name: getRandomPlayer() },
+                type: "Card",
+                detail: isRed ? "Red Card" : "Yellow Card"
+            });
+        }
+        events.sort((a, b) => a.time.elapsed - b.time.elapsed);
+        updated.events[matchId] = events;
+    }
+
+    return updated;
+}
