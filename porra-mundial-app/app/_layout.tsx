@@ -53,18 +53,27 @@ export default function RootLayout() {
     Promise.all([loadAuth(), initI18n()]).then(async ([data]) => {
       let finalData = data;
       const hasBioCreds = await biometric.has();
+      const bioAvailable = await biometric.isAvailable();
 
-      // Gate biométrico: si hay sesión guardada y credenciales biométricas, pedir huella/FaceID
-      if (finalData && (finalData.biometricEnabled || hasBioCreds)) {
+      console.log('[Biometric Gate] finalData:', finalData ? { userId: finalData.userId, biometricEnabled: finalData.biometricEnabled } : null);
+      console.log('[Biometric Gate] hasBioCreds:', hasBioCreds);
+      console.log('[Biometric Gate] bioAvailable:', bioAvailable);
+
+      // Gate biométrico: si hay sesión guardada y (biometricEnabled O credenciales en SecureStore O biometría disponible en el dispositivo)
+      if (finalData && (finalData.biometricEnabled || hasBioCreds || bioAvailable)) {
+        console.log('[Biometric Gate] Activando prompt biométrico...');
         const ok = await biometric.authenticate('Desbloquea la app');
+        console.log('[Biometric Gate] Resultado:', ok);
         if (ok) {
-          // Migrar flag si falta (usuarios que enrolaron antes de que existiera el flag)
-          if (!finalData.biometricEnabled && hasBioCreds) {
+          // Migrar flag si falta (usuarios que enrolaron antes de que existiera el flag o SecureStore falló)
+          if (!finalData.biometricEnabled) {
             await saveAuth({ ...finalData, biometricEnabled: true });
           }
         } else {
           finalData = null;
         }
+      } else {
+        console.log('[Biometric Gate] No se cumple condición para gate biométrico');
       }
 
       // Si no hay sesión en AsyncStorage, intentar login completo desde SecureStore
@@ -100,6 +109,10 @@ export default function RootLayout() {
         setupPushNotifications(finalData.userId);
         connectSocket(finalData.email, finalData.password);
       }
+    }).catch((e) => {
+      console.error('[RootLayout] Error en inicialización:', e);
+      setIsReady(true);
+      setIsLoggedIn(false);
     });
 
     return unsubscribe;

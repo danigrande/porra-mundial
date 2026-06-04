@@ -79,7 +79,7 @@ export default function ProfileScreen() {
       setLikes((profile.likes || []).join(', '));
       setDislikes((profile.dislikes || []).join(', '));
       setBiometricAvailable(bioAvail);
-      setBiometricEnabled(bioHas && !!auth.biometricEnabled);
+      setBiometricEnabled(!!auth.biometricEnabled);
     })
       .catch(e => console.error(e))
       .finally(() => setLoading(false));
@@ -182,7 +182,11 @@ export default function ProfileScreen() {
       Alert.alert('Desactivado', 'El acceso biométrico se ha desactivado.');
     } else {
       const bioType = await biometric.getBiometricType();
-      await biometric.save(auth.email, auth.password, auth.currentGroup);
+      const saved = await biometric.save(auth.email, auth.password, auth.currentGroup);
+      if (!saved) {
+        Alert.alert('Error', `No se pudo configurar ${bioType}. Intenta de nuevo más tarde.`);
+        return;
+      }
       await saveAuth({ ...auth, biometricEnabled: true });
       setBiometricEnabled(true);
       Alert.alert('Activado', `Ahora puedes iniciar sesión con ${bioType}.`);

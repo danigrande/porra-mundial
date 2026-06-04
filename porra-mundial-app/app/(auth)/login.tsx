@@ -100,9 +100,9 @@ export default function LoginScreen() {
               text: 'Activar',
               onPress: async () => {
                 const saved = await biometric.save(authData.email, authData.password, authData.currentGroup);
-                await saveAuth({ ...authData, biometricEnabled: saved });
+                await saveAuth({ ...authData, biometricEnabled: true });
                 if (!saved) {
-                  Alert.alert('Aviso', 'No se pudieron guardar las credenciales biométricas.');
+                  Alert.alert('Aviso', 'La biometría se activó pero el auto-login no estará disponible. Para desbloquear, usa tu huella/FaceID al abrir la app.');
                 }
                 router.replace('/(tabs)');
               }

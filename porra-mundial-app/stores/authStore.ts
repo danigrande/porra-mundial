@@ -95,12 +95,10 @@ export async function setCurrentGroup(groupName: string): Promise<void> {
 
 /**
  * Cierra sesión.
+ * No borra credenciales biométricas (SecureStore) para permitir auto-login futuro.
  */
 export async function logout(): Promise<void> {
   authData = null;
-  await Promise.all([
-    AsyncStorage.removeItem(AUTH_KEY),
-    biometric.clear(),
-  ]);
+  await AsyncStorage.removeItem(AUTH_KEY);
   notifyListeners();
 }
