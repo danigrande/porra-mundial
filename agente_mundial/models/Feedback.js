@@ -11,9 +11,8 @@ const feedbackSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-feedbackSchema.pre('save', function (next) {
+feedbackSchema.pre('save', function () {
   this.voteCount = this.votes.length;
-  next();
 });
 
 export const Feedback = mongoose.model('Feedback', feedbackSchema);
