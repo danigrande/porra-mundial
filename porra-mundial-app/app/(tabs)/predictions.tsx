@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
-import { FIXTURE_GROUPS, getGroupMatches, getGroupStandings, TEAM_CODES } from '../../constants/tournamentData';
+import { FIXTURE_GROUPS, getGroupMatches, getGroupStandings, fullResolve, BRACKET_MATCHES, TEAM_CODES } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
 import { useTranslation, tTeam } from '../../i18n/i18n';
 
@@ -20,33 +20,22 @@ export default function PredictionsScreen() {
   const [selectedGroup, setSelectedGroup] = useState('A');
   const [predictions, setPredictions] = useState<Record<string, string>>({});
 
-  // --- LÓGICA DE RESOLUCIÓN DE EQUIPOS ---
-  const resolveTeamName = (code: string) => {
+  const resolveTeamName = (code: string, dataForResolve: Record<string, string>) => {
     if (!code) return 'TBD';
-    
-    // Grupo: "1A"
-    const groupMatch = code.match(/^([1-2])([A-L])$/);
-    if (groupMatch) {
-      const letter = groupMatch[2];
-      const pos = parseInt(groupMatch[1]);
-      // Necesitaríamos calcular la clasificación del grupo según las predicciones del usuario
-      // Por ahora, para simplificar y no meter todo el scoring engine aquí, 
-      // si es 1A devolvemos "1º Grupo A" o el nombre si es fácil de sacar.
-      return t('predictions.group_position', { pos, letter });
+    const resolved = fullResolve(code, dataForResolve);
+    // If still unresolved (returns raw code like "1A"), fall back to user-friendly text
+    if (resolved === code) {
+      const groupMatch = code.match(/^([1-2])([A-L])$/);
+      if (groupMatch) {
+        return t('predictions.group_position', { pos: groupMatch[1], letter: groupMatch[2] });
+      }
+      const matchRef = code.match(/^([WL])(\d+)$/);
+      if (matchRef) {
+        return matchRef[1] === 'W' ? t('predictions.winner_of', { num: matchRef[2] }) : t('predictions.loser_of', { num: matchRef[2] });
+      }
+      if (code.startsWith('3')) return t('predictions.best_third');
     }
-
-    // Mejores terceros
-    if (code.startsWith('3')) return t('predictions.best_third');
-
-    // Ganador/Perdedor de partido: "W73"
-    const matchRef = code.match(/^([WL])(\d+)$/);
-    if (matchRef) {
-      const type = matchRef[1];
-      const num = matchRef[2];
-      return type === 'W' ? t('predictions.winner_of', { num }) : t('predictions.loser_of', { num });
-    }
-
-    return tTeam(code);
+    return tTeam(resolved);
   };
 
   useEffect(() => {
@@ -89,6 +78,15 @@ export default function PredictionsScreen() {
     return () => clearTimeout(refreshTimer);
   }, [groupName, userId]);
 
+  const dataForResolve = useMemo(() => {
+    // Merge predictions + bracket matches for resolution
+    const data: Record<string, string> = { ...predictions };
+    if (state?.bracketMatches) {
+      Object.assign(data, state.bracketMatches);
+    }
+    return data;
+  }, [predictions, state]);
+
   const matchesToDisplay = useMemo(() => {
     const group = FIXTURE_GROUPS.find(g => g.letter === selectedGroup);
     if (group) {
@@ -103,18 +101,26 @@ export default function PredictionsScreen() {
     const koPhase = state?.knockoutBracket?.find((kb: any) => kb.id === selectedGroup);
     if (koPhase) {
       return koPhase.matches.map((mId: number) => {
-        const teams = state?.bracketMatches?.[mId] || ['TBD', 'TBD'];
+        const pairing = BRACKET_MATCHES[mId];
+        if (pairing) {
+          return {
+            id: `ko_${mId}`,
+            team1: resolveTeamName(pairing[0], dataForResolve),
+            team2: resolveTeamName(pairing[1], dataForResolve),
+            isEditable: state?.unlocks?.includes(koPhase.id) ?? false
+          };
+        }
         return {
           id: `ko_${mId}`,
-          team1: resolveTeamName(teams[0]),
-          team2: resolveTeamName(teams[1]),
-          isEditable: state?.unlocks?.includes(koPhase.id) ?? false
+          team1: 'TBD',
+          team2: 'TBD',
+          isEditable: false
         };
       });
     }
 
     return [];
-  }, [selectedGroup, state, predictions]);
+  }, [selectedGroup, state, dataForResolve]);
 
   const handleScoreChange = (matchId: string, teamIndex: 1 | 2, text: string) => {
     const value = text.replace(/[^0-9]/g, '').substring(0, 2);

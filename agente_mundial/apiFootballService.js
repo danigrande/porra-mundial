@@ -3,6 +3,7 @@
 // ============================================
 
 import axios from 'axios';
+import { fullResolve } from './scoringEngine.js';
 
 // Función para obtener la URL base de API-Football (v3)
 const API_URL = 'https://v3.football.api-sports.io';
@@ -142,11 +143,14 @@ export function simulatePhaseResults(phaseId, currentReality, groups, bracket, m
         if (round) {
             round.matches.forEach(matchNum => {
                 const matchId = `ko_${matchNum}`;
-                // Intentar obtener equipos reales de los resultados previos si es posible
-                // Para simplificar el test, usamos nombres genéricos o "Ganador X"
-                const sim = simulateMatchEvents(matchId, "Equipo A", "Equipo B");
+                const pairing = bracket[matchNum];
+                const resolvedH = pairing ? fullResolve(pairing[0], results) : "TBD";
+                const resolvedA = pairing ? fullResolve(pairing[1], results) : "TBD";
+                const sim = simulateMatchEvents(matchId, resolvedH, resolvedA);
                 results[`${matchId}_h`] = sim.goals.home.toString();
                 results[`${matchId}_a`] = sim.goals.away.toString();
+                results[`${matchId}_h_team`] = resolvedH;
+                results[`${matchId}_a_team`] = resolvedA;
                 if (sim.penalties) {
                     results[`pen_${matchNum}_h`] = sim.penalties.home.toString();
                     results[`pen_${matchNum}_a`] = sim.penalties.away.toString();
@@ -269,9 +273,14 @@ export function simulateAllMatches(groups, bracket) {
         const matchDate = new Date(baseDate);
         matchDate.setDate(baseDate.getDate() + 10 + Math.floor(idx / 4)); // Después de grupos
 
-        const sim = simulateMatchEvents(matchId, "Local", "Visitante", matchDate.toISOString());
+        const pairing = bracket[matchNum];
+        const resolvedH = fullResolve(pairing[0], results);
+        const resolvedA = fullResolve(pairing[1], results);
+        const sim = simulateMatchEvents(matchId, resolvedH, resolvedA, matchDate.toISOString());
         results[`${matchId}_h`] = sim.goals.home.toString();
         results[`${matchId}_a`] = sim.goals.away.toString();
+        results[`${matchId}_h_team`] = resolvedH;
+        results[`${matchId}_a_team`] = resolvedA;
         results[`${matchId}_date`] = sim.date;
         if (sim.penalties) {
             results[`pen_${matchNum}_h`] = sim.penalties.home.toString();

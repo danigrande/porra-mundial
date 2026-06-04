@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET, getGroupMatches, getGroupStandings } from '../../constants/tournamentData';
+import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET, getGroupMatches, getGroupStandings, fullResolve, BRACKET_MATCHES } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
 import { useTranslation, tTeam } from '../../i18n/i18n';
 
@@ -104,51 +104,7 @@ export default function ResultsScreen() {
   const isTestMode = state?.isTestMode === true;
   const injected = reality?.autoPopulatedPhases || [];
 
-  const resolveTeamName = (code: string) => {
-    if (!code || !reality) return code;
-    
-    // 1. Si es un equipo real, lo devolvemos
-    if (TEAM_CODES[code]) return code;
 
-    // 2. Si es posición de grupo (ej: "1A")
-    const groupMatch = code.match(/^([1-2])([A-L])$/);
-    if (groupMatch) {
-      const pos = parseInt(groupMatch[1]);
-      const letter = groupMatch[2];
-      // Nota: Esto requeriría calcular los standings en el móvil o que el server los de.
-      // Por simplicidad, devolvemos el código si no podemos calcularlo aquí,
-      // pero el server ya nos da la realidad poblada en matchId si usamos el motor de simulación.
-      return code; 
-    }
-
-    // 3. Si es ganador/perdedor de partido (ej: "W104")
-    const matchRef = code.match(/^([WL])(\d+)$/);
-    if (matchRef) {
-      const type = matchRef[1];
-      const mNum = matchRef[2];
-      const hScore = parseInt(reality[`ko_${mNum}_h`]);
-      const aScore = parseInt(reality[`ko_${mNum}_a`]);
-      
-      if (isNaN(hScore) || isNaN(aScore)) return code;
-      
-      // Aquí necesitaríamos saber quiénes jugaron ese partido para saber quién ganó.
-      // En la app, el motor de simulación del servidor ya inyecta los nombres reales 
-      // en la 'reality' cuando se avanza de fase.
-      return code;
-    }
-
-    return code;
-  };
-
-  const getWinner = (matchId: string) => {
-    const h = parseInt(reality[`${matchId}_h`]);
-    const a = parseInt(reality[`${matchId}_a`]);
-    if (isNaN(h) || isNaN(a)) return null;
-    
-    // Simplificado: esto debería venir resuelto del server en un caso ideal
-    // Pero podemos intentar leer los nombres que el server inyectó
-    return h > a ? 'Ganador' : 'Ganador'; 
-  };
 
   return (
     <View style={styles.container}>
@@ -267,8 +223,9 @@ export default function ResultsScreen() {
                 <Text style={styles.stageTitle}>{stage.name}</Text>
                 {stage.matches.map(mId => {
                   const matchId = `ko_${mId}`;
-                  const hName = reality[`${matchId}_h_team`] || "TBD";
-                  const aName = reality[`${matchId}_a_team`] || "TBD";
+                  const pairing = BRACKET_MATCHES[mId];
+                  const hName = reality[`${matchId}_h_team`] || (pairing ? fullResolve(pairing[0], reality) : "TBD");
+                  const aName = reality[`${matchId}_a_team`] || (pairing ? fullResolve(pairing[1], reality) : "TBD");
                   return (
                     <MatchRow 
                       key={mId}

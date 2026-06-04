@@ -1,3 +1,5 @@
+type DataSource = Record<string, any>;
+
 export const TEAM_CODES: Record<string, string> = {
   'México': 'mx', 'Sudáfrica': 'za', 'Corea del Sur': 'kr', 'República Checa': 'cz',
   'Canadá': 'ca', 'Bosnia y Herzegovina': 'ba', 'Catar': 'qa', 'Suiza': 'ch',
@@ -86,4 +88,99 @@ export function getGroupStandings(letter: string, reality: Record<string, any>) 
   return Object.values(stats)
     .map(s => ({ ...s, gd: s.gf - s.ga }))
     .sort((a, b) => (b.pts - a.pts) || (b.gd - a.gd) || (b.gf - a.gf));
+}
+
+export function fullResolve(code: string, dataSource: DataSource): string {
+  if (!code || !dataSource) return code;
+
+  // Grupo: "1A" → 1º del grupo A
+  const groupMatch = code.match(/^([1-2])([A-L])$/);
+  if (groupMatch) {
+    const letter = groupMatch[2];
+    let groupFinished = true;
+    for (let i = 0; i < 6; i++) {
+      if (isNaN(parseInt(dataSource[`g${letter}_m${i}_h`])) || isNaN(parseInt(dataSource[`g${letter}_m${i}_a`]))) {
+        groupFinished = false;
+        break;
+      }
+    }
+    if (!groupFinished) return code;
+    return getGroupStandings(letter, dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
+  }
+
+  // Mejores terceros
+  if (code.startsWith('3')) {
+    let allFinished = true;
+    for (const g of FIXTURE_GROUPS) {
+      for (let i = 0; i < 6; i++) {
+        if (isNaN(parseInt(dataSource[`g${g.letter}_m${i}_h`]))) {
+          allFinished = false;
+          break;
+        }
+      }
+    }
+    if (!allFinished) return code;
+
+    const thirds: { letter: string; team: any }[] = [];
+    FIXTURE_GROUPS.forEach(g => {
+      const st = getGroupStandings(g.letter, dataSource);
+      if (st[2]) thirds.push({ letter: g.letter, team: st[2] });
+    });
+
+    thirds.sort((a, b) => (b.team.pts - a.team.pts) || (b.team.gd - a.team.gd) || (b.team.gf - a.team.gf));
+    const best8 = thirds.slice(0, 8);
+
+    if (!dataSource._thirdsMapping) {
+      dataSource._thirdsMapping = {};
+      const slots = ['3ABCDF', '3CDFGH', '3CEFHI', '3EHIJK', '3AEHIJ', '3BEFIJ', '3EFGIJ', '3DEIJL'];
+      slots.forEach(slot => {
+        const letters = slot.substring(1).split('');
+        const match = best8.find(t => !t.used && letters.includes(t.letter));
+        if (match) {
+          match.used = true;
+          dataSource._thirdsMapping[slot] = match.team.name;
+        } else {
+          const fallback = best8.find(t => !t.used);
+          if (fallback) {
+            fallback.used = true;
+            dataSource._thirdsMapping[slot] = fallback.team.name;
+          }
+        }
+      });
+    }
+
+    return dataSource._thirdsMapping[code] || code;
+  }
+
+  // Referencia a partido: "W95" → ganador del partido 95
+  const matchRef = code.match(/^([WL])(\d+)$/);
+  if (matchRef) {
+    const type = matchRef[1];
+    const num = matchRef[2];
+    const gh = parseInt(dataSource[`ko_${num}_h`]);
+    const ga = parseInt(dataSource[`ko_${num}_a`]);
+    if (isNaN(gh) || isNaN(ga)) return code;
+
+    const pairing = BRACKET_MATCHES[num];
+    if (!pairing) return code;
+    const homeResolved = fullResolve(pairing[0], dataSource);
+    const awayResolved = fullResolve(pairing[1], dataSource);
+
+    if (gh > ga) {
+      return type === 'W' ? homeResolved : awayResolved;
+    } else if (ga > gh) {
+      return type === 'W' ? awayResolved : homeResolved;
+    } else {
+      const penH = parseInt(dataSource[`pen_${num}_h`]);
+      const penA = parseInt(dataSource[`pen_${num}_a`]);
+      if (isNaN(penH) || isNaN(penA)) return code;
+      if (penH > penA) {
+        return type === 'W' ? homeResolved : awayResolved;
+      } else {
+        return type === 'W' ? awayResolved : homeResolved;
+      }
+    }
+  }
+
+  return code;
 }
