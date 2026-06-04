@@ -103,6 +103,12 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="feedback"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
