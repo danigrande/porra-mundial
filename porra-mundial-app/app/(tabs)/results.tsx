@@ -322,6 +322,13 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
   const hCode = TEAM_CODES[hName];
   const aCode = TEAM_CODES[aName];
 
+  const hNorm = hName?.toLowerCase() ?? '';
+  const aNorm = aName?.toLowerCase() ?? '';
+  const allEvents: any[] = (reality.events && reality.events[matchId]) || [];
+  const homeEvts = allEvents.filter((e: any) => e.team?.name?.toLowerCase() === hNorm);
+  const awayEvts = allEvents.filter((e: any) => e.team?.name?.toLowerCase() === aNorm);
+  const getIcon = (e: any) => e.type === 'Goal' ? '\u26bd' : (e.detail === 'Red Card' ? '\ud83d\udfe5' : '\ud83d\udfe8');
+
   return (
     <View style={styles.matchItem}>
       <View style={styles.matchMeta}>
@@ -332,53 +339,35 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
           </TouchableOpacity>
         )}
       </View>
-      {/* Score row */}
       <View style={styles.scoreRow}>
-        <View style={styles.team}>
-          {hCode && <Image source={{ uri: `https://flagcdn.com/w40/${hCode}.png` }} style={styles.miniFlag} />}
-          <Text style={styles.teamText} numberOfLines={1}>{tTeam(hName)}</Text>
+        <View style={styles.teamCol}>
+          <View style={styles.team}>
+            {hCode && <Image source={{ uri: `https://flagcdn.com/w40/${hCode}.png` }} style={styles.miniFlag} />}
+            <Text style={styles.teamText} numberOfLines={1}>{tTeam(hName)}</Text>
+          </View>
+          {homeEvts.map((e: any, i: number) => (
+            <Text key={i} style={styles.eventItemHome}>
+              {e.time.elapsed}' {getIcon(e)} {e.player.name}
+            </Text>
+          ))}
         </View>
         <View style={styles.scoreBox}>
           <Text style={styles.scoreText}>{hScore !== '' ? hScore : '-'}</Text>
           <Text style={styles.vs}>-</Text>
           <Text style={styles.scoreText}>{aScore !== '' ? aScore : '-'}</Text>
         </View>
-        <View style={[styles.team, { justifyContent: 'flex-end' }]}>
-          <Text style={[styles.teamText, { textAlign: 'right' }]} numberOfLines={1}>{tTeam(aName)}</Text>
-          {aCode && <Image source={{ uri: `https://flagcdn.com/w40/${aCode}.png` }} style={styles.miniFlag} />}
+        <View style={[styles.teamCol, { alignItems: 'flex-end' }]}>
+          <View style={[styles.team, { justifyContent: 'flex-end' }]}>
+            <Text style={[styles.teamText, { textAlign: 'right' }]} numberOfLines={1}>{tTeam(aName)}</Text>
+            {aCode && <Image source={{ uri: `https://flagcdn.com/w40/${aCode}.png` }} style={styles.miniFlag} />}
+          </View>
+          {awayEvts.map((e: any, i: number) => (
+            <Text key={i} style={styles.eventItemAway}>
+              {e.player.name} {getIcon(e)} {e.time.elapsed}'
+            </Text>
+          ))}
         </View>
       </View>
-
-      {/* Events two-column layout */}
-      {reality.events && reality.events[matchId] && reality.events[matchId].length > 0 && (() => {
-        const allEvents: any[] = reality.events[matchId];
-        const hNorm = hName?.toLowerCase() ?? '';
-        const aNorm = aName?.toLowerCase() ?? '';
-        const homeEvts = allEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
-        const awayEvts = allEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
-        // fallback: if no team.name matches, show all on both sides empty and center
-        const getIcon = (e: any) => e.type === 'Goal' ? '\u26bd' : (e.detail === 'Red Card' ? '\ud83d\udfe5' : '\ud83d\udfe8');
-        return (
-          <View style={styles.eventsRow}>
-            {/* Home side - left aligned */}
-            <View style={styles.eventsCol}>
-              {homeEvts.map((e: any, i: number) => (
-                <Text key={i} style={styles.eventItemHome}>
-                  {e.time.elapsed}' {getIcon(e)} {e.player.name}
-                </Text>
-              ))}
-            </View>
-            {/* Away side - right aligned */}
-            <View style={[styles.eventsCol, { alignItems: 'flex-end' }]}>
-              {awayEvts.map((e: any, i: number) => (
-                <Text key={i} style={styles.eventItemAway}>
-                  {e.player.name} {getIcon(e)} {e.time.elapsed}'
-                </Text>
-              ))}
-            </View>
-          </View>
-        );
-      })()}
     </View>
   );
 }
@@ -476,16 +465,13 @@ const styles = StyleSheet.create({
   matchMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' },
   matchId: { color: '#484f58', fontSize: 10, fontWeight: '800' },
   diceBtn: { padding: 4 },
-  scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  team: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  scoreRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  teamCol: { flex: 1, flexDirection: 'column' },
+  team: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   teamText: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1 },
   miniFlag: { width: 24, height: 16, borderRadius: 3 },
-  eventContainer: { paddingVertical: 5 },
-  eventText: { color: 'rgba(255,255,255,0.6)', fontSize: 12, textAlign: 'center' },
-  eventsRow: { flexDirection: 'row', marginTop: 10, gap: 8 },
-  eventsCol: { flex: 1 },
-  eventItemHome: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 2 },
-  eventItemAway: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 2, textAlign: 'right' },
+  eventItemHome: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 3 },
+  eventItemAway: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 3, textAlign: 'right' },
   scoreBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 90 },
   scoreText: { color: '#f5a623', fontSize: 24, fontWeight: '900', width: 34, textAlign: 'center' },
   vs: { color: '#484f58', marginHorizontal: 6, fontSize: 18 },

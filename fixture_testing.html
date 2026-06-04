@@ -294,34 +294,30 @@
                   const aName = g.teams[p[1]];
                   const matchEvents = (currentData.events && currentData.events[matchId]) || [];
                   
+                  const hNorm = hName?.toLowerCase() ?? '';
+                  const aNorm = aName?.toLowerCase() ?? '';
+                  const homeEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
+                  const awayEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
+                  const getIcon = (e) => e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨');
                   return `
                     <div class="match-edit" style="display:flex; flex-direction:column; margin-bottom:10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="${window.i18n ? window.i18n.t('testing.match_sim_title') : 'Simular partido'}" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem;">🎲</button>
-                            <span style="font-size:0.8rem; flex:1; text-align:right;">${hName}</span>
-                            <div style="display:flex; gap:5px; margin: 0 10px;">
-                                <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
-                                <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
+                        <div style="display:flex; align-items:center;">
+                            <div style="flex:1; text-align:right; padding-right:10px;">
+                                <div style="font-size:0.8rem; font-weight:600;">${getTeamHtml(hName)}</div>
+                                ${homeEvts.length > 0 ? `<div style="margin-top:4px;">${homeEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:1px 0;">${e.time.elapsed}' ${getIcon(e)} ${e.player.name}</div>`).join('')}</div>` : ''}
                             </div>
-                            <span style="font-size:0.8rem; flex:1;">${aName}</span>
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                                <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="${window.i18n ? window.i18n.t('testing.match_sim_title') : 'Simular partido'}" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem;">🎲</button>
+                                <div style="display:flex; gap:5px;">
+                                    <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
+                                    <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
+                                </div>
+                            </div>
+                            <div style="flex:1; text-align:left; padding-left:10px;">
+                                <div style="font-size:0.8rem; font-weight:600;">${getTeamHtml(aName)}</div>
+                                ${awayEvts.length > 0 ? `<div style="margin-top:4px;">${awayEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:1px 0;">${e.player.name} ${getIcon(e)} ${e.time.elapsed}'</div>`).join('')}</div>` : ''}
+                            </div>
                         </div>
-                        ${matchEvents.length > 0 ? (() => {
-                          const hNorm = hName?.toLowerCase() ?? '';
-                          const aNorm = aName?.toLowerCase() ?? '';
-                          const homeEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
-                          const awayEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
-                          const getIcon = (e) => e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨');
-                          return `
-                            <div style="display:flex; margin-top:5px; gap:8px;">
-                                <div style="flex:1; text-align:left;">
-                                    ${homeEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.time.elapsed}' ${getIcon(e)} ${e.player.name}</div>`).join('')}
-                                </div>
-                                <div style="flex:1; text-align:right;">
-                                    ${awayEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.player.name} ${getIcon(e)} ${e.time.elapsed}'</div>`).join('')}
-                                </div>
-                            </div>
-                          `;
-                        })() : ''}
                     </div>
                   `;
                 }).join('')}
@@ -357,47 +353,41 @@
               const isDraw = currentData[hId] && currentData[aId] && currentData[hId] === currentData[aId];
               const matchEvents = (currentData.events && currentData.events[matchId]) || [];
 
+              const hNorm = hName?.toLowerCase() ?? '';
+              const aNorm = aName?.toLowerCase() ?? '';
+              const homeEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
+              const awayEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
+              const getIcon = (e) => e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨');
               return `
                 <div class="knockout-match">
                   <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                       <span class="match-number">#${num}</span>
                       <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="${window.i18n ? window.i18n.t('testing.match_sim_title') : 'Simular partido'}" style="background:transparent; border:none; cursor:pointer; font-size:1rem;">🎲</button>
                   </div>
-                  <div class="km-teams">
-                    <span class="team-name team-home">${getTeamHtml(hName)}</span>
-                    <div class="score-container" style="display:flex; flex-direction:column; gap:5px;">
-                        <div style="display:flex; gap:5px; align-items:center;">
-                            <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
-                            <span>–</span>
-                            <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
-                        </div>
-                        ${isDraw ? `
-                            <div style="display:flex; gap:2px; font-size:0.6rem; color:var(--accent-gold);">
-                                <input type="number" class="score-input" id="${pHId}" placeholder="P" value="${currentData[pHId] || ''}" oninput="render()" style="width:30px !important;">
-                                <span>(pen)</span>
-                                <input type="number" class="score-input" id="${pAId}" placeholder="P" value="${currentData[pAId] || ''}" oninput="render()" style="width:30px !important;">
-                            </div>
-                        ` : ''}
-                    </div>
-                    <span class="team-name team-away">${getTeamHtml(aName)}</span>
+                  <div style="display:flex; align-items:flex-start;">
+                      <div style="flex:1; text-align:right; padding-right:10px;">
+                          <div class="team-name team-home" style="display:block; margin-bottom:4px;">${getTeamHtml(hName)}</div>
+                          ${homeEvts.length > 0 ? homeEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:1px 0;">${e.time.elapsed}' ${getIcon(e)} ${e.player.name}</div>`).join('') : ''}
+                      </div>
+                      <div class="score-container" style="display:flex; flex-direction:column; gap:5px; align-items:center;">
+                          <div style="display:flex; gap:5px; align-items:center;">
+                              <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
+                              <span>–</span>
+                              <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
+                          </div>
+                          ${isDraw ? `
+                              <div style="display:flex; gap:2px; font-size:0.6rem; color:var(--accent-gold);">
+                                  <input type="number" class="score-input" id="${pHId}" placeholder="P" value="${currentData[pHId] || ''}" oninput="render()" style="width:30px !important;">
+                                  <span>(pen)</span>
+                                  <input type="number" class="score-input" id="${pAId}" placeholder="P" value="${currentData[pAId] || ''}" oninput="render()" style="width:30px !important;">
+                              </div>
+                          ` : ''}
+                      </div>
+                      <div style="flex:1; text-align:left; padding-left:10px;">
+                          <div class="team-name team-away" style="display:block; margin-bottom:4px;">${getTeamHtml(aName)}</div>
+                          ${awayEvts.length > 0 ? awayEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:1px 0;">${e.player.name} ${getIcon(e)} ${e.time.elapsed}'</div>`).join('') : ''}
+                      </div>
                   </div>
-                  ${matchEvents.length > 0 ? (() => {
-                      const hNorm = hName?.toLowerCase() ?? '';
-                      const aNorm = aName?.toLowerCase() ?? '';
-                      const homeEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === hNorm);
-                      const awayEvts = matchEvents.filter(e => e.team?.name?.toLowerCase() === aNorm);
-                      const getIcon = (e) => e.type === 'Goal' ? '⚽' : (e.detail === 'Red Card' ? '🟥' : '🟨');
-                      return `
-                        <div style="display:flex; margin-top:8px; gap:8px;">
-                            <div style="flex:1; text-align:left;">
-                                ${homeEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.time.elapsed}' ${getIcon(e)} ${e.player.name}</div>`).join('')}
-                            </div>
-                            <div style="flex:1; text-align:right;">
-                                ${awayEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:2px 0;">${e.player.name} ${getIcon(e)} ${e.time.elapsed}'</div>`).join('')}
-                            </div>
-                        </div>
-                      `;
-                  })() : ''}
                 </div>
               `;
             }).join('')}
