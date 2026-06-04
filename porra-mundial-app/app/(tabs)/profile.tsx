@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import { getAuth, saveAuth, logout, setCurrentGroup } from '../../stores/authStore';
 import * as api from '../../services/api';
+import * as biometric from '../../services/biometric';
 import * as socketService from '../../services/socket';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useTranslation } from '../../i18n/i18n';
@@ -50,6 +51,10 @@ export default function ProfileScreen() {
     { id: 'trump', nameKey: 'profile.personality_trump', icon: '🇬🇧' }
   ];
 
+  // Biometric State
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
   // Password Change State
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -63,14 +68,19 @@ export default function ProfileScreen() {
     }
     
     setLoading(true);
-    api.getProfile(auth.userId)
-      .then(data => {
-        setNickname(data.nickname || auth.name);
-        setHumorStyle(data.humor_style || 'Divertido y amigable');
-        setAiPersonality(data.ai_personality || 'andres_montes');
-        setLikes((data.likes || []).join(', '));
-        setDislikes((data.dislikes || []).join(', '));
-      })
+    Promise.all([
+      api.getProfile(auth.userId),
+      biometric.isAvailable(),
+      biometric.has(),
+    ]).then(([profile, bioAvail, bioHas]) => {
+      setNickname(profile.nickname || auth.name);
+      setHumorStyle(profile.humor_style || 'Divertido y amigable');
+      setAiPersonality(profile.ai_personality || 'andres_montes');
+      setLikes((profile.likes || []).join(', '));
+      setDislikes((profile.dislikes || []).join(', '));
+      setBiometricAvailable(bioAvail);
+      setBiometricEnabled(bioHas && !!auth.biometricEnabled);
+    })
       .catch(e => console.error(e))
       .finally(() => setLoading(false));
   }, [auth]);
@@ -161,6 +171,22 @@ export default function ProfileScreen() {
         }
       ]
     );
+  }
+
+  async function handleToggleBiometric() {
+    if (!auth) return;
+    if (biometricEnabled) {
+      await biometric.clear();
+      await saveAuth({ ...auth, biometricEnabled: false });
+      setBiometricEnabled(false);
+      Alert.alert('Desactivado', 'El acceso biométrico se ha desactivado.');
+    } else {
+      const bioType = await biometric.getBiometricType();
+      await biometric.save(auth.email, auth.password, auth.currentGroup);
+      await saveAuth({ ...auth, biometricEnabled: true });
+      setBiometricEnabled(true);
+      Alert.alert('Activado', `Ahora puedes iniciar sesión con ${bioType}.`);
+    }
   }
 
   if (loading) {
@@ -323,6 +349,33 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* ACCESO BIOMÉTRICO */}
+        {biometricAvailable && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="finger-print" size={24} color="#10b981" />
+              <View style={{marginLeft: 12}}>
+                <Text style={styles.cardTitle}>Acceso biométrico</Text>
+                <Text style={styles.cardSubtitle}>Inicia sesión con tu huella o FaceID</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.biometricRow, biometricEnabled && styles.biometricRowActive]}
+              onPress={handleToggleBiometric}
+            >
+              <Ionicons
+                name={biometricEnabled ? 'checkmark-circle' : 'ellipse-outline'}
+                size={24}
+                color={biometricEnabled ? '#10b981' : '#64748b'}
+              />
+              <Text style={[styles.biometricText, biometricEnabled && styles.biometricTextActive]}>
+                {biometricEnabled ? 'Activado' : 'Activar'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* CAMBIO DE CONTRASEÑA */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -438,4 +491,8 @@ const styles = StyleSheet.create({
   pinButtonText: { color: '#f59e0b', fontSize: 16, fontWeight: '800' },
   deleteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, marginTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(239, 68, 68, 0.1)' },
   deleteButtonText: { color: '#ef4444', fontSize: 14, fontWeight: '600', marginLeft: 8 },
+  biometricRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.04)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  biometricRowActive: { borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)' },
+  biometricText: { color: '#94a3b8', fontSize: 16, fontWeight: '600' },
+  biometricTextActive: { color: '#10b981' },
 });

@@ -188,15 +188,16 @@
           // En 2026: 12 grupos * 6 partidos/grupo * 2 campos/partido = 144 campos
           if (matchInputs.length < 144) missing = true;
           
-          matchInputs.forEach(input => {
-            const val = input.value.trim();
-            const id = input.id;
-            if (mode === 'A') {
-              if (val === '') missing = true;
-            } else {
-              if (id.startsWith('g') && val === '') missing = true;
-            }
-          });
+      matchInputs.forEach(input => {
+        if (input.closest('[style*="display:none"], [style*="display: none"]')) return;
+        const val = input.value.trim();
+        const id = input.id;
+        if (mode === 'A') {
+          if (val === '') missing = true;
+        } else {
+          if (id.startsWith('g') && val === '') missing = true;
+        }
+      });
           
           // Si es modo A, validar que existan los de eliminatorias (32 partidos * 2 = 64)
           if (mode === 'A') {
@@ -207,6 +208,7 @@
           // Durante el torneo, validamos los campos que no estén bloqueados
           if (matchInputs.length === 0) missing = true;
           matchInputs.forEach(input => {
+            if (input.closest('[style*="display:none"], [style*="display: none"]')) return;
             if (!input.disabled && input.value.trim() === '') missing = true;
           });
       }
@@ -221,11 +223,6 @@
       }
 
       return !missing;
-    }
-
-    function handleInputChange() {
-      // Cada vez que el usuario escribe, refrescamos el banner
-      updateTournamentUI();
     }
 
     function startCountdown() {
@@ -529,6 +526,7 @@
       const hRunner = document.getElementById('honor_runnerup');
       if (hChamp) hChamp.innerHTML = getTeamHtml(champ);
       if (hRunner) hRunner.innerHTML = getTeamHtml(runner);
+      updateTournamentUI();
     }
 
 

@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
-import { loadAuth, getAuth, subscribeAuth } from '../stores/authStore';
+import { loadAuth, getAuth, saveAuth, subscribeAuth } from '../stores/authStore';
 import { setupPushNotifications } from '../services/push';
 import { connect as connectSocket } from '../services/socket';
+import * as biometric from '../services/biometric';
+import * as api from '../services/api';
 import { initI18n } from '../i18n/i18n';
 
 export default function RootLayout() {
@@ -48,12 +50,55 @@ export default function RootLayout() {
     });
 
     // Carga inicial (auth + i18n en paralelo)
-    Promise.all([loadAuth(), initI18n()]).then(([data]) => {
-      setIsLoggedIn(!!data);
+    Promise.all([loadAuth(), initI18n()]).then(async ([data]) => {
+      let finalData = data;
+      const hasBioCreds = await biometric.has();
+
+      // Gate biométrico: si hay sesión guardada y credenciales biométricas, pedir huella/FaceID
+      if (finalData && (finalData.biometricEnabled || hasBioCreds)) {
+        const ok = await biometric.authenticate('Desbloquea la app');
+        if (ok) {
+          // Migrar flag si falta (usuarios que enrolaron antes de que existiera el flag)
+          if (!finalData.biometricEnabled && hasBioCreds) {
+            await saveAuth({ ...finalData, biometricEnabled: true });
+          }
+        } else {
+          finalData = null;
+        }
+      }
+
+      // Si no hay sesión en AsyncStorage, intentar login completo desde SecureStore
+      if (!finalData && hasBioCreds) {
+        const creds = await biometric.retrieve();
+        if (creds) {
+          try {
+            const result = await api.login(creds.email, creds.password, creds.groupName);
+            const user = await api.getUserByEmail(creds.email);
+            finalData = {
+              userId: result.userId,
+              email: creds.email,
+              password: creds.password,
+              name: result.name,
+              currentGroup: creds.groupName,
+              groups: user.groups || [creds.groupName],
+              isAdmin: result.isAdmin || false,
+              biometricEnabled: true,
+            };
+            await saveAuth(finalData);
+          } catch (e: any) {
+            if (e.message && (e.message.toLowerCase().includes('incorrect') || e.message.toLowerCase().includes('credencial'))) {
+              await biometric.clear();
+            }
+            console.error('[Biometric] Login con credenciales guardadas falló:', e);
+          }
+        }
+      }
+
+      setIsLoggedIn(!!finalData);
       setIsReady(true);
-      if (data && data.email && data.password) {
-        setupPushNotifications(data.userId);
-        connectSocket(data.email, data.password);
+      if (finalData && finalData.email && finalData.password) {
+        setupPushNotifications(finalData.userId);
+        connectSocket(finalData.email, finalData.password);
       }
     });
 

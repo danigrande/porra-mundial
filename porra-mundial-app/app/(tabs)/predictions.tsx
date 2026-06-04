@@ -184,6 +184,46 @@ export default function PredictionsScreen() {
     }
   };
 
+  const isComplete = useMemo(() => {
+    if (!state || !state.isPredictionWindow) return null;
+    const mode = state.predictionMode || 'A';
+    const unlocks = state.unlocks || [];
+    const phaseId = state.id;
+
+    // Groups check
+    if (phaseId === 'PRE_TOURNAMENT' || unlocks.includes('groups')) {
+      for (const letter of 'ABCDEFGHIJKL') {
+        for (let i = 0; i < 6; i++) {
+          if (!predictions[`g${letter}_m${i}_h`] || !predictions[`g${letter}_m${i}_a`]) return false;
+        }
+      }
+    }
+
+    // KO check
+    if (phaseId === 'PRE_TOURNAMENT' && mode === 'A') {
+      for (const matchId of Object.keys(BRACKET_MATCHES)) {
+        if (!predictions[`ko_${matchId}_h`] || !predictions[`ko_${matchId}_a`]) return false;
+      }
+    } else if (state.knockoutBracket) {
+      for (const phase of state.knockoutBracket) {
+        if (unlocks.includes(phase.id)) {
+          for (const matchId of phase.matches) {
+            if (!predictions[`ko_${matchId}_h`] || !predictions[`ko_${matchId}_a`]) return false;
+          }
+        }
+      }
+    }
+
+    // Awards check
+    if (phaseId === 'PRE_TOURNAMENT' || unlocks.includes('honor')) {
+      for (const key of ['ball_gold', 'ball_silver', 'ball_bronze', 'boot_gold', 'boot_silver', 'boot_bronze']) {
+        if (!predictions[key]) return false;
+      }
+    }
+
+    return true;
+  }, [state, predictions]);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -195,7 +235,7 @@ export default function PredictionsScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       
-      <TournamentBanner state={state} />
+      <TournamentBanner state={state} isComplete={isComplete} />
 
       {/* Selector de Grupos y Fases Horizontal */}
       <View style={styles.groupSelectorContainer}>

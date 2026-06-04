@@ -26,6 +26,7 @@
     "pin_placeholder": "PIN (4 digits)",
     "pin_create": "Create a PIN (4 digits)",
     "email_placeholder": "Email",
+    "password_placeholder": "Password",
     "password_create": "Password (min. 8 characters)",
     "name_placeholder": "Your name (e.g. John)",
     "group_placeholder": "Group name to join/create",

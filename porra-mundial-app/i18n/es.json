@@ -18,7 +18,7 @@
     "to_be_defined": "Por definir"
   },
   "auth": {
-    "title": "Predicción Global",
+    "title": "Predicción Mundial",
     "subtitle": "2026 — Pronósticos entre amigos",
     "login": "Entrar",
     "register": "Registrarse",
@@ -26,6 +26,7 @@
     "pin_placeholder": "PIN (4 dígitos)",
     "pin_create": "Crea un PIN (4 dígitos)",
     "email_placeholder": "Correo electrónico",
+    "password_placeholder": "Contraseña",
     "password_create": "Contraseña (mín. 8 caracteres)",
     "name_placeholder": "Tu nombre (ej: Edu)",
     "group_placeholder": "Nombre del grupo a unirse/crear",
@@ -49,7 +50,7 @@
     "single_group": "Grupo:",
     "bad_credentials": "Credenciales incorrectas",
     "register_error": "Error al registrarse",
-    "footer": "Predicción Global 🏆 — Sin dinero real",
+    "footer": "Predicción Mundial 🏆 — Sin dinero real",
     "apple_disclaimer": "* Apple Inc. no es patrocinador ni está involucrado de ninguna manera en esta aplicación o sus pronósticos."
   },
   "tabs": {
@@ -128,7 +129,7 @@
     "logout": "Cerrar Sesión",
     "logout_confirm_title": "Cerrar Sesión",
     "logout_confirm": "¿Estás seguro de que quieres salir?",
-    "version": "Predicción Global v1.2.0",
+    "version": "Predicción Mundial v1.2.0",
     "language": "Idioma",
     "language_sub": "Cambiar idioma de la aplicación"
   },

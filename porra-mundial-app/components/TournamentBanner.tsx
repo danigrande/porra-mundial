@@ -9,9 +9,10 @@ interface TournamentBannerProps {
     timeRemainingMs: number;
     isPredictionWindow: boolean;
   } | null;
+  isComplete?: boolean | null;
 }
 
-export default function TournamentBanner({ state }: TournamentBannerProps) {
+export default function TournamentBanner({ state, isComplete }: TournamentBannerProps) {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -66,6 +67,11 @@ export default function TournamentBanner({ state }: TournamentBannerProps) {
             <Text style={styles.phaseStatus}>
               {state.isPredictionWindow ? '🟠 Ventana Abierta' : '🔵 Fase en Juego'}
             </Text>
+            {state.isPredictionWindow && isComplete !== null && isComplete !== undefined && (
+              <Text style={[styles.phaseStatus, { marginTop: 4, fontWeight: '700' }, isComplete ? { color: '#10b981' } : { color: '#ef4444' }]}>
+                {isComplete ? '✅ Todo listo' : '🚨 Pendiente'}
+              </Text>
+            )}
           </View>
         </View>
 

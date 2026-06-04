@@ -3,17 +3,19 @@
 // ============================================
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as biometric from '../services/biometric';
 
 const AUTH_KEY = 'porra_mundial_auth';
 
 export type AuthData = {
   userId: string;
   email: string;
-  password: string; // kept in memory for socket re-auth
+  password: string;
   name: string;
   currentGroup: string;
   groups: string[];
   isAdmin: boolean;
+  biometricEnabled?: boolean;
 };
 
 let authData: AuthData | null = null;
@@ -96,6 +98,9 @@ export async function setCurrentGroup(groupName: string): Promise<void> {
  */
 export async function logout(): Promise<void> {
   authData = null;
-  await AsyncStorage.removeItem(AUTH_KEY);
+  await Promise.all([
+    AsyncStorage.removeItem(AUTH_KEY),
+    biometric.clear(),
+  ]);
   notifyListeners();
 }

@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as api from '../../services/api';
+import * as biometric from '../../services/biometric';
 import { saveAuth } from '../../stores/authStore';
 import { connect } from '../../services/socket';
 import { useTranslation } from '../../i18n/i18n';
@@ -69,7 +70,7 @@ export default function LoginScreen() {
     try {
       const result = await api.login(email.trim().toLowerCase(), password, groupName);
 
-      await saveAuth({
+      const authData = {
         userId: result.userId,
         email: email.trim().toLowerCase(),
         password,
@@ -77,10 +78,41 @@ export default function LoginScreen() {
         currentGroup: groupName,
         groups: availableGroups,
         isAdmin: result.isAdmin,
-      });
+      };
 
       connect(email.trim().toLowerCase(), password);
-      router.replace('/(tabs)');
+
+      const bioAvailable = await biometric.isAvailable();
+      if (bioAvailable) {
+        const bioType = await biometric.getBiometricType();
+        Alert.alert(
+          '🔐 Acceso biométrico',
+          `¿Quieres activar ${bioType} para iniciar sesión automáticamente la próxima vez?`,
+          [
+            {
+              text: 'Ahora no',
+              onPress: async () => {
+                await saveAuth(authData);
+                router.replace('/(tabs)');
+              }
+            },
+            {
+              text: 'Activar',
+              onPress: async () => {
+                const saved = await biometric.save(authData.email, authData.password, authData.currentGroup);
+                await saveAuth({ ...authData, biometricEnabled: saved });
+                if (!saved) {
+                  Alert.alert('Aviso', 'No se pudieron guardar las credenciales biométricas.');
+                }
+                router.replace('/(tabs)');
+              }
+            },
+          ]
+        );
+      } else {
+        await saveAuth(authData);
+        router.replace('/(tabs)');
+      }
     } catch (error: any) {
       Alert.alert(t('common.error'), error.message || t('auth.bad_credentials') || 'Credenciales incorrectas');
     } finally {
