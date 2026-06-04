@@ -143,6 +143,19 @@ export async function apiCall(params = {}, options = {}) {
     case 'tournament-state':
       endpoint = `/tournament-state?groupName=${encodeURIComponent(groupName)}`;
       break;
+    case 'sendFeedback':
+      endpoint = `/feedback`;
+      method = 'POST';
+      body = { userId: params.userId, userName: params.userName, type: params.type, subject: params.subject, detail: params.detail };
+      break;
+    case 'getFeedback':
+      endpoint = `/feedback`;
+      break;
+    case 'voteFeedback':
+      endpoint = `/feedback/${params.feedbackId}/vote`;
+      method = 'POST';
+      body = { userId: params.userId };
+      break;
     default:
       console.warn(`[API] Acción no implementada en la nueva API: ${action}`);
       return { status: 'error', message: 'Not implemented' };

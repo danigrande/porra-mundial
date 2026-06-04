@@ -38,7 +38,8 @@ const translations = {
       "chat": "Chat",
       "profile": "Mi Perfil",
       "scoring": "Sistema Puntos",
-      "config": "Configuración"
+      "config": "Configuración",
+      "feedback": "Feedback"
     },
     "dashboard": {
       "greeting": "¡Hola",
@@ -255,6 +256,30 @@ const translations = {
       "note": "Nota:",
       "admin_mod": "El administrador puede cambiar estas reglas."
     },
+    "feedback": {
+      "title": "Feedback",
+      "subtitle": "Ayúdanos a mejorar la aplicación reportando fallos o sugiriendo mejoras",
+      "report_bug": "Reportar un Fallo",
+      "suggest_feature": "Sugerir una Mejora",
+      "subject_label": "Asunto",
+      "detail_label": "Detalle",
+      "send_bug": "Reportar Fallo",
+      "send_feature": "Enviar Sugerencia",
+      "history_title": "Histórico de Peticiones",
+      "refresh": "Refrescar",
+      "loading": "Cargando peticiones...",
+      "empty": "No hay peticiones todavía",
+      "col_type": "Tipo",
+      "col_subject": "Asunto",
+      "col_user": "Usuario",
+      "col_votes": "Votos",
+      "type_bug": "Fallo",
+      "type_feature": "Mejora",
+      "error_subject": "Escribe un asunto",
+      "error_detail": "Escribe un detalle",
+      "success": "¡Gracias por tu feedback!",
+      "error": "Error al enviar feedback"
+    },
     "profile": {
       "title": "Mi Perfil IA",
       "subtitle": "Personaliza cómo te trata el Agente Mundial",
@@ -325,7 +350,8 @@ const translations = {
       "chat": "Chat",
       "profile": "My Profile",
       "scoring": "Points System",
-      "config": "Settings"
+      "config": "Settings",
+      "feedback": "Feedback"
     },
     "dashboard": {
       "greeting": "Hello",
@@ -541,6 +567,30 @@ const translations = {
       "section6_title": "Restrictions",
       "note": "Note:",
       "admin_mod": "The administrator can modify these rules."
+    },
+    "feedback": {
+      "title": "Feedback",
+      "subtitle": "Help us improve the app by reporting bugs or suggesting features",
+      "report_bug": "Report a Bug",
+      "suggest_feature": "Suggest a Feature",
+      "subject_label": "Subject",
+      "detail_label": "Details",
+      "send_bug": "Report Bug",
+      "send_feature": "Send Suggestion",
+      "history_title": "Request History",
+      "refresh": "Refresh",
+      "loading": "Loading requests...",
+      "empty": "No requests yet",
+      "col_type": "Type",
+      "col_subject": "Subject",
+      "col_user": "User",
+      "col_votes": "Votes",
+      "type_bug": "Bug",
+      "type_feature": "Feature",
+      "error_subject": "Please enter a subject",
+      "error_detail": "Please enter details",
+      "success": "Thanks for your feedback!",
+      "error": "Error submitting feedback"
     },
     "profile": {
       "title": "My AI Profile",

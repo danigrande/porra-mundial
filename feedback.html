@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feedback - Porra Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .fb-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      max-width: 800px;
+      margin: 2rem auto;
+      box-shadow: var(--shadow-card);
+    }
+    .fb-type-selector {
+      display: flex; gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .fb-type-btn {
+      flex: 1; padding: 1rem; border-radius: var(--radius-md); border: 2px solid var(--border-color);
+      background: transparent; color: var(--text-secondary); font-weight: 700; font-size: 1rem;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .fb-type-btn:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+    .fb-type-btn.active { border-color: var(--accent-blue); background: rgba(59,130,246,0.1); color: var(--accent-blue); }
+    .fb-type-btn.bug.active { border-color: #ef4444; background: rgba(239,68,68,0.1); color: #ef4444; }
+    .fb-type-btn.feature.active { border-color: #22c55e; background: rgba(34,197,94,0.1); color: #22c55e; }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; }
+    .form-control { width: 100%; padding: 0.8rem 1rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-primary); font-size: 1rem; box-sizing: border-box; }
+    .form-control:focus { border-color: var(--accent-blue); outline: none; }
+    textarea.form-control { resize: vertical; min-height: 100px; font-family: inherit; }
+    .char-counter { text-align: right; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .char-counter.over { color: #ef4444; }
+    .btn-submit { width: 100%; padding: 1rem; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 1rem; cursor: pointer; transition: transform 0.2s, filter 0.2s; margin-top: 0.5rem; }
+    .btn-submit:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .btn-submit.bug { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .btn-submit.feature { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; filter: none; }
+    .status-msg { margin-top: 1rem; text-align: center; font-weight: 600; padding: 0.5rem; border-radius: 4px; display: none; }
+    .status-success { background: rgba(16,185,129,0.2); color: var(--accent-green); display: block; }
+    .status-error { background: rgba(239,68,68,0.2); color: var(--accent-red); display: block; }
+    .fb-divider { border: none; border-top: 1px solid var(--border-color); margin: 2rem 0; }
+    .fb-table-wrap { overflow-x: auto; }
+    table.fb-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    table.fb-table th { text-align: left; padding: 0.75rem 0.5rem; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+    table.fb-table td { padding: 0.75rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-primary); }
+    table.fb-table tr.fb-row { cursor: pointer; transition: background 0.15s; }
+    table.fb-table tr.fb-row:hover { background: rgba(255,255,255,0.03); }
+    .fb-type-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; }
+    .fb-type-badge.bug { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .fb-type-badge.feature { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .fb-detail-row { display: none; }
+    .fb-detail-row.open { display: table-row; }
+    .fb-detail-cell { padding: 0.5rem 0.5rem 1rem 2rem !important; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap; }
+    .fb-vote-btn { background: none; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: var(--text-secondary); transition: all 0.2s; }
+    .fb-vote-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+    .fb-vote-btn.voted { border-color: var(--accent-cyan); background: rgba(6,182,212,0.1); color: var(--accent-cyan); }
+    .fb-empty { text-align: center; padding: 2rem; color: var(--text-muted); }
+    .loading { text-align: center; padding: 2rem; color: var(--text-muted); }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border-color); border-top-color: var(--accent-cyan); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <nav class="main-nav">
+    <div class="nav-inner">
+      <a href="player_scores.html" class="nav-logo">
+        <span class="nav-logo-icon">⚽</span>
+        <span class="nav-logo-text" data-i18n="common.app_title">Mundial 2026</span>
+      </a>
+      <div class="nav-links" id="navLinks"></div>
+      <div id="navUserInfo" class="nav-user">
+        <span class="nav-user-name" id="displayUserName"></span>
+        <a href="#" onclick="handleLogout()" class="nav-logout" data-i18n="common.logout">Cerrar Sesión</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <h1><span class="header-icon">💬</span> <span class="header-text-gradient" data-i18n="feedback.title">Feedback</span></h1>
+    <p class="subtitle" data-i18n="feedback.subtitle">Ayúdanos a mejorar la aplicación reportando fallos o sugiriendo mejoras</p>
+  </header>
+
+  <main class="main-content">
+    <div class="fb-card">
+      <div id="fbStatus" class="status-msg"></div>
+
+      <div class="fb-type-selector">
+        <button type="button" class="fb-type-btn bug" data-type="bug" onclick="selectType('bug')">
+          🐛 <span data-i18n="feedback.report_bug">Reportar un Fallo</span>
+        </button>
+        <button type="button" class="fb-type-btn feature" data-type="feature" onclick="selectType('feature')">
+          💡 <span data-i18n="feedback.suggest_feature">Sugerir una Mejora</span>
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="fbSubject" data-i18n="feedback.subject_label">Asunto</label>
+        <input type="text" id="fbSubject" class="form-control" maxlength="100" placeholder="Ej: La app se cierra al abrir el chat" oninput="updateSubjectCounter()">
+        <div class="char-counter" id="subjectCounter">0/100</div>
+      </div>
+
+      <div class="form-group">
+        <label for="fbDetail" data-i18n="feedback.detail_label">Detalle</label>
+        <textarea id="fbDetail" class="form-control" maxlength="1500" rows="4" placeholder="Describe con detalle qué ocurre o qué te gustaría ver..." oninput="updateDetailCounter()"></textarea>
+        <div class="char-counter" id="detailCounter">0/1500</div>
+      </div>
+
+      <button type="button" id="fbSubmitBtn" class="btn-submit" onclick="submitFeedback()" disabled>
+        🐛 <span data-i18n="feedback.send_bug">Reportar Fallo</span>
+      </button>
+    </div>
+
+    <div class="fb-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="margin:0; color:var(--text-primary);">📋 <span data-i18n="feedback.history_title">Histórico de Peticiones</span></h3>
+        <button onclick="loadHistory()" style="background:var(--accent-blue); padding:6px 12px; border-radius:6px; font-size:0.8rem; color:white; border:none; cursor:pointer;">🔄 <span data-i18n="feedback.refresh">Refrescar</span></button>
+      </div>
+      <div class="fb-table-wrap">
+        <table class="fb-table">
+          <thead>
+            <tr>
+              <th data-i18n="feedback.col_type">Tipo</th>
+              <th data-i18n="feedback.col_subject">Asunto</th>
+              <th data-i18n="feedback.col_user">Usuario</th>
+              <th data-i18n="feedback.col_votes">Votos</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fbHistoryBody">
+            <tr><td colspan="5" class="loading"><span class="spinner"></span> <span data-i18n="feedback.loading">Cargando peticiones...</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="web_config.js"></script>
+  <script type="module">
+    import { checkAuth, handleLogout, renderNavigation, initOnboarding } from './shared_ui.js';
+    import { apiCall } from './agente_mundial/dataFetcher.js';
+
+    window.handleLogout = handleLogout;
+    renderNavigation('feedback.html');
+    let currentUser = checkAuth();
+    initOnboarding('feedback.html');
+
+    window.selectedType = null;
+
+    window.selectType = function(type) {
+      window.selectedType = type;
+      document.querySelectorAll('.fb-type-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.type === type);
+      });
+      const btn = document.getElementById('fbSubmitBtn');
+      btn.disabled = false;
+      if (type === 'bug') {
+        btn.className = 'btn-submit bug';
+        btn.innerHTML = '🐛 ' + (window.i18n ? window.i18n.t('feedback.send_bug') : 'Reportar Fallo');
+      } else {
+        btn.className = 'btn-submit feature';
+        btn.innerHTML = '💡 ' + (window.i18n ? window.i18n.t('feedback.send_feature') : 'Enviar Sugerencia');
+      }
+    };
+
+    window.updateSubjectCounter = function() {
+      const el = document.getElementById('fbSubject');
+      document.getElementById('subjectCounter').textContent = el.value.length + '/100';
+    };
+
+    window.updateDetailCounter = function() {
+      const el = document.getElementById('fbDetail');
+      document.getElementById('detailCounter').textContent = el.value.length + '/1500';
+    };
+
+    window.submitFeedback = async function() {
+      if (!window.selectedType) return;
+      const subject = document.getElementById('fbSubject').value.trim();
+      const detail = document.getElementById('fbDetail').value.trim();
+      if (!subject) { showStatus('fbStatus', (window.i18n ? window.i18n.t('feedback.error_subject') : 'Escribe un asunto'), 'error'); return; }
+      if (!detail) { showStatus('fbStatus', (window.i18n ? window.i18n.t('feedback.error_detail') : 'Escribe un detalle'), 'error'); return; }
+
+      const btn = document.getElementById('fbSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = (window.i18n ? window.i18n.t('common.sending') : 'Enviando...');
+
+      try {
+        const res = await apiCall({
+          action: 'sendFeedback',
+          userId: currentUser.userId,
+          userName: currentUser.name,
+          type: window.selectedType,
+          subject,
+          detail
+        });
+        if (res.status === 'success') {
+          showStatus('fbStatus', (window.i18n ? window.i18n.t('feedback.success') : '¡Gracias por tu feedback!'), 'success');
+          document.getElementById('fbSubject').value = '';
+          document.getElementById('fbDetail').value = '';
+          updateSubjectCounter();
+          updateDetailCounter();
+          window.selectedType = null;
+          document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.remove('active'));
+          btn.disabled = true;
+          loadHistory();
+        } else {
+          throw new Error(res.message);
+        }
+      } catch (e) {
+        showStatus('fbStatus', (window.i18n ? window.i18n.t('feedback.error') : 'Error: ') + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = window.selectedType === 'bug'
+          ? '🐛 ' + (window.i18n ? window.i18n.t('feedback.send_bug') : 'Reportar Fallo')
+          : '💡 ' + (window.i18n ? window.i18n.t('feedback.send_feature') : 'Enviar Sugerencia');
+      }
+    };
+
+    function showStatus(id, msg, type) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.className = 'status-msg status-' + type;
+    }
+
+    window.vote = async function(feedbackId) {
+      try {
+        const res = await apiCall({
+          action: 'voteFeedback',
+          feedbackId,
+          userId: currentUser.userId
+        });
+        if (res.status === 'success') {
+          loadHistory();
+        }
+      } catch (e) {
+        console.error('Error al votar:', e);
+      }
+    };
+
+    window.toggleDetail = function(id) {
+      const row = document.getElementById('detail-' + id);
+      if (row) row.classList.toggle('open');
+    };
+
+    window.loadHistory = async function() {
+      const tbody = document.getElementById('fbHistoryBody');
+      tbody.innerHTML = '<tr><td colspan="5" class="loading"><span class="spinner"></span> ' + (window.i18n ? window.i18n.t('feedback.loading') : 'Cargando...') + '</td></tr>';
+      try {
+        const res = await apiCall({ action: 'getFeedback' });
+        if (res.status !== 'success') throw new Error(res.message);
+        const items = res.data || [];
+        if (items.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="fb-empty">📭 ' + (window.i18n ? window.i18n.t('feedback.empty') : 'No hay peticiones todavía') + '</td></tr>';
+          return;
+        }
+        let html = '';
+        items.forEach(f => {
+          const isBug = f.type === 'bug';
+          const typeLabel = isBug
+            ? (window.i18n ? window.i18n.t('feedback.type_bug') : 'Fallo')
+            : (window.i18n ? window.i18n.t('feedback.type_feature') : 'Mejora');
+          const voted = (f.votes || []).includes(currentUser.userId);
+          html += `
+            <tr class="fb-row" onclick="toggleDetail('${f._id}')">
+              <td><span class="fb-type-badge ${f.type}">${isBug ? '🐛' : '💡'} ${typeLabel}</span></td>
+              <td>${escapeHtml(f.subject)}</td>
+              <td>${escapeHtml(f.userName)}</td>
+              <td>${f.voteCount || 0}</td>
+              <td><button class="fb-vote-btn ${voted ? 'voted' : ''}" onclick="event.stopPropagation(); vote('${f._id}')">${voted ? '👍' : '👍'}</button></td>
+            </tr>
+            <tr class="fb-detail-row" id="detail-${f._id}">
+              <td colspan="5" class="fb-detail-cell">${escapeHtml(f.detail)}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" class="fb-empty" style="color:#ef4444">❌ Error: ' + e.message + '</td></tr>';
+      }
+    };
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

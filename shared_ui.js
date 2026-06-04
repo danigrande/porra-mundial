@@ -59,6 +59,7 @@ export function renderNavigation(currentPage) {
     { href: 'pool.html', text: window.i18n ? window.i18n.t('tabs.pool') : 'El Muro', adminOnly: false },
     { href: 'worldcup.html', text: window.i18n ? window.i18n.t('tabs.predictions') : 'Mis Pronósticos', adminOnly: false },
     { href: 'about_user.html', text: window.i18n ? window.i18n.t('tabs.profile') : 'Mi Perfil', adminOnly: false },
+    { href: 'feedback.html', text: window.i18n ? window.i18n.t('tabs.feedback') : 'Feedback', adminOnly: false },
     { href: 'points_system.html', text: window.i18n ? window.i18n.t('tabs.scoring') : 'Sistema Puntos', adminOnly: false },
     { href: 'scoring_criteria.html', text: window.i18n ? window.i18n.t('tabs.config') : 'Configuración', adminOnly: true }
   ];

@@ -77,6 +77,13 @@ export default function MenuScreen() {
           onPress={() => router.push('/(tabs)/rules')}
           color="#10b981"
         />
+        <MenuButton 
+          icon="feedback" 
+          label={t('menu.feedback')} 
+          sublabel={t('menu.feedback_sub')}
+          onPress={() => router.push('/(tabs)/feedback')}
+          color="#8b5cf6"
+        />
       </View>
 
       {/* Language Switcher */}

@@ -291,3 +291,19 @@ export async function getBlockedUsers(userId: string): Promise<string[]> {
 export async function searchGiphy(query: string) {
   return apiFetch(`/giphy/search?q=${encodeURIComponent(query)}`);
 }
+
+// === FEEDBACK ===
+
+export async function sendFeedback(data: {
+  userId: string; userName: string; type: string; subject: string; detail: string;
+}) {
+  return apiFetch('/feedback', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function getFeedback() {
+  return apiFetch('/feedback');
+}
+
+export async function voteFeedback(feedbackId: string, userId: string) {
+  return apiFetch(`/feedback/${feedbackId}/vote`, { method: 'POST', body: JSON.stringify({ userId }) });
+}
