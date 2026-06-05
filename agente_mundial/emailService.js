@@ -7,12 +7,10 @@ async function initEmail() {
 
   if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {
     const key = process.env.BREVO_API_KEY.trim();
-    const headers = { 'Content-Type': 'application/json' };
-    if (key.startsWith('xkeysib')) {
-      headers['api-key'] = key;
-    } else {
-      headers['Authorization'] = `Bearer ${key}`;
-    }
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`,
+    };
 
     console.log(`📧 Brevo key starts with: ${key.substring(0, 8)}... (length: ${key.length})`);
 
