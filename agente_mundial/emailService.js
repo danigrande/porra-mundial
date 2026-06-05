@@ -7,10 +7,7 @@ async function initEmail() {
 
   if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {
     const key = process.env.BREVO_API_KEY.trim();
-    // Brevo v3 API acepta api-key o Bearer token
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    const headers = { 'Content-Type': 'application/json' };
     if (key.startsWith('xkeysib')) {
       headers['api-key'] = key;
     } else {
