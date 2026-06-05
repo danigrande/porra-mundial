@@ -517,6 +517,29 @@ tr { cursor: pointer; transition: background 0.15s; }
 .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
 .pagination .page-info { color: var(--text-muted); font-size: 0.8rem; display: flex; align-items: center; }
 
+/* Feedback / PRD specific */
+.badge-feedback { background: rgba(59,130,246,0.2); color: var(--accent-blue); }
+.badge-bug { background: var(--accent-red-dim); color: var(--accent-red); }
+.badge-feature { background: var(--accent-cyan-dim); color: var(--accent-cyan); }
+.badge-improvement { background: var(--accent-purple); color: white; background: rgba(168,85,247,0.2); color: var(--accent-purple); }
+.badge-other { background: var(--accent-amber-dim); color: var(--accent-amber); }
+
+.badge-priority { font-weight: 700; }
+.badge-status { font-weight: 600; }
+
+.btn-sm {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-family: var(--mono);
+}
+
+.btn-sm:hover { opacity: 0.8; }
+
 /* Loading */
 .loading {
   text-align: center;

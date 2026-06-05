@@ -10,6 +10,7 @@ import { Message } from '../models/Message.js';
 import { Reality } from '../models/Reality.js';
 import { Report } from '../models/Report.js';
 import { Feedback } from '../models/Feedback.js';
+import { PRD } from '../models/PRD.js';
 import { BlockedUser } from '../models/BlockedUser.js';
 import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
@@ -1501,6 +1502,20 @@ router.post('/feedback/:id/vote', async (req, res) => {
         res.json(createResponse('success', { voteCount: feedback.voteCount, voted: idx === -1 }));
     } catch (error) {
         console.error('❌ Error en POST /feedback/:id/vote:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// ==========================================
+// PUBLIC — Obtener PRDs aprobados (para el coding agent)
+// ==========================================
+router.get('/prds/approved', async (req, res) => {
+    try {
+        const prds = await PRD.find({ status: 'approved' })
+            .populate('feedbackId', 'subject type detail userName')
+            .sort({ priority: 1, createdAt: -1 });
+        res.json(createResponse('success', prds));
+    } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
     }
 });

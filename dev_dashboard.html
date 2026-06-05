@@ -35,6 +35,8 @@
       <div class="tab" onclick="switchTab('websearch')">🔍 Web Search</div>
       <div class="tab" onclick="switchTab('groups')">👥 Manage Groups</div>
       <div class="tab" onclick="switchTab('users')">👤 Manage Users</div>
+      <div class="tab" onclick="switchTab('feedback')">💬 Feedback</div>
+      <div class="tab" onclick="switchTab('prds')">📄 PRDs</div>
       <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
     </div>
 
@@ -132,6 +134,72 @@
           <button onclick="loadUsers()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
         </div>
         <div id="users-table-body"><div class="loading"><span class="spinner"></span> Cargando usuarios...</div></div>
+      </div>
+    </div>
+
+    <!-- FEEDBACK PANEL -->
+    <div class="panel" id="panel-feedback">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>💬 Feedback de Usuarios</h3>
+          <div class="table-filters">
+            <select id="filter-fb-priority" onchange="loadFeedback()">
+              <option value="">Todas las prioridades</option>
+              <option value="P0">P0 - Crítico</option>
+              <option value="P1">P1 - Alta</option>
+              <option value="P2">P2 - Media</option>
+              <option value="P3">P3 - Baja</option>
+              <option value="P-PENDING">P-PENDING - Sin analizar</option>
+            </select>
+            <select id="filter-fb-type" onchange="loadFeedback()">
+              <option value="">Todos los tipos</option>
+              <option value="bug">Bug</option>
+              <option value="feature">Feature</option>
+              <option value="improvement">Improvement</option>
+              <option value="other">Other</option>
+            </select>
+            <select id="filter-fb-analyzed" onchange="loadFeedback()">
+              <option value="">Todos</option>
+              <option value="false">Sin analizar</option>
+              <option value="true">Analizados</option>
+            </select>
+            <button onclick="loadFeedback()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄</button>
+          </div>
+        </div>
+        <div style="padding:0.5rem 1rem; display:flex; gap:0.5rem; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+          <button class="btn-sm" onclick="analyzeAllFeedback()" style="background:var(--accent-cyan)">🤖 Analizar todo (LangFlow)</button>
+          <button class="btn-sm" onclick="loadFeedback()" style="background:var(--accent-blue)">📋 Refrescar</button>
+        </div>
+        <div id="feedback-table-body"><div class="loading"><span class="spinner"></span> Cargando feedback...</div></div>
+        <div class="pagination" id="feedback-pagination"></div>
+      </div>
+    </div>
+
+    <!-- PRDs PANEL -->
+    <div class="panel" id="panel-prds">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>📄 PRDs Generados</h3>
+          <div class="table-filters">
+            <select id="filter-prd-status" onchange="loadPRDs()">
+              <option value="">Todos los estados</option>
+              <option value="draft">Draft</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="implemented">Implemented</option>
+            </select>
+            <select id="filter-prd-priority" onchange="loadPRDs()">
+              <option value="">Todas las prioridades</option>
+              <option value="P0">P0 - Crítico</option>
+              <option value="P1">P1 - Alta</option>
+              <option value="P2">P2 - Media</option>
+              <option value="P3">P3 - Baja</option>
+            </select>
+            <button onclick="loadPRDs()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄</button>
+          </div>
+        </div>
+        <div id="prds-table-body"><div class="loading"><span class="spinner"></span> Cargando PRDs...</div></div>
+        <div class="pagination" id="prds-pagination"></div>
       </div>
     </div>
 
