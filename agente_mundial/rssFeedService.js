@@ -3,12 +3,13 @@ import Groq from 'groq-sdk';
 import config from './config.js';
 import { sendBotMessage } from './chatService.js';
 import * as pushService from './pushService.js';
+import { SeenArticle } from './models/SeenArticle.js';
 
 const rssParser = new RssParser();
 const groq = new Groq({ apiKey: config.groq.apiKey });
 
-// In-memory tracking of seen articles: Map<guid, timestamp>
-const seenArticles = new Map();
+// Persistent tracking of seen articles via MongoDB
+const seenGuids = new Set();
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Daily articles for end-of-day summary
@@ -31,13 +32,23 @@ const stats = {
 
 let io = null;
 
-export function startRssService(socketIo) {
+export async function startRssService(socketIo) {
   if (!config.rss.enabled) {
     console.log('[RSS] Servicio deshabilitado en config');
     return;
   }
 
   io = socketIo;
+
+  // Cargar GUIDs vistos desde MongoDB
+  try {
+    const existing = await SeenArticle.find({}, 'guid').lean();
+    existing.forEach(a => seenGuids.add(a.guid));
+    console.log(`[RSS] Cargados ${seenGuids.size} GUIDs de artículos vistos`);
+  } catch (err) {
+    console.error('[RSS] Error cargando GUIDs:', err.message);
+  }
+
   console.log(`📡 RSS Service iniciado (cada ${config.rss.pollIntervalMs / 60000} min, ${config.rss.feeds.length} feeds)`);
 
   pollFeeds();
@@ -54,10 +65,11 @@ async function pollFeeds() {
       const articles = await parseRSS(feedUrl);
       stats.articlesParsed += articles.length;
 
-      const newArticles = articles.filter(a => !seenArticles.has(a.guid));
+      const newArticles = articles.filter(a => !seenGuids.has(a.guid));
 
       for (const article of newArticles) {
-        seenArticles.set(article.guid, Date.now());
+        seenGuids.add(article.guid);
+        try { await SeenArticle.create({ guid: article.guid, title: article.title }); } catch (e) { /* duplicado */ }
 
         if (!isWorldCupRelated(article)) continue;
         stats.worldCupArticles++;
@@ -95,10 +107,19 @@ async function pollFeeds() {
     }
   }
 
-  // Limpiar entradas antiguas
-  const cutoff = Date.now() - MAX_AGE_MS;
-  for (const [guid, ts] of seenArticles) {
-    if (ts < cutoff) seenArticles.delete(guid);
+  // Limpiar entradas antiguas de MongoDB
+  try {
+    const cutoff = new Date(Date.now() - MAX_AGE_MS);
+    const deleted = await SeenArticle.deleteMany({ seenAt: { $lt: cutoff } });
+    if (deleted.deletedCount > 0) {
+      console.log(`[RSS] Limpiados ${deleted.deletedCount} GUIDs antiguos`);
+      // Refrescar Set
+      const remaining = await SeenArticle.find({}, 'guid').lean();
+      seenGuids.clear();
+      remaining.forEach(a => seenGuids.add(a.guid));
+    }
+  } catch (err) {
+    console.error('[RSS] Error limpiando GUIDs:', err.message);
   }
 }
 
@@ -318,7 +339,7 @@ export function getRssStats() {
     pollIntervalMinutes: config.rss.pollIntervalMs / 60000,
     keywords: config.rss.worldCupKeywords,
     ...stats,
-    seenArticlesCount: seenArticles.size,
+    seenArticlesCount: seenGuids.size,
     dailyArticlesPending: dailyArticles.length,
     breakingFilter: 'Spain + World Cup + breaking',
     summaryFilter: 'World Cup relevant (no Spain filter)',
