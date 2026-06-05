@@ -9,13 +9,11 @@ async function initEmail() {
     const key = process.env.BREVO_API_KEY.trim();
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
+      'api-key': key,
     };
 
-    console.log(`📧 Brevo key starts with: ${key.substring(0, 8)}... (length: ${key.length})`);
-
     sendEmailFn = async ({ to, subject, html }) => {
-      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+      await axios.post('https://api.brevo.com/v3/smtp/email', {
         sender: { email: process.env.FROM_EMAIL, name: 'Predicción Mundial' },
         to: [{ email: to }],
         subject,
@@ -24,7 +22,6 @@ async function initEmail() {
         headers,
         timeout: 15000,
       });
-      console.log(`📧 Brevo email sent, status: ${response.status}`);
     };
     emailConfigured = true;
     console.log('📧 Email service: Brevo API');
