@@ -6,19 +6,30 @@ async function initEmail() {
   if (emailConfigured || sendEmailFn) return;
 
   if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {
+    const key = process.env.BREVO_API_KEY.trim();
+    // Brevo v3 API acepta api-key o Bearer token
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (key.startsWith('xkeysib')) {
+      headers['api-key'] = key;
+    } else {
+      headers['Authorization'] = `Bearer ${key}`;
+    }
+
+    console.log(`📧 Brevo key starts with: ${key.substring(0, 8)}... (length: ${key.length})`);
+
     sendEmailFn = async ({ to, subject, html }) => {
-      await axios.post('https://api.brevo.com/v3/smtp/email', {
+      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
         sender: { email: process.env.FROM_EMAIL, name: 'Predicción Mundial' },
         to: [{ email: to }],
         subject,
         htmlContent: html,
       }, {
-        headers: {
-          'api-key': process.env.BREVO_API_KEY,
-          'Content-Type': 'application/json',
-        },
+        headers,
         timeout: 15000,
       });
+      console.log(`📧 Brevo email sent, status: ${response.status}`);
     };
     emailConfigured = true;
     console.log('📧 Email service: Brevo API');
