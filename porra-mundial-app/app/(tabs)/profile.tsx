@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAuth, saveAuth, logout, setCurrentGroup } from '../../stores/authStore';
 import * as api from '../../services/api';
@@ -60,6 +60,13 @@ export default function ProfileScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+
+  // Admin Reset Member Password State
+  const [showAdminReset, setShowAdminReset] = useState(false);
+  const [groupMembers, setGroupMembers] = useState<{ name: string; email: string; userId: string }[]>([]);
+  const [selectedMember, setSelectedMember] = useState<{ name: string; email: string } | null>(null);
+  const [tempPassword, setTempPassword] = useState('PrediccionMundial');
+  const [resettingMember, setResettingMember] = useState(false);
 
   useEffect(() => {
     if (!auth || !auth.userId) {
@@ -380,6 +387,105 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* ADMIN: RESET MEMBER PASSWORD */}
+        {auth && auth.isAdmin && auth.currentGroup && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="shield-checkmark" size={22} color="#ef4444" />
+              <View style={{marginLeft: 12}}>
+                <Text style={styles.cardTitle}>{t('profile.reset_member_password')}</Text>
+                <Text style={styles.cardSubtitle}>{t('profile.reset_member_password_desc')}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.pinButton}
+              onPress={async () => {
+                try {
+                  const players = await api.getPlayers(auth.currentGroup);
+                  setGroupMembers(players || []);
+                  setShowAdminReset(true);
+                } catch (e: any) {
+                  Alert.alert('Error', e.message);
+                }
+              }}
+            >
+              <Text style={styles.pinButtonText}>Gestionar contraseñas</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* MODAL: Admin Reset Member Password */}
+        <Modal visible={showAdminReset} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>{t('profile.reset_member_password')}</Text>
+
+              <Text style={styles.label}>{t('profile.select_member')}</Text>
+              <ScrollView style={{maxHeight: 200}}>
+                {groupMembers.map((m, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.memberItem, selectedMember?.email === m.email && styles.memberItemActive]}
+                    onPress={() => setSelectedMember(m)}
+                  >
+                    <Text style={[styles.memberItemText, selectedMember?.email === m.email && styles.memberItemTextActive]}>
+                      {m.name} — {m.email}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <Text style={[styles.label, {marginTop: 12}]}>{t('profile.temporary_password')}</Text>
+              <TextInput
+                style={styles.input}
+                value={tempPassword}
+                onChangeText={setTempPassword}
+                secureTextEntry
+                placeholder="PrediccionMundial"
+                placeholderTextColor="#64748b"
+              />
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.pinButton, {flex: 1}]}
+                  onPress={() => {
+                    setShowAdminReset(false);
+                    setSelectedMember(null);
+                    setTempPassword('PrediccionMundial');
+                  }}
+                >
+                  <Text style={styles.pinButtonText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.saveButton, {flex: 1, marginLeft: 8}, resettingMember && styles.buttonDisabled]}
+                  disabled={!selectedMember || resettingMember}
+                  onPress={async () => {
+                    if (!selectedMember) return;
+                    setResettingMember(true);
+                    try {
+                      await api.adminResetMemberPassword(auth.userId, auth.currentGroup, selectedMember.email, tempPassword);
+                      Alert.alert(t('common.success'), t('profile.admin_reset_success', { password: tempPassword }));
+                      setShowAdminReset(false);
+                      setSelectedMember(null);
+                      setTempPassword('PrediccionMundial');
+                    } catch (e: any) {
+                      Alert.alert(t('common.error'), e.message);
+                    } finally {
+                      setResettingMember(false);
+                    }
+                  }}
+                >
+                  {resettingMember
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.saveButtonText}>Resetear</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         {/* CAMBIO DE CONTRASEÑA */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -499,4 +605,12 @@ const styles = StyleSheet.create({
   biometricRowActive: { borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)' },
   biometricText: { color: '#94a3b8', fontSize: 16, fontWeight: '600' },
   biometricTextActive: { color: '#10b981' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 24 },
+  modalContent: { backgroundColor: '#151a3a', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: '#1e2a5a' },
+  modalTitle: { color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 16, textAlign: 'center' },
+  modalActions: { flexDirection: 'row', marginTop: 16 },
+  memberItem: { padding: 14, borderRadius: 12, marginBottom: 4, backgroundColor: 'rgba(255,255,255,0.04)' },
+  memberItemActive: { backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: '#3b82f6' },
+  memberItemText: { color: '#94a3b8', fontSize: 14, fontWeight: '600' },
+  memberItemTextActive: { color: '#fff' },
 });

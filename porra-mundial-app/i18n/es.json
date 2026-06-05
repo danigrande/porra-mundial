@@ -51,7 +51,28 @@
     "bad_credentials": "Credenciales incorrectas",
     "register_error": "Error al registrarse",
     "footer": "Predicción Mundial 🏆 — Sin dinero real",
-    "apple_disclaimer": "* Apple Inc. no es patrocinador ni está involucrado de ninguna manera en esta aplicación o sus pronósticos."
+    "apple_disclaimer": "* Apple Inc. no es patrocinador ni está involucrado de ninguna manera en esta aplicación o sus pronósticos.",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "forgot_password_title": "Recuperar contraseña",
+    "forgot_password_subtitle": "Te ayudaremos a recuperar el acceso a tu cuenta",
+    "send_reset_code": "Enviar código de recuperación",
+    "sending": "Enviando...",
+    "check_email": "Te hemos enviado un código a {{email}}",
+    "enter_code": "Introduce el código de 6 dígitos",
+    "code_placeholder": "Código de 6 dígitos",
+    "new_password": "Nueva contraseña",
+    "confirm_new_password": "Confirmar nueva contraseña",
+    "reset_password": "Restablecer contraseña",
+    "password_reset_success": "¡Contraseña restablecida correctamente!",
+    "password_reset_success_msg": "Ahora puedes iniciar sesión con tu nueva contraseña",
+    "contact_admin": "Contacta con el administrador de tu grupo:",
+    "contact_admin_desc": "No hay servicio de email configurado. Pídele al administrador de tu grupo que te restablezca la contraseña.",
+    "admin_name": "{{name}} (Admin)",
+    "admin_email": "{{email}}",
+    "back_to_login": "Volver al inicio de sesión",
+    "code_sent": "Código enviado",
+    "token_expired": "El código ha expirado. Solicita uno nuevo.",
+    "reset_error": "Error al restablecer la contraseña"
   },
   "tabs": {
     "leaderboard": "Clasificación",
@@ -316,7 +337,12 @@
     "delete_title": "⚠️ ELIMINAR CUENTA",
     "delete_confirm": "¿Estás COMPLETAMENTE seguro? Esta acción no se puede deshacer y perderás todos tus puntos y predicciones.",
     "delete_action": "SÍ, BORRAR TODO",
-    "delete_error": "No se pudo eliminar la cuenta: "
+    "delete_error": "No se pudo eliminar la cuenta: ",
+    "reset_member_password": "Restablecer contraseña de miembro",
+    "reset_member_password_desc": "Asigna una nueva contraseña a un miembro del grupo",
+    "select_member": "Selecciona un miembro",
+    "temporary_password": "Contraseña temporal",
+    "admin_reset_success": "Contraseña restablecida a '{{password}}'. Compártela con el miembro."
   },
   "notifications": {
     "title": "Notificaciones",

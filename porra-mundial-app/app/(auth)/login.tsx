@@ -227,15 +227,21 @@ export default function LoginScreen() {
 
           {/* LOGIN FLOW - STEP 1 (Verify Email) */}
           {mode === 'login' && !emailVerified && (
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleVerifyEmail}
-              disabled={loading}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.buttonText}>{t('auth.next_arrow') || 'Siguiente →'}</Text>}
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleVerifyEmail}
+                disabled={loading}
+              >
+                {loading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.buttonText}>{t('auth.next_arrow') || 'Siguiente →'}</Text>}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.forgotLink} onPress={() => router.push('/(auth)/forgot-password')}>
+                <Text style={styles.forgotLinkText}>{t('auth.forgot_password')}</Text>
+              </TouchableOpacity>
+            </>
           )}
 
           {/* LOGIN FLOW - STEP 2 (Select Group & Enter Password) */}
@@ -537,6 +543,16 @@ const styles = StyleSheet.create({
   },
   groupPillTextActive: {
     color: '#fff',
+  },
+  forgotLink: {
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  forgotLinkText: {
+    color: '#3b82f6',
+    fontSize: 14,
+    fontWeight: '600',
   },
   footer: {
     color: '#555',

@@ -241,6 +241,32 @@ export async function updateProfile(userId: string, groupName: string, profile: 
   });
 }
 
+export async function forgotPassword(email: string) {
+  return apiFetch('/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token: string, code: string, newPassword: string) {
+  return apiFetch('/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, code, newPassword }),
+  });
+}
+
+export async function adminResetMemberPassword(
+  adminUserId: string,
+  groupName: string,
+  memberEmail: string,
+  newPassword?: string,
+) {
+  return apiFetch('/admin/reset-member-password', {
+    method: 'POST',
+    body: JSON.stringify({ adminUserId, groupName, memberEmail, newPassword }),
+  });
+}
+
 export async function changePassword(
   userId: string,
   oldPassword: string,
