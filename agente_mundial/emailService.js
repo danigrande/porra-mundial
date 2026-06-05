@@ -18,6 +18,14 @@ async function initEmail() {
       greetingTimeout: 10000,
       socketTimeout: 15000,
     });
+    try {
+      await transporter.verify();
+      emailConfigured = true;
+      console.log(`📧 Email service: SMTP (${process.env.SMTP_HOST})`);
+    } catch (err) {
+      console.error(`❌ Email SMTP verification failed: ${err.message}`);
+      return;
+    }
     sendEmailFn = async ({ to, subject, html }) => {
       await transporter.sendMail({
         from: `"Predicción Mundial" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
@@ -26,8 +34,6 @@ async function initEmail() {
         html,
       });
     };
-    emailConfigured = true;
-    console.log(`📧 Email service: SMTP (${process.env.SMTP_HOST})`);
   } else {
     console.log('📧 Email service: not configured — will use admin-contact fallback');
   }
