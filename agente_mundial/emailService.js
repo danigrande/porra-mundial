@@ -1,52 +1,27 @@
-import dns from 'dns';
+import axios from 'axios';
 let sendEmailFn = null;
 let emailConfigured = false;
 
 async function initEmail() {
   if (emailConfigured || sendEmailFn) return;
 
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    // Resolver IPv4 manualmente (Render no soporta IPv6)
-    let hostIp = process.env.SMTP_HOST;
-    try {
-      const addresses = await dns.promises.resolve4(process.env.SMTP_HOST);
-      if (addresses.length > 0) {
-        hostIp = addresses[0];
-        console.log(`📧 Resuelto ${process.env.SMTP_HOST} → ${hostIp} (IPv4)`);
-      }
-    } catch (e) {
-      console.warn(`📧 No se pudo resolver IPv4 para ${process.env.SMTP_HOST}: ${e.message}`);
-    }
-
-    const nodemailer = await import('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: hostIp,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    });
-    try {
-      await transporter.verify();
-      emailConfigured = true;
-      console.log(`📧 Email service: SMTP (${process.env.SMTP_HOST})`);
-    } catch (err) {
-      console.error(`❌ Email SMTP verification failed: ${err.message}`);
-      return;
-    }
+  if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {
     sendEmailFn = async ({ to, subject, html }) => {
-      await transporter.sendMail({
-        from: `"Predicción Mundial" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
-        to,
+      await axios.post('https://api.brevo.com/v3/smtp/email', {
+        sender: { email: process.env.FROM_EMAIL, name: 'Predicción Mundial' },
+        to: [{ email: to }],
         subject,
-        html,
+        htmlContent: html,
+      }, {
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000,
       });
     };
+    emailConfigured = true;
+    console.log('📧 Email service: Brevo API');
   } else {
     console.log('📧 Email service: not configured — will use admin-contact fallback');
   }
