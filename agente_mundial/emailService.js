@@ -1,3 +1,4 @@
+import dns from 'dns';
 let sendEmailFn = null;
 let emailConfigured = false;
 
@@ -5,9 +6,21 @@ async function initEmail() {
   if (emailConfigured || sendEmailFn) return;
 
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    // Resolver IPv4 manualmente (Render no soporta IPv6)
+    let hostIp = process.env.SMTP_HOST;
+    try {
+      const addresses = await dns.promises.resolve4(process.env.SMTP_HOST);
+      if (addresses.length > 0) {
+        hostIp = addresses[0];
+        console.log(`📧 Resuelto ${process.env.SMTP_HOST} → ${hostIp} (IPv4)`);
+      }
+    } catch (e) {
+      console.warn(`📧 No se pudo resolver IPv4 para ${process.env.SMTP_HOST}: ${e.message}`);
+    }
+
     const nodemailer = await import('nodemailer');
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host: hostIp,
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
@@ -17,7 +30,6 @@ async function initEmail() {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
-      family: 4,
     });
     try {
       await transporter.verify();
