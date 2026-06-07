@@ -304,7 +304,7 @@ ${instruction}`;
       try {
         console.log('[Groq] Fallback a HuggingFace Inference...');
         const stream = hf.chatCompletionStream({
-          model: 'NousResearch/Hermes-2-Pro-Llama-3-8B',
+          model: 'Qwen/Qwen2.5-7B-Instruct',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage },
