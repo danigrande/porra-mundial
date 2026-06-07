@@ -101,6 +101,15 @@ export default function PredictionsScreen() {
     const koPhase = state?.knockoutBracket?.find((kb: any) => kb.id === selectedGroup);
     if (koPhase) {
       return koPhase.matches.map((mId: number) => {
+        const fromBracket = state?.bracketMatches?.[mId];
+        if (fromBracket) {
+          return {
+            id: `ko_${mId}`,
+            team1: tTeam(fromBracket[0]),
+            team2: tTeam(fromBracket[1]),
+            isEditable: state?.unlocks?.includes(koPhase.id) ?? false
+          };
+        }
         const pairing = BRACKET_MATCHES[mId];
         if (pairing) {
           return {
