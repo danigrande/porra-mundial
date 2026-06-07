@@ -1185,7 +1185,6 @@ export default function ChatScreen() {
         keyExtractor={item => item._id}
         renderItem={renderMessage}
         contentContainerStyle={styles.listContent}
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         onScrollToIndexFailed={info => {
@@ -1194,6 +1193,10 @@ export default function ChatScreen() {
             flatListRef.current?.scrollToIndex({ index: info.index, animated: false, viewPosition: 0 });
           });
         }}
+        removeClippedSubviews={true}
+        windowSize={5}
+        maxToRenderPerBatch={15}
+        initialNumToRender={12}
       />
 
       {showUnreadMarker && (
@@ -1502,7 +1505,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0e27' },
+  container: { flex: 1, backgroundColor: '#0a0e27', overflow: 'hidden' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0e27' },
   listContent: { padding: 16, paddingBottom: 24 },
   dateSeparator: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
