@@ -65,6 +65,13 @@ app.use(express.json()); // Permitir body en JSON para la nueva API
 // Servir archivos estáticos
 app.use('/uploads', express.static(uploadDir));
 
+// Servir dev dashboard desde el directorio raíz del proyecto
+const projectRoot = path.resolve(__dirname, '..');
+app.use('/dev-dashboard', express.static(projectRoot, {
+  index: 'dev_dashboard.html',
+  extensions: ['html', 'js', 'css']
+}));
+
 // Endpoint de subida de archivos
 app.post('/api/upload', upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ status: 'error', message: 'No se subió ningún archivo' });

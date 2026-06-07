@@ -47,6 +47,26 @@ async function devFetch(endpoint) {
   return res.json();
 }
 
+async function devFetchPost(endpoint, body) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-dev-key': DEV_KEY },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({ error: res.statusText })); throw new Error(err.error || `HTTP ${res.status}`); }
+  return res.json();
+}
+
+async function devFetchPut(endpoint, body) {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-dev-key': DEV_KEY },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({ error: res.statusText })); throw new Error(err.error || `HTTP ${res.status}`); }
+  return res.json();
+}
+
 // ==========================================
 // TABS
 // ==========================================
@@ -55,7 +75,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-  const tabs = ['health', 'logs', 'rag', 'rss', 'websearch', 'groups', 'users', 'usage'];
+  const tabs = ['health', 'logs', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'usage'];
   const idx = tabs.indexOf(name);
   document.querySelectorAll('.tab')[idx]?.classList.add('active');
   document.getElementById(`panel-${name}`)?.classList.add('active');
@@ -67,6 +87,8 @@ function switchTab(name) {
   if (name === 'users') loadUsers();
   if (name === 'rss') loadRssStats();
   if (name === 'websearch') loadWebSearchStats();
+  if (name === 'feedback') loadFeedback();
+  if (name === 'prds') loadPRDs();
   if (name === 'usage') loadUsage();
 }
 
@@ -829,6 +851,349 @@ async function loadWebSearchStats() {
   } catch (e) {
     document.getElementById('websearch-cards').innerHTML = `<div class="card"><div class="card-value red">ERROR</div><div class="card-sub">${e.message}</div></div>`;
   }
+}
+
+// ==========================================
+// FEEDBACK PANEL
+// ==========================================
+
+let currentFeedbackPage = 1;
+
+async function loadFeedback() {
+  const priority = document.getElementById('filter-fb-priority').value;
+  const type = document.getElementById('filter-fb-type').value;
+  const analyzed = document.getElementById('filter-fb-analyzed').value;
+
+  let query = `?page=${currentFeedbackPage}&limit=30`;
+  if (priority) query += `&priority=${priority}`;
+  if (type) query += `&type=${type}`;
+  if (analyzed) query += `&analyzed=${analyzed}`;
+
+  const container = document.getElementById('feedback-table-body');
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando feedback...</div>';
+
+  try {
+    const data = await devFetch(`/feedback${query}`);
+
+    if (!data.feedback.length) {
+      container.innerHTML = '<div class="loading">No hay feedback de usuarios todavía.</div>';
+      document.getElementById('feedback-pagination').innerHTML = '';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Fecha</th><th>Usuario</th><th>Tipo</th><th>Prioridad</th><th>Asunto</th><th>Votos</th><th>Acciones</th></tr></thead><tbody>';
+
+    data.feedback.forEach(fb => {
+      const time = new Date(fb.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const typeBadge = `<span class="badge badge-${fb.type}">${fb.type}</span>`;
+      const priorityBadge = getPriorityBadge(fb.priority);
+      const analyzed = fb.analyzedAt ? '✅' : '⏳';
+
+      html += `<tr onclick="openFeedbackDetail('${fb._id}')">
+        <td style="white-space:nowrap">${time}</td>
+        <td>${escapeHtml(fb.userName)}</td>
+        <td>${typeBadge}</td>
+        <td>${priorityBadge} ${analyzed}</td>
+        <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${escapeHtml(fb.subject)}</td>
+        <td>${fb.voteCount}</td>
+        <td>
+          <button class="btn-sm" onclick="event.stopPropagation(); analyzeFeedback('${fb._id}')" style="background:var(--accent-cyan)" title="Analizar con LangFlow">🤖</button>
+          <button class="btn-sm" onclick="event.stopPropagation(); generatePRD('${fb._id}')" style="background:var(--accent-purple)" title="Generar PRD">📄</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    const p = data.pagination;
+    document.getElementById('feedback-pagination').innerHTML = `
+      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentFeedbackPage--; loadFeedback()">← Prev</button>
+      <span class="page-info">${p.page} / ${p.pages} (${p.total} total)</span>
+      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentFeedbackPage++; loadFeedback()">Next →</button>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function openFeedbackDetail(id) {
+  const modal = document.getElementById('log-modal');
+  const body = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  modal.classList.add('show');
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando detalle...</div>';
+  title.textContent = '💬 Detalle de Feedback';
+
+  try {
+    // Get feedback data
+    const data = await devFetch(`/feedback?limit=1`);
+    const fb = data.feedback.find(f => f._id === id);
+    if (!fb) { body.innerHTML = '<div class="loading">Feedback no encontrado</div>'; return; }
+
+    const time = new Date(fb.createdAt).toLocaleString('es-ES');
+
+    body.innerHTML = `
+      <div style="margin-bottom:1rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap">
+        <span class="badge badge-${fb.type}">${fb.type}</span>
+        ${getPriorityBadge(fb.priority)}
+        <span style="color:var(--text-muted);font-size:0.8rem">${fb.userName} · ${time}</span>
+        <span style="color:var(--text-muted);font-size:0.8rem">🗳️ ${fb.voteCount} votos</span>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div class="prompt-label">Asunto</div>
+        <div style="font-size:1.1rem;font-weight:600;margin-top:0.3rem">${escapeHtml(fb.subject)}</div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div class="prompt-label">Detalle</div>
+        <div class="prompt-content" style="max-height:none;white-space:pre-wrap">${escapeHtml(fb.detail)}</div>
+      </div>
+      ${fb.analyzedAt ? `
+        <div style="margin-bottom:1rem">
+          <div class="prompt-label">Análisis (LangFlow) <small style="color:var(--text-muted);font-weight:normal">· ${new Date(fb.analyzedAt).toLocaleString('es-ES')}</small></div>
+          <div class="prompt-content system" style="max-height:none;white-space:pre-wrap">${escapeHtml(fb.analysis || 'Sin análisis')}</div>
+        </div>
+        <div style="margin-bottom:1rem">
+          <div class="prompt-label">Razón de prioridad</div>
+          <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.8rem;font-size:0.85rem">${escapeHtml(fb.priorityReason || '—')}</div>
+        </div>
+      ` : '<div style="margin-bottom:1rem;color:var(--text-muted);font-style:italic">⏳ Pendiente de análisis por LangFlow</div>'}
+
+      <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap">
+        ${!fb.analyzedAt ? `<button class="btn-sm" onclick="analyzeFeedback('${fb._id}')" style="background:var(--accent-cyan)">🤖 Analizar ahora</button>` : ''}
+        <button class="btn-sm" onclick="editFeedbackPriority('${fb._id}')" style="background:var(--accent-amber)">✏️ Editar prioridad</button>
+        <button class="btn-sm" onclick="generatePRD('${fb._id}')" style="background:var(--accent-purple)">📄 Generar PRD</button>
+      </div>
+    `;
+  } catch (e) {
+    body.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function analyzeFeedback(id) {
+  try {
+    const result = await devFetchPost(`/feedback/${id}/analyze`, {});
+    alert(`✅ Feedback analizado\nPrioridad: ${result.feedback.priority}`);
+    loadFeedback();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function analyzeAllFeedback() {
+  if (!confirm('¿Analizar todo el feedback pendiente con LangFlow? Puede tomar varios segundos.')) return;
+  try {
+    const result = await devFetchPost('/feedback/analyze-all', {});
+    alert(`✅ ${result.analyzed} feedbacks analizados`);
+    loadFeedback();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function editFeedbackPriority(id) {
+  const newPriority = prompt('Nueva prioridad (P0, P1, P2, P3, P-PENDING):');
+  if (!newPriority) return;
+  try {
+    await devFetchPut(`/feedback/${id}`, { priority: newPriority.toUpperCase() });
+    openFeedbackDetail(id);
+    loadFeedback();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function generatePRD(feedbackId) {
+  try {
+    const result = await devFetchPost(`/prds/generate/${feedbackId}`, {});
+    alert(`✅ PRD generado: "${result.prd.title}"`);
+    switchTab('prds');
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+// ==========================================
+// PRDs PANEL
+// ==========================================
+
+let currentPRDPage = 1;
+
+async function loadPRDs() {
+  const status = document.getElementById('filter-prd-status').value;
+  const priority = document.getElementById('filter-prd-priority').value;
+
+  let query = `?page=${currentPRDPage}&limit=30`;
+  if (status) query += `&status=${status}`;
+  if (priority) query += `&priority=${priority}`;
+
+  const container = document.getElementById('prds-table-body');
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando PRDs...</div>';
+
+  try {
+    const data = await devFetch(`/prds${query}`);
+
+    if (!data.prds.length) {
+      container.innerHTML = '<div class="loading">No hay PRDs generados todavía. Analiza feedback y genera PRDs desde la pestaña 💬 Feedback.</div>';
+      document.getElementById('prds-pagination').innerHTML = '';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Fecha</th><th>Título</th><th>Prioridad</th><th>Estado</th><th>Feedback</th><th>Acciones</th></tr></thead><tbody>';
+
+    data.prds.forEach(prd => {
+      const time = new Date(prd.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const statusBadge = getStatusBadge(prd.status);
+      const fbSubject = prd.feedbackId?.subject || '—';
+
+      html += `<tr onclick="openPRDDetail('${prd._id}')">
+        <td style="white-space:nowrap">${time}</td>
+        <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap"><strong>${escapeHtml(prd.title)}</strong></td>
+        <td>${getPriorityBadge(prd.priority)}</td>
+        <td>${statusBadge}</td>
+        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;font-size:0.75rem">${escapeHtml(fbSubject)}</td>
+        <td>
+          <button class="btn-sm" onclick="event.stopPropagation(); approvePRD('${prd._id}')" style="background:var(--accent-green)" title="Aprobar">✅</button>
+          <button class="btn-sm" onclick="event.stopPropagation(); rejectPRD('${prd._id}')" style="background:var(--accent-red)" title="Rechazar">❌</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    const p = data.pagination;
+    document.getElementById('prds-pagination').innerHTML = `
+      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentPRDPage--; loadPRDs()">← Prev</button>
+      <span class="page-info">${p.page} / ${p.pages} (${p.total} total)</span>
+      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentPRDPage++; loadPRDs()">Next →</button>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function openPRDDetail(id) {
+  const modal = document.getElementById('log-modal');
+  const body = document.getElementById('modal-body');
+  const title = document.getElementById('modal-title');
+  modal.classList.add('show');
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando detalle...</div>';
+  title.textContent = '📄 Detalle de PRD';
+
+  try {
+    const data = await devFetch(`/prds?limit=1`);
+    const prd = data.prds.find(p => p._id === id);
+    if (!prd) { body.innerHTML = '<div class="loading">PRD no encontrado</div>'; return; }
+
+    const time = new Date(prd.createdAt).toLocaleString('es-ES');
+
+    body.innerHTML = `
+      <div style="margin-bottom:1rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap">
+        ${getStatusBadge(prd.status)}
+        ${getPriorityBadge(prd.priority)}
+        <span style="color:var(--text-muted);font-size:0.8rem">${time}</span>
+      </div>
+      <h2 style="margin-bottom:1.5rem;font-size:1.3rem">${escapeHtml(prd.title)}</h2>
+
+      <div class="prompt-block">
+        <div class="prompt-label">Problema</div>
+        <div class="prompt-content" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.problemStatement || '—')}</div>
+      </div>
+      <div class="prompt-block">
+        <div class="prompt-label">Solución Propuesta</div>
+        <div class="prompt-content system" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.proposedSolution || '—')}</div>
+      </div>
+      <div class="prompt-block">
+        <div class="prompt-label">Impacto en Usuarios</div>
+        <div class="prompt-content" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.userImpact || '—')}</div>
+      </div>
+      <div class="prompt-block">
+        <div class="prompt-label">Notas Técnicas</div>
+        <div class="prompt-content" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.technicalNotes || '—')}</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">Criterios de Aceptación</div>
+        <div class="prompt-content" style="max-height:none">
+          ${prd.acceptanceCriteria?.length ? prd.acceptanceCriteria.map((c, i) => `${i + 1}. ${escapeHtml(c)}`).join('\n') : '—'}
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">Archivos Sugeridos</div>
+        <div class="prompt-content" style="max-height:none">
+          ${prd.suggestedFiles?.length ? prd.suggestedFiles.map(f => `📄 ${escapeHtml(f)}`).join('\n') : '—'}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap">
+        ${prd.status === 'draft' ? `
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','approved')" style="background:var(--accent-green)">✅ Aprobar</button>
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','rejected')" style="background:var(--accent-red)">❌ Rechazar</button>
+        ` : ''}
+        ${prd.status === 'approved' ? `
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','implemented')" style="background:var(--accent-blue)">✅ Marcar implementado</button>
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','rejected')" style="background:var(--accent-red)">❌ Rechazar</button>
+        ` : ''}
+        <button class="btn-sm" onclick="editPRDFields('${prd._id}')" style="background:var(--accent-amber)">✏️ Editar</button>
+      </div>
+    `;
+  } catch (e) {
+    body.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function updatePRDStatus(id, status) {
+  try {
+    await devFetchPut(`/prds/${id}`, { status });
+    openPRDDetail(id);
+    loadPRDs();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function approvePRD(id) {
+  if (!confirm('¿Aprobar este PRD para implementación?')) return;
+  await updatePRDStatus(id, 'approved');
+}
+
+async function rejectPRD(id) {
+  if (!confirm('¿Rechazar este PRD?')) return;
+  await updatePRDStatus(id, 'rejected');
+}
+
+async function editPRDFields(id) {
+  // Simple editing via prompt - for full editing we'd need a richer UI
+  const field = prompt('Campo a editar (title, problemStatement, proposedSolution, userImpact, technicalNotes):');
+  if (!field) return;
+  const value = prompt(`Nuevo valor para "${field}":`);
+  if (!value) return;
+
+  try {
+    await devFetchPut(`/prds/${id}`, { [field]: value });
+    openPRDDetail(id);
+    loadPRDs();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+// ==========================================
+// PRIORITY / STATUS BADGE HELPERS
+// ==========================================
+
+function getPriorityBadge(priority) {
+  const colors = { 'P0': 'red', 'P1': 'amber', 'P2': 'cyan', 'P3': 'green', 'P-PENDING': 'purple' };
+  const color = colors[priority] || 'purple';
+  return `<span class="badge badge-priority" style="background:var(--accent-${color}-dim);color:var(--accent-${color})">${priority}</span>`;
+}
+
+function getStatusBadge(status) {
+  const colors = { 'draft': 'amber', 'approved': 'green', 'rejected': 'red', 'implemented': 'blue' };
+  const color = colors[status] || 'purple';
+  return `<span class="badge badge-status" style="background:var(--accent-${color}-dim);color:var(--accent-${color})">${status}</span>`;
 }
 
 // ==========================================

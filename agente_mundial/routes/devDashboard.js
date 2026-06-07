@@ -14,6 +14,9 @@ import { Prediction } from '../models/Prediction.js';
 import { BlockedUser } from '../models/BlockedUser.js';
 import { Report } from '../models/Report.js';
 import { PushToken } from '../models/PushToken.js';
+import { Feedback } from '../models/Feedback.js';
+import { PRD } from '../models/PRD.js';
+import { runLangFlow, extractPRDFromAnalysis } from '../langflowService.js';
 import config from '../config.js';
 
 const router = express.Router();
@@ -654,6 +657,188 @@ router.get('/rss-stats', async (req, res) => {
 router.get('/websearch-stats', async (req, res) => {
   try {
     res.json(getWebSearchStats());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// FEEDBACK — Listar feedback con filtros
+// ==========================================
+router.get('/feedback', async (req, res) => {
+  try {
+    const { priority, type, analyzed, page = 1, limit = 50 } = req.query;
+    const filter = {};
+    if (priority) filter.priority = priority;
+    if (type) filter.type = type;
+    if (analyzed === 'true') filter.analyzedAt = { $ne: null };
+    if (analyzed === 'false') filter.analyzedAt = null;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const [feedback, total] = await Promise.all([
+      Feedback.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      Feedback.countDocuments(filter)
+    ]);
+
+    res.json({
+      feedback,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// FEEDBACK — Análisis individual con LangFlow
+// ==========================================
+router.post('/feedback/:id/analyze', async (req, res) => {
+  try {
+    const fb = await Feedback.findById(req.params.id);
+    if (!fb) return res.status(404).json({ error: 'Feedback no encontrado' });
+
+    const result = await runLangFlow(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
+
+    fb.analysis = result.raw || result.parsed?.analysis || '';
+    fb.priority = result.parsed?.priority || 'P-PENDING';
+    fb.priorityReason = result.parsed?.reason || '';
+    fb.langflowRunId = result.raw?.substring(0, 50) || '';
+    fb.analyzedAt = new Date();
+    await fb.save();
+
+    res.json({ feedback: fb, analysis: result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// FEEDBACK — Análisis batch (todos los no analizados)
+// ==========================================
+router.post('/feedback/analyze-all', async (req, res) => {
+  try {
+    const unanalyzed = await Feedback.find({ analyzedAt: null }).sort({ voteCount: -1 });
+    const results = [];
+
+    for (const fb of unanalyzed) {
+      const result = await runLangFlow(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
+      fb.analysis = result.raw || result.parsed?.analysis || '';
+      fb.priority = result.parsed?.priority || 'P-PENDING';
+      fb.priorityReason = result.parsed?.reason || '';
+      fb.analyzedAt = new Date();
+      await fb.save();
+      results.push({ feedbackId: fb._id, priority: fb.priority });
+    }
+
+    res.json({ analyzed: results.length, results });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// FEEDBACK — Editar campos de análisis manualmente
+// ==========================================
+router.put('/feedback/:id', async (req, res) => {
+  try {
+    const { priority, priorityReason, analysis } = req.body;
+    const fb = await Feedback.findById(req.params.id);
+    if (!fb) return res.status(404).json({ error: 'Feedback no encontrado' });
+
+    if (priority) fb.priority = priority;
+    if (priorityReason !== undefined) fb.priorityReason = priorityReason;
+    if (analysis !== undefined) fb.analysis = analysis;
+    await fb.save();
+
+    res.json({ feedback: fb });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// PRD — Listar PRDs
+// ==========================================
+router.get('/prds', async (req, res) => {
+  try {
+    const { status, priority, page = 1, limit = 50 } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (priority) filter.priority = priority;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const [prds, total] = await Promise.all([
+      PRD.find(filter).populate('feedbackId', 'subject type detail userName').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)),
+      PRD.countDocuments(filter)
+    ]);
+
+    res.json({ prds, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// PRD — Generar PRD desde un feedback analizado
+// ==========================================
+router.post('/prds/generate/:feedbackId', async (req, res) => {
+  try {
+    const fb = await Feedback.findById(req.params.feedbackId);
+    if (!fb) return res.status(404).json({ error: 'Feedback no encontrado' });
+    if (!fb.analyzedAt) return res.status(400).json({ error: 'El feedback debe analizarse antes de generar PRD' });
+
+    const analysisResult = await runLangFlow(`GENERATE PRD for: [${fb.priority}] ${fb.subject}: ${fb.detail}`, fb._id);
+    const extracted = await extractPRDFromAnalysis(analysisResult.raw);
+
+    const prdData = extracted || {
+      title: fb.subject,
+      problemStatement: fb.detail,
+      proposedSolution: '',
+      userImpact: '',
+      technicalNotes: '',
+      acceptanceCriteria: [],
+      suggestedFiles: [],
+      priority: fb.priority === 'P-PENDING' ? 'P2' : (fb.priority || 'P2'),
+    };
+
+    const prd = await PRD.create({
+      feedbackId: fb._id,
+      title: prdData.title,
+      priority: prdData.priority,
+      problemStatement: prdData.problemStatement,
+      proposedSolution: prdData.proposedSolution,
+      userImpact: prdData.userImpact,
+      technicalNotes: prdData.technicalNotes,
+      acceptanceCriteria: prdData.acceptanceCriteria,
+      suggestedFiles: prdData.suggestedFiles,
+      rawAnalysis: analysisResult.raw,
+      langflowRunId: analysisResult.raw?.substring(0, 50) || '',
+    });
+
+    fb.prdGenerated = true;
+    await fb.save();
+
+    res.json({ prd });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// PRD — Editar/Actualizar PRD (approve/reject/edit)
+// ==========================================
+router.put('/prds/:id', async (req, res) => {
+  try {
+    const allowed = ['title', 'status', 'priority', 'problemStatement', 'proposedSolution', 'userImpact', 'technicalNotes', 'acceptanceCriteria', 'suggestedFiles'];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    updates.updatedAt = new Date();
+
+    const prd = await PRD.findByIdAndUpdate(req.params.id, updates, { new: true });
+    if (!prd) return res.status(404).json({ error: 'PRD no encontrado' });
+    res.json({ prd });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

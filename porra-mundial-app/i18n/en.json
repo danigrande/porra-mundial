@@ -51,7 +51,28 @@
     "bad_credentials": "Incorrect credentials",
     "register_error": "Error signing up",
     "footer": "Global Cup Prediction 🏆 — No real money",
-    "apple_disclaimer": "* Apple Inc. is not a sponsor nor is it involved in any way in this application or its predictions."
+    "apple_disclaimer": "* Apple Inc. is not a sponsor nor is it involved in any way in this application or its predictions.",
+    "forgot_password": "Forgot your password?",
+    "forgot_password_title": "Recover password",
+    "forgot_password_subtitle": "We'll help you regain access to your account",
+    "send_reset_code": "Send recovery code",
+    "sending": "Sending...",
+    "check_email": "We've sent a code to {{email}}",
+    "enter_code": "Enter the 6-digit code",
+    "code_placeholder": "6-digit code",
+    "new_password": "New password",
+    "confirm_new_password": "Confirm new password",
+    "reset_password": "Reset password",
+    "password_reset_success": "Password reset successfully!",
+    "password_reset_success_msg": "You can now log in with your new password",
+    "contact_admin": "Contact your group administrator:",
+    "contact_admin_desc": "No email service is configured. Ask your group admin to reset your password.",
+    "admin_name": "{{name}} (Admin)",
+    "admin_email": "{{email}}",
+    "back_to_login": "Back to log in",
+    "code_sent": "Code sent",
+    "token_expired": "The code has expired. Request a new one.",
+    "reset_error": "Error resetting password"
   },
   "tabs": {
     "leaderboard": "Leaderboard",
@@ -337,7 +358,12 @@
     "delete_title": "⚠️ DELETE ACCOUNT",
     "delete_confirm": "Are you COMPLETELY sure? This action cannot be undone and you will lose all your points and predictions.",
     "delete_action": "YES, DELETE EVERYTHING",
-    "delete_error": "Could not delete the account: "
+    "delete_error": "Could not delete the account: ",
+    "reset_member_password": "Reset member password",
+    "reset_member_password_desc": "Assign a new password to a group member",
+    "select_member": "Select a member",
+    "temporary_password": "Temporary password",
+    "admin_reset_success": "Password reset to '{{password}}'. Share it with the member."
   },
   "notifications": {
     "title": "Notifications",

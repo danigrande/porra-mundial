@@ -10,6 +10,7 @@ import { Message } from '../models/Message.js';
 import { Reality } from '../models/Reality.js';
 import { Report } from '../models/Report.js';
 import { Feedback } from '../models/Feedback.js';
+import { PRD } from '../models/PRD.js';
 import { BlockedUser } from '../models/BlockedUser.js';
 import * as scoringEngine from '../scoringEngine.js';
 import * as groqEngine from '../groqEngine.js';
@@ -18,6 +19,8 @@ import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from '../shared_dat
 import { getTournamentState } from '../tournamentState.js';
 import { triggerAutoSimulationIfNeeded } from '../autoSimulator.js';
 import { adminAuth } from '../middleware.js';
+import crypto from 'crypto';
+import { sendResetCode, isEmailConfigured, ensureInit } from '../emailService.js';
 
 const router = express.Router();
 
@@ -572,7 +575,6 @@ router.post('/register', async (req, res) => {
         groups: [groupName] 
       });
     } else {
-      // Si el usuario ya existe, asegurar que tenga el grupo
       if (!user.groups || !user.groups.includes(groupName)) {
         user.groups.push(groupName);
         await user.save();
@@ -610,72 +612,147 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Registro — con email y password
-router.post('/register', async (req, res) => {
+// ==========================================
+// RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+
+// Solicitar código de recuperación
+router.post('/forgot-password', async (req, res) => {
   try {
-    const { playerName, email, password, groupName, isNewGroup } = req.body;
-    
-    if (!email || !email.includes('@')) {
-      return res.status(400).json(createResponse('error', null, 'El correo electrónico no es válido'));
-    }
-    if (!password || password.length < 8) {
-      return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json(createResponse('error', null, 'Email requerido'));
     }
 
-    // Hashear password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Buscar por email (identificador único)
-    const normalizedEmail = email.toLowerCase().trim();
-    let user = await User.findOne({ email: normalizedEmail });
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-       console.log(`✨ Creando nuevo usuario: ${playerName} (📧${normalizedEmail})`);
-       user = await User.create({ 
-         name: playerName, 
-         password: hashedPassword, 
-         email: normalizedEmail, 
-         groups: [groupName] 
-       });
-    } else {
-       // El email ya existe — añadir al nuevo grupo si no está
-       if (!user.groups.includes(groupName)) {
-           user.groups.push(groupName);
-           await user.save();
-       }
+      return res.json(createResponse('success', { method: 'none' }, 'Si el email existe, recibirás instrucciones'));
     }
 
-    if (isNewGroup) {
-      const existingGroup = await Group.findOne({ name: groupName });
-      if (existingGroup) return res.status(400).json(createResponse('error', null, 'El grupo ya existe'));
-      
-      const newGroup = await Group.create({ name: groupName, admin: user._id, members: [user._id] });
-      user.isAdminOf.push(groupName);
+    await ensureInit();
+
+    if (isEmailConfigured()) {
+      const code = crypto.randomInt(100000, 999999).toString();
+      const token = crypto.randomBytes(32).toString('hex');
+
+      user.resetToken = token;
+      user.resetCode = code;
+      user.resetTokenExpires = new Date(Date.now() + 3600000);
       await user.save();
+
+      try {
+        await sendResetCode(user.email, code);
+        console.log(`📧 Código de recuperación enviado a ${user.email}`);
+        res.json(createResponse('success', {
+          method: 'email',
+          email: user.email,
+          token,
+          codeLength: 6
+        }));
+      } catch (emailErr) {
+        console.error('❌ Error enviando email:', emailErr.message);
+        user.resetToken = null;
+        user.resetCode = null;
+        user.resetTokenExpires = null;
+        await user.save();
+        res.json(createResponse('success', { method: 'none' }, 'Si el email existe, recibirás instrucciones'));
+      }
     } else {
-       const group = await Group.findOne({ name: groupName });
-       if (group && !group.members.includes(user._id)) {
-           group.members.push(user._id);
-           await group.save();
-       }
+      const groupsData = [];
+      if (user.groups && user.groups.length > 0) {
+        for (const groupName of user.groups) {
+          const group = await Group.findOne({ name: groupName }).populate('admin', 'name email');
+          if (group && group.admin) {
+            groupsData.push({
+              groupName: group.name,
+              admin: { name: group.admin.name, email: group.admin.email }
+            });
+          }
+        }
+      }
+      if (groupsData.length === 0) {
+        return res.json(createResponse('success', { method: 'none' }, 'Si el email existe, recibirás instrucciones'));
+      }
+      res.json(createResponse('success', { method: 'admin', groups: groupsData }));
     }
-
-    // Notificar cambios en el grupo por Socket.IO
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('group-updated', { groupName });
-    }
-
-    res.json(createResponse('success', { name: user.name, userId: user._id.toString(), email: user.email }, 'Usuario registrado con éxito'));
   } catch (error) {
-    console.error('❌ Error en POST /register:', error);
-    if (error.code === 11000) {
-      return res.status(400).json(createResponse('error', null, 'Este correo electrónico ya está registrado'));
-    }
+    console.error('❌ Error en POST /forgot-password:', error);
     res.status(500).json(createResponse('error', null, error.message));
   }
 });
 
+// Restablecer contraseña con código (el frontend envía token + code + newPassword)
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, code, newPassword } = req.body;
 
+    if (!token || !code || !newPassword) {
+      return res.status(400).json(createResponse('error', null, 'Token, código y nueva contraseña son requeridos'));
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
+    }
+
+    const user = await User.findOne({
+      resetToken: token,
+      resetCode: code,
+      resetTokenExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json(createResponse('error', null, 'Código inválido o expirado. Solicita uno nuevo.'));
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetToken = null;
+    user.resetCode = null;
+    user.resetTokenExpires = null;
+    await user.save();
+
+    console.log(`🔐 Contraseña restablecida para ${user.name} (📧${user.email})`);
+    res.json(createResponse('success', null, 'Contraseña restablecida correctamente'));
+  } catch (error) {
+    console.error('❌ Error en POST /reset-password:', error);
+    res.status(500).json(createResponse('error', null, error.message));
+  }
+});
+
+// Admin resetea contraseña de un miembro del grupo
+router.post('/admin/reset-member-password', async (req, res) => {
+  try {
+    const { adminUserId, groupName, memberEmail, newPassword } = req.body;
+
+    if (!adminUserId || !groupName || !memberEmail) {
+      return res.status(400).json(createResponse('error', null, 'Faltan campos obligatorios'));
+    }
+
+    const admin = await User.findById(adminUserId);
+    if (!admin || !admin.isAdminOf || !admin.isAdminOf.includes(groupName)) {
+      return res.status(403).json(createResponse('error', null, 'No eres administrador de este grupo'));
+    }
+
+    const member = await User.findOne({ email: memberEmail.toLowerCase().trim(), groups: groupName });
+    if (!member) {
+      return res.status(404).json(createResponse('error', null, 'Usuario no encontrado en este grupo'));
+    }
+
+    const tempPassword = newPassword || 'PrediccionMundial';
+    if (tempPassword.length < 8) {
+      return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
+    }
+
+    member.password = await bcrypt.hash(tempPassword, 10);
+    await member.save();
+
+    console.log(`🔧 Admin ${admin.name} reseteó contraseña de ${member.name} en ${groupName}`);
+    res.json(createResponse('success', { newPassword: tempPassword }, 'Contraseña del miembro restablecida correctamente'));
+  } catch (error) {
+    console.error('❌ Error en POST /admin/reset-member-password:', error);
+    res.status(500).json(createResponse('error', null, error.message));
+  }
+});
+
+// Registro — con email y password
 // ==========================================
 // RUTAS DE GRUPOS Y REGLAS
 // ==========================================
@@ -1597,6 +1674,20 @@ router.post('/feedback/:id/vote', async (req, res) => {
         res.json(createResponse('success', { voteCount: feedback.voteCount, voted: idx === -1 }));
     } catch (error) {
         console.error('❌ Error en POST /feedback/:id/vote:', error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
+// ==========================================
+// PUBLIC — Obtener PRDs aprobados (para el coding agent)
+// ==========================================
+router.get('/prds/approved', async (req, res) => {
+    try {
+        const prds = await PRD.find({ status: 'approved' })
+            .populate('feedbackId', 'subject type detail userName')
+            .sort({ priority: 1, createdAt: -1 });
+        res.json(createResponse('success', prds));
+    } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
