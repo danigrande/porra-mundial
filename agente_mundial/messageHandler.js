@@ -13,7 +13,16 @@ import { Group } from './models/Group.js';
 
 // Cache organizada por GroupName
 const caches = {};
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+const CACHE_TTL = 30 * 1000; // 30 segundos — datos casi en tiempo real
+
+/**
+ * Invalida el cache de todos los grupos (para forzar refresco tras cambios de realidad).
+ */
+export function invalidateAllCaches() {
+  const keys = Object.keys(caches);
+  keys.forEach(k => delete caches[k]);
+  console.log(`🧹 Cache invalidado para ${keys.length} grupo(s)`);
+}
 
 // Cache de grupos (para no hacer query cada mensaje)
 const groupCache = new Map();

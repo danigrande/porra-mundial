@@ -18,6 +18,7 @@ import * as apiFootballService from '../apiFootballService.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from '../shared_data.js';
 import { getTournamentState } from '../tournamentState.js';
 import { triggerAutoSimulationIfNeeded } from '../autoSimulator.js';
+import { invalidateAllCaches } from '../messageHandler.js';
 import { adminAuth } from '../middleware.js';
 import crypto from 'crypto';
 import { sendResetCode, sendWelcomeEmail, isEmailConfigured, ensureInit } from '../emailService.js';
@@ -80,6 +81,10 @@ router.post('/reality', async (req, res) => {
             { results: mergedResults, updatedAt: new Date() },
             { upsert: true }
         );
+
+        // Forzar refresco del cache del agente con los nuevos datos
+        invalidateAllCaches();
+
         res.json(createResponse('success'));
     } catch (error) {
         res.status(500).json(createResponse('error', null, error.message));
