@@ -4,11 +4,13 @@ import { useRouter, Stack } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function ResultsManagement() {
   const router = useRouter();
   const auth = getAuth();
   const groupName = auth?.currentGroup || '';
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [reality, setReality] = useState<any>({});
@@ -67,7 +69,12 @@ export default function ResultsManagement() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Control de Resultados', headerTintColor: '#fff', headerStyle: { backgroundColor: '#0a0e27' } }} />
+      <Stack.Screen options={{ title: t('admin.results_title'), headerTintColor: '#fff', headerStyle: { backgroundColor: '#0a0e27' }, headerLeft: () => (
+        <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 17 }}>{t('common.back')}</Text>
+        </TouchableOpacity>
+      ) }} />
       
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.infoBox}>

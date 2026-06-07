@@ -15,7 +15,10 @@
     "tbd": "TBD",
     "points": "pts",
     "match": "Match",
-    "to_be_defined": "To be defined"
+    "to_be_defined": "To be defined",
+    "delete": "Delete",
+    "remove_confirm": "Are you sure you want to remove",
+    "predictions_lost": "Their predictions will be deleted."
   },
   "auth": {
     "title": "Global Cup Prediction",
@@ -72,7 +75,11 @@
     "back_to_login": "Back to log in",
     "code_sent": "Code sent",
     "token_expired": "The code has expired. Request a new one.",
-    "reset_error": "Error resetting password"
+    "reset_error": "Error resetting password",
+    "register_hint": "Create a new group. You'll be the admin.",
+    "join_existing_hint": "Already have a group? Ask the admin to add you from member management.",
+    "group_exists": "The group \"{{name}}\" already exists. To join, ask the admin to add you.",
+    "biometric_warning": "Biometrics were enabled but auto-login won't be available. Use Face ID / fingerprint when opening the app."
   },
   "tabs": {
     "leaderboard": "Leaderboard",
@@ -390,6 +397,7 @@
     "subtitle_prefix": "Full management of",
     "scoring_title": "Scoring Rules",
     "scoring_desc": "Configure how much each correct pick is worth and the game mode.",
+    "results_title": "Results Control",
     "members_title": "Member Management",
     "members_desc": "Add players, remove members or link WhatsApp.",
     "reset_title": "Test Zone: Reset",
@@ -401,7 +409,38 @@
     "reset_error": "Could not reset the group.",
     "restricted": "Restricted Access",
     "restricted_desc": "Only group administrators can view this section.",
+    "add_player": "Add Player",
+    "player_name_placeholder": "Player name",
+    "player_email_placeholder": "Player email",
+    "random_password": "Generate random password",
+    "password_placeholder": "Password (min. 8 characters)",
+    "add_to_group": "Add to Group",
+    "members_count": "Current Members ({{count}})",
+    "you_admin": "You (Admin)",
+    "add_success": "Player {{name}} added.",
+    "name_required": "Name is required",
+    "valid_email": "Please enter a valid email",
+    "password_length": "Password must be at least 8 characters",
+    "transfer_title": "Transfer Administration",
+    "transfer_confirm": "⚠️ Are you sure you want to transfer group admin to \"{{name}}\"?\n\nIf you accept, you will lose all your admin privileges.",
+    "transfer_button": "Transfer",
+    "transfer_success": "👑 {{name}} is now the group admin.",
     "admin_footer": "You are the administrator of this group."
+  },
+  "password_change": {
+    "title": "Password change required",
+    "subtitle": "For security, you must change your password before continuing.",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "confirm_password": "Confirm New Password",
+    "current_required": "Enter your current password",
+    "length_error": "New password must be at least 8 characters",
+    "mismatch": "Passwords don't match",
+    "success": "Password updated successfully",
+    "button": "Change Password",
+    "old_placeholder": "Current password",
+    "new_placeholder": "Min. 8 characters",
+    "confirm_placeholder": "Repeat the password"
   },
   "not_found": {
     "title": "Oops!",

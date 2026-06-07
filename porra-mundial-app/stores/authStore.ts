@@ -16,6 +16,7 @@ export type AuthData = {
   groups: string[];
   isAdmin: boolean;
   biometricEnabled?: boolean;
+  mustChangePassword?: boolean;
 };
 
 let authData: AuthData | null = null;

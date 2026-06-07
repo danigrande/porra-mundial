@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from '../../i18n/i18n';
 
 export default function AdminScreen() {
   const auth = getAuth();
   const groupName = auth?.currentGroup || '';
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Redirigir si no es admin
   useEffect(() => {
@@ -115,7 +117,14 @@ export default function AdminScreen() {
   );
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <>
+      <Stack.Screen options={{ title: t('admin.scoring_title'), headerTintColor: '#fff', headerStyle: { backgroundColor: '#0a0e27' }, headerLeft: () => (
+        <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 17 }}>{t('common.back')}</Text>
+        </TouchableOpacity>
+      ) }} />
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll}>
         
         {/* Header */}
@@ -208,6 +217,7 @@ export default function AdminScreen() {
       </View>
 
     </KeyboardAvoidingView>
+    </>
   );
 }
 

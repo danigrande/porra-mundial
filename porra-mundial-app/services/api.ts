@@ -95,11 +95,10 @@ export async function register(
   email: string,
   password: string,
   groupName: string,
-  isNewGroup: boolean = false,
 ) {
   return apiFetch('/register', {
     method: 'POST',
-    body: JSON.stringify({ playerName, email, password, groupName, isNewGroup }),
+    body: JSON.stringify({ playerName, email, password, groupName }),
   });
 }
 
@@ -119,10 +118,21 @@ export async function getPlayers(groupName: string) {
   return apiFetch(`/groups/${encodeURIComponent(groupName)}/players`);
 }
 
-export async function addPlayer(groupName: string, playerName: string, email: string) {
+export async function addPlayer(groupName: string, playerName: string, email: string, password?: string) {
   return apiFetch(`/groups/${encodeURIComponent(groupName)}/players`, {
     method: 'POST',
-    body: JSON.stringify({ playerName, email }),
+    body: JSON.stringify({ playerName, email, password }),
+  });
+}
+
+export async function checkGroupExists(name: string) {
+  return apiFetch(`/groups/${encodeURIComponent(name)}/exists`);
+}
+
+export async function transferAdmin(groupName: string, requesterName: string, targetName: string) {
+  return apiFetch(`/groups/${encodeURIComponent(groupName)}/transfer-admin`, {
+    method: 'POST',
+    body: JSON.stringify({ requesterName, targetName }),
   });
 }
 

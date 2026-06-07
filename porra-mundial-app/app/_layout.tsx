@@ -123,11 +123,18 @@ export default function RootLayout() {
     if (!isReady) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const currentRoute = segments.join('/');
 
     if (!isLoggedIn && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isLoggedIn && inAuthGroup) {
-      router.replace('/(tabs)');
+      // Si el usuario debe cambiar su contraseña, forzar a esa pantalla
+      const auth = getAuth();
+      if (auth?.mustChangePassword && currentRoute !== '(auth)/force-password-change') {
+        router.replace('/(auth)/force-password-change');
+      } else {
+        router.replace('/(tabs)');
+      }
     }
   }, [isReady, isLoggedIn, segments]);
 
@@ -146,6 +153,7 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)/force-password-change" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
   );

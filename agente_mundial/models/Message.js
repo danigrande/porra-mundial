@@ -8,16 +8,7 @@ const messageSchema = new mongoose.Schema({
   type: { type: String, enum: ['text', 'image', 'audio', 'sticker', 'gif', 'file'], default: 'text' },
   mediaUrl: { type: String },
   isBot: { type: Boolean, default: false },
-  replyTo: {
-    type: {
-      messageId: { type: String },
-      senderName: { type: String },
-      text: { type: String },
-      type: { type: String },
-      mediaUrl: { type: String }
-    },
-    default: null
-  },
+  replyTo: { type: mongoose.Schema.Types.Mixed, default: null },
   reactions: { type: Map, of: [String], default: {} },
   edited: { type: Boolean, default: false },
   editedAt: { type: Date, default: null },

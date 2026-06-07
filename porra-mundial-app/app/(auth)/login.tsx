@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
   ScrollView, Linking,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as api from '../../services/api';
 import * as biometric from '../../services/biometric';
@@ -25,7 +26,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [name, setName]         = useState('');
   const [groupName, setGroupName] = useState('');
-  const [isNewGroup, setIsNewGroup] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // Login multi-step
@@ -70,6 +70,7 @@ export default function LoginScreen() {
     try {
       const result = await api.login(email.trim().toLowerCase(), password, groupName);
 
+      const mustChangePw = result.mustChangePassword || false;
       const authData = {
         userId: result.userId,
         email: email.trim().toLowerCase(),
@@ -78,9 +79,16 @@ export default function LoginScreen() {
         currentGroup: groupName,
         groups: availableGroups,
         isAdmin: result.isAdmin,
+        mustChangePassword: mustChangePw,
       };
 
       connect(email.trim().toLowerCase(), password);
+
+      if (mustChangePw) {
+        await saveAuth(authData);
+        router.replace('/(auth)/force-password-change');
+        return;
+      }
 
       const bioAvailable = await biometric.isAvailable();
       if (bioAvailable) {
@@ -102,7 +110,7 @@ export default function LoginScreen() {
                 const saved = await biometric.save(authData.email, authData.password, authData.currentGroup);
                 await saveAuth({ ...authData, biometricEnabled: true });
                 if (!saved) {
-                  Alert.alert('Aviso', 'La biometría se activó pero el auto-login no estará disponible. Para desbloquear, usa tu huella/FaceID al abrir la app.');
+                    Alert.alert('Aviso', t('auth.biometric_warning'));
                 }
                 router.replace('/(tabs)');
               }
@@ -141,7 +149,7 @@ export default function LoginScreen() {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      await api.register(name, cleanEmail, password, groupName, isNewGroup);
+      await api.register(name, cleanEmail, password, groupName);
       const result = await api.login(cleanEmail, password, groupName);
       const user   = await api.getUserByEmail(cleanEmail);
 
@@ -152,7 +160,8 @@ export default function LoginScreen() {
         name: result.name || name,
         currentGroup: groupName,
         groups: user.groups || [groupName],
-        isAdmin: result.isAdmin || isNewGroup,
+        isAdmin: true, // El creador del grupo siempre es admin
+        mustChangePassword: result.mustChangePassword || false,
       });
 
       connect(cleanEmail, password);
@@ -300,13 +309,20 @@ export default function LoginScreen() {
           {/* REGISTER FLOW */}
           {mode === 'register' && (
             <>
+              <Text style={styles.registerHint}>
+                {t('auth.register_hint')}
+              </Text>
+
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.group_placeholder') || 'Nombre del grupo'}
+                placeholder={t('auth.group_placeholder') || 'Nombre del nuevo grupo'}
                 placeholderTextColor="#666"
                 value={groupName}
                 onChangeText={setGroupName}
               />
+              {groupName.length > 0 && (
+                <GroupExistsWarning name={groupName} />
+              )}
 
               <TextInput
                 style={styles.input}
@@ -317,22 +333,12 @@ export default function LoginScreen() {
                 secureTextEntry
               />
 
-              <TouchableOpacity
-                style={styles.checkRow}
-                onPress={() => setIsNewGroup(!isNewGroup)}
-              >
-                <View style={[styles.checkbox, isNewGroup && styles.checkboxActive]}>
-                  {isNewGroup && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={styles.checkLabel}>{t('auth.new_group') || 'Crear grupo nuevo'}</Text>
-              </TouchableOpacity>
-
               {/* EULA (Apple Requirement) */}
               <TouchableOpacity
                 style={styles.checkRow}
                 onPress={() => setAcceptedTerms(!acceptedTerms)}
               >
-                <View style={[styles.checkbox, acceptedTerms && styles.checkboxActive, { borderColor: '#10b981' }]}>
+                <View style={[styles.checkbox, acceptedTerms && styles.checkboxActive]}>
                   {acceptedTerms && <Text style={styles.checkmark}>✓</Text>}
                 </View>
                 <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap' }}>
@@ -357,9 +363,12 @@ export default function LoginScreen() {
                   : <Text style={styles.buttonText}>{t('auth.register_button')}</Text>}
               </TouchableOpacity>
 
-              <Text style={{ fontSize: 10, color: '#64748b', textAlign: 'center', marginTop: 15, paddingHorizontal: 20 }}>
-                {t('auth.apple_disclaimer')}
-              </Text>
+              <View style={styles.joinInfo}>
+                <Ionicons name="information-circle-outline" size={16} color="#64748b" />
+                <Text style={styles.joinInfoText}>
+                  {t('auth.join_existing_hint')}
+                </Text>
+              </View>
             </>
           )}
 
@@ -371,6 +380,34 @@ export default function LoginScreen() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
+}
+
+function GroupExistsWarning({ name }: { name: string }) {
+  const { t } = useTranslation();
+  const [exists, setExists] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!name.trim()) return;
+    setExists(null);
+    const timer = setTimeout(async () => {
+      try {
+        const result = await api.checkGroupExists(name.trim());
+        setExists(result.exists);
+      } catch {
+        setExists(null);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [name]);
+
+  if (exists === true) {
+    return (
+      <Text style={{ color: '#ef4444', fontSize: 12, marginBottom: 8 }}>
+        ✗ {t('auth.group_exists', { name })}
+      </Text>
+    );
+  }
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -553,6 +590,26 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
     fontSize: 14,
     fontWeight: '600',
+  },
+  registerHint: {
+    color: '#94a3b8',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  joinInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 4,
+  },
+  joinInfoText: {
+    color: '#64748b',
+    fontSize: 12,
+    flex: 1,
+    lineHeight: 16,
   },
   footer: {
     color: '#555',

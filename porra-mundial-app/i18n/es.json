@@ -15,7 +15,10 @@
     "tbd": "TBD",
     "points": "pts",
     "match": "Partido",
-    "to_be_defined": "Por definir"
+    "to_be_defined": "Por definir",
+    "delete": "Eliminar",
+    "remove_confirm": "¿Seguro que quieres quitar a",
+    "predictions_lost": "Se borrarán sus predicciones."
   },
   "auth": {
     "title": "Predicción Mundial",
@@ -72,7 +75,11 @@
     "back_to_login": "Volver al inicio de sesión",
     "code_sent": "Código enviado",
     "token_expired": "El código ha expirado. Solicita uno nuevo.",
-    "reset_error": "Error al restablecer la contraseña"
+    "reset_error": "Error al restablecer la contraseña",
+    "register_hint": "Crea un grupo nuevo. Serás el administrador.",
+    "join_existing_hint": "¿Ya tienes un grupo? Pídele al administrador que te añada desde la gestión de miembros.",
+    "group_exists": "El grupo \"{{name}}\" ya existe. Para unirte, pídele al administrador que te añada.",
+    "biometric_warning": "La biometría se activó pero el auto-login no estará disponible. Para desbloquear, usa tu huella/FaceID al abrir la app."
   },
   "tabs": {
     "leaderboard": "Clasificación",
@@ -390,6 +397,7 @@
     "subtitle_prefix": "Gestión total de",
     "scoring_title": "Reglas de Puntuación",
     "scoring_desc": "Configura cuánto vale cada acierto y el modo de juego.",
+    "results_title": "Control de Resultados",
     "members_title": "Gestión de Miembros",
     "members_desc": "Añade jugadores, quita miembros o vincula WhatsApp.",
     "reset_title": "Zona de Pruebas: Reset",
@@ -401,7 +409,38 @@
     "reset_error": "No se pudo resetear el grupo.",
     "restricted": "Acceso Restringido",
     "restricted_desc": "Solo los administradores del grupo pueden ver esta sección.",
+    "add_player": "Añadir Jugador",
+    "player_name_placeholder": "Nombre del jugador",
+    "player_email_placeholder": "Email del jugador",
+    "random_password": "Generar contraseña aleatoria",
+    "password_placeholder": "Contraseña (mín. 8 caracteres)",
+    "add_to_group": "Añadir al Grupo",
+    "members_count": "Miembros Actuales ({{count}})",
+    "you_admin": "Tú (Admin)",
+    "add_success": "Jugador {{name}} añadido.",
+    "name_required": "El nombre es obligatorio",
+    "valid_email": "Por favor, introduce un email válido",
+    "password_length": "La contraseña debe tener al menos 8 caracteres",
+    "transfer_title": "Traspasar administración",
+    "transfer_confirm": "⚠️ ¿Seguro que quieres traspasar el mando del grupo a \"{{name}}\"?\n\nSi aceptas, perderás todos tus privilegios de administrador.",
+    "transfer_button": "Traspasar",
+    "transfer_success": "👑 {{name}} es ahora el administrador del grupo.",
     "admin_footer": "Eres el administrador de este grupo."
+  },
+  "password_change": {
+    "title": "Cambio de contraseña requerido",
+    "subtitle": "Por seguridad, debes cambiar tu contraseña antes de continuar.",
+    "current_password": "Contraseña actual",
+    "new_password": "Nueva contraseña",
+    "confirm_password": "Confirmar nueva contraseña",
+    "current_required": "Introduce tu contraseña actual",
+    "length_error": "La nueva contraseña debe tener al menos 8 caracteres",
+    "mismatch": "Las contraseñas no coinciden",
+    "success": "Contraseña actualizada correctamente",
+    "button": "Cambiar contraseña",
+    "old_placeholder": "Contraseña actual",
+    "new_placeholder": "Mín. 8 caracteres",
+    "confirm_placeholder": "Repite la contraseña"
   },
   "not_found": {
     "title": "Oops!",

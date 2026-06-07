@@ -20,7 +20,7 @@ import { getTournamentState } from '../tournamentState.js';
 import { triggerAutoSimulationIfNeeded } from '../autoSimulator.js';
 import { adminAuth } from '../middleware.js';
 import crypto from 'crypto';
-import { sendResetCode, isEmailConfigured, ensureInit } from '../emailService.js';
+import { sendResetCode, sendWelcomeEmail, isEmailConfigured, ensureInit } from '../emailService.js';
 
 const router = express.Router();
 
@@ -544,7 +544,8 @@ router.post('/login', async (req, res) => {
         name: user.name, 
         userId: user._id.toString(), 
         email: user.email,
-        groups: user.groups || []
+        groups: user.groups || [],
+        mustChangePassword: user.mustChangePassword || false
     }));
   } catch (error) {
     console.error('❌ Error en POST /login:', error);
@@ -554,13 +555,23 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   try {
-    const { playerName, email, password, groupName, isNewGroup } = req.body;
+    const { playerName, email, password, groupName } = req.body;
     
     if (!email || !email.includes('@')) {
       return res.status(400).json(createResponse('error', null, 'El correo electrónico no es válido'));
     }
     if (!password || password.length < 8) {
       return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
+    }
+    if (!groupName) {
+      return res.status(400).json(createResponse('error', null, 'El nombre del grupo es obligatorio'));
+    }
+
+    // Solo se permite crear grupos nuevos. Para unirte a un grupo existente,
+    // pídele al administrador que te añada desde la gestión de miembros.
+    const existingGroup = await Group.findOne({ name: groupName });
+    if (existingGroup) {
+      return res.status(400).json(createResponse('error', null, `El grupo "${groupName}" ya existe. Para unirte, pídele al administrador que te añada desde la gestión de miembros.`));
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -572,37 +583,26 @@ router.post('/register', async (req, res) => {
         name: playerName, 
         password: await bcrypt.hash(password, 10), 
         email: normalizedEmail, 
-        groups: [groupName] 
+        groups: [groupName],
+        isAdminOf: [groupName],
       });
     } else {
-      if (!user.groups || !user.groups.includes(groupName)) {
+      // Usuario existente creando un nuevo grupo
+      if (!user.groups.includes(groupName)) {
         user.groups.push(groupName);
-        await user.save();
       }
+      if (!user.isAdminOf.includes(groupName)) {
+        user.isAdminOf.push(groupName);
+      }
+      await user.save();
     }
 
-    if (isNewGroup) {
-      const existingGroup = await Group.findOne({ name: groupName });
-      if (existingGroup) return res.status(400).json(createResponse('error', null, 'El grupo ya existe'));
-      
-      const newGroup = await Group.create({ name: groupName, admin: user._id, members: [user._id] });
-      if (!user.isAdminOf) user.isAdminOf = [];
-      user.isAdminOf.push(groupName);
-      await user.save();
-    } else {
-      const group = await Group.findOne({ name: groupName });
-      if (group) {
-        if (!group.members.includes(user._id)) {
-          group.members.push(user._id);
-          await group.save();
-        }
-      }
-    }
+    const newGroup = await Group.create({ name: groupName, admin: user._id, members: [user._id] });
 
     const io = req.app.get('io');
     if (io) io.emit('group-updated', { groupName });
 
-    res.json(createResponse('success', { name: user.name, userId: user._id.toString(), email: user.email }, 'Usuario registrado con éxito'));
+    res.json(createResponse('success', { name: user.name, userId: user._id.toString(), email: user.email }, 'Grupo creado con éxito'));
   } catch (error) {
     console.error('❌ Error en POST /register:', error);
     if (error.code === 11000) {
@@ -736,12 +736,13 @@ router.post('/admin/reset-member-password', async (req, res) => {
       return res.status(404).json(createResponse('error', null, 'Usuario no encontrado en este grupo'));
     }
 
-    const tempPassword = newPassword || 'PrediccionMundial';
+    const tempPassword = newPassword || crypto.randomBytes(4).toString('hex');
     if (tempPassword.length < 8) {
       return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
     }
 
     member.password = await bcrypt.hash(tempPassword, 10);
+    member.mustChangePassword = true;
     await member.save();
 
     console.log(`🔧 Admin ${admin.name} reseteó contraseña de ${member.name} en ${groupName}`);
@@ -750,6 +751,16 @@ router.post('/admin/reset-member-password', async (req, res) => {
     console.error('❌ Error en POST /admin/reset-member-password:', error);
     res.status(500).json(createResponse('error', null, error.message));
   }
+});
+
+// Verificar si un grupo existe por nombre
+router.get('/groups/:name/exists', async (req, res) => {
+    try {
+        const group = await Group.findOne({ name: req.params.name });
+        res.json(createResponse('success', { exists: !!group }));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
 });
 
 // Registro — con email y password
@@ -845,17 +856,22 @@ router.get('/groups/:groupName/user-mapping', async (req, res) => {
 router.post('/groups/:groupName/players', async (req, res) => {
     try {
         const { groupName } = req.params;
-        const { playerName, email } = req.body;
+        const { playerName, email, password } = req.body;
         
         console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" (📧${email}) al grupo: "${groupName}"`);
 
         if (!playerName || !email) return res.status(400).json(createResponse('error', null, 'El nombre y email del jugador son requeridos'));
 
-        // Hashear password por defecto
-        const hashedPassword = await bcrypt.hash('PrediccionMundial', 10);
+        // Usar contraseña proporcionada o generar una aleatoria segura
+        const rawPassword = password || crypto.randomBytes(4).toString('hex');
+        if (rawPassword.length < 8) {
+            return res.status(400).json(createResponse('error', null, 'La contraseña debe tener al menos 8 caracteres'));
+        }
+        const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
         // Buscar por email (identificador único)
         const normalizedEmail = email.toLowerCase().trim();
+        let isNewUser = false;
         let user = await User.findOne({ email: normalizedEmail });
         if (!user) {
             console.log(`✨ Creando nuevo usuario: ${playerName} (📧${normalizedEmail})`);
@@ -863,8 +879,10 @@ router.post('/groups/:groupName/players', async (req, res) => {
                 name: playerName, 
                 password: hashedPassword, 
                 email: normalizedEmail, 
-                groups: [groupName] 
+                groups: [groupName],
+                mustChangePassword: true,
             });
+            isNewUser = true;
         } else {
             // Si el usuario ya existe, actualizar nombre si se proporcionó uno diferente
             if (playerName && user.name !== playerName) {
@@ -890,11 +908,18 @@ router.post('/groups/:groupName/players', async (req, res) => {
             console.log(`ℹ️ El usuario ya es miembro del grupo`);
         }
 
+        // Enviar email de bienvenida si es un usuario nuevo
+        if (isNewUser) {
+            sendWelcomeEmail(normalizedEmail, playerName, groupName, rawPassword).catch(e => {
+                console.error('[Email] Error enviando bienvenida:', e.message);
+            });
+        }
+
         // Notificar cambios en el grupo por Socket.IO
         const io = req.app.get('io');
         if (io) io.emit('group-updated', { groupName });
 
-        res.json(createResponse('success'));
+        res.json(createResponse('success', { isNewUser }));
     } catch (error) {
         console.error('❌ Error en POST /groups/:groupName/players:', error);
         if (error.code === 11000) {
@@ -940,69 +965,6 @@ router.get('/groups/:groupName/user-mapping', async (req, res) => {
         });
         res.json(createResponse('success', mapping));
     } catch (error) {
-        res.status(500).json(createResponse('error', null, error.message));
-    }
-});
-
-router.post('/groups/:groupName/players', async (req, res) => {
-    try {
-        const { groupName } = req.params;
-        const { playerName, email } = req.body;
-        
-        console.log(`👤 [ADMIN] Añadiendo jugador: "${playerName}" (📧${email}) al grupo: "${groupName}"`);
-
-        if (!playerName || !email) return res.status(400).json(createResponse('error', null, 'El nombre y email del jugador son requeridos'));
-
-        // Hashear password por defecto
-        const hashedPassword = await bcrypt.hash('PrediccionMundial', 10);
-
-        // Buscar por email (identificador único)
-        const normalizedEmail = email.toLowerCase().trim();
-        let user = await User.findOne({ email: normalizedEmail });
-        if (!user) {
-            console.log(`✨ Creando nuevo usuario: ${playerName} (📧${normalizedEmail})`);
-            user = await User.create({ 
-                name: playerName, 
-                password: hashedPassword, 
-                email: normalizedEmail, 
-                groups: [groupName] 
-            });
-        } else {
-            // Si el usuario ya existe, actualizar nombre si se proporcionó uno diferente
-            if (playerName && user.name !== playerName) {
-                user.name = playerName;
-            }
-            if (!user.groups.includes(groupName)) {
-                console.log(`📝 Actualizando grupos del usuario: ${playerName}`);
-                user.groups.push(groupName);
-            }
-            await user.save();
-        }
-
-        const group = await Group.findOne({ name: groupName });
-        if (!group) return res.status(404).json(createResponse('error', null, 'Grupo no encontrado'));
-
-        // Evitar duplicados de forma robusta comparando strings de IDs
-        const isAlreadyMember = group.members.some(mId => mId.toString() === user._id.toString());
-        
-        if (!isAlreadyMember) {
-            console.log(`🔗 Vinculando usuario ${user._id} al grupo ${group._id}`);
-            group.members.push(user._id);
-            await group.save();
-        } else {
-            console.log(`ℹ️ El usuario ya es miembro del grupo`);
-        }
-
-        // Notificar cambios en el grupo
-        const io = req.app.get('io');
-        if (io) io.emit('group-updated', { groupName });
-
-        res.json(createResponse('success'));
-    } catch (error) {
-        console.error('❌ Error en POST /groups/:groupName/players:', error);
-        if (error.code === 11000) {
-            return res.status(400).json(createResponse('error', null, 'Este correo electrónico ya está registrado con otro nombre'));
-        }
         res.status(500).json(createResponse('error', null, error.message));
     }
 });
@@ -1122,6 +1084,7 @@ router.post('/profile/change-password', async (req, res) => {
         }
         
         user.password = await bcrypt.hash(newPassword, 10);
+        user.mustChangePassword = false;
         await user.save();
         
         console.log(`🔐 Contraseña actualizada para ${user.name} (📧${user.email})`);

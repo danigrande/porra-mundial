@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
     enum: ['all', 'agent-mentions', 'mentions', 'none'], 
     default: 'all' 
   },
+  mustChangePassword: { type: Boolean, default: false },
   resetToken: { type: String, default: null },
   resetCode: { type: String, default: null },
   resetTokenExpires: { type: Date, default: null },

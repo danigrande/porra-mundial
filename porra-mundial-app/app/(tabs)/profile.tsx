@@ -141,7 +141,7 @@ export default function ProfileScreen() {
     try {
       await api.changePassword(auth.userId, oldPassword, newPassword);
       // Update persisted password so socket can re-auth
-      await saveAuth({ ...auth, password: newPassword });
+      await saveAuth({ ...auth, password: newPassword, mustChangePassword: false });
       Alert.alert(t('common.success'), t('profile.password_updated') || '¡Contraseña actualizada!');
       setOldPassword('');
       setNewPassword('');
