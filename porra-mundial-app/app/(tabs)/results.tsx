@@ -244,13 +244,17 @@ export default function ResultsScreen() {
                 <Text style={styles.awardsTitle}>{t('results.honor_title')}</Text>
               </View>
 
+              {(() => {
+                const champ = fullResolve('W104', reality);
+                const runner = fullResolve('L104', reality);
+                const hasChamp = champ && !!TEAM_CODES[champ];
+                const hasRunner = runner && !!TEAM_CODES[runner];
+                return (<>
               <View style={styles.awardRow}>
                 <View>
                   <Text style={styles.awardLabel}>{t('results.world_champion')}</Text>
                   <Text style={styles.awardVal}>
-                    {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
-                      ? tTeam(parseInt(reality['ko_104_h']) > parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
-                      : t('common.to_be_defined')}
+                    {hasChamp ? tTeam(champ) : t('common.to_be_defined')}
                   </Text>
                 </View>
                 <MaterialCommunityIcons name="star" size={20} color="#f5a623" />
@@ -260,12 +264,12 @@ export default function ResultsScreen() {
                 <View>
                   <Text style={styles.awardLabel}>{t('results.runner_up')}</Text>
                   <Text style={styles.awardVal}>
-                    {reality['ko_104_h_team'] && reality['ko_104_a_team'] 
-                      ? tTeam(parseInt(reality['ko_104_h']) < parseInt(reality['ko_104_a']) ? reality['ko_104_h_team'] : reality['ko_104_a_team'])
-                      : t('common.to_be_defined')}
+                    {hasRunner ? tTeam(runner) : t('common.to_be_defined')}
                   </Text>
                 </View>
               </View>
+              </>);
+              })()}
 
               {/* BALONES DE ORO */}
               <View style={styles.awardRow}>

@@ -64,17 +64,16 @@ router.get('/reality', async (req, res) => {
 router.post('/reality', async (req, res) => {
     try {
         const { results } = req.body;
-        // Si results.events es undefined, mantenemos los existentes. 
-        // Pero si es un objeto vacío {}, significa que queremos borrarlos.
         const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
         const existingResults = realityDoc ? realityDoc.results : {};
         
+        // Deep merge: solo sobreescribe las keys enviadas, conserva el resto
         let events = results.events;
         if (events === undefined) {
             events = existingResults.events || {};
         }
         
-        const mergedResults = { ...results, events };
+        const mergedResults = { ...existingResults, ...results, events };
 
         await Reality.findOneAndUpdate(
             { tournament: 'worldcup2026' },
