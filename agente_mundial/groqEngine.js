@@ -5,6 +5,7 @@
 // API compatible con OpenAI, ultra-rápido (~500 tokens/s).
 
 import Groq from 'groq-sdk';
+import { HfInference } from '@huggingface/inference';
 import config from './config.js';
 import { AILog } from './models/AILog.js';
 import { User } from './models/User.js';
@@ -13,6 +14,10 @@ import { Group } from './models/Group.js';
 const groq = new Groq({
   apiKey: config.groq.apiKey,
 });
+
+const hf = process.env.HUGGINGFACEHUB_API_KEY
+  ? new HfInference(process.env.HUGGINGFACEHUB_API_KEY)
+  : null;
 
 // Track last N bot responses per personality to avoid catchphrase repetition
 const recentBotOutputs = new Map();
@@ -292,6 +297,49 @@ ${instruction}`;
 
     if (error.status === 429) {
       return '⚡ ¡Ratatatatata! He hablado demasiado rápido y me han mandado al banquillo. Espera un minutillo y vuelve a preguntar, ¡jugón! ⏳';
+    }
+
+    // Fallback a HuggingFace cuando Groq bloquea por región (403)
+    if ((error.status === 403 || error.status === 503) && hf) {
+      try {
+        console.log('[Groq] Fallback a HuggingFace Inference...');
+        const stream = hf.chatCompletionStream({
+          model: 'mistralai/Mistral-7B-Instruct-v0.3',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: config.groq.temperature,
+          max_tokens: config.groq.maxTokens,
+        });
+        let hfResponse = '';
+        for await (const chunk of stream) {
+          if (chunk.choices?.[0]?.delta?.content) {
+            hfResponse += chunk.choices[0].delta.content;
+          }
+        }
+        if (hfResponse) {
+          addRecentOutput(personalityId, hfResponse);
+          saveAILog({
+            type: 'response',
+            playerName,
+            groupName: groupName || 'Privado',
+            ragContext: context.chatContext || '',
+            systemPrompt: systemPrompt,
+            userPrompt: userMessage,
+            groqResponse: hfResponse,
+            model: 'mistralai/Mistral-7B-Instruct-v0.3 (HF)',
+            temperature: config.groq.temperature,
+            maxTokens: config.groq.maxTokens,
+            latencyMs: Date.now() - startTime,
+            source: meta.source || 'chat',
+            success: true
+          });
+          return hfResponse;
+        }
+      } catch (hfError) {
+        console.error('[Groq] HF fallback también falló:', hfError.message);
+      }
     }
 
     return '❌ ¡Uy! El Agente Mundial ha tenido un tropiezo técnico. Inténtalo en un momento.';
