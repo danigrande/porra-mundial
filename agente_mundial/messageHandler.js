@@ -171,6 +171,9 @@ export async function refreshCache(groupName) {
     };
 
     console.log(`✅ Datos sincronizados para ${groupName}: ${leaderboard.length} jugadores con puntos calculados.`);
+    if (leaderboard.length > 0) {
+      console.log(`🏆 Top 3: ${leaderboard.slice(0, 3).map(p => `${p.position}. ${p.name} (${p.totalPts})`).join(' | ')}`);
+    }
   } catch (error) {
     console.error(`Error refrescando cache para ${groupName}:`, error.message);
   }
