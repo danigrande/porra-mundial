@@ -304,7 +304,7 @@ ${instruction}`;
       try {
         console.log('[Groq] Fallback a HuggingFace Inference...');
         const stream = hf.chatCompletionStream({
-          model: 'meta-llama/Llama-3.2-3B-Instruct',
+          model: 'meta-llama/Llama-3.1-8B-Instruct',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage },
@@ -328,7 +328,7 @@ ${instruction}`;
             systemPrompt: systemPrompt,
             userPrompt: userMessage,
             groqResponse: hfResponse,
-            model: 'meta-llama/Llama-3.2-3B-Instruct (HF)',
+            model: 'meta-llama/Llama-3.1-8B-Instruct (HF)',
             temperature: config.groq.temperature,
             maxTokens: config.groq.maxTokens,
             latencyMs: Date.now() - startTime,
