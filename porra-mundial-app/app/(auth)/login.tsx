@@ -309,20 +309,6 @@ export default function LoginScreen() {
           {/* REGISTER FLOW */}
           {mode === 'register' && (
             <>
-              <Text style={styles.registerHint}>
-                {t('auth.register_hint')}
-              </Text>
-
-              <TextInput
-                style={styles.input}
-                placeholder={t('auth.group_placeholder') || 'Nombre del nuevo grupo'}
-                placeholderTextColor="#666"
-                value={groupName}
-                onChangeText={setGroupName}
-              />
-              {groupName.length > 0 && (
-                <GroupExistsWarning name={groupName} />
-              )}
 
               <TextInput
                 style={styles.input}
@@ -332,6 +318,21 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 secureTextEntry
               />
+
+              <Text style={styles.registerHint}>
+                {t('auth.register_hint')}
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder={t('auth.group_placeholder') || 'Nombre del grupo'}
+                placeholderTextColor="#666"
+                value={groupName}
+                onChangeText={setGroupName}
+              />
+              {groupName.length > 0 && (
+                <GroupExistsWarning name={groupName} />
+              )}
 
               {/* EULA (Apple Requirement) */}
               <TouchableOpacity
@@ -362,13 +363,6 @@ export default function LoginScreen() {
                   ? <ActivityIndicator color="#fff" />
                   : <Text style={styles.buttonText}>{t('auth.register_button')}</Text>}
               </TouchableOpacity>
-
-              <View style={styles.joinInfo}>
-                <Ionicons name="information-circle-outline" size={16} color="#64748b" />
-                <Text style={styles.joinInfoText}>
-                  {t('auth.join_existing_hint')}
-                </Text>
-              </View>
             </>
           )}
 

@@ -32,7 +32,7 @@
     "password_placeholder": "Password",
     "password_create": "Password (min. 8 characters)",
     "name_placeholder": "Your name (e.g. John)",
-    "group_placeholder": "Group name to join/create",
+    "group_placeholder": "Group name",
     "new_group": "This is a new group",
     "accept_terms_prefix": "I accept the",
     "terms_of_use": "terms of use",

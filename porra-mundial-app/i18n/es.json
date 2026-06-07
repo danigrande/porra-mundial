@@ -32,7 +32,7 @@
     "password_placeholder": "Contraseña",
     "password_create": "Contraseña (mín. 8 caracteres)",
     "name_placeholder": "Tu nombre (ej: Edu)",
-    "group_placeholder": "Nombre del grupo a unirse/crear",
+    "group_placeholder": "Nombre del grupo",
     "new_group": "Es un grupo nuevo",
     "accept_terms_prefix": "Acepto los",
     "terms_of_use": "términos de uso",
