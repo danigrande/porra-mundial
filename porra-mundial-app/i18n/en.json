@@ -145,6 +145,7 @@
     "file_open": "Open file",
     "no_connection": "No connection",
     "no_connection_msg": "Could not send message. Check your internet connection and try again.",
+    "reconnecting": "Reconnecting...",
     "edit_timeout": "You can no longer edit this message (over 15 min)"
   },
   "menu": {

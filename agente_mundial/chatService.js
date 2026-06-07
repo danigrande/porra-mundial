@@ -106,7 +106,7 @@ export function initChatServer(httpServer) {
       try {
         const messages = await Message.find({ chatId: groupName })
           .sort({ timestamp: -1 })
-          .limit(50)
+          .limit(100)
           .lean();
         
         // Obtener lista de usuarios que el usuario ha bloqueado
@@ -138,8 +138,8 @@ export function initChatServer(httpServer) {
       const cleanGroupName = groupName.trim();
 
       try {
-        // Asegurar que el caché esté fresco para la identificación
-        await refreshCache(cleanGroupName);
+        // Cache refresh en background — no bloqueamos el envío del mensaje
+        refreshCache(cleanGroupName).catch(e => console.error('[Chat] Error refreshCache:', e.message));
         const identifiedName = identifyPlayer(userId, cleanGroupName);
         const senderNameForDb = identifiedName || userName;
 
@@ -172,13 +172,13 @@ export function initChatServer(httpServer) {
           timestamp: userMessage.timestamp
         };
 
-        // En lugar de broadcast simple, filtramos destinatarios
+        // En lugar de broadcast simple, filtramos destinatarios con una sola query
         const socketsInRoom = await io.in(`group:${groupName}`).fetchSockets();
+        const roomUserIds = socketsInRoom.map(s => s.userData.userId);
+        const blockedEntries = await BlockedUser.find({ blockerId: { $in: roomUserIds }, blockedId: userId }).select('blockerId').lean();
+        const blockedSet = new Set(blockedEntries.map(b => b.blockerId));
         for (const s of socketsInRoom) {
-            // No enviar si el destinatario ha bloqueado al remitente
-            // Nota: Para optimizar, podríamos cachear los bloqueos en el socket
-            const isBlocked = await BlockedUser.findOne({ blockerId: s.userData.userId, blockedId: userId });
-            if (!isBlocked) {
+            if (!blockedSet.has(s.userData.userId)) {
                 s.emit('new-message', messagePayload);
             }
         }
@@ -228,7 +228,7 @@ export function initChatServer(httpServer) {
 
           if (botResponse) {
             // Pequeño delay para simular "pensando"
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 500));
 
             // 5. Guardar respuesta del bot
             const botMessage = await Message.create({

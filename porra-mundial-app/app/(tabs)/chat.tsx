@@ -86,6 +86,8 @@ export default function ChatScreen() {
   const [searchResults, setSearchResults] = useState<socketService.ChatMessage[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchIndex, setSearchIndex] = useState(0);
+  const [socketConnected, setSocketConnected] = useState(true);
+  const pendingMessagesRef = useRef<string[]>([]);
 
   // Lista de mensajes única para la vista (Garantía total contra duplicados)
   const uniqueMessages = useMemo(() => {
@@ -132,16 +134,15 @@ export default function ChatScreen() {
     // en la práctica getSocket() debería devolver algo. Pero por seguridad, salimos
     // si es nulo (el usuario sería redirigido a login por el guard de _layout.tsx).
     if (!socket) {
-      console.warn('[Chat] Socket no disponible al montar. Se intentará la reconexión automática.');
-      socketService.joinGroup(groupName);
-      setLoading(false);
+      console.warn('[Chat] Socket no disponible al montar. Usando REST fallback.');
+      loadHistory();
       return;
     }
 
     loadingTimeoutRef.current = setTimeout(() => {
-      console.warn('[Chat] Timeout de carga, forzando setLoading(false)');
-      setLoading(false);
-    }, 15000);
+      console.warn('[Chat] Timeout de carga, forzando REST fallback');
+      loadHistory();
+    }, 45000);
 
     const onNewMessage = (msg: socketService.ChatMessage) => {
       setMessagesSafe(prev => {
@@ -172,12 +173,13 @@ export default function ChatScreen() {
     // el nuevo chat-history que mandará el servidor.
     const onSocketReconnect = () => {
       console.log('[Chat] Socket reconectado mientras el chat estaba abierto. Re-solicitando historial...');
+      setSocketConnected(true);
       setLoading(true);
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = setTimeout(() => {
-        console.warn('[Chat] Timeout de carga tras reconexión, forzando setLoading(false)');
-        setLoading(false);
-      }, 15000);
+        console.warn('[Chat] Timeout de carga tras reconexión, forzando REST fallback');
+        loadHistory();
+      }, 45000);
     };
 
     const onChatHistory = async (data: any) => {
@@ -199,17 +201,33 @@ export default function ChatScreen() {
         if (savedId && data.messages.length > 0) {
           setLastReadId(savedId);
           const index = data.messages.findIndex((m: any) => m._id === savedId);
-          if (index !== -1 && index < data.messages.length - 1) {
-            const count = data.messages.length - 1 - index;
-            setUnreadCount(count);
+          if (index !== -1) {
+            if (index < data.messages.length - 1) {
+              // Hay mensajes NO leídos después de este — scroll al primero no leído
+              const count = data.messages.length - 1 - index;
+              setUnreadCount(count);
+              setShowUnreadMarker(true);
+              setTimeout(() => {
+                flatListRef.current?.scrollToIndex({ 
+                  index: index + 1, 
+                  animated: false,
+                  viewPosition: 0,
+                  viewOffset: 20 
+                });
+              }, 400);
+              return;
+            }
+            // Último mensaje ya leído — scroll al final
+          } else {
+            // El último mensaje leído es más antiguo que el historial cargado
+            // Mostrar botón "cargar más" y no scroll automático
+            setUnreadCount(data.messages.length);
             setShowUnreadMarker(true);
-            
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({ 
-                index: index + 1, 
+                index: 0, 
                 animated: false,
                 viewPosition: 0,
-                viewOffset: 20 
               });
             }, 400);
             return;
@@ -268,8 +286,17 @@ export default function ChatScreen() {
       }
     };
 
+    const onSocketDisconnect = () => {
+      console.log('[Chat] Socket desconectado');
+      setSocketConnected(false);
+    };
+
+    // Inicializar estado de conexión
+    setSocketConnected(socket.connected);
+
     // 1. Registrar listeners PRIMERO
     socket.on('connect', onSocketReconnect);
+    socket.on('disconnect', onSocketDisconnect);
     socket.on('new-message', onNewMessage);
     socket.on('chat-history', onChatHistory);
     socket.on('user-typing', onUserTyping);
@@ -289,6 +316,7 @@ export default function ChatScreen() {
     return () => {
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
       socket.off('connect', onSocketReconnect);
+      socket.off('disconnect', onSocketDisconnect);
       socket.off('new-message', onNewMessage);
       socket.off('chat-history', onChatHistory);
       socket.off('user-typing', onUserTyping);
@@ -341,10 +369,19 @@ export default function ChatScreen() {
     }
   };
 
-  // loadHistory queda como respaldo o para recarga manual si fuera necesario, 
-  // pero desactivamos su uso automático para evitar duplicados con el socket.
   async function loadHistory() {
-    // console.log('loadHistory (REST) desactivado en favor del socket');
+    if (!groupName) return;
+    console.log('[Chat] Cargando historial vía REST fallback...');
+    try {
+      const messages = await api.getChatHistory(groupName);
+      if (Array.isArray(messages)) {
+        setMessagesSafe(messages);
+      }
+    } catch (e) {
+      console.warn('[Chat] REST fallback falló:', e.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ==========================================
@@ -499,6 +536,8 @@ export default function ChatScreen() {
     } : undefined;
     const sent = socketService.sendMessage(groupName, text, 'text', undefined, replyData);
     if (!sent) {
+      console.warn('[Chat] Socket desconectado, encolando mensaje');
+      pendingMessagesRef.current.push(text);
       Alert.alert(
         t('chat.no_connection'),
         t('chat.no_connection_msg'),
@@ -1098,6 +1137,14 @@ export default function ChatScreen() {
   return (
     <BottomSheetModalProvider>
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+
+      {/* Barra de estado de conexión */}
+      {!socketConnected && (
+        <View style={styles.connectionBanner}>
+          <Ionicons name="cloud-offline-outline" size={16} color="#fff" />
+          <Text style={styles.connectionBannerText}>{t('chat.reconnecting')}</Text>
+        </View>
+      )}
 
       {/* Visor de imagen a pantalla completa */}
       <Modal visible={!!selectedImageUrl} transparent animationType="fade" onRequestClose={() => setSelectedImageUrl(null)}>
@@ -1797,5 +1844,20 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 11,
     marginTop: 2,
+  },
+
+  // Connection status banner
+  connectionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ef4444',
+    paddingVertical: 6,
+    gap: 6,
+  },
+  connectionBannerText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

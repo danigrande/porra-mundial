@@ -3,12 +3,34 @@
 // ============================================
 
 import { io, Socket } from 'socket.io-client';
-import { SOCKET_URL } from './api';
+import { SOCKET_URL, API_URL } from './api';
 
 let socket: Socket | null = null;
 
 // Grupo activo al que hay que re-unirse tras reconexión
 let currentGroup: string | null = null;
+
+// Keep-alive para evitar que Render duerma el servidor
+let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+const KEEP_ALIVE_INTERVAL = 4 * 60 * 1000; // cada 4 minutos
+
+function startKeepAlive() {
+  if (keepAliveInterval) return;
+  keepAliveInterval = setInterval(async () => {
+    try {
+      await fetch(`${API_URL}/health`, { method: 'GET' });
+    } catch {
+      // Silencioso — no importa si falla
+    }
+  }, KEEP_ALIVE_INTERVAL);
+}
+
+function stopKeepAlive() {
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+  }
+}
 
 export type ChatMessage = {
   _id: string;
@@ -53,12 +75,14 @@ export function connect(email: string, password: string): Socket {
     auth: { email, password },
     transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 10,
+    reconnectionAttempts: 30,
     reconnectionDelay: 2000,
+    reconnectionDelayMax: 10000,
   });
 
   socket.on('connect', () => {
     console.log('✅ Socket.IO conectado');
+    startKeepAlive();
     // Bug fix: re-unirse al grupo automáticamente tras cada (re)conexión
     if (currentGroup) {
       console.log('[Socket] Re-uniéndose al grupo tras (re)conexión:', currentGroup);
@@ -81,6 +105,7 @@ export function connect(email: string, password: string): Socket {
  * Desconecta del servidor de chat.
  */
 export function disconnect() {
+  stopKeepAlive();
   if (socket) {
     socket.removeAllListeners();
     socket.disconnect();
