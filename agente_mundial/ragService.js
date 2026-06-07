@@ -60,7 +60,8 @@ export async function retrieveContextForPlayer(chatId, playerName, limit = 30) {
     };
 
     const messages = await Message.find(query).sort({ timestamp: -1 }).limit(limit);
-    let finalMessages = [...messages];
+    // Filtrar mensajes del bot para evitar datos obsoletos en el contexto
+    let finalMessages = messages.filter(m => m.senderName !== 'Agente Mundial 🏆');
 
     // 2. Si no hay suficientes mensajes específicos, traer los últimos del grupo (contexto reciente)
     if (finalMessages.length < 5) {
@@ -76,6 +77,7 @@ export async function retrieveContextForPlayer(chatId, playerName, limit = 30) {
         }
 
         recentMessages.forEach(rm => {
+            if (rm.senderName === 'Agente Mundial 🏆') return;
             if (!finalMessages.find(fm => fm._id.toString() === rm._id.toString())) {
                 finalMessages.push(rm);
             }
