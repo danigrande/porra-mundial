@@ -261,11 +261,11 @@ export async function processMessage(text, senderUserId, groupName) {
     // Si no hay resultados web, cae al flujo 'general'
   }
 
-  // 3. Si el usuario pide su estado o ranking
-  if (intent === 'my_status' || intent === 'explain_score' || intent === 'summary' || intent === 'general') {
+  // 3. Si el usuario pide su estado, ranking o resumen
+  if (intent === 'ranking' || intent === 'my_status' || intent === 'explain_score' || intent === 'summary' || intent === 'general') {
     if (!playerName) {
-      // Permitir que 'general' pase aunque no esté identificado, usaremos 'Desconocido'
-      if (intent !== 'general') {
+      // Permitir que 'general' y 'ranking' pasen aunque no estén identificados
+      if (intent !== 'general' && intent !== 'ranking') {
         return "No tengo tu usuario registrado, ¡jugón! Dile al administrador que te añada a la porra.";
       }
     }
@@ -309,6 +309,7 @@ export async function processMessage(text, senderUserId, groupName) {
   const context = {
     groupName,
     ranking: cache.leaderboard,
+    leaderboard: cache.leaderboard,
     playerStats,
     profile,
     rules: cache.rules,
