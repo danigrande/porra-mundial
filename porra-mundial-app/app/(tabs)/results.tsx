@@ -329,6 +329,12 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
   const awayEvts = allEvents.filter((e: any) => e.team?.name?.toLowerCase() === aNorm);
   const getIcon = (e: any) => e.type === 'Goal' ? '\u26bd' : (e.detail === 'Red Card' ? '\ud83d\udfe5' : '\ud83d\udfe8');
 
+  const isKnockout = matchId.startsWith('ko_');
+  const matchNum = isKnockout ? matchId.replace('ko_', '') : '';
+  const isTie = hScore !== '' && aScore !== '' && hScore === aScore;
+  const penH = reality[`pen_${matchNum}_h`] ?? '';
+  const penA = reality[`pen_${matchNum}_a`] ?? '';
+
   return (
     <View style={styles.matchItem}>
       <View style={styles.matchMeta}>
@@ -368,6 +374,18 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
           ))}
         </View>
       </View>
+      {isKnockout && isTie && penH !== '' && penA !== '' && (
+        <View style={styles.penaltiesRow}>
+          <View style={styles.teamCol} />
+          <View style={styles.penaltiesBox}>
+            <Text style={styles.penaltiesLabel}>Pen.</Text>
+            <Text style={styles.penaltyScore}>{penH}</Text>
+            <Text style={styles.vs}>-</Text>
+            <Text style={styles.penaltyScore}>{penA}</Text>
+          </View>
+          <View style={styles.teamCol} />
+        </View>
+      )}
     </View>
   );
 }
@@ -475,6 +493,10 @@ const styles = StyleSheet.create({
   scoreBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 90 },
   scoreText: { color: '#f5a623', fontSize: 24, fontWeight: '900', width: 34, textAlign: 'center' },
   vs: { color: '#484f58', marginHorizontal: 6, fontSize: 18 },
+  penaltiesRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  penaltiesBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 90 },
+  penaltiesLabel: { color: '#8b949e', fontSize: 10, fontWeight: '700', marginRight: 4 },
+  penaltyScore: { color: '#f5a623', fontSize: 16, fontWeight: '900', width: 34, textAlign: 'center' },
   awardsCard: { backgroundColor: 'rgba(245, 166, 35, 0.05)', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(245, 166, 35, 0.2)' },
   awardsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
   awardsTitle: { color: '#f5a623', fontSize: 18, fontWeight: '800' },
