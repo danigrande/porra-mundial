@@ -35,9 +35,9 @@ const TEST_PHASES = [
   { id: 'QF_ACTIVE', name: 'Cuartos Final (TEST)', start: '2026-06-03T10:00:00Z', end: '2026-06-04T10:00:00Z', unlocks: [] },
   { id: 'WAITING_SF', name: 'Ventana Semis (TEST)', start: '2026-06-04T10:00:00Z', end: '2026-06-05T10:00:00Z', unlocks: ['sf'] },
   { id: 'SF_ACTIVE', name: 'Semifinales (TEST)', start: '2026-06-05T10:00:00Z', end: '2026-06-05T22:00:00Z', unlocks: [] },
-  { id: 'WAITING_FINALS', name: 'Ventana Finales (TEST)', start: '2026-06-05T22:00:00Z', end: '2026-06-07T10:00:00Z', unlocks: ['3rd', 'final'] },
-  { id: 'FINALS_ACTIVE', name: 'Final (TEST)', start: '2026-06-07T10:00:00Z', end: '2026-06-08T10:00:00Z', unlocks: [] },
-  { id: 'POST_TOURNAMENT', name: 'Finalizado (TEST)', start: '2026-06-08T10:00:00Z', end: '2030-01-01T00:00:00Z', unlocks: [] },
+  { id: 'WAITING_FINALS', name: 'Ventana Finales (TEST)', start: '2026-06-05T22:00:00Z', end: '2026-06-07T19:00:00Z', unlocks: ['3rd', 'final'] },
+  { id: 'FINALS_ACTIVE', name: 'Final (TEST)', start: '2026-06-07T19:00:00Z', end: '2026-06-07T21:00:00Z', unlocks: [] },
+  { id: 'POST_TOURNAMENT', name: 'Finalizado (TEST)', start: '2026-06-07T21:00:00Z', end: '2030-01-01T00:00:00Z', unlocks: [] },
 ];
 
 export const TOURNAMENT_PHASES = process.env.TEST_MODE === 'true' ? TEST_PHASES : REAL_PHASES;
