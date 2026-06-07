@@ -49,7 +49,6 @@ const config = {
     pollIntervalMs: 15 * 60 * 1000,
     feeds: [
       'https://api.foxsports.com/v2/content/optimized-rss?partnerKey=MB0Wehpmuj2lUhuRhQaafhBjAJqaPU244mlTDK1i&size=30&tags=soccer/wc/league/12',
-      'https://feeds.as.com/mrss-p/pages/as/site/as.com/section/futbol/subsection/mundial/',
     ],
     worldCupKeywords: [
       'mundial', 'world cup', 'fifa', 'selección', 'seleccion', 'mundo',
