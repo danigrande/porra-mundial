@@ -156,7 +156,7 @@ async function broadcastBreakingNews(article) {
     if (roomName.startsWith('group:')) {
       const groupName = roomName.replace('group:', '');
       try {
-        await sendBotMessage(groupName, message);
+        await sendBotMessage(groupName, message, true); // skipPush=true: el push se envía abajo con título específico
         stats.broadcastsSent++;
         console.log(`[RSS] Mensaje enviado al grupo ${groupName}`);
       } catch (err) {

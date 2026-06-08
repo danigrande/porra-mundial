@@ -435,7 +435,7 @@ export function getIO() {
  * @param {string} groupName - Nombre del grupo
  * @param {string} text - Texto del mensaje
  */
-export async function sendBotMessage(groupName, text) {
+export async function sendBotMessage(groupName, text, skipPush = false) {
   if (!io) {
     console.warn('[Chat] Socket.IO no inicializado, no se puede enviar mensaje');
     return;
@@ -462,15 +462,17 @@ export async function sendBotMessage(groupName, text) {
       timestamp: botMessage.timestamp
     });
 
-    // Push notification a todos los miembros
-    pushService.sendToGroup(
-      groupName,
-      'Agente Mundial 🏆',
-      text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-      { screen: 'chat', groupName },
-      null,
-      true // es el agente
-    );
+    // Push notification a todos los miembros (se puede saltar si el caller ya lo maneja)
+    if (!skipPush) {
+      pushService.sendToGroup(
+        groupName,
+        'Agente Mundial 🏆',
+        text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+        { screen: 'chat', groupName },
+        null,
+        true // es el agente
+      );
+    }
 
     console.log(`[Chat] Mensaje del bot enviado a ${groupName}`);
   } catch (error) {
