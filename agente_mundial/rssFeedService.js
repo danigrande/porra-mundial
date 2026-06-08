@@ -1,12 +1,10 @@
 import RssParser from 'rss-parser';
-import Groq from 'groq-sdk';
 import config from './config.js';
 import { sendBotMessage } from './chatService.js';
 import * as pushService from './pushService.js';
 import { SeenArticle } from './models/SeenArticle.js';
 
 const rssParser = new RssParser();
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // Persistent tracking of seen articles via MongoDB
 const seenGuids = new Set();
@@ -139,41 +137,70 @@ function isWorldCupRelated(article) {
   return config.rss.worldCupKeywords.some(keyword => text.includes(keyword));
 }
 
-async function isBreakingNews(article) {
+async function classifyWithGroq(systemPrompt, userPrompt) {
+  const apiKey = config.groq.apiKey;
+  if (!apiKey) {
+    console.warn('[RSS] GROQ_API_KEY no configurada');
+    return null;
+  }
+
   try {
-    const snippet = (article.content || '').substring(0, 500);
-
-    const response = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a sports news classifier. Respond with ONLY a single word: YES or NO.',
-        },
-        {
-          role: 'user',
-          content: `Is this about the Spanish national team and is it a breaking or important development regarding the FIFA World Cup that users of a World Cup prediction pool should know about?
-
-Title: ${article.title}
-Content: ${snippet}`,
-        },
-      ],
-      model: config.groq.model,
-      temperature: 0.1,
-      max_tokens: 10,
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: config.groq.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 10,
+      }),
+      signal: AbortSignal.timeout(15000),
     });
 
-    const answer = response.choices[0]?.message?.content?.trim().toUpperCase();
-    const isBreaking = answer === 'YES';
-
-    if (isBreaking) {
-      console.log(`🚨 BREAKING: "${article.title.substring(0, 80)}"`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '(no body)');
+      console.error(`[RSS] Groq API error ${response.status}: ${body.substring(0, 200)}`);
+      return null;
     }
 
-    return isBreaking;
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content?.trim().toUpperCase() || null;
   } catch (error) {
-    console.error('[RSS] Error clasificando artículo:', error.message);
-    return false;
+    if (error.name === 'TimeoutError' || error.code === 'UND_ERR_CONNECT_TIMEOUT') {
+      console.warn('[RSS] Groq API timeout');
+    } else if (error.cause?.code === 'ECONNREFUSED' || error.cause?.code === 'ENOTFOUND') {
+      console.warn('[RSS] Groq API no disponible (error de red)');
+    } else {
+      console.error('[RSS] Error en Groq API:', error.message?.substring(0, 200) || error);
+    }
+    return null;
   }
+}
+
+async function isBreakingNews(article) {
+  const snippet = (article.content || '').substring(0, 500);
+
+  const answer = await classifyWithGroq(
+    'You are a sports news classifier. Respond with ONLY a single word: YES or NO.',
+    `Is this about the Spanish national team and is it a breaking or important development regarding the FIFA World Cup that users of a World Cup prediction pool should know about?
+
+Title: ${article.title}
+Content: ${snippet}`
+  );
+
+  const isBreaking = answer === 'YES';
+
+  if (isBreaking) {
+    console.log(`🚨 BREAKING: "${article.title.substring(0, 80)}"`);
+  }
+
+  return isBreaking;
 }
 
 async function broadcastBreakingNews(article) {
@@ -244,34 +271,17 @@ function scheduleDailySummary() {
 }
 
 async function isRelevantForSummary(article) {
-  try {
-    const snippet = (article.content || '').substring(0, 500);
+  const snippet = (article.content || '').substring(0, 500);
 
-    const response = await groq.chat.completions.create({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a sports news classifier. Respond with ONLY a single word: YES or NO.',
-        },
-        {
-          role: 'user',
-          content: `Is this news article relevant to the FIFA World Cup that users of a World Cup prediction pool should know about?
+  const answer = await classifyWithGroq(
+    'You are a sports news classifier. Respond with ONLY a single word: YES or NO.',
+    `Is this news article relevant to the FIFA World Cup that users of a World Cup prediction pool should know about?
 
 Title: ${article.title}
-Content: ${snippet}`,
-        },
-      ],
-      model: config.groq.model,
-      temperature: 0.1,
-      max_tokens: 10,
-    });
+Content: ${snippet}`
+  );
 
-    const answer = response.choices[0]?.message?.content?.trim().toUpperCase();
-    return answer === 'YES';
-  } catch (error) {
-    console.error('[RSS] Error clasificando para resumen:', error.message);
-    return false;
-  }
+  return answer === 'YES';
 }
 
 async function sendDailySummary() {
