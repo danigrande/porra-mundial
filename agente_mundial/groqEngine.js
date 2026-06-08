@@ -232,6 +232,47 @@ ${instruction}`;
 
   const startTime = Date.now();
 
+  if (hf) {
+    try {
+      const stream = hf.chatCompletionStream({
+        model: 'Qwen/Qwen2.5-7B-Instruct',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        temperature: config.groq.temperature,
+        max_tokens: config.groq.maxTokens,
+      });
+      let hfResponse = '';
+      for await (const chunk of stream) {
+        if (chunk.choices?.[0]?.delta?.content) {
+          hfResponse += chunk.choices[0].delta.content;
+        }
+      }
+      if (hfResponse) {
+        addRecentOutput(personalityId, hfResponse);
+        saveAILog({
+          type: 'response',
+          playerName,
+          groupName: groupName || 'Privado',
+          ragContext: context.chatContext || '',
+          systemPrompt: systemPrompt,
+          userPrompt: userMessage,
+          groqResponse: hfResponse,
+          model: 'Qwen/Qwen2.5-7B-Instruct (HF)',
+          temperature: config.groq.temperature,
+          maxTokens: config.groq.maxTokens,
+          latencyMs: Date.now() - startTime,
+          source: meta.source || 'chat',
+          success: true
+        });
+        return hfResponse;
+      }
+    } catch (hfError) {
+      console.error('[Groq] HF falló, intentando Groq:', hfError.message);
+    }
+  }
+
   try {
     const completion = await groq.chat.completions.create({
       messages: [
@@ -247,10 +288,8 @@ ${instruction}`;
     const responseText = completion.choices[0]?.message?.content || '¡Jugón! Algo ha fallado en mi cabeza. Inténtalo de nuevo. 🤯';
     const usage = completion.usage || {};
 
-    // Store this response to avoid catchphrase repetition on next call
     addRecentOutput(personalityId, responseText);
 
-    // 📊 Log de la interacción
     saveAILog({
       type: 'response',
       playerName,
@@ -275,9 +314,7 @@ ${instruction}`;
     return responseText;
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    console.error('Error en Groq:', error.message);
 
-    // 📊 Log del error
     saveAILog({
       type: 'response',
       playerName,
@@ -299,49 +336,7 @@ ${instruction}`;
       return '⚡ ¡Ratatatatata! He hablado demasiado rápido y me han mandado al banquillo. Espera un minutillo y vuelve a preguntar, ¡jugón! ⏳';
     }
 
-    // Fallback a HuggingFace cuando Groq bloquea por región (403)
-    if ((error.status === 403 || error.status === 503) && hf) {
-      try {
-        console.log('[Groq] Fallback a HuggingFace Inference...');
-        const stream = hf.chatCompletionStream({
-          model: 'Qwen/Qwen2.5-7B-Instruct',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userMessage },
-          ],
-          temperature: config.groq.temperature,
-          max_tokens: config.groq.maxTokens,
-        });
-        let hfResponse = '';
-        for await (const chunk of stream) {
-          if (chunk.choices?.[0]?.delta?.content) {
-            hfResponse += chunk.choices[0].delta.content;
-          }
-        }
-        if (hfResponse) {
-          addRecentOutput(personalityId, hfResponse);
-          saveAILog({
-            type: 'response',
-            playerName,
-            groupName: groupName || 'Privado',
-            ragContext: context.chatContext || '',
-            systemPrompt: systemPrompt,
-            userPrompt: userMessage,
-            groqResponse: hfResponse,
-            model: 'meta-llama/Llama-3.1-8B-Instruct (HF)',
-            temperature: config.groq.temperature,
-            maxTokens: config.groq.maxTokens,
-            latencyMs: Date.now() - startTime,
-            source: meta.source || 'chat',
-            success: true
-          });
-          return hfResponse;
-        }
-      } catch (hfError) {
-        console.error('[Groq] HF fallback también falló:', hfError.message);
-      }
-    }
-
+    console.error('[Groq] Ambos fallaron (HF + Groq):', error.message);
     return '❌ ¡Uy! El Agente Mundial ha tenido un tropiezo técnico. Inténtalo en un momento.';
   }
 }
@@ -400,6 +395,45 @@ The summary must:
 
   const startTime = Date.now();
 
+  if (hf) {
+    try {
+      const stream = hf.chatCompletionStream({
+        model: 'Qwen/Qwen2.5-7B-Instruct',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        temperature: config.groq.temperature,
+        max_tokens: 800,
+      });
+      let hfResponse = '';
+      for await (const chunk of stream) {
+        if (chunk.choices?.[0]?.delta?.content) {
+          hfResponse += chunk.choices[0].delta.content;
+        }
+      }
+      if (hfResponse) {
+        saveAILog({
+          type: 'summary',
+          playerName: 'Global',
+          groupName: groupName || 'Unknown',
+          systemPrompt: systemPrompt,
+          userPrompt: userMessage,
+          groqResponse: hfResponse,
+          model: 'Qwen/Qwen2.5-7B-Instruct (HF)',
+          temperature: config.groq.temperature,
+          maxTokens: 800,
+          latencyMs: Date.now() - startTime,
+          source: 'cron',
+          success: true
+        });
+        return hfResponse;
+      }
+    } catch (hfError) {
+      console.error('[Groq] HF falló en resumen, intentando Groq:', hfError.message);
+    }
+  }
+
   try {
     const completion = await groq.chat.completions.create({
       messages: [
@@ -415,7 +449,6 @@ The summary must:
     const responseText = completion.choices[0]?.message?.content || '¡Jugón! No pude generar el resumen. ¡La tecnología también falla!';
     const usage = completion.usage || {};
 
-    // 📊 Log de la interacción
     saveAILog({
       type: 'summary',
       playerName: 'Global',
@@ -437,7 +470,7 @@ The summary must:
     return responseText;
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    console.error('Error generando resumen:', error.message);
+    console.error('[Groq] Ambos fallaron en resumen:', error.message);
 
     saveAILog({
       type: 'summary',
@@ -517,6 +550,46 @@ The summary must be a funny and motivational description in the style of ${perso
 
   const startTime = Date.now();
 
+  if (hf) {
+    try {
+      const stream = hf.chatCompletionStream({
+        model: 'Qwen/Qwen2.5-7B-Instruct',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        temperature: 0.8,
+        max_tokens: 400,
+      });
+      let hfResponse = '';
+      for await (const chunk of stream) {
+        if (chunk.choices?.[0]?.delta?.content) {
+          hfResponse += chunk.choices[0].delta.content;
+        }
+      }
+      if (hfResponse) {
+        saveAILog({
+          type: 'personality',
+          playerName,
+          groupName: groupName || 'Unknown',
+          ragContext: chatContext || '',
+          systemPrompt: systemPrompt,
+          userPrompt: userMessage,
+          groqResponse: hfResponse,
+          model: 'Qwen/Qwen2.5-7B-Instruct (HF)',
+          temperature: 0.8,
+          maxTokens: 400,
+          latencyMs: Date.now() - startTime,
+          source: 'web',
+          success: true
+        });
+        return hfResponse;
+      }
+    } catch (hfError) {
+      console.error('[Groq] HF falló en personalidad, intentando Groq:', hfError.message);
+    }
+  }
+
   try {
     const completion = await groq.chat.completions.create({
       messages: [
@@ -532,7 +605,6 @@ The summary must be a funny and motivational description in the style of ${perso
     const responseText = completion.choices[0]?.message?.content || '¡Algo falló en la cabina de retransmisión!';
     const usage = completion.usage || {};
 
-    // 📊 Log de la interacción
     saveAILog({
       type: 'personality',
       playerName,
@@ -557,7 +629,7 @@ The summary must be a funny and motivational description in the style of ${perso
     return responseText;
   } catch (error) {
     const latencyMs = Date.now() - startTime;
-    console.error('Error en resumen personalidad:', error);
+    console.error('[Groq] Ambos fallaron en personalidad:', error);
 
     saveAILog({
       type: 'personality',
