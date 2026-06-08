@@ -17,10 +17,6 @@ const rssParser = new RssParser({
 const seenGuids = new Set();
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-// Daily articles for end-of-day summary
-const dailyArticles = [];
-
-// Stats for dev dashboard
 const stats = {
   pollCount: 0,
   lastPollTime: null,
@@ -31,8 +27,6 @@ const stats = {
   pushNotificationsSent: 0,
   errors: 0,
   recentBreaking: [], // last 10
-  summariesSent: 0,
-  summaryArticles: 0,
 };
 
 let io = null;
@@ -58,7 +52,6 @@ export async function startRssService(socketIo) {
 
   pollFeeds();
   setInterval(pollFeeds, config.rss.pollIntervalMs);
-  scheduleDailySummary();
 }
 
 async function pollFeeds() {
@@ -78,16 +71,6 @@ async function pollFeeds() {
 
         if (!isWorldCupRelated(article)) continue;
         stats.worldCupArticles++;
-
-        // Guardar para resumen diario
-        dailyArticles.push({
-          guid: article.guid,
-          title: article.title,
-          content: article.content,
-          link: article.link,
-          source: feedUrl.substring(0, 40),
-          time: new Date().toISOString(),
-        });
 
         const isBreaking = await isBreakingNews(article);
         if (isBreaking) {
@@ -202,94 +185,6 @@ async function broadcastBreakingNews(article) {
   console.log(`📢 Breaking news broadcast complete: "${article.title.substring(0, 60)}"`);
 }
 
-// ==========================================
-// Daily summary at 23:59
-// ==========================================
-
-function scheduleDailySummary() {
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(8, 45, 0, 0);
-
-  let msUntil = target - now;
-  if (msUntil <= 0) {
-    target.setDate(target.getDate() + 1);
-    msUntil = target - now;
-  }
-
-  console.log(`📅 Resumen diario programado para las 08:45 (en ${Math.round(msUntil / 60000)} min)`);
-
-  setTimeout(async () => {
-    await sendDailySummary();
-    scheduleDailySummary(); // reprogramar para el día siguiente
-  }, msUntil);
-}
-
-function isRelevantForSummary(article) {
-  const snippet = (article.content || '').substring(0, 500);
-  const text = `${article.title} ${snippet}`.toLowerCase();
-
-  const relevantKeywords = ['mundial', 'world cup', '2026', 'espana', 'mexico', 'usa', 'canada', 'seleccion', 'partido', 'gol', 'clasificacion', 'futbol'];
-  return relevantKeywords.some(k => text.includes(k));
-}
-
-async function sendDailySummary() {
-  if (dailyArticles.length === 0) {
-    console.log('[RSS] No hay artículos para el resumen diario');
-    return;
-  }
-
-  console.log(`📅 Preparando resumen diario de ${dailyArticles.length} artículos candidatos...`);
-
-  // Clasificar cada artículo de hoy con prompt relajado (sin filtro España)
-  const relevant = [];
-  for (const article of dailyArticles) {
-    const ok = await isRelevantForSummary(article);
-    if (ok) relevant.push(article);
-  }
-
-  // Vaciar el array para el día siguiente
-  dailyArticles.length = 0;
-
-  if (relevant.length === 0) {
-    console.log('[RSS] Ningún artículo relevante para el resumen diario');
-    return;
-  }
-
-  // Limitar a 8 artículos
-  const top = relevant.slice(0, 8);
-
-  // Construir mensaje
-  const dateStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-  let message = `📰 *RESUMEN INFORMATIVO — ${dateStr}* 📰\n\nLas noticias más relevantes del día sobre el Mundial:\n\n`;
-  top.forEach((a, i) => {
-    message += `${i + 1}. *${a.title}*\n${a.link}\n\n`;
-  });
-  message += `🤖 Generado automáticamente por el bot de la porra`;
-
-  if (!io) {
-    console.warn('[RSS] Socket.IO no disponible para resumen diario');
-    return;
-  }
-
-  const rooms = io.sockets.adapter.rooms;
-  for (const roomName of rooms.keys()) {
-    if (roomName.startsWith('group:')) {
-      const groupName = roomName.replace('group:', '');
-      try {
-        await sendBotMessage(groupName, message);
-        stats.summariesSent++;
-        console.log(`[RSS] Resumen enviado al grupo ${groupName}`);
-      } catch (err) {
-        stats.errors++;
-        console.error(`[RSS] Error enviando resumen a grupo ${groupName}:`, err.message);
-      }
-    }
-  }
-
-  stats.summaryArticles += top.length;
-  console.log(`📅 Resumen diario enviado: ${top.length} artículos a ${rooms.size} grupos`);
-}
 
 export function getRssStats() {
   return {
@@ -299,9 +194,6 @@ export function getRssStats() {
     keywords: config.rss.worldCupKeywords,
     ...stats,
     seenArticlesCount: seenGuids.size,
-    dailyArticlesPending: dailyArticles.length,
     breakingFilter: 'Spain + World Cup + breaking',
-    summaryFilter: 'World Cup relevant (no Spain filter)',
-    summaryTime: '08:45 daily',
   };
 }
