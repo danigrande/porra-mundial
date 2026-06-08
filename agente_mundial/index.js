@@ -16,7 +16,6 @@ import { Group } from './models/Group.js';
 import { adminAuth } from './middleware.js';
 import { Reality } from './models/Reality.js';
 import { getTournamentState, getCurrentTime } from './tournamentState.js';
-import * as apiFootballService from './apiFootballService.js';
 import { triggerAutoSimulationIfNeeded } from './autoSimulator.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from './shared_data.js';
 import { connectDB } from './db.js';

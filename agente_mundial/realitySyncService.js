@@ -1,20 +1,18 @@
-import axios from 'axios';
 import { Reality } from './models/Reality.js';
 import { Group } from './models/Group.js';
 import { FIXTURE_GROUPS, BRACKET_MATCHES } from './shared_data.js';
-import { syncRealityFromApi } from './apiFootballService.js';
+import { fetchWorldCupJson, syncRealityFromOpenfootball } from './openfootballService.js';
 
-const API_URL = 'https://v3.football.api-sports.io';
-const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const POLL_INTERVAL_MS = 15 * 60 * 1000;
 
 const TEAM_NAME_MAP = {
   'Mexico': 'México', 'South Africa': 'Sudáfrica', 'South Korea': 'Corea del Sur',
   'Czech Republic': 'República Checa', 'Canada': 'Canadá',
-  'Bosnia-Herzegovina': 'Bosnia y Herzegovina', 'Qatar': 'Catar',
+  'Bosnia-Herzegovina': 'Bosnia y Herzegovina', 'Bosnia & Herzegovina': 'Bosnia y Herzegovina', 'Qatar': 'Catar',
   'Switzerland': 'Suiza', 'Brazil': 'Brasil', 'Morocco': 'Marruecos',
   'Haiti': 'Haití', 'Scotland': 'Escocia', 'USA': 'Estados Unidos',
   'Paraguay': 'Paraguay', 'Australia': 'Australia', 'Turkey': 'Turquía',
-  'Germany': 'Alemania', 'Curacao': 'Curazao', 'Ivory Coast': 'Costa de Marfil',
+  'Germany': 'Alemania', 'Curacao': 'Curazao', 'Curaçao': 'Curazao', 'Ivory Coast': 'Costa de Marfil',
   'Ecuador': 'Ecuador', 'Netherlands': 'Países Bajos', 'Japan': 'Japón',
   'Sweden': 'Suecia', 'Tunisia': 'Túnez', 'Belgium': 'Bélgica',
   'Egypt': 'Egipto', 'Iran': 'Irán', 'New Zealand': 'Nueva Zelanda',
@@ -46,41 +44,25 @@ export function stopRealitySync() {
 
 async function syncResults() {
   try {
-    const apiKey = process.env.API_FOOTBALL_KEY;
-    if (!apiKey) {
-      console.warn('[RealitySync] API_FOOTBALL_KEY no configurada');
-      return;
-    }
+    const openfootballData = await fetchWorldCupJson();
+    const matches = openfootballData.matches || [];
 
-    const response = await axios.get(`${API_URL}/fixtures`, {
-      params: { league: 1, season: 2026, status: 'FT' },
-      headers: { 'x-apisports-key': apiKey },
-      timeout: 15000,
-    });
-
-    const fixtures = response.data?.response || [];
-    if (fixtures.length === 0) {
+    const completedMatches = matches.filter(m => m.score);
+    if (completedMatches.length === 0) {
       console.log('[RealitySync] No hay partidos finalizados aún');
       return;
     }
 
-    const translatedFixtures = fixtures.map(f => ({
-      ...f,
-      teams: {
-        home: { name: TEAM_NAME_MAP[f.teams.home.name] || f.teams.home.name },
-        away: { name: TEAM_NAME_MAP[f.teams.away.name] || f.teams.away.name },
-      }
-    }));
-
-    const apiResponse = { response: translatedFixtures };
-
     const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
     const currentReality = realityDoc ? realityDoc.results : { events: {} };
 
-    const updatedResults = syncRealityFromApi(apiResponse, currentReality, FIXTURE_GROUPS, BRACKET_MATCHES);
+    const updatedResults = syncRealityFromOpenfootball(openfootballData, currentReality, FIXTURE_GROUPS, BRACKET_MATCHES, TEAM_NAME_MAP);
 
     const hasChanges = JSON.stringify(currentReality) !== JSON.stringify(updatedResults);
-    if (!hasChanges) return;
+    if (!hasChanges) {
+      console.log(`[RealitySync] ${completedMatches.length} partidos — sin cambios`);
+      return;
+    }
 
     await Reality.findOneAndUpdate(
       { tournament: 'worldcup2026' },
@@ -88,17 +70,16 @@ async function syncResults() {
       { upsert: true }
     );
 
-    console.log(`[RealitySync] ${fixtures.length} partidos sincronizados`);
+    const syncedCount = completedMatches.length;
+    console.log(`[RealitySync] ${syncedCount} partidos sincronizados desde openfootball`);
 
     if (io) {
-      io.emit('reality-updated', { count: fixtures.length });
+      io.emit('reality-updated', { count: syncedCount });
       await notifyGroups();
     }
   } catch (error) {
-    if (error.response?.status === 429) {
-      console.warn('[RealitySync] Rate limit alcanzado');
-    } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-      console.warn('[RealitySync] API no disponible, reintentando en el próximo ciclo');
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      console.warn('[RealitySync] openfootball no disponible, reintentando en el próximo ciclo');
     } else {
       console.error('[RealitySync] Error:', error.message);
     }
