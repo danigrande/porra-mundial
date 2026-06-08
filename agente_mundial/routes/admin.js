@@ -19,7 +19,7 @@ router.get('/reality', async (req, res) => {
     }
 });
 
-router.post('/reality', async (req, res) => {
+router.post('/reality', adminAuth, async (req, res) => {
     try {
         const { results } = req.body;
         const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
