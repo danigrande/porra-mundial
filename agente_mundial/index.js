@@ -69,9 +69,6 @@ const upload = multer({
   },
 });
 
-// Conectar a MongoDB
-await connectDB();
-
 // ==========================================
 // SERVIDOR EXPRESS + HTTP
 // ==========================================
@@ -79,10 +76,6 @@ const app = express();
 const server = http.createServer(app);
 
 const isProduction = process.env.NODE_ENV === 'production' || process.env.TEST_MODE === 'false';
-
-// Middleware global: verificar conexión a DB
-import { dbCheck } from './routes/helpers.js';
-app.use('/api', dbCheck);
 
 const allowedOrigins = isProduction
     ? ['https://porra-mundial.onrender.com', 'https://porra-mundial-frontend.onrender.com']
@@ -98,52 +91,12 @@ app.use(cors({
     },
     credentials: true,
 }));
-app.use(express.json()); // Permitir body en JSON para la nueva API
+app.use(express.json());
 
 // Servir archivos estáticos
 app.use('/uploads', express.static(uploadDir));
 
-// Servir dev dashboard solo en modo test/desarrollo
-if (!isProduction) {
-  const projectRoot = path.resolve(__dirname, '..');
-  app.use('/dev-dashboard', express.static(projectRoot, {
-    index: 'dev_dashboard.html',
-    extensions: ['html', 'js', 'css']
-  }));
-}
-
-// Endpoint de subida de archivos
-app.post('/api/upload', (req, res) => {
-  upload.single('file')(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ status: 'error', message: 'El archivo excede el límite de 10 MB' });
-      }
-      return res.status(400).json({ status: 'error', message: err.message });
-    }
-    if (err) {
-      return res.status(400).json({ status: 'error', message: err.message });
-    }
-    if (!req.file) return res.status(400).json({ status: 'error', message: 'No se subió ningún archivo' });
-
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({ status: 'success', data: { url: fileUrl } });
-  });
-});
-
-// Usar nuestras rutas de Node.js (separadas por dominio)
-app.use('/api', authRoutes);
-app.use('/api', groupsRoutes);
-app.use('/api', predictionsRoutes);
-app.use('/api', adminRoutes);
-app.use('/api', feedbackRoutes);
-app.use('/api', miscRoutes);
-
-// Rutas de desarrollo solo disponibles en modo test
-if (!isProduction) {
-  app.use('/api/dev', devDashboardRoutes);
-}
-
+// Rutas públicas que responden inmediatamente (sin DB)
 app.get('/', (req, res) => {
   res.json({
     status: '🏆 Agente Mundial activo',
@@ -209,6 +162,65 @@ app.get('/legal/terms', (req, res) => {
   `;
   res.send(legalLayout('Términos de Uso (EULA)', content));
 });
+
+// Arrancar servidor ANTES de conectar DB para aceptar peticiones inmediatamente
+const PORT = config.bot.port;
+server.listen(PORT, () => {
+  console.log(`🌐 Servidor HTTP + Socket.IO en puerto ${PORT} (esperando BD...)`);
+});
+
+// ==========================================
+// CONEXIÓN A MONGODB (bloqueante)
+// ==========================================
+await connectDB();
+console.log('✅ Base de datos conectada');
+
+// ==========================================
+// MIDDLEWARE QUE DEPENDE DE DB
+// ==========================================
+import { dbCheck } from './routes/helpers.js';
+app.use('/api', dbCheck);
+
+// Servir dev dashboard solo en modo test/desarrollo
+if (!isProduction) {
+  const projectRoot = path.resolve(__dirname, '..');
+  app.use('/dev-dashboard', express.static(projectRoot, {
+    index: 'dev_dashboard.html',
+    extensions: ['html', 'js', 'css']
+  }));
+}
+
+// Endpoint de subida de archivos
+app.post('/api/upload', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ status: 'error', message: 'El archivo excede el límite de 10 MB' });
+      }
+      return res.status(400).json({ status: 'error', message: err.message });
+    }
+    if (err) {
+      return res.status(400).json({ status: 'error', message: err.message });
+    }
+    if (!req.file) return res.status(400).json({ status: 'error', message: 'No se subió ningún archivo' });
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ status: 'success', data: { url: fileUrl } });
+  });
+});
+
+// Usar nuestras rutas de Node.js (separadas por dominio)
+app.use('/api', authRoutes);
+app.use('/api', groupsRoutes);
+app.use('/api', predictionsRoutes);
+app.use('/api', adminRoutes);
+app.use('/api', feedbackRoutes);
+app.use('/api', miscRoutes);
+
+// Rutas de desarrollo solo disponibles en modo test
+if (!isProduction) {
+  app.use('/api/dev', devDashboardRoutes);
+}
 
 // Endpoint para forzar un resumen (útil para testing)
 app.get('/trigger-summary', adminAuth, async (req, res) => {
@@ -308,14 +320,6 @@ app.set('io', io);
 // INICIAR RSS BREAKING NEWS SERVICE
 // ==========================================
 startRssService(io);
-
-// ==========================================
-// ARRANCAR SERVIDOR
-// ==========================================
-const PORT = config.bot.port;
-server.listen(PORT, () => {
-  console.log(`🌐 Servidor HTTP + Socket.IO en puerto ${PORT}`);
-});
 
 // ==========================================
 // RESÚMENES PROGRAMADOS
