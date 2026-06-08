@@ -40,6 +40,9 @@ export function initChatServer(httpServer) {
       },
       methods: ['GET', 'POST']
     },
+    // Aumentados para móvil: evitar ping timeout cuando la app va al background
+    pingInterval: 60000,   // 60s — menos frecuente para móvil
+    pingTimeout: 40000,    // 40s — más tiempo para responder en background
     // Buffer de mensajes para reconexiones
     connectionStateRecovery: {
       maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutos
@@ -72,7 +75,7 @@ export function initChatServer(httpServer) {
       }
 
       // Guardar datos del usuario en el socket para uso posterior
-      socket.userData = {
+      socket.data.user = {
         userId: user._id.toString(),
         userName: user.name,
         email: user.email,
@@ -90,13 +93,13 @@ export function initChatServer(httpServer) {
   // MANEJO DE CONEXIONES
   // ==========================================
   io.on('connection', (socket) => {
-    if (!socket.userData) {
-      console.warn('⚠️ Conexión rechazada: userData indefinido');
+    if (!socket.data.user) {
+      console.warn(`⚠️ Conexión rechazada: data.user indefinido (socketId: ${socket.id})`);
       socket.disconnect(true);
       return;
     }
 
-    const { userName, userId, groups } = socket.userData;
+    const { userName, userId, groups } = socket.data.user;
     console.log(`💬 ${userName} conectado al chat (${groups?.length || 0} grupos)`);
 
     // Unir automáticamente a las salas de sus grupos
@@ -106,7 +109,7 @@ export function initChatServer(httpServer) {
 
     // --- UNIRSE A UN GRUPO ESPECÍFICO ---
     socket.on('join-group', async (groupName) => {
-      const { userName, userId, groups } = socket.userData;
+      const { userName, userId, groups } = socket.data.user;
       if (!groups.includes(groupName)) {
         socket.emit('error', { message: 'No eres miembro de este grupo' });
         return;
@@ -146,7 +149,7 @@ export function initChatServer(httpServer) {
       if (!groupName) return;
       if (type === 'text' && (!text || !text.trim())) return;
 
-      const { userName, userId, email } = socket.userData;
+      const { userName, userId, email } = socket.data.user;
       const cleanGroupName = groupName.trim();
 
       try {
@@ -186,11 +189,11 @@ export function initChatServer(httpServer) {
 
         // En lugar de broadcast simple, filtramos destinatarios con una sola query
         const socketsInRoom = await io.in(`group:${groupName}`).fetchSockets();
-        const roomUserIds = socketsInRoom.map(s => s.userData.userId);
+        const roomUserIds = socketsInRoom.map(s => s.data.user.userId);
         const blockedEntries = await BlockedUser.find({ blockerId: { $in: roomUserIds }, blockedId: userId }).select('blockerId').lean();
         const blockedSet = new Set(blockedEntries.map(b => b.blockerId));
         for (const s of socketsInRoom) {
-            if (!blockedSet.has(s.userData.userId)) {
+            if (!blockedSet.has(s.data.user.userId)) {
                 s.emit('new-message', messagePayload);
             }
         }
@@ -314,7 +317,7 @@ export function initChatServer(httpServer) {
       const { groupName } = data;
       socket.to(`group:${groupName}`).emit('user-typing', {
         groupName,
-        userName: socket.userData.userName
+        userName: socket.data.user.userName
       });
     });
 
@@ -322,7 +325,7 @@ export function initChatServer(httpServer) {
       const { groupName } = data;
       socket.to(`group:${groupName}`).emit('user-stopped-typing', {
         groupName,
-        userName: socket.userData.userName
+        userName: socket.data.user.userName
       });
     });
 

@@ -91,6 +91,7 @@ export default function ChatScreen() {
   const auth = getAuth();
   const groupName = paramGroupName || auth?.currentGroup || '';
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disconnectBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Lista de mensajes única para la vista (Garantía total contra duplicados)
   const uniqueMessages = useMemo(() => {
@@ -173,6 +174,11 @@ export default function ChatScreen() {
     // el nuevo chat-history que mandará el servidor.
     const onSocketReconnect = () => {
       console.log('[Chat] Socket reconectado mientras el chat estaba abierto. Re-solicitando historial...');
+      // Limpiar el timer del banner de desconexión en caso de reconexión rápida
+      if (disconnectBannerTimerRef.current) {
+        clearTimeout(disconnectBannerTimerRef.current);
+        disconnectBannerTimerRef.current = null;
+      }
       setSocketConnected(true);
       setLoading(true);
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
@@ -287,8 +293,13 @@ export default function ChatScreen() {
     };
 
     const onSocketDisconnect = () => {
-      console.log('[Chat] Socket desconectado');
-      setSocketConnected(false);
+      console.log('[Chat] Socket desconectado — esperando 4s antes de mostrar banner');
+      // Delay para evitar parpadeo del banner "Reconectando..." durante
+      // reconexiones breves (ej. ping timeout y reconexión automática)
+      if (disconnectBannerTimerRef.current) clearTimeout(disconnectBannerTimerRef.current);
+      disconnectBannerTimerRef.current = setTimeout(() => {
+        setSocketConnected(false);
+      }, 4000);
     };
 
     // Inicializar estado de conexión
@@ -315,6 +326,7 @@ export default function ChatScreen() {
 
     return () => {
       if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+      if (disconnectBannerTimerRef.current) clearTimeout(disconnectBannerTimerRef.current);
       socket.off('connect', onSocketReconnect);
       socket.off('disconnect', onSocketDisconnect);
       socket.off('new-message', onNewMessage);
