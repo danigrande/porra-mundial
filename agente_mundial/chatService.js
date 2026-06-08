@@ -23,9 +23,15 @@ let io = null;
  * @param {import('http').Server} httpServer - Servidor HTTP de Express
  */
 export function initChatServer(httpServer) {
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.TEST_MODE === 'false';
+
+  const allowedOrigins = isProduction
+    ? ['https://porra-mundial.onrender.com', 'https://porra-mundial-frontend.onrender.com']
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
   io = new Server(httpServer, {
     cors: {
-      origin: '*', // En producción, restringir a tu dominio
+      origin: allowedOrigins,
       methods: ['GET', 'POST']
     },
     // Buffer de mensajes para reconexiones
@@ -269,14 +275,6 @@ export function initChatServer(httpServer) {
             );
           }
         }
-
-        // 8. Guardar embedding para RAG (fire-and-forget, solo si hay texto)
-        if (text?.trim()) {
-          import('./ragService.js').then(rag => {
-            rag.vectorizeMessage(userMessage._id, text.trim());
-          }).catch(e => console.error('[Chat] Error RAG:', e.message));
-        }
-
 
       } catch (error) {
         console.error('[Chat] Error procesando mensaje:', error);

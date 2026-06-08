@@ -23,11 +23,17 @@ import { connectDB } from './db.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
-import apiRoutes from './routes/api.js';
+import authRoutes from './routes/auth.js';
+import groupsRoutes from './routes/groups.js';
+import predictionsRoutes from './routes/predictions.js';
+import adminRoutes from './routes/admin.js';
+import feedbackRoutes from './routes/feedback.js';
+import miscRoutes from './routes/misc.js';
 import devDashboardRoutes from './routes/devDashboard.js';
 import { initChatServer, sendBotMessage } from './chatService.js';
 import { startRssService } from './rssFeedService.js';
 import * as pushService from './pushService.js';
+import { startRealitySync } from './realitySyncService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,18 +65,39 @@ await connectDB();
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors()); // Permitir llamadas desde la web
+const isProduction = process.env.NODE_ENV === 'production' || process.env.TEST_MODE === 'false';
+
+// Middleware global: verificar conexión a DB
+import { dbCheck } from './routes/helpers.js';
+app.use('/api', dbCheck);
+
+const allowedOrigins = isProduction
+    ? ['https://porra-mundial.onrender.com', 'https://porra-mundial-frontend.onrender.com']
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Origen no permitido por CORS'));
+        }
+    },
+    credentials: true,
+}));
 app.use(express.json()); // Permitir body en JSON para la nueva API
 
 // Servir archivos estáticos
 app.use('/uploads', express.static(uploadDir));
 
-// Servir dev dashboard desde el directorio raíz del proyecto
-const projectRoot = path.resolve(__dirname, '..');
-app.use('/dev-dashboard', express.static(projectRoot, {
-  index: 'dev_dashboard.html',
-  extensions: ['html', 'js', 'css']
-}));
+// Servir dev dashboard solo en modo test/desarrollo
+if (!isProduction) {
+  const projectRoot = path.resolve(__dirname, '..');
+  app.use('/dev-dashboard', express.static(projectRoot, {
+    index: 'dev_dashboard.html',
+    extensions: ['html', 'js', 'css']
+  }));
+}
 
 // Endpoint de subida de archivos
 app.post('/api/upload', upload.single('file'), (req, res) => {
@@ -81,9 +108,18 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   res.json({ status: 'success', data: { url: fileUrl } });
 });
 
-// Usar nuestras rutas de Node.js
-app.use('/api', apiRoutes);
-app.use('/api/dev', devDashboardRoutes);
+// Usar nuestras rutas de Node.js (separadas por dominio)
+app.use('/api', authRoutes);
+app.use('/api', groupsRoutes);
+app.use('/api', predictionsRoutes);
+app.use('/api', adminRoutes);
+app.use('/api', feedbackRoutes);
+app.use('/api', miscRoutes);
+
+// Rutas de desarrollo solo disponibles en modo test
+if (!isProduction) {
+  app.use('/api/dev', devDashboardRoutes);
+}
 
 app.get('/', (req, res) => {
   res.json({
@@ -356,17 +392,12 @@ async function initProactiveNotifications() {
 }
 
 // ==========================================
-// SIMULACIÓN AUTOMÁTICA (Solo en TEST_MODE)
+// SINCRONIZACIÓN DE RESULTADOS REALES (API-Football)
 // ==========================================
 
-async function initAutoSimulation() {
-  if (process.env.TEST_MODE !== 'true') return;
-  
-  console.log('🧪 MODO TEST: Iniciando motor de auto-simulación de resultados (Background)...');
-  
-  setInterval(async () => {
-    await triggerAutoSimulationIfNeeded();
-  }, 30000); // Comprobar cada 30 segundos
+async function initRealitySync() {
+  console.log('📡 Iniciando sincronización de resultados reales (API-Football)...');
+  await startRealitySync(io);
 }
 
 
@@ -393,4 +424,4 @@ console.log(`
 
 // Iniciar servicios
 initProactiveNotifications();
-initAutoSimulation();
+initRealitySync();

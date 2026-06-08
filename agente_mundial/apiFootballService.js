@@ -180,7 +180,7 @@ export function syncRealityFromApi(apiResponse, currentReality, groups, bracket)
         const events = item.events || [];
 
         // 1. Identificar el partido en nuestro sistema
-        const matchId = findMatchIdByTeams(teams.home.name, teams.away.name, groups, bracket);
+        const matchId = findMatchIdByTeams(teams.home.name, teams.away.name, groups, bracket, currentReality);
         
         if (matchId) {
             console.log(`🔗 Mapeando partido API: ${teams.home.name} vs ${teams.away.name} -> ID: ${matchId}`);
@@ -213,16 +213,16 @@ export function syncRealityFromApi(apiResponse, currentReality, groups, bracket)
 /**
  * Función auxiliar para encontrar nuestro ID de partido basado en nombres de equipos
  */
-function findMatchIdByTeams(hName, aName, groups, bracket) {
+function findMatchIdByTeams(hName, aName, groups, bracket, currentReality = {}) {
     for (const g of groups) {
         if (g.teams.includes(hName) && g.teams.includes(aName)) {
             const pairs = [
-                [g.teams[0], g.teams[1]], // m0
-                [g.teams[2], g.teams[3]], // m1
-                [g.teams[0], g.teams[2]], // m2
-                [g.teams[1], g.teams[3]], // m3
-                [g.teams[0], g.teams[3]], // m4
-                [g.teams[1], g.teams[2]]  // m5
+                [g.teams[0], g.teams[1]],
+                [g.teams[2], g.teams[3]],
+                [g.teams[0], g.teams[2]],
+                [g.teams[1], g.teams[3]],
+                [g.teams[0], g.teams[3]],
+                [g.teams[1], g.teams[2]]
             ];
             for (let i = 0; i < 6; i++) {
                 if ((pairs[i][0] === hName && pairs[i][1] === aName) || 
@@ -232,8 +232,16 @@ function findMatchIdByTeams(hName, aName, groups, bracket) {
             }
         }
     }
-    // En KO, durante el mundial real se usará una tabla de mapeo por ID de fixture
-    return null; 
+
+    // KO: resolver bracket con resultados actuales y buscar coincidencia
+    for (const [matchNum, pairing] of Object.entries(bracket)) {
+        const resolvedH = fullResolve(pairing[0], currentReality);
+        const resolvedA = fullResolve(pairing[1], currentReality);
+        if (resolvedH === hName && resolvedA === aName) return `ko_${matchNum}`;
+        if (resolvedH === aName && resolvedA === hName) return `ko_${matchNum}`;
+    }
+
+    return null;
 }
 
 export function simulateAllMatches(groups, bracket) {

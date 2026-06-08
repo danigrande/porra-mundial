@@ -157,12 +157,12 @@ export async function getLeaderboard(groupName: string) {
   return apiFetch(`/leaderboard?groupName=${encodeURIComponent(groupName)}`);
 }
 
-export async function resetGroup(groupName: string) {
+export async function resetGroup(groupName: string, adminKey: string) {
   return apiFetch('/dev/reset-test', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-admin-key': 'agente-dev-2026'
+      'x-admin-key': adminKey
     },
     body: JSON.stringify({ groupName }),
   });
@@ -214,12 +214,12 @@ export async function saveReality(results: any) {
   });
 }
 
-export async function simulateMatch(matchId: string | number, homeTeam: string, awayTeam: string) {
+export async function simulateMatch(matchId: string | number, homeTeam: string, awayTeam: string, adminKey: string) {
   return apiFetch('/admin/simulate-match', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-admin-key': 'agente-dev-2026'
+      'x-admin-key': adminKey
     },
     body: JSON.stringify({ matchId, homeTeam, awayTeam }),
   });

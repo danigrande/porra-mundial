@@ -263,6 +263,19 @@ router.post('/admin/regenerate-events', adminAuth, async (req, res) => {
     }
 });
 
+// Forzar sincronización manual con API-Football
+router.post('/admin/force-sync', adminAuth, async (req, res) => {
+    try {
+        const { startRealitySync } = await import('../realitySyncService.js');
+        const io = req.app.get('io');
+        await startRealitySync(io);
+        res.json(createResponse('success', null, 'Sincronización forzada completada'));
+    } catch (error) {
+        console.error("Error en force-sync:", error);
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 // ==========================================
 // RUTAS DE DESARROLLO (Testing Go-Live)
 // ==========================================
