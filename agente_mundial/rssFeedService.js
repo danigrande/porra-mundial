@@ -209,7 +209,7 @@ async function broadcastBreakingNews(article) {
 function scheduleDailySummary() {
   const now = new Date();
   const target = new Date(now);
-  target.setHours(23, 59, 0, 0);
+  target.setHours(8, 45, 0, 0);
 
   let msUntil = target - now;
   if (msUntil <= 0) {
