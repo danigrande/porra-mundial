@@ -321,8 +321,8 @@ server.listen(PORT, () => {
 // RESÚMENES PROGRAMADOS
 // ==========================================
 
-// Resumen diario a las 23:00 (hora España) — Multi-grupo
-schedule('0 23 * * *', async () => {
+// Resumen diario a las 08:45 (hora España) — Multi-grupo
+schedule('45 8 * * *', async () => {
   console.log(`📢 Generando resúmenes programados para TODOS los grupos...`);
   try {
     const allGroups = await Group.find();
