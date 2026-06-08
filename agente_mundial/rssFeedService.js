@@ -185,8 +185,9 @@ async function classifyWithGroq(systemPrompt, userPrompt) {
 
 async function isBreakingNews(article) {
   const snippet = (article.content || '').substring(0, 500);
+  const text = `${article.title} ${snippet}`.toLowerCase();
 
-  const answer = await classifyWithGroq(
+  const groqAnswer = await classifyWithGroq(
     'You are a sports news classifier. Respond with ONLY a single word: YES or NO.',
     `Is this about the Spanish national team and is it a breaking or important development regarding the FIFA World Cup that users of a World Cup prediction pool should know about?
 
@@ -194,13 +195,18 @@ Title: ${article.title}
 Content: ${snippet}`
   );
 
-  const isBreaking = answer === 'YES';
-
-  if (isBreaking) {
+  if (groqAnswer === 'YES') {
     console.log(`🚨 BREAKING: "${article.title.substring(0, 80)}"`);
+    return true;
   }
 
-  return isBreaking;
+  if (groqAnswer === null) {
+    const breakingKeywords = ['última hora', 'breaking', 'oficial', 'confirmado', 'lesión', 'gol', 'victoria', 'clasifica', 'elimina', 'sorteo', 'once titular', 'convocatoria', 'españa', 'selección española', 'de la fuente'];
+    const hasBreakingKeyword = breakingKeywords.some(k => text.includes(k));
+    return hasBreakingKeyword;
+  }
+
+  return false;
 }
 
 async function broadcastBreakingNews(article) {
@@ -272,8 +278,9 @@ function scheduleDailySummary() {
 
 async function isRelevantForSummary(article) {
   const snippet = (article.content || '').substring(0, 500);
+  const text = `${article.title} ${snippet}`.toLowerCase();
 
-  const answer = await classifyWithGroq(
+  const groqAnswer = await classifyWithGroq(
     'You are a sports news classifier. Respond with ONLY a single word: YES or NO.',
     `Is this news article relevant to the FIFA World Cup that users of a World Cup prediction pool should know about?
 
@@ -281,7 +288,10 @@ Title: ${article.title}
 Content: ${snippet}`
   );
 
-  return answer === 'YES';
+  if (groqAnswer !== null) return groqAnswer === 'YES';
+
+  const relevantKeywords = ['mundial', 'world cup', '2026', 'espana', 'mexico', 'usa', 'canada', 'seleccion', 'partido', 'gol', 'clasificacion', 'futbol'];
+  return relevantKeywords.some(k => text.includes(k));
 }
 
 async function sendDailySummary() {
