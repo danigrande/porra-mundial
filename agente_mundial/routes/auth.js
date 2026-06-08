@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { User } from '../models/User.js';
 import { Group } from '../models/Group.js';
 import { Prediction } from '../models/Prediction.js';
@@ -10,7 +11,15 @@ import { sendResetCode, isEmailConfigured, ensureInit } from '../emailService.js
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { status: 'error', data: null, message: 'Demasiados intentos. Intenta de nuevo en 15 minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password, groupName } = req.body;
     if (!email || !password) {

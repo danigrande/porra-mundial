@@ -54,7 +54,21 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage });
+
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/mp3', 'audio/m4a', 'application/pdf'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+const upload = multer({
+  storage,
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
+    }
+  },
+});
 
 // Conectar a MongoDB
 await connectDB();
@@ -100,12 +114,22 @@ if (!isProduction) {
 }
 
 // Endpoint de subida de archivos
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ status: 'error', message: 'No se subió ningún archivo' });
-  
-  // Construir URL pública (usar HOST si existe, sino relativo)
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ status: 'success', data: { url: fileUrl } });
+app.post('/api/upload', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ status: 'error', message: 'El archivo excede el límite de 10 MB' });
+      }
+      return res.status(400).json({ status: 'error', message: err.message });
+    }
+    if (err) {
+      return res.status(400).json({ status: 'error', message: err.message });
+    }
+    if (!req.file) return res.status(400).json({ status: 'error', message: 'No se subió ningún archivo' });
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ status: 'success', data: { url: fileUrl } });
+  });
 });
 
 // Usar nuestras rutas de Node.js (separadas por dominio)
