@@ -217,7 +217,7 @@ function scheduleDailySummary() {
     msUntil = target - now;
   }
 
-  console.log(`📅 Resumen diario programado para las 23:59 (en ${Math.round(msUntil / 60000)} min)`);
+  console.log(`📅 Resumen diario programado para las 08:45 (en ${Math.round(msUntil / 60000)} min)`);
 
   setTimeout(async () => {
     await sendDailySummary();
@@ -302,6 +302,6 @@ export function getRssStats() {
     dailyArticlesPending: dailyArticles.length,
     breakingFilter: 'Spain + World Cup + breaking',
     summaryFilter: 'World Cup relevant (no Spain filter)',
-    summaryTime: '23:59 daily',
+    summaryTime: '08:45 daily',
   };
 }
