@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.get('/tournament-state', async (req, res) => {
   const { groupName } = req.query;
-  await triggerAutoSimulationIfNeeded();
+  if (process.env.TEST_MODE === 'true') await triggerAutoSimulationIfNeeded();
   res.json(createResponse('success', await getTournamentState(groupName)));
 });
 

@@ -65,7 +65,7 @@ export default function ProfileScreen() {
   const [showAdminReset, setShowAdminReset] = useState(false);
   const [groupMembers, setGroupMembers] = useState<{ name: string; email: string; userId: string }[]>([]);
   const [selectedMember, setSelectedMember] = useState<{ name: string; email: string } | null>(null);
-  const [tempPassword, setTempPassword] = useState('PrediccionMundial');
+  const [tempPassword, setTempPassword] = useState('');
   const [resettingMember, setResettingMember] = useState(false);
 
   useEffect(() => {
@@ -449,10 +449,10 @@ export default function ProfileScreen() {
               <View style={styles.modalActions}>
                 <TouchableOpacity
                   style={[styles.pinButton, {flex: 1}]}
-                  onPress={() => {
+                    onPress={() => {
                     setShowAdminReset(false);
                     setSelectedMember(null);
-                    setTempPassword('PrediccionMundial');
+                    setTempPassword('');
                   }}
                 >
                   <Text style={styles.pinButtonText}>{t('common.cancel')}</Text>
@@ -469,7 +469,7 @@ export default function ProfileScreen() {
                       Alert.alert(t('common.success'), t('profile.admin_reset_success', { password: tempPassword }));
                       setShowAdminReset(false);
                       setSelectedMember(null);
-                      setTempPassword('PrediccionMundial');
+                      setTempPassword('');
                     } catch (e: any) {
                       Alert.alert(t('common.error'), e.message);
                     } finally {

@@ -5,6 +5,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { AILog } from '../models/AILog.js';
 import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
@@ -529,18 +530,19 @@ router.get('/users', async (req, res) => {
   }
 });
 
-// Resetear contraseña de un usuario (Forzar a 'PrediccionMundial')
+// Resetear contraseña de un usuario (genera una aleatoria)
 router.post('/users/:userName/reset-password', async (req, res) => {
   try {
     const { userName } = req.params;
     const user = await User.findOne({ name: userName });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-    user.password = await bcrypt.hash('PrediccionMundial', 10);
+    const newPassword = crypto.randomBytes(4).toString('hex');
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
     
-    console.log(`🔧 Contraseña reseteada a PrediccionMundial para ${userName}`);
-    res.json({ status: 'ok' });
+    console.log(`🔧 Contraseña reseteada para ${userName}`);
+    res.json({ status: 'ok', newPassword });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

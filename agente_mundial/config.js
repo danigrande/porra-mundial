@@ -24,11 +24,7 @@ const config = {
     // Se puede mapear aquí si es necesario
   },
 
-  // --- Perfiles de personalidad (respaldo local) ---
-  playerProfiles: {
-    'Dani': { nickname: 'El Optimista', likes: ['Fútbol'], dislikes: ['El VAR'], humor_style: 'Sarcástico' },
-    'Dani Grande': { nickname: 'El Jefe', likes: ['Ganar'], dislikes: ['Derrotas'], humor_style: 'Autoritario' },
-  },
+  playerProfiles: {},
 
   // --- Configuración del bot ---
   bot: {

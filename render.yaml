@@ -28,7 +28,7 @@ services:
       - key: API_FOOTBALL_KEY
         sync: false
       - key: DEV_DASHBOARD_KEY
-        value: agente-dev-2026
+        sync: false
       - key: TAVILY_API_KEY
         sync: false # Configurar manualmente en el dashboard (obtener gratis en tavily.com)
       # Email (Brevo API) para recuperación de contraseña

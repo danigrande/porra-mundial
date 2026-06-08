@@ -3,3 +3,4 @@ porra-mundial-app/playstore.json
 graphify-out/
 .graphifyignore
 opencode-session.md
+.env
