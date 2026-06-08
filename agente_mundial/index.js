@@ -90,7 +90,7 @@ const allowedOrigins = isProduction
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('exp://') || origin.startsWith('file://')) {
             callback(null, true);
         } else {
             callback(new Error('Origen no permitido por CORS'));

@@ -31,7 +31,13 @@ export function initChatServer(httpServer) {
 
   io = new Server(httpServer, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('exp://') || origin.startsWith('file://')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Origen no permitido por CORS'));
+        }
+      },
       methods: ['GET', 'POST']
     },
     // Buffer de mensajes para reconexiones
