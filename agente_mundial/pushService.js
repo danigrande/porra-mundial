@@ -45,7 +45,7 @@ export async function sendToUser(userId, title, body, data = {}) {
  * @param {Object} data - Datos adicionales
  * @param {string} excludeUserId - ID de usuario a excluir (ej: el que envió el mensaje)
  */
-export async function sendToGroup(groupName, title, body, data = {}, excludeUserId = null, isAgent = false) {
+export async function sendToGroup(groupName, title, body, data = {}, excludeUserId = null, isAgent = false, excludeUserIds = new Set()) {
   try {
     const group = await Group.findOne({ name: groupName }).populate('members');
     if (!group) return;
@@ -70,10 +70,17 @@ export async function sendToGroup(groupName, title, body, data = {}, excludeUser
 
     for (const t of tokens) {
       const user = t.user;
-      if (!user || user._id.toString() === excludeUserId) continue;
+      const userId = user._id.toString();
+      if (!user || userId === excludeUserId) continue;
+
+      // Evitar duplicados entre grupos (un usuario en múltiples grupos recibe 1 solo push)
+      if (excludeUserIds.has(userId)) {
+        console.log(`[Push] 🔇 ${user.name} ya notificado desde otro grupo, saltando...`);
+        continue;
+      }
 
       // No enviar si el destinatario ha bloqueado al remitente
-      if (blockedMeIds.includes(user._id.toString())) {
+      if (blockedMeIds.includes(userId)) {
           console.log(`[Push] 🚫 Saltando a ${user.name} (ha bloqueado al remitente)`);
           continue;
       }
@@ -108,6 +115,7 @@ export async function sendToGroup(groupName, title, body, data = {}, excludeUser
         }
       }
 
+      excludeUserIds.add(userId);
       messages.push({
         to: t.token,
         sound: 'default',

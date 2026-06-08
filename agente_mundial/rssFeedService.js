@@ -152,6 +152,8 @@ async function broadcastBreakingNews(article) {
 
   // Enviar a todos los grupos activos
   const rooms = io.sockets.adapter.rooms;
+  const notifiedUserIds = new Set(); // Evita duplicados: 1 push por usuario aunque esté en varios grupos
+
   for (const roomName of rooms.keys()) {
     if (roomName.startsWith('group:')) {
       const groupName = roomName.replace('group:', '');
@@ -164,7 +166,7 @@ async function broadcastBreakingNews(article) {
         console.error(`[RSS] Error enviando a grupo ${groupName}:`, err.message);
       }
 
-      // También push notification a los miembros del grupo
+      // También push notification a los miembros del grupo (sin duplicar usuarios)
       try {
         await pushService.sendToGroup(
           groupName,
@@ -172,7 +174,8 @@ async function broadcastBreakingNews(article) {
           article.title.substring(0, 150),
           { screen: 'chat', groupName },
           null,
-          true // es el agente (RSS)
+          true, // es el agente (RSS)
+          notifiedUserIds // excluye usuarios ya notificados desde otro grupo
         );
         stats.pushNotificationsSent++;
       } catch (err) {
