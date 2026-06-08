@@ -4,7 +4,14 @@ import { sendBotMessage } from './chatService.js';
 import * as pushService from './pushService.js';
 import { SeenArticle } from './models/SeenArticle.js';
 
-const rssParser = new RssParser();
+const rssParser = new RssParser({
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+    'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+  },
+  timeout: 10000,
+});
 
 // Persistent tracking of seen articles via MongoDB
 const seenGuids = new Set();
