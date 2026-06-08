@@ -10,18 +10,18 @@ import { KNOCKOUT_BRACKET, BRACKET_MATCHES } from './shared_data.js';
 
 const REAL_PHASES = [
   { id: 'PRE_TOURNAMENT', name: 'Pre-Mundial', start: '2026-01-01T00:00:00Z', end: '2026-06-11T19:00:00Z', unlocks: ['groups', 'honor'] },
-  { id: 'GROUP_STAGE', name: 'Fase de Grupos', start: '2026-06-11T19:00:00Z', end: '2026-06-27T00:00:00Z', unlocks: [] },
-  { id: 'WAITING_R32', name: 'Ventana de 1/16 Final', start: '2026-06-27T00:00:00Z', end: '2026-06-28T19:00:00Z', unlocks: ['r32'] },
-  { id: 'R32_ACTIVE', name: '1/16 Final', start: '2026-06-28T19:00:00Z', end: '2026-07-03T00:00:00Z', unlocks: [] },
-  { id: 'WAITING_R16', name: 'Ventana de Octavos', start: '2026-07-03T00:00:00Z', end: '2026-07-04T19:00:00Z', unlocks: ['r16'] },
-  { id: 'R16_ACTIVE', name: 'Octavos de Final', start: '2026-07-04T19:00:00Z', end: '2026-07-08T00:00:00Z', unlocks: [] },
-  { id: 'WAITING_QF', name: 'Ventana de Cuartos', start: '2026-07-08T00:00:00Z', end: '2026-07-09T19:00:00Z', unlocks: ['qf'] },
-  { id: 'QF_ACTIVE', name: 'Cuartos de Final', start: '2026-07-09T19:00:00Z', end: '2026-07-12T00:00:00Z', unlocks: [] },
-  { id: 'WAITING_SF', name: 'Ventana de Semifinales', start: '2026-07-12T00:00:00Z', end: '2026-07-14T19:00:00Z', unlocks: ['sf'] },
-  { id: 'SF_ACTIVE', name: 'Semifinales', start: '2026-07-14T19:00:00Z', end: '2026-07-16T00:00:00Z', unlocks: [] },
-  { id: 'WAITING_FINALS', name: 'Ventana de Finales', start: '2026-07-16T00:00:00Z', end: '2026-07-18T19:00:00Z', unlocks: ['3rd', 'final'] },
-  { id: 'FINALS_ACTIVE', name: 'Finales', start: '2026-07-18T19:00:00Z', end: '2026-07-20T00:00:00Z', unlocks: [] },
-  { id: 'POST_TOURNAMENT', name: 'Torneo Finalizado', start: '2026-07-20T00:00:00Z', end: '2030-01-01T00:00:00Z', unlocks: [] },
+  { id: 'GROUP_STAGE', name: 'Fase de Grupos', start: '2026-06-11T19:00:00Z', end: '2026-06-28T04:00:00Z', unlocks: [] },
+  { id: 'WAITING_R32', name: 'Ventana de 1/16 Final', start: '2026-06-28T04:00:00Z', end: '2026-06-28T19:00:00Z', unlocks: ['r32'] },
+  { id: 'R32_ACTIVE', name: '1/16 Final', start: '2026-06-28T19:00:00Z', end: '2026-07-04T04:00:00Z', unlocks: [] },
+  { id: 'WAITING_R16', name: 'Ventana de Octavos', start: '2026-07-04T04:00:00Z', end: '2026-07-04T17:00:00Z', unlocks: ['r16'] },
+  { id: 'R16_ACTIVE', name: 'Octavos de Final', start: '2026-07-04T17:00:00Z', end: '2026-07-08T00:00:00Z', unlocks: [] },
+  { id: 'WAITING_QF', name: 'Ventana de Cuartos', start: '2026-07-08T00:00:00Z', end: '2026-07-09T20:00:00Z', unlocks: ['qf'] },
+  { id: 'QF_ACTIVE', name: 'Cuartos de Final', start: '2026-07-09T20:00:00Z', end: '2026-07-12T04:00:00Z', unlocks: [] },
+  { id: 'WAITING_SF', name: 'Ventana de Semifinales', start: '2026-07-12T04:00:00Z', end: '2026-07-14T19:00:00Z', unlocks: ['sf'] },
+  { id: 'SF_ACTIVE', name: 'Semifinales', start: '2026-07-14T19:00:00Z', end: '2026-07-16T04:00:00Z', unlocks: [] },
+  { id: 'WAITING_FINALS', name: 'Ventana de Finales', start: '2026-07-16T04:00:00Z', end: '2026-07-18T21:00:00Z', unlocks: ['3rd', 'final'] },
+  { id: 'FINALS_ACTIVE', name: 'Finales', start: '2026-07-18T21:00:00Z', end: '2026-07-20T04:00:00Z', unlocks: [] },
+  { id: 'POST_TOURNAMENT', name: 'Torneo Finalizado', start: '2026-07-20T04:00:00Z', end: '2030-01-01T00:00:00Z', unlocks: [] },
 ];
 
 const TEST_PHASES = [
