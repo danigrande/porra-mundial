@@ -44,7 +44,7 @@ export default function PredictionsScreen() {
       return;
     }
     
-    let refreshTimer: NodeJS.Timeout;
+    let refreshTimer: ReturnType<typeof setTimeout>;
     let isInitial = true;
     
     const loadData = async () => {
@@ -419,7 +419,7 @@ export default function PredictionsScreen() {
                       
                       <View style={styles.scoreContainer}>
                         <TextInput
-                          style={[styles.scoreInput, isPenTieError && styles.scoreInputError]}
+                          style={[styles.scoreInput, isPenTieError && styles.scoreInput]}
                           keyboardType="number-pad"
                           value={pen1}
                           onChangeText={(text) => handlePenaltyChange(matchNum, 1, text)}
@@ -428,7 +428,7 @@ export default function PredictionsScreen() {
                         />
                         <Text style={styles.vsText}>-</Text>
                         <TextInput
-                          style={[styles.scoreInput, isPenTieError && styles.scoreInputError]}
+                          style={[styles.scoreInput, isPenTieError && styles.scoreInput]}
                           keyboardType="number-pad"
                           value={pen2}
                           onChangeText={(text) => handlePenaltyChange(matchNum, 2, text)}

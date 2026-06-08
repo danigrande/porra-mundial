@@ -462,7 +462,7 @@ export default function ProfileScreen() {
                   style={[styles.saveButton, {flex: 1, marginLeft: 8}, resettingMember && styles.buttonDisabled]}
                   disabled={!selectedMember || resettingMember}
                   onPress={async () => {
-                    if (!selectedMember) return;
+                    if (!selectedMember || !auth) return;
                     setResettingMember(true);
                     try {
                       await api.adminResetMemberPassword(auth.userId, auth.currentGroup, selectedMember.email, tempPassword);

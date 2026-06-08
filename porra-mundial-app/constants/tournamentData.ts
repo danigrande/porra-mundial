@@ -128,7 +128,7 @@ export function fullResolve(code: string, dataSource: DataSource): string {
     });
 
     thirds.sort((a, b) => (b.team.pts - a.team.pts) || (b.team.gd - a.team.gd) || (b.team.gf - a.team.gf));
-    const best8 = thirds.slice(0, 8);
+    const best8: ({ letter: string; team: any; used?: boolean })[] = thirds.slice(0, 8);
 
     if (!dataSource._thirdsMapping) {
       dataSource._thirdsMapping = {};

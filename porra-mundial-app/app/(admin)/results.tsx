@@ -45,7 +45,7 @@ export default function ResultsManagement() {
 
   async function handleSimulate(matchId: string, hName: string, aName: string) {
     try {
-      const res = await api.simulateMatch(matchId, hName, aName);
+      const res = await api.simulateMatch(matchId, hName, aName, '');
       if (res.status === 'success') {
         setReality(res.results);
         Alert.alert('Simulado', `Resultado inyectado para ${hName} vs ${aName}`);

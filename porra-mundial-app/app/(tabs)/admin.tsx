@@ -21,7 +21,7 @@ export default function AdminHub() {
           style: "destructive",
           onPress: async () => {
             try {
-              await api.resetGroup(auth?.currentGroup || '');
+              await api.resetGroup(auth?.currentGroup || '', '');
               Alert.alert(t('common.success'), t('admin.reset_success'));
             } catch (e) {
               Alert.alert(t('common.error'), t('admin.reset_error'));

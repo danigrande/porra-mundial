@@ -82,7 +82,7 @@ export default function ResultsScreen() {
   async function handleSimulate(matchId: string, hName: string, aName: string) {
     if (!isAdmin) return;
     try {
-      const res = await api.simulateMatch(matchId, hName, aName);
+      const res = await api.simulateMatch(matchId, hName, aName, '');
       // Actualizamos reality con la respuesta del server (que ya guardó el cambio)
       if (res) {
           fetchData(); // Recargamos para estar sincronizados

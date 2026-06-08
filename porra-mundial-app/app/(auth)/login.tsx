@@ -86,7 +86,7 @@ export default function LoginScreen() {
 
       if (mustChangePw) {
         await saveAuth(authData);
-        router.replace('/(auth)/force-password-change');
+        router.replace('/(auth)/force-password-change' as any);
         return;
       }
 

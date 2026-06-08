@@ -88,6 +88,9 @@ export default function ChatScreen() {
   const [searchIndex, setSearchIndex] = useState(0);
   const [socketConnected, setSocketConnected] = useState(true);
   const pendingMessagesRef = useRef<string[]>([]);
+  const auth = getAuth();
+  const groupName = paramGroupName || auth?.currentGroup || '';
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Lista de mensajes única para la vista (Garantía total contra duplicados)
   const uniqueMessages = useMemo(() => {
@@ -106,9 +109,6 @@ export default function ChatScreen() {
   const isAtBottomRef = useRef(true);
   const messagesRef = useRef(messages);
   const showUnreadMarkerRef = useRef(showUnreadMarker);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const auth = getAuth();
-  const groupName = paramGroupName || auth?.currentGroup || '';
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -377,7 +377,7 @@ export default function ChatScreen() {
       if (Array.isArray(messages)) {
         setMessagesSafe(messages);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[Chat] REST fallback falló:', e.message);
     } finally {
       setLoading(false);

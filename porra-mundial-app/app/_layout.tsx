@@ -131,7 +131,7 @@ export default function RootLayout() {
       // Si el usuario debe cambiar su contraseña, forzar a esa pantalla
       const auth = getAuth();
       if (auth?.mustChangePassword && currentRoute !== '(auth)/force-password-change') {
-        router.replace('/(auth)/force-password-change');
+        router.replace('/(auth)/force-password-change' as any);
       } else {
         router.replace('/(tabs)');
       }
