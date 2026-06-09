@@ -77,9 +77,13 @@ const server = http.createServer(app);
 
 const isProduction = process.env.NODE_ENV === 'production' || process.env.TEST_MODE === 'false';
 
-const allowedOrigins = isProduction
-    ? ['https://porra-mundial.onrender.com', 'https://porra-mundial-frontend.onrender.com']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const allowedOrigins = [
+    'https://porra-mundial.onrender.com',
+    'https://porra-mundial-frontend.onrender.com',
+    'https://porra-mundial-six.vercel.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+];
 
 app.use(cors({
     origin: (origin, callback) => {
