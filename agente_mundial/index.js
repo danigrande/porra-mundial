@@ -87,11 +87,10 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('exp://') || origin.startsWith('file://')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Origen no permitido por CORS'));
+        if (origin && !allowedOrigins.includes(origin) && !origin.startsWith('exp://') && !origin.startsWith('file://')) {
+            console.warn(`[CORS] Bloqueado origen: ${origin}`);
         }
+        callback(null, true);
     },
     credentials: true,
 }));
