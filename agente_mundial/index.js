@@ -181,14 +181,12 @@ console.log('✅ Base de datos conectada');
 import { dbCheck } from './routes/helpers.js';
 app.use('/api', dbCheck);
 
-// Servir dev dashboard solo en modo test/desarrollo
-if (!isProduction) {
-  const projectRoot = path.resolve(__dirname, '..');
-  app.use('/dev-dashboard', express.static(projectRoot, {
-    index: 'dev_dashboard.html',
-    extensions: ['html', 'js', 'css']
-  }));
-}
+// Servir dev dashboard (protegido por x-dev-key en los endpoints)
+const projectRoot = path.resolve(__dirname, '..');
+app.use('/dev-dashboard', express.static(projectRoot, {
+  index: 'dev_dashboard.html',
+  extensions: ['html', 'js', 'css']
+}));
 
 // Endpoint de subida de archivos
 app.post('/api/upload', (req, res) => {
@@ -217,10 +215,8 @@ app.use('/api', adminRoutes);
 app.use('/api', feedbackRoutes);
 app.use('/api', miscRoutes);
 
-// Rutas de desarrollo solo disponibles en modo test
-if (!isProduction) {
-  app.use('/api/dev', devDashboardRoutes);
-}
+// Rutas de desarrollo (protegidas por x-dev-key)
+app.use('/api/dev', devDashboardRoutes);
 
 // Endpoint para forzar un resumen (útil para testing)
 app.get('/trigger-summary', adminAuth, async (req, res) => {
