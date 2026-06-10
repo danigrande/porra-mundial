@@ -153,7 +153,21 @@
     "no_connection": "Sin conexión",
     "no_connection_msg": "No se pudo enviar el mensaje. Comprueba tu conexión a internet e inténtalo de nuevo.",
     "reconnecting": "Reconectando...",
-    "edit_timeout": "Ya no puedes editar este mensaje (más de 15 min)"
+    "edit_timeout": "Ya no puedes editar este mensaje (más de 15 min)",
+    "upload_error": "No se pudo subir la imagen",
+    "recording_locked": "Grabación bloqueada",
+    "swipe_to_lock": "Desliza arriba para bloquear",
+    "typing": "está escribiendo...",
+    "gif_search": "Buscar GIFs...",
+    "feedback_title": "¿Qué sucedió?",
+    "feedback_subtitle": "Ayúdanos a mejorar seleccionando el motivo",
+    "feedback_reason_incorrect": "Respuesta incorrecta",
+    "feedback_reason_not_helpful": "No fue útil",
+    "feedback_reason_off_topic": "Fuera de tema",
+    "feedback_reason_rude": "Respuesta inapropiada",
+    "feedback_reason_other": "Otro",
+    "feedback_submit": "Enviar",
+    "feedback_thanks": "Gracias por tu opinión"
   },
   "menu": {
     "title": "Menú Principal",

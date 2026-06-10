@@ -376,3 +376,19 @@ export async function getFeedback() {
 export async function voteFeedback(feedbackId: string, userId: string) {
   return apiFetch(`/feedback/${feedbackId}/vote`, { method: 'POST', body: JSON.stringify({ userId }) });
 }
+
+// === CHATBOT FEEDBACK ===
+
+export async function submitChatbotFeedback(data: {
+  messageId: string;
+  userId: string;
+  userName: string;
+  rating: 'up' | 'down';
+  reason?: string;
+}) {
+  return apiFetch('/chatbot-feedback', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function getChatbotFeedbackBatch(messageIds: string[], userId: string) {
+  return apiFetch(`/chatbot-feedback/batch?messageIds=${encodeURIComponent(JSON.stringify(messageIds))}&userId=${encodeURIComponent(userId)}`);
+}

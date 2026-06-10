@@ -153,7 +153,21 @@
     "no_connection": "No connection",
     "no_connection_msg": "Could not send message. Check your internet connection and try again.",
     "reconnecting": "Reconnecting...",
-    "edit_timeout": "You can no longer edit this message (over 15 min)"
+    "edit_timeout": "You can no longer edit this message (over 15 min)",
+    "upload_error": "Could not upload the image",
+    "recording_locked": "Recording locked",
+    "swipe_to_lock": "Swipe up to lock",
+    "typing": "is typing...",
+    "gif_search": "Search GIFs...",
+    "feedback_title": "What went wrong?",
+    "feedback_subtitle": "Help us improve by selecting a reason",
+    "feedback_reason_incorrect": "Incorrect response",
+    "feedback_reason_not_helpful": "Not helpful",
+    "feedback_reason_off_topic": "Off topic",
+    "feedback_reason_rude": "Inappropriate response",
+    "feedback_reason_other": "Other",
+    "feedback_submit": "Submit",
+    "feedback_thanks": "Thanks for your feedback"
   },
   "menu": {
     "title": "Main Menu",

@@ -27,6 +27,7 @@ import groupsRoutes from './routes/groups.js';
 import predictionsRoutes from './routes/predictions.js';
 import adminRoutes from './routes/admin.js';
 import feedbackRoutes from './routes/feedback.js';
+import chatbotFeedbackRoutes from './routes/chatbotFeedback.js';
 import miscRoutes from './routes/misc.js';
 import devDashboardRoutes from './routes/devDashboard.js';
 import { initChatServer, sendBotMessage } from './chatService.js';
@@ -216,6 +217,7 @@ app.use('/api', groupsRoutes);
 app.use('/api', predictionsRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', feedbackRoutes);
+app.use('/api', chatbotFeedbackRoutes);
 app.use('/api', miscRoutes);
 
 // Rutas de desarrollo (protegidas por x-dev-key)

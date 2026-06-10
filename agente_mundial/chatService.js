@@ -16,6 +16,9 @@ import * as pushService from './pushService.js';
 
 let io = null;
 
+// Throttle de eventos de escritura: evitar que el cliente reciba ~10 eventos/segundo
+const typingThrottle = new Map();
+
 // Lista básica de palabras prohibidas (Automatización de Moderación - Guideline 1.2)
 
 /**
@@ -314,9 +317,16 @@ export function initChatServer(httpServer) {
       }
     });
 
-    // --- INDICADOR DE "ESCRIBIENDO" ---
+    // --- INDICADOR DE "ESCRIBIENDO" (con throttling) ---
     socket.on('typing', (data) => {
       const { groupName } = data;
+      const userId = socket.data.user.userId;
+      const now = Date.now();
+      const last = typingThrottle.get(userId) || 0;
+      // Emitir como máximo una vez por segundo
+      if (now - last < 1000) return;
+      typingThrottle.set(userId, now);
+
       socket.to(`group:${groupName}`).emit('user-typing', {
         groupName,
         userName: socket.data.user.userName
@@ -325,6 +335,7 @@ export function initChatServer(httpServer) {
 
     socket.on('stop-typing', (data) => {
       const { groupName } = data;
+      typingThrottle.delete(socket.data.user.userId);
       socket.to(`group:${groupName}`).emit('user-stopped-typing', {
         groupName,
         userName: socket.data.user.userName
