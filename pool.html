@@ -407,10 +407,10 @@
           let score = '–';
           
           const isMe = p === currentUser.name;
-          const canSeeOthers = tournamentState?.hasStarted;
+          const isGroupWindowOpen = tournamentState?.unlocks?.includes('groups') ?? false;
 
           if (key) {
-            if (!isMe && !canSeeOthers) {
+            if (!isMe && isGroupWindowOpen) {
               score = '🔒';
             } else {
               if (key.single) {

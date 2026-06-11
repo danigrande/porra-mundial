@@ -469,7 +469,9 @@
         const card = tbody.closest('.group-card');
         if (card) {
           card.querySelectorAll('input').forEach(input => {
-            input.disabled = !isGroupUnlock || !tournamentState;
+            const matchId = input.id.replace(/_[ha]$/, '');
+            const isLocked = tournamentState?.lockedMatchIds?.includes(matchId);
+            input.disabled = !isGroupUnlock || !tournamentState || isLocked;
           });
           card.style.opacity = (!isGroupUnlock && tournamentState) ? '0.8' : '1';
         }
