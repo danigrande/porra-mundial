@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { Group } from './models/Group.js';
 import { Reality } from './models/Reality.js';
 import { fullResolve } from './scoringEngine.js';
-import { KNOCKOUT_BRACKET, BRACKET_MATCHES } from './shared_data.js';
+import { KNOCKOUT_BRACKET, BRACKET_MATCHES, MATCH_KICKOFFS } from './shared_data.js';
 
 // ============================================
 // TOURNAMENT STATE — Máquina de Estados (Opción B)
@@ -87,14 +87,16 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
     console.error('Error fetching Reality for tournament state:', e.message);
   }
 
-  // Calcular qué partidos de grupos ya tienen resultado real
+  // Calcular qué partidos de grupos están bloqueados:
+  // un partido se bloquea en cuanto pasa su hora de kick-off (aunque no haya resultado aún)
   const lockedMatchIds = [];
-  if (Object.keys(realityResults).length > 0) {
-    for (const letter of 'ABCDEFGHIJKL') {
-      for (let i = 0; i < 6; i++) {
-        if (`g${letter}_m${i}_h` in realityResults && `g${letter}_m${i}_a` in realityResults) {
-          lockedMatchIds.push(`g${letter}_m${i}`);
-        }
+  for (const letter of 'ABCDEFGHIJKL') {
+    for (let i = 0; i < 6; i++) {
+      const matchId = `g${letter}_m${i}`;
+      const kickoffMs = MATCH_KICKOFFS[matchId] ? new Date(MATCH_KICKOFFS[matchId]).getTime() : null;
+      const hasResult = `${matchId}_h` in realityResults && `${matchId}_a` in realityResults;
+      if (hasResult || (kickoffMs !== null && now >= kickoffMs)) {
+        lockedMatchIds.push(matchId);
       }
     }
   }
