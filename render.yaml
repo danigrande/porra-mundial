@@ -31,6 +31,8 @@ services:
         sync: false
       - key: TAVILY_API_KEY
         sync: false # Configurar manualmente en el dashboard (obtener gratis en tavily.com)
+      - key: GIPHY_API_KEY
+        value: XszfwZBVBmHmmFMxmAQqY1VuQu8YDUsR
       # Email (Brevo API) para recuperación de contraseña
       - key: BREVO_API_KEY
         sync: false

@@ -469,9 +469,6 @@ router.get('/giphy/search', async (req, res) => {
     try {
         const { q, limit = 20 } = req.query;
         const apiKey = process.env.GIPHY_API_KEY;
-        if (!apiKey) {
-            return res.status(503).json(createResponse('error', null, 'GIPHY_API_KEY no configurada'));
-        }
         const response = await axios.get(`https://api.giphy.com/v1/gifs/search`, {
             params: {
                 api_key: apiKey,
