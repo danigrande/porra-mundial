@@ -94,7 +94,8 @@ export default function PredictionsScreen() {
         ...m,
         team1: tTeam(m.team1),
         team2: tTeam(m.team2),
-        isEditable: state?.unlocks?.includes('groups') ?? false
+        isEditable: (state?.unlocks?.includes('groups') ?? false) &&
+                    !(state?.lockedMatchIds?.includes(m.id) ?? false)
       }));
     }
 

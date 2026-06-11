@@ -91,10 +91,10 @@ export default function PoolScreen() {
 function PredictionList({ predictions, isMe, tournamentState }: { predictions: any, isMe: boolean, tournamentState: any }) {
   const { t } = useTranslation();
   
-  const hasStarted = tournamentState?.hasStarted;
   const unlocks = tournamentState?.unlocks || [];
+  const isGroupWindowOpen = unlocks.includes('groups');
 
-  if (!isMe && !hasStarted) {
+  if (!isMe && (tournamentState?.unlocks?.includes('groups') ?? false)) {
     return (
       <View style={styles.lockedCard}>
         <Ionicons name="lock-closed" size={48} color="#64748b" />

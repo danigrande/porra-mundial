@@ -57,6 +57,19 @@ router.post('/predictions', async (req, res) => {
         const user = await User.findOne({ name: playerName, groups: groupName });
         if (!user) return res.status(404).json(createResponse('error', null, 'Usuario no encontrado en este grupo'));
 
+        // Eliminar keys de partidos que ya tienen resultado real (no se pueden editar)
+        const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+        const reality = realityDoc ? realityDoc.results : {};
+        for (const key of Object.keys(predictions)) {
+          const match = key.match(/^(g[A-L]_m\d)_[ha]$/);
+          if (match) {
+            const mid = match[1];
+            if (`${mid}_h` in reality && `${mid}_a` in reality) {
+              delete predictions[key];
+            }
+          }
+        }
+
         let pred = await Prediction.findOne({ user: user._id, group: group._id });
         if (!pred) {
             pred = new Prediction({ user: user._id, group: group._id, predictions });

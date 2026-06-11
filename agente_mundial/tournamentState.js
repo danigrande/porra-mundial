@@ -70,12 +70,6 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
   }
   const visiblePhases = [...new Set(pastUnlocks)];
 
-  // Es ventana de predicción si la fase actual tiene 'unlocks' definidos
-  const isPredictionWindow = currentPhase.unlocks && currentPhase.unlocks.length > 0;
-  
-  const nextDeadline = new Date(currentPhase.end).getTime();
-  const timeRemainingMs = Math.max(0, nextDeadline - now);
-
   let predictionMode = 'A';
   try {
     const group = await Group.findOne({ name: groupName });
@@ -93,6 +87,36 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
     console.error('Error fetching Reality for tournament state:', e.message);
   }
 
+  // Calcular qué partidos de grupos ya tienen resultado real
+  const lockedMatchIds = [];
+  if (Object.keys(realityResults).length > 0) {
+    for (const letter of 'ABCDEFGHIJKL') {
+      for (let i = 0; i < 6; i++) {
+        if (`g${letter}_m${i}_h` in realityResults && `g${letter}_m${i}_a` in realityResults) {
+          lockedMatchIds.push(`g${letter}_m${i}`);
+        }
+      }
+    }
+  }
+
+  // En GROUP_STAGE, si aún hay partidos sin bloquear, extender ventana hasta mañana 21:00
+  let effectiveUnlocks = currentPhase.unlocks || [];
+  let effectiveDeadline = currentPhase.end;
+
+  if (currentPhase.id === 'GROUP_STAGE' && lockedMatchIds.length < 72) {
+    const extendedDeadline = new Date('2026-06-12T19:00:00Z').getTime();
+    if (now < extendedDeadline) {
+      effectiveUnlocks = ['groups', 'honor'];
+      effectiveDeadline = new Date('2026-06-12T19:00:00Z').toISOString();
+    }
+  }
+
+  // Es ventana de predicción si hay unlocks efectivos
+  const isPredictionWindow = effectiveUnlocks && effectiveUnlocks.length > 0;
+
+  const nextDeadline = new Date(effectiveDeadline).getTime();
+  const timeRemainingMs = Math.max(0, nextDeadline - now);
+
   // Resolver los nombres de los equipos en los cruces eliminatorios
   const resolvedBracketMatches = {};
   for (const [matchId, teams] of Object.entries(BRACKET_MATCHES)) {
@@ -108,17 +132,18 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
   return {
     id: currentPhase.id,
     name: currentPhase.name,
-    unlocks: currentPhase.unlocks || [], // CRÍTICO: Para habilitar inputs
+    unlocks: effectiveUnlocks, // CRÍTICO: Para habilitar inputs
     visiblePhases: visiblePhases,       // CRÍTICO: Para mostrar rondas
     knockoutBracket: visibleKnockoutBrackets, // Necesario para pintar las pestañas de eliminatorias
     bracketMatches: resolvedBracketMatches,   // Con los nombres de los países ya resueltos
-    deadline: currentPhase.end,
+    deadline: effectiveDeadline,
     nextDeadline: nextPhase ? nextPhase.end : null,
     timeRemainingMs,
     isPredictionWindow,
     hasStarted: currentPhase.id !== 'PRE_TOURNAMENT',
     isTestMode: process.env.TEST_MODE === 'true',
     predictionMode,
+    lockedMatchIds,
     currentTime: new Date(now).toISOString()
   };
 };
