@@ -1,29 +1,8 @@
 import { Reality } from './models/Reality.js';
 import { Group } from './models/Group.js';
-import { FIXTURE_GROUPS, BRACKET_MATCHES } from './shared_data.js';
-import { fetchWorldCupJson, syncRealityFromOpenfootball } from './openfootballService.js';
+import { fetchZafronixMatches, syncRealityFromZafronix } from './zafronixService.js';
 
 const POLL_INTERVAL_MS = 15 * 60 * 1000;
-
-const TEAM_NAME_MAP = {
-  'Mexico': 'México', 'South Africa': 'Sudáfrica', 'South Korea': 'Corea del Sur',
-  'Czech Republic': 'República Checa', 'Canada': 'Canadá',
-  'Bosnia-Herzegovina': 'Bosnia y Herzegovina', 'Bosnia & Herzegovina': 'Bosnia y Herzegovina', 'Qatar': 'Catar',
-  'Switzerland': 'Suiza', 'Brazil': 'Brasil', 'Morocco': 'Marruecos',
-  'Haiti': 'Haití', 'Scotland': 'Escocia', 'USA': 'Estados Unidos',
-  'Paraguay': 'Paraguay', 'Australia': 'Australia', 'Turkey': 'Turquía',
-  'Germany': 'Alemania', 'Curacao': 'Curazao', 'Curaçao': 'Curazao', 'Ivory Coast': 'Costa de Marfil',
-  'Ecuador': 'Ecuador', 'Netherlands': 'Países Bajos', 'Japan': 'Japón',
-  'Sweden': 'Suecia', 'Tunisia': 'Túnez', 'Belgium': 'Bélgica',
-  'Egypt': 'Egipto', 'Iran': 'Irán', 'New Zealand': 'Nueva Zelanda',
-  'Spain': 'España', 'Cape Verde': 'Cabo Verde', 'Saudi Arabia': 'Arabia Saudita',
-  'Uruguay': 'Uruguay', 'France': 'Francia', 'Senegal': 'Senegal',
-  'Iraq': 'Irak', 'Norway': 'Noruega', 'Argentina': 'Argentina',
-  'Algeria': 'Argelia', 'Austria': 'Austria', 'Jordan': 'Jordania',
-  'Portugal': 'Portugal', 'DR Congo': 'RD Congo', 'Uzbekistan': 'Uzbekistán',
-  'Colombia': 'Colombia', 'England': 'Inglaterra', 'Croatia': 'Croacia',
-  'Ghana': 'Ghana', 'Panama': 'Panamá',
-};
 
 let pollInterval = null;
 let io = null;
@@ -44,10 +23,16 @@ export function stopRealitySync() {
 
 async function syncResults() {
   try {
-    const openfootballData = await fetchWorldCupJson();
-    const matches = openfootballData.matches || [];
+    const apiKey = process.env.ZAFRONIX_API_KEY;
+    if (!apiKey) {
+      console.warn('[RealitySync] ZAFRONIX_API_KEY no configurada');
+      return;
+    }
 
-    const completedMatches = matches.filter(m => m.score);
+    const zafronixData = await fetchZafronixMatches(apiKey);
+    const matches = zafronixData.data || [];
+
+    const completedMatches = matches.filter(m => m.homeScore !== null);
     if (completedMatches.length === 0) {
       console.log('[RealitySync] No hay partidos finalizados aún');
       return;
@@ -56,7 +41,7 @@ async function syncResults() {
     const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
     const currentReality = realityDoc ? realityDoc.results : { events: {} };
 
-    const updatedResults = syncRealityFromOpenfootball(openfootballData, currentReality, FIXTURE_GROUPS, BRACKET_MATCHES, TEAM_NAME_MAP);
+    const updatedResults = syncRealityFromZafronix(zafronixData, currentReality);
 
     const hasChanges = JSON.stringify(currentReality) !== JSON.stringify(updatedResults);
     if (!hasChanges) {
@@ -71,15 +56,15 @@ async function syncResults() {
     );
 
     const syncedCount = completedMatches.length;
-    console.log(`[RealitySync] ${syncedCount} partidos sincronizados desde openfootball`);
+    console.log(`[RealitySync] ${syncedCount} partidos sincronizados desde Zafronix`);
 
     if (io) {
       io.emit('reality-updated', { count: syncedCount });
       await notifyGroups();
     }
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-      console.warn('[RealitySync] openfootball no disponible, reintentando en el próximo ciclo');
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ERR_BAD_REQUEST') {
+      console.warn('[RealitySync] Zafronix no disponible, reintentando en el próximo ciclo');
     } else {
       console.error('[RealitySync] Error:', error.message);
     }

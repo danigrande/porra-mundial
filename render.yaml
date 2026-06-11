@@ -33,6 +33,8 @@ services:
         sync: false # Configurar manualmente en el dashboard (obtener gratis en tavily.com)
       - key: GIPHY_API_KEY
         value: XszfwZBVBmHmmFMxmAQqY1VuQu8YDUsR
+      - key: ZAFRONIX_API_KEY
+        value: zwc_free_ceefb1eb2e870ff70f45ac47
       # Email (Brevo API) para recuperación de contraseña
       - key: BREVO_API_KEY
         sync: false

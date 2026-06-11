@@ -420,11 +420,11 @@ async function initProactiveNotifications() {
 }
 
 // ==========================================
-// SINCRONIZACIÓN DE RESULTADOS REALES (API-Football)
+// SINCRONIZACIÓN DE RESULTADOS REALES (Zafronix)
 // ==========================================
 
 async function initRealitySync() {
-  console.log('📡 Iniciando sincronización de resultados reales (API-Football)...');
+  console.log('📡 Iniciando sincronización de resultados reales (Zafronix)...');
   await startRealitySync(io);
 }
 
