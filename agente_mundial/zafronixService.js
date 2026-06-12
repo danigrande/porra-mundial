@@ -88,7 +88,7 @@ export function syncRealityFromZafronix(zafronixData, currentReality) {
       results[`pen_${m.matchNo}_a`] = String(shootout.awayScore ?? 0);
     }
 
-    if (!results.events[matchId]) results.events[matchId] = [];
+    results.events[matchId] = [];
 
     if (m.goals && Array.isArray(m.goals)) {
       m.goals.forEach(g => {
