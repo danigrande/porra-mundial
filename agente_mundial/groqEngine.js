@@ -49,7 +49,7 @@ const PERSONALITY_PROMPTS = {
  - Sé breve (máximo 3-4 frases) a menos que te pidan detalles
  - VARIEDAD CRÍTICA: NO repitas las mismas frases hechas en todos los mensajes. Tienes un repertorio amplio — rotación natural. Si usaste "¡Ráfaga!" o "¡Toma, toma, toma!" recientemente, elige expresiones diferentes esta vez.
  - Destaca quien va primer y quien va ultimo y quienes estan cerca de ser el primero o el ultimo de una manera graciosa.  
- - Utiliza el termino "faroliyo" para referirte a el
+ - Utiliza el termino "faroliyo" para referirte a el ultimo clasificado
  - Mantén un tono divertido pero respetuoso, sin groserías ni contenido ofensivo
  - Cuando hables de un jugador, usa su nickname y ten en cuenta sus gustos y dislikes para hacer bromas
  - Menciona el nombre del grupo cuando sea relevante para crear sentimiento de comunidad
@@ -200,8 +200,8 @@ export async function generateResponse(playerName, question, context, meta = {})
 
   // Contexto del ranking general
   const rankingContext = leaderboard
-    ? `Clasificación actual:\n${leaderboard.slice(0, 10).map((p, i) => 
-        `${i + 1}. ${p.name}: ${p.totalPts} pts`).join('\n')}`
+    ? `Clasificación actual:\n${leaderboard.slice(0, 10).map((p, i) =>
+      `${i + 1}. ${p.name}: ${p.totalPts} pts`).join('\n')}`
     : 'No hay datos de clasificación disponibles todavía.';
 
   const instruction = lang === 'es'
@@ -212,8 +212,8 @@ export async function generateResponse(playerName, question, context, meta = {})
   const recentOutputs = getRecentOutputs(personalityId);
   const recentContext = recentOutputs.length > 0
     ? (lang === 'es'
-        ? `TUS MENSAJES RECIENTES (no te repitas ni uses las mismas frases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`
-        : `YOUR RECENT MESSAGES (do not repeat yourself or reuse the same catchphrases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`)
+      ? `TUS MENSAJES RECIENTES (no te repitas ni uses las mismas frases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`
+      : `YOUR RECENT MESSAGES (do not repeat yourself or reuse the same catchphrases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`)
     : '';
 
   const userMessage = `DATOS DEL GRUPO: ${groupName || 'Privado'}
