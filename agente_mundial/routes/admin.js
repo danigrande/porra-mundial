@@ -58,6 +58,15 @@ router.post('/admin/force-sync', adminAuth, async (req, res) => {
     }
 });
 
+router.get('/admin/sync-status', adminAuth, async (req, res) => {
+    try {
+        const { syncStatus } = await import('../realitySyncService.js');
+        res.json(createResponse('success', syncStatus));
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 
 
 router.post('/dev/reset-test', adminAuth, async (req, res) => {
