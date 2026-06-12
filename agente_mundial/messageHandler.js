@@ -232,36 +232,38 @@ export async function processMessage(text, senderUserId, groupName) {
 \nPuedes preguntarme por la clasificación, tu posición, noticias del mundial o un resumen de la jornada.`;
   }
 
-  // 2a. Web Search para preguntas factuales
+  // 2a. Web Search — solo si NO tenemos datos locales para responder
   if (intent === 'factual' && config.webSearch.enabled) {
-    console.log(`🔍 Búsqueda web para: "${text.substring(0, 80)}"`);
-    const webResults = await searchWeb(text, config.webSearch.maxResults);
-    if (webResults.length > 0) {
-      const webContext = webResults.map((r, i) =>
-        `Fuente ${i + 1}: ${r.title}\n${r.content.substring(0, 300)}`
-      ).join('\n\n');
-      console.log(`🔍 Web search OK: ${webResults.length} resultados`);
+    const hasLocalData = cache.leaderboard?.length > 0;
+    if (!hasLocalData) {
+      console.log(`🔍 Búsqueda web para: "${text.substring(0, 80)}"`);
+      const webResults = await searchWeb(text, config.webSearch.maxResults);
+      if (webResults.length > 0) {
+        const webContext = webResults.map((r, i) =>
+          `Fuente ${i + 1}: ${r.title}\n${r.content.substring(0, 300)}`
+        ).join('\n\n');
+        console.log(`🔍 Web search OK: ${webResults.length} resultados`);
 
-      // Construir contexto con la información web
-      const rulesContext = buildRulesContext(groupName, cache.rules);
-      const matchDrama = buildMatchDrama(cache.reality);
+        const rulesContext = buildRulesContext(groupName, cache.rules);
+        const matchDrama = buildMatchDrama(cache.reality);
 
-      const context = {
-        groupName,
-        ranking: cache.leaderboard,
-        playerStats: null,
-        profile: playerName ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName]) : null,
-        leaderboard: cache.leaderboard,
-        chatContext: '',
-        webContext,
-        rulesContext,
-        matchDrama
-      };
+        const context = {
+          groupName,
+          ranking: cache.leaderboard,
+          playerStats: null,
+          profile: playerName ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName]) : null,
+          leaderboard: cache.leaderboard,
+          chatContext: '',
+          webContext,
+          rulesContext,
+          matchDrama
+        };
 
-      const response = await generateResponse(playerName || 'Desconocido', text, context);
-      return response;
+        const response = await generateResponse(playerName || 'Desconocido', text, context);
+        return response;
+      }
     }
-    // Si no hay resultados web, cae al flujo 'general'
+    // Si tenemos datos locales o no hay resultados web, cae al flujo general
   }
 
   // 3. Si el usuario pide su estado, ranking o resumen
