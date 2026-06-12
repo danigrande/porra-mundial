@@ -74,7 +74,9 @@ router.post('/predictions', async (req, res) => {
         if (!pred) {
             pred = new Prediction({ user: user._id, group: group._id, predictions });
         } else {
-            pred.predictions = predictions;
+            // Merge para preservar predicciones de partidos bloqueados (ya jugados)
+            // que fueron eliminadas de 'predictions' unas líneas arriba
+            pred.predictions = { ...pred.predictions, ...predictions };
             pred.updatedAt = new Date();
         }
         await pred.save();
