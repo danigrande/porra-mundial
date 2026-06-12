@@ -45,6 +45,8 @@ export default function SwipeableMessage({ children, disabled, onReply }: Props)
       overshootLeft={false}
       friction={2}
       leftThreshold={40}
+      containerStyle={styles.swipeableContainer}
+      childrenContainerStyle={styles.swipeableChildren}
     >
       {children}
     </Swipeable>
@@ -52,6 +54,13 @@ export default function SwipeableMessage({ children, disabled, onReply }: Props)
 }
 
 const styles = StyleSheet.create({
+  swipeableContainer: {
+    flexShrink: 1,
+    maxWidth: '85%',
+  },
+  swipeableChildren: {
+    flexShrink: 1,
+  },
   leftAction: {
     flexDirection: 'row',
     alignItems: 'center',

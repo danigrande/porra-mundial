@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
          KeyboardAvoidingView, Platform, ActivityIndicator, Image,
-         Modal, Alert } from 'react-native';
+         Modal, Alert, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { getAuth } from '../../stores/authStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as socketService from '../../services/socket';
 import * as api from '../../services/api';
+import * as chatStore from '../../stores/chatStore';
 import { useTranslation } from '../../i18n/i18n';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import MessageBottomSheet from '../../components/MessageBottomSheet';
@@ -18,28 +19,32 @@ import ChatbotFeedbackSheet from '../../components/ChatbotFeedbackSheet';
 
 export default function ChatScreen() {
   const { groupName: paramGroupName } = useLocalSearchParams<{ groupName: string }>();
-  const [messages, setMessages] = useState<socketService.ChatMessage[]>([]);
   const { t } = useTranslation();
-  
-  // Función para actualizar mensajes sin duplicados (Deduplicación Atómica)
-  const setMessagesSafe = (updater: socketService.ChatMessage[] | ((prev: socketService.ChatMessage[]) => socketService.ChatMessage[])) => {
-    setMessages(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      const seen = new Set();
-      return next.filter(m => {
-        if (!m._id || seen.has(m._id)) return false;
-        seen.add(m._id);
-        return true;
-      });
-    });
-  };
+  const navigation = useNavigation();
 
-  const [lastReadId, setLastReadId] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [showUnreadMarker, setShowUnreadMarker] = useState(false);
+  // Suscribirse a chatStore
+  const [chatState, setChatState] = useState(() => chatStore.getChatState(paramGroupName || getAuth()?.currentGroup || ''));
+  const auth = getAuth();
+  const groupName = paramGroupName || auth?.currentGroup || '';
+
+  useEffect(() => {
+    setChatState(chatStore.getChatState(groupName));
+    const unsubscribe = chatStore.subscribeChat(() => {
+      setChatState({ ...chatStore.getChatState(groupName) });
+    });
+    return unsubscribe;
+  }, [groupName]);
+
+  // Variables mapeadas del store
+  const messages = chatState.messages;
+  const lastReadId = chatState.lastReadId;
+  const unreadCount = chatState.unreadCount;
+  const showUnreadMarker = chatState.showUnreadMarker;
+  const typingUsers = chatState.typingUsers;
+  const loading = chatState.loading;
+  const socketConnected = chatStore.isSocketConnected();
+
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [groupMembers, setGroupMembers] = useState<{name: string, userId: string, nickname?: string}[]>([]);
 
   // Reply state
@@ -61,12 +66,6 @@ export default function ChatScreen() {
   const [searchResults, setSearchResults] = useState<socketService.ChatMessage[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchIndex, setSearchIndex] = useState(0);
-  const [socketConnected, setSocketConnected] = useState(true);
-  const pendingMessagesRef = useRef<string[]>([]);
-  const auth = getAuth();
-  const groupName = paramGroupName || auth?.currentGroup || '';
-  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const disconnectBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Lista de mensajes única para la vista (Garantía total contra duplicados)
   const uniqueMessages = useMemo(() => {
@@ -83,15 +82,21 @@ export default function ChatScreen() {
   const [feedbackMessageId, setFeedbackMessageId] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
-  const canClearUnread = useRef(false);
   const isAtBottomRef = useRef(true);
-  const messagesRef = useRef(messages);
-  const showUnreadMarkerRef = useRef(showUnreadMarker);
+  const hasAutoScrolled = useRef(false);
+  const prevMessagesLen = useRef(messages.length);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
-    messagesRef.current = messages;
-    showUnreadMarkerRef.current = showUnreadMarker;
-  }, [messages, showUnreadMarker]);
+    hasAutoScrolled.current = false;
+  }, [groupName]);
+
+  // Track keyboard height to adjust "at bottom" detection
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', e => setKeyboardHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   useEffect(() => {
     if (auth?.userId) {
@@ -99,261 +104,103 @@ export default function ChatScreen() {
     }
   }, [auth]);
 
+  // Unirse al grupo en el socket
   useEffect(() => {
-    if (!auth || !groupName) {
-      setLoading(false);
-      return;
-    }
-    const socket = socketService.getSocket();
+    if (!auth || !groupName) return;
+    
+    // Asegurar que estamos unidos al grupo
+    socketService.joinGroup(groupName);
 
-    // Bug fix: si el socket no existe todavía, no podemos registrar listeners.
-    // Esto puede ocurrir si la app se relanza sin pasar por el login.
-    // _layout.tsx ya llama a connectSocket() con los datos guardados, así que
-    // en la práctica getSocket() debería devolver algo. Pero por seguridad, salimos
-    // si es nulo (el usuario sería redirigido a login por el guard de _layout.tsx).
-    if (!socket) {
-      console.warn('[Chat] Socket no disponible al montar. Usando REST fallback.');
-      loadHistory();
-      return;
-    }
-
-    loadingTimeoutRef.current = setTimeout(() => {
-      console.warn('[Chat] Timeout de carga, forzando REST fallback');
-      loadHistory();
-    }, 45000);
-
-    const onNewMessage = (msg: socketService.ChatMessage) => {
-      setMessagesSafe(prev => {
-        const newMsgs = [...prev, msg];
-        
-        if (msg.senderId === auth?.userId || isAtBottomRef.current) {
-          updateLastRead(msg._id);
-          setShowUnreadMarker(false);
-          setUnreadCount(0);
-        } else {
-          if (showUnreadMarkerRef.current) {
-            setUnreadCount(prev => prev + 1);
-          } else {
-            setShowUnreadMarker(true);
-            setUnreadCount(1);
-          }
-        }
-        return newMsgs;
-      });
-      if (msg.senderId === auth?.userId) {
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-      }
-    };
-
-    // Bug fix: si el socket se reconecta mientras el chat está abierto (p.ej. tras
-    // pérdida de red), socket.ts ya re-emite join-group automáticamente. Aquí
-    // escuchamos el evento 'connect' para resetear el estado de carga y esperar
-    // el nuevo chat-history que mandará el servidor.
-    const onSocketReconnect = () => {
-      console.log('[Chat] Socket reconectado mientras el chat estaba abierto. Re-solicitando historial...');
-      // Limpiar el timer del banner de desconexión en caso de reconexión rápida
-      if (disconnectBannerTimerRef.current) {
-        clearTimeout(disconnectBannerTimerRef.current);
-        disconnectBannerTimerRef.current = null;
-      }
-      setSocketConnected(true);
-      setLoading(true);
-      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-      loadingTimeoutRef.current = setTimeout(() => {
-        console.warn('[Chat] Timeout de carga tras reconexión, forzando REST fallback');
+    // REST fallback si tarda demasiado
+    const timer = setTimeout(() => {
+      const state = chatStore.getChatState(groupName);
+      if (state.loading && state.messages.length === 0) {
+        console.warn('[Chat] Timeout de carga inicial, forzando REST fallback');
         loadHistory();
-      }, 45000);
-    };
+      }
+    }, 8000);
 
-    const onChatHistory = async (data: any) => {
-      console.log('[Chat] Historial recibido:', data.messages?.length, 'mensajes');
-      if (data.groupName === groupName) {
-        if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-        setMessagesSafe(data.messages);
-        setLoading(false);
-        
-        // El temporizador de "lectura permitida" empieza solo después de cargar el historial
-        canClearUnread.current = false;
-        setTimeout(() => {
-          canClearUnread.current = true;
-          console.log('[Unread] Lectura automática activada');
-        }, 3000);
-        
-        // Mover aquí la lógica de mensajes no leídos
-        const savedId = await AsyncStorage.getItem(`lastRead_${groupName}`);
-        if (savedId && data.messages.length > 0) {
-          setLastReadId(savedId);
-          const index = data.messages.findIndex((m: any) => m._id === savedId);
-          if (index !== -1) {
-            if (index < data.messages.length - 1) {
-              // Hay mensajes NO leídos después de este — scroll al primero no leído
-              const count = data.messages.length - 1 - index;
-              setUnreadCount(count);
-              setShowUnreadMarker(true);
-              setTimeout(() => {
-                flatListRef.current?.scrollToIndex({ 
-                  index: index + 1, 
-                  animated: false,
-                  viewPosition: 0,
-                  viewOffset: 20 
-                });
-              }, 400);
-              return;
-            }
-            // Último mensaje ya leído — scroll al final
-          } else {
-            // El último mensaje leído es más antiguo que el historial cargado
-            // Mostrar botón "cargar más" y no scroll automático
-            setUnreadCount(data.messages.length);
-            setShowUnreadMarker(true);
+    return () => clearTimeout(timer);
+  }, [auth, groupName]);
+
+  // Manejo de foco para marcar leído y registrar chat activo
+  useEffect(() => {
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      chatStore.setActiveChat(groupName);
+      if (isAtBottomRef.current && messages.length > 0) {
+        const lastId = messages[messages.length - 1]._id;
+        chatStore.updateLastRead(groupName, lastId);
+      }
+    });
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      chatStore.setActiveChat(null);
+    });
+
+    chatStore.setActiveChat(groupName);
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+      chatStore.setActiveChat(null);
+    };
+  }, [navigation, groupName, messages]);
+
+  // Auto-scroll inicial a mensajes no leídos o al fondo
+  useEffect(() => {
+    if (messages.length > 0 && chatState.lastReadLoaded && !hasAutoScrolled.current) {
+      hasAutoScrolled.current = true;
+      const doInitialScroll = () => {
+        if (lastReadId) {
+          const index = messages.findIndex(m => m._id === lastReadId);
+          if (index !== -1 && index < messages.length - 1) {
             setTimeout(() => {
-              flatListRef.current?.scrollToIndex({ 
-                index: 0, 
+              flatListRef.current?.scrollToIndex({
+                index: index + 1,
                 animated: false,
                 viewPosition: 0,
+                viewOffset: 20
               });
-            }, 400);
+            }, 100);
             return;
           }
         }
-        
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 200);
-      }
-    };
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+        }, 100);
+      };
+      doInitialScroll();
+    }
+  }, [messages.length, chatState.lastReadLoaded]);
 
-    const onUserTyping = (data: any) => {
-      if (data.groupName === groupName && data.userName !== auth.name) {
-        setTypingUsers(prev => prev.includes(data.userName) ? prev : [...prev, data.userName]);
-      }
-    };
-
-    const onUserStoppedTyping = (data: any) => {
-      if (data.groupName === groupName) {
-        setTypingUsers(prev => prev.filter(name => name !== data.userName));
-      }
-    };
-
-    const onBotTyping = (data: any) => {
-      if (data.groupName === groupName) {
-        setTypingUsers(prev => prev.includes('Agente Mundial') ? prev : [...prev, 'Agente Mundial']);
-      }
-    };
-
-    const onBotStoppedTyping = (data: any) => {
-      if (data.groupName === groupName) {
-        setTypingUsers(prev => prev.filter(name => name !== 'Agente Mundial'));
-      }
-    };
-
-    const onMessageReacted = (data: { messageId: string; reactions: { [emoji: string]: string[] } }) => {
-      setMessagesSafe(prev => prev.map(m =>
-        m._id === data.messageId ? { ...m, reactions: data.reactions } : m
-      ));
-    };
-
-    const onMessageEdited = (data: { messageId: string; newText: string; edited: boolean; editedAt: string }) => {
-      setMessagesSafe(prev => prev.map(m =>
-        m._id === data.messageId ? { ...m, text: data.newText, edited: true, editedAt: data.editedAt } : m
-      ));
-    };
-
-    const onMessageDeleted = (data: { messageId: string; deleteFor: string; userId?: string }) => {
-      if (data.deleteFor === 'everyone') {
-        setMessagesSafe(prev => prev.filter(m => m._id !== data.messageId));
-      } else if (data.deleteFor === 'me' && data.userId) {
-        setMessagesSafe(prev => prev.map(m =>
-          m._id === data.messageId
-            ? { ...m, deletedFor: [...(m.deletedFor || []), data.userId!] }
-            : m
-        ));
-      }
-    };
-
-    const onSocketDisconnect = () => {
-      console.log('[Chat] Socket desconectado — esperando 4s antes de mostrar banner');
-      // Delay para evitar parpadeo del banner "Reconectando..." durante
-      // reconexiones breves (ej. ping timeout y reconexión automática)
-      if (disconnectBannerTimerRef.current) clearTimeout(disconnectBannerTimerRef.current);
-      disconnectBannerTimerRef.current = setTimeout(() => {
-        setSocketConnected(false);
-      }, 4000);
-    };
-
-    // Inicializar estado de conexión
-    setSocketConnected(socket.connected);
-
-    // 1. Registrar listeners PRIMERO
-    socket.on('connect', onSocketReconnect);
-    socket.on('disconnect', onSocketDisconnect);
-    socket.on('new-message', onNewMessage);
-    socket.on('chat-history', onChatHistory);
-    socket.on('user-typing', onUserTyping);
-    socket.on('user-stopped-typing', onUserStoppedTyping);
-    socket.on('bot-typing', onBotTyping);
-    socket.on('bot-stopped-typing', onBotStoppedTyping);
-    socket.on('message-reacted', onMessageReacted);
-    socket.on('message-edited', onMessageEdited);
-    socket.on('message-deleted', onMessageDeleted);
-
-    // 2. Emitir join-group DESPUÉS de registrar listeners
-    // Nota: loading ya está en true desde el estado inicial, no lo reseteamos aquí
-    // para evitar una race condition donde chat-history llegue entre el registro
-    // de listeners y este setLoading(true), dejando el spinner para siempre.
-    socketService.joinGroup(groupName);
-
-    return () => {
-      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
-      if (disconnectBannerTimerRef.current) clearTimeout(disconnectBannerTimerRef.current);
-      socket.off('connect', onSocketReconnect);
-      socket.off('disconnect', onSocketDisconnect);
-      socket.off('new-message', onNewMessage);
-      socket.off('chat-history', onChatHistory);
-      socket.off('user-typing', onUserTyping);
-      socket.off('user-stopped-typing', onUserStoppedTyping);
-      socket.off('bot-typing', onBotTyping);
-      socket.off('bot-stopped-typing', onBotStoppedTyping);
-      socket.off('message-reacted', onMessageReacted);
-      socket.off('message-edited', onMessageEdited);
-      socket.off('message-deleted', onMessageDeleted);
-    };
-  }, [auth, groupName]);
-
-  // Eliminamos el useEffect que guardaba al desmontar porque era demasiado agresivo
-  // y podía marcar como leído mensajes que el usuario aún no había visto bien.
-
+  // Auto-scroll cuando llegan mensajes nuevos (después del scroll inicial)
   useEffect(() => {
-    const loadLastRead = async () => {
-      const savedId = await AsyncStorage.getItem(`lastRead_${groupName}`);
-      setLastReadId(savedId);
-    };
-    loadLastRead();
-
-    return () => {
-      canClearUnread.current = false;
-    };
-  }, [groupName]);
-
-  // Guardar el último mensaje al salir o actualizar
-  const updateLastRead = async (id: string) => {
-    await AsyncStorage.setItem(`lastRead_${groupName}`, id);
-    setLastReadId(id);
-  };
+    if (!hasAutoScrolled.current) return;
+    if (messages.length > prevMessagesLen.current) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.senderId === auth?.userId) {
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+      } else if (isAtBottomRef.current) {
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+      }
+    }
+    prevMessagesLen.current = messages.length;
+  }, [messages.length]);
 
   const handleScroll = (event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+    // Keyboard-aware bottom detection: when keyboard is open the visible area
+    // shrinks, so we widen the threshold proportionally
+    const keyboardAdjust = keyboardHeight > 0 ? keyboardHeight * 0.8 : 0;
+    const threshold = 50 + keyboardAdjust;
+    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - threshold;
     isAtBottomRef.current = isAtBottom;
+    chatStore.setActiveChatAtBottom(isAtBottom);
     
-    // Solo borramos la marca si el usuario está haciendo scroll de forma consciente
-    if (isAtBottom && canClearUnread.current) {
-      if (showUnreadMarkerRef.current) {
-        setShowUnreadMarker(false);
-        setUnreadCount(0);
-      }
-      // Siempre actualizamos el último leído si estamos al fondo
-      if (messagesRef.current.length > 0) {
-        const lastId = messagesRef.current[messagesRef.current.length - 1]._id;
-        if (lastId !== lastReadId) updateLastRead(lastId);
+    if (isAtBottom && messages.length > 0) {
+      const lastId = messages[messages.length - 1]._id;
+      if (lastId !== lastReadId) {
+        chatStore.updateLastRead(groupName, lastId);
       }
     }
   };
@@ -361,17 +208,31 @@ export default function ChatScreen() {
   async function loadHistory() {
     if (!groupName) return;
     console.log('[Chat] Cargando historial vía REST fallback...');
+    chatStore.setLoading(groupName, true);
     try {
-      const messages = await api.getChatHistory(groupName);
-      if (Array.isArray(messages)) {
-        setMessagesSafe(messages);
+      const msgs = await api.getChatHistory(groupName);
+      if (msgs && Array.isArray(msgs)) {
+        chatStore.setChatHistory(groupName, msgs);
       }
     } catch (e: any) {
       console.warn('[Chat] REST fallback falló:', e.message);
     } finally {
-      setLoading(false);
+      chatStore.setLoading(groupName, false);
     }
   }
+
+  const loadMoreMessages = () => {
+    if (uniqueMessages.length === 0) return;
+    const oldestTimestamp = uniqueMessages[0].timestamp;
+    const socket = socketService.getSocket();
+    if (socket) {
+      console.log('[Chat] Cargando más mensajes anteriores a:', oldestTimestamp);
+      chatStore.setLoadingMore(groupName, true);
+      socket.emit('load-more', { groupName, beforeTimestamp: oldestTimestamp });
+      // Safety timeout: reset loadingMore after 10s if response never arrives
+      setTimeout(() => chatStore.setLoadingMore(groupName, false), 10000);
+    }
+  };
 
   // ==========================================
   // RENDERING
@@ -597,7 +458,24 @@ export default function ChatScreen() {
     );
   };
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator size="large" color="#f5a623" /></View>;
+  const renderHeader = () => {
+    if (!chatState.hasMore) return null;
+    return (
+      <View style={{ alignItems: 'center', marginVertical: 10 }}>
+        {chatState.loadingMore ? (
+          <ActivityIndicator size="small" color="#f5a623" />
+        ) : (
+          <TouchableOpacity onPress={loadMoreMessages} style={{ padding: 8, backgroundColor: '#151a3a', borderRadius: 16 }}>
+            <Text style={{ color: '#f5a623', fontSize: 13, fontWeight: '600' }}>
+              {t('chat.load_older')}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  if (loading && messages.length === 0) return <View style={styles.centered}><ActivityIndicator size="large" color="#f5a623" /></View>;
 
   return (
     <BottomSheetModalProvider>
@@ -649,6 +527,7 @@ export default function ChatScreen() {
         data={uniqueMessages}
         keyExtractor={item => item._id}
         renderItem={renderMessage}
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
@@ -669,8 +548,9 @@ export default function ChatScreen() {
           style={styles.floatingUnread} 
           onPress={() => {
             flatListRef.current?.scrollToEnd({ animated: true });
-            setShowUnreadMarker(false);
-            if (messages.length > 0) updateLastRead(messages[messages.length - 1]._id);
+            if (messages.length > 0) {
+              chatStore.updateLastRead(groupName, messages[messages.length - 1]._id);
+            }
           }}
         >
           <Ionicons name="chevron-down" size={24} color="#fff" />
@@ -704,9 +584,35 @@ export default function ChatScreen() {
           />
           {isSearching && <ActivityIndicator size="small" color="#f5a623" />}
           {searchResults.length > 0 && (
-            <Text style={{ color: '#64748b', fontSize: 12, marginHorizontal: 4 }}>
-              {searchIndex + 1}/{searchResults.length}
-            </Text>
+            <>
+              <TouchableOpacity
+                onPress={() => {
+                  const prev = Math.max(0, searchIndex - 1);
+                  setSearchIndex(prev);
+                  const msgId = searchResults[prev]._id;
+                  const idx = uniqueMessages.findIndex(m => m._id === msgId);
+                  if (idx !== -1) flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0 });
+                }}
+                style={{ padding: 4 }}
+              >
+                <Ionicons name="chevron-back" size={18} color={searchIndex > 0 ? '#f5a623' : '#374151'} />
+              </TouchableOpacity>
+              <Text style={{ color: '#64748b', fontSize: 12, marginHorizontal: 2 }}>
+                {searchIndex + 1}/{searchResults.length}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const next = Math.min(searchResults.length - 1, searchIndex + 1);
+                  setSearchIndex(next);
+                  const msgId = searchResults[next]._id;
+                  const idx = uniqueMessages.findIndex(m => m._id === msgId);
+                  if (idx !== -1) flatListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0 });
+                }}
+                style={{ padding: 4 }}
+              >
+                <Ionicons name="chevron-forward" size={18} color={searchIndex < searchResults.length - 1 ? '#f5a623' : '#374151'} />
+              </TouchableOpacity>
+            </>
           )}
           <TouchableOpacity onPress={() => { setShowSearch(false); setSearchQuery(''); setSearchResults([]); }}>
             <Ionicons name="close" size={20} color="#fff" />
@@ -765,7 +671,7 @@ export default function ChatScreen() {
           !!actionMessage &&
           actionMessage.senderId === auth?.userId &&
           actionMessage.type === 'text' &&
-          Date.now() - new Date(actionMessage.timestamp).getTime() < 15 * 60 * 1000
+          Date.now() - new Date(actionMessage.timestamp).getTime() < 60 * 60 * 1000
         }
         onClose={() => setActionMessage(null)}
         onReply={(msg) => { setReplyToMessage(msg); setActionMessage(null); }}

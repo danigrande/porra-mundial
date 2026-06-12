@@ -101,6 +101,7 @@
     "points_label": "Puntos"
   },
   "chat": {
+    "load_older": "Cargar mensajes anteriores",
     "unread_one": "Mensaje no leído",
     "unread_many": "Mensajes no leídos",
     "voice_note": "Nota de voz enviada",

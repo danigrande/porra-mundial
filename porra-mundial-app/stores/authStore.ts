@@ -4,6 +4,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as biometric from '../services/biometric';
+import * as socketService from '../services/socket';
 
 const AUTH_KEY = 'porra_mundial_auth';
 
@@ -101,5 +102,6 @@ export async function setCurrentGroup(groupName: string): Promise<void> {
 export async function logout(): Promise<void> {
   authData = null;
   await AsyncStorage.removeItem(AUTH_KEY);
+  socketService.disconnect();
   notifyListeners();
 }

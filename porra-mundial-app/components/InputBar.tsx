@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform,
-         Animated, PanResponder, ScrollView, ActivityIndicator, Image } from 'react-native';
+         Animated, PanResponder, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
@@ -39,6 +39,7 @@ export default function InputBar({
   const [pickerTab, setPickerTab] = useState<'emoji' | 'sticker' | 'gif'>('emoji');
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   // GIF state
   const [gifSearch, setGifSearch] = useState('');
@@ -52,6 +53,7 @@ export default function InputBar({
   const recordingRef = useRef<Audio.Recording | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const inputRef = useRef<TextInput>(null);
+  const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Recording timer
   useEffect(() => {
@@ -70,6 +72,13 @@ export default function InputBar({
       searchGifs(gifSearch || 'football goals');
     }
   }, [gifSearch, pickerTab]);
+
+  // Cleanup typing debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+    };
+  }, []);
 
   // Populate text when editing starts
   useEffect(() => {
@@ -95,11 +104,18 @@ export default function InputBar({
       setShowMentions(false);
     }
 
-    // Typing indicator (debouced internally, server throttles too)
-    if (val.length > 0 && !isTyping) {
-      socketService.sendTyping(groupName);
-      setIsTyping(true);
-    } else if (val.length === 0 && isTyping) {
+    // Typing indicator with local debounce (500ms)
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+    if (val.length > 0) {
+      if (!isTyping) {
+        socketService.sendTyping(groupName);
+        setIsTyping(true);
+      }
+      typingDebounceRef.current = setTimeout(() => {
+        socketService.sendStopTyping(groupName);
+        setIsTyping(false);
+      }, 500);
+    } else if (isTyping) {
       socketService.sendStopTyping(groupName);
       setIsTyping(false);
     }
@@ -134,7 +150,10 @@ export default function InputBar({
     const sent = socketService.sendMessage(groupName, text, 'text', undefined, replyData);
     if (!sent) {
       console.warn('[InputBar] Socket desconectado');
+      Alert.alert(t('common.error'), t('chat.no_connection_msg'));
+      return;
     }
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
     setText('');
     onCancelReply();
     if (isTyping) {
@@ -142,7 +161,7 @@ export default function InputBar({
       setIsTyping(false);
     }
     setShowPicker(false);
-  }, [text, auth, groupName, editingMessageId, replyToMessage, isTyping, onCancelReply, onCancelEdit]);
+  }, [text, auth, groupName, editingMessageId, replyToMessage, isTyping, onCancelReply, onCancelEdit, t]);
 
   const sendMedia = useCallback((type: 'image' | 'sticker' | 'gif' | 'file', url: string) => {
     const replyData = replyToMessage ? {
@@ -165,26 +184,40 @@ export default function InputBar({
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0].uri) {
-        const serverUrl = await api.uploadFile(result.assets[0].uri, 'image');
-        sendMedia('image', serverUrl);
+        setUploading(true);
+        try {
+          const serverUrl = await api.uploadFile(result.assets[0].uri, 'image');
+          sendMedia('image', serverUrl);
+        } catch (e) {
+          Alert.alert(t('common.error'), t('chat.image_error'));
+        } finally {
+          setUploading(false);
+        }
       }
     } catch (e) {
       console.error('Error picking image:', e);
     }
-  }, [sendMedia]);
+  }, [sendMedia, t]);
 
   const pickFile = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
       if (!result.canceled && result.assets?.[0]?.uri) {
         const asset = result.assets[0];
-        const serverUrl = await api.uploadFile(asset.uri, asset.mimeType || 'file');
-        sendMedia('file', serverUrl);
+        setUploading(true);
+        try {
+          const serverUrl = await api.uploadFile(asset.uri, asset.mimeType || 'file');
+          sendMedia('file', serverUrl);
+        } catch (e) {
+          Alert.alert(t('common.error'), t('chat.file_error'));
+        } finally {
+          setUploading(false);
+        }
       }
     } catch (e) {
       console.error('Error picking file:', e);
     }
-  }, [sendMedia]);
+  }, [sendMedia, t]);
 
   // ====== RECORDING ======
   const startRecording = useCallback(async () => {
@@ -224,14 +257,21 @@ export default function InputBar({
       recordingRef.current = null;
 
       if (uri) {
-        const serverUrl = await api.uploadFile(uri, 'audio');
-        socketService.sendMessage(groupName, 'Nota de voz enviada', 'audio', serverUrl);
+        setUploading(true);
+        try {
+          const serverUrl = await api.uploadFile(uri, 'audio');
+          socketService.sendMessage(groupName, 'Nota de voz enviada', 'audio', serverUrl);
+        } catch (e) {
+          Alert.alert(t('common.error'), t('chat.audio_send_error'));
+        } finally {
+          setUploading(false);
+        }
       }
     } catch (e) {
       console.error('Error stopping recording:', e);
       recordingRef.current = null;
     }
-  }, [groupName, isLocked]);
+  }, [groupName, isLocked, t]);
 
   const cancelRecording = useCallback(async () => {
     if (!recordingRef.current) return;
@@ -255,14 +295,21 @@ export default function InputBar({
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0].uri) {
-        const serverUrl = await api.uploadFile(result.assets[0].uri, 'image');
-        setRecentStickers(prev => [serverUrl, ...prev.slice(0, 19)]);
-        sendMedia('sticker', serverUrl);
+        setUploading(true);
+        try {
+          const serverUrl = await api.uploadFile(result.assets[0].uri, 'image');
+          setRecentStickers(prev => [serverUrl, ...prev.slice(0, 19)]);
+          sendMedia('sticker', serverUrl);
+        } catch (e) {
+          Alert.alert(t('common.error'), t('chat.sticker_error'));
+        } finally {
+          setUploading(false);
+        }
       }
     } catch (e) {
       console.error('Error creating sticker:', e);
     }
-  }, [sendMedia]);
+  }, [sendMedia, t]);
 
   const searchGifs = useCallback(async (query: string) => {
     setGifsLoading(true);
@@ -498,6 +545,18 @@ export default function InputBar({
           </>
         )}
       </View>
+      {uploading && (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(10,14,39,0.85)', justifyContent: 'center', alignItems: 'center',
+          zIndex: 999, flexDirection: 'row', gap: 8
+        }}>
+          <ActivityIndicator size="small" color="#f5a623" />
+          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
+            {t('common.loading') || 'Cargando...'}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

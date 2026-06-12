@@ -34,6 +34,7 @@ import { initChatServer, sendBotMessage } from './chatService.js';
 import { startRssService } from './rssFeedService.js';
 import * as pushService from './pushService.js';
 import { startRealitySync } from './realitySyncService.js';
+import { Message } from './models/Message.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -178,6 +179,9 @@ server.listen(PORT, () => {
 // ==========================================
 await connectDB();
 console.log('✅ Base de datos conectada');
+
+// Asegurar índices de MongoDB (especialmente chatId+timestamp para el chat)
+Message.createIndexes().catch(err => console.warn('[Index] Error creando índices:', err.message));
 
 // ==========================================
 // MIDDLEWARE QUE DEPENDE DE DB

@@ -124,13 +124,13 @@ export function initChatServer(httpServer) {
 
       // Enviar historial de mensajes recientes
       try {
-        const messages = await Message.find({ chatId: groupName })
-          .sort({ timestamp: -1 })
-          .limit(100)
-          .lean();
-        
-        // Obtener lista de usuarios que el usuario ha bloqueado
-        const blockedByMe = await BlockedUser.find({ blockerId: userId }).lean();
+        const [messages, blockedByMe] = await Promise.all([
+          Message.find({ chatId: groupName })
+            .sort({ timestamp: -1 })
+            .limit(50)
+            .lean(),
+          BlockedUser.find({ blockerId: userId }).lean()
+        ]);
         const blockedIds = blockedByMe.map(b => b.blockedId);
 
         // Filtrar mensajes de usuarios bloqueados
@@ -310,7 +310,8 @@ export function initChatServer(httpServer) {
 
         socket.emit('more-messages', {
           groupName,
-          messages: messages.reverse()
+          messages: messages.reverse(),
+          hasMore: messages.length === 30
         });
       } catch (e) {
         console.error('[Chat] Error cargando más mensajes:', e.message);
@@ -382,8 +383,8 @@ export function initChatServer(httpServer) {
         const message = await Message.findById(messageId);
         if (!message) return;
         if (message.senderId !== userId) return;
-        if (Date.now() - new Date(message.timestamp).getTime() > 15 * 60 * 1000) {
-          socket.emit('error', { message: 'Ya no puedes editar este mensaje (más de 15 min)' });
+        if (Date.now() - new Date(message.timestamp).getTime() > 60 * 60 * 1000) {
+          socket.emit('error', { message: 'Ya no puedes editar este mensaje (más de 1 hora)' });
           return;
         }
         message.text = newText.trim();

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const messageSchema = new mongoose.Schema({
-  chatId: { type: String, required: true, index: true },
+  chatId: { type: String, required: true },
   senderId: { type: String, required: true },
   senderName: { type: String },
   text: { type: String },
@@ -16,5 +16,7 @@ const messageSchema = new mongoose.Schema({
   embedding: { type: [Number] },
   timestamp: { type: Date, default: Date.now }
 });
+
+messageSchema.index({ chatId: 1, timestamp: -1 });
 
 export const Message = mongoose.models.Message || mongoose.model('Message', messageSchema);

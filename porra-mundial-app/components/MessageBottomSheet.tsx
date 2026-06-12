@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import type { ChatMessage } from '../services/socket';
 
 interface Props {
@@ -62,6 +63,9 @@ export default function MessageBottomSheet({
       handleIndicatorStyle={styles.handle}
     >
       <BottomSheetScrollView style={styles.content} bounces={false}>
+        {/* Copy */}
+        <ActionRow icon="copy" label="Copiar" onPress={() => { Clipboard.setStringAsync(message.text ?? message.mediaUrl ?? ''); sheetRef.current?.dismiss(); }} />
+
         {/* Reply */}
         <ActionRow icon="chatbubble-ellipses" label="Responder" onPress={() => { onReply(message); sheetRef.current?.dismiss(); }} />
 

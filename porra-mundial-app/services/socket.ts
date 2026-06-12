@@ -4,6 +4,9 @@
 
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_URL, API_URL } from './api';
+import { AppState } from 'react-native';
+import * as chatStore from '../stores/chatStore';
+import { getAuth } from '../stores/authStore';
 
 let socket: Socket | null = null;
 
@@ -58,6 +61,24 @@ export type ChatMessage = {
 /**
  * Conecta al servidor de chat con las credenciales del usuario.
  */
+// AppState listener to pause keep-alive when backgrounded
+if (typeof AppState !== 'undefined') {
+  AppState.addEventListener('change', (nextAppState) => {
+    if (nextAppState === 'active') {
+      if (socket && socket.connected) {
+        console.log('[Socket] AppState activa — Reanudando keep-alive');
+        startKeepAlive();
+      }
+    } else {
+      console.log('[Socket] AppState inactiva/background — Pausando keep-alive');
+      stopKeepAlive();
+    }
+  });
+}
+
+/**
+ * Conecta al servidor de chat con las credenciales del usuario.
+ */
 export function connect(email: string, password: string): Socket {
   // Si ya hay socket activo (conectado o en proceso de reconexión), reutilizarlo
   if (socket && (socket.connected || socket.active)) {
@@ -82,6 +103,7 @@ export function connect(email: string, password: string): Socket {
 
   socket.on('connect', () => {
     console.log('✅ Socket.IO conectado');
+    chatStore.setSocketConnected(true);
     startKeepAlive();
     // Bug fix: re-unirse al grupo automáticamente tras cada (re)conexión
     if (currentGroup) {
@@ -96,6 +118,71 @@ export function connect(email: string, password: string): Socket {
 
   socket.on('disconnect', (reason) => {
     console.log('👋 Socket.IO desconectado:', reason);
+    chatStore.setSocketConnected(false);
+  });
+
+  // Global listeners forwarding to chatStore
+  socket.on('new-message', (msg: ChatMessage) => {
+    const auth = getAuth();
+    const groupName = msg.chatId || currentGroup;
+    if (groupName) {
+      chatStore.addNewMessage(groupName, msg, auth?.userId || '');
+    }
+  });
+
+  socket.on('chat-history', (data: { groupName: string; messages: ChatMessage[] }) => {
+    if (data.groupName) {
+      chatStore.setChatHistory(data.groupName, data.messages);
+    }
+  });
+
+  socket.on('more-messages', (data: { groupName: string; messages: ChatMessage[]; hasMore?: boolean }) => {
+    if (data.groupName) {
+      chatStore.addOlderMessages(data.groupName, data.messages, data.hasMore !== false);
+    }
+  });
+
+  socket.on('user-typing', (data: { groupName: string; userName: string }) => {
+    const auth = getAuth();
+    if (data.groupName && data.userName !== auth?.name) {
+      chatStore.setUserTyping(data.groupName, data.userName, true);
+    }
+  });
+
+  socket.on('user-stopped-typing', (data: { groupName: string; userName: string }) => {
+    if (data.groupName) {
+      chatStore.setUserTyping(data.groupName, data.userName, false);
+    }
+  });
+
+  socket.on('bot-typing', (data: { groupName: string }) => {
+    if (data.groupName) {
+      chatStore.setUserTyping(data.groupName, 'Agente Mundial', true);
+    }
+  });
+
+  socket.on('bot-stopped-typing', (data: { groupName: string }) => {
+    if (data.groupName) {
+      chatStore.setUserTyping(data.groupName, 'Agente Mundial', false);
+    }
+  });
+
+  socket.on('message-reacted', (data: { messageId: string; reactions: { [emoji: string]: string[] } }) => {
+    if (currentGroup) {
+      chatStore.updateMessageReactions(currentGroup, data.messageId, data.reactions);
+    }
+  });
+
+  socket.on('message-edited', (data: { messageId: string; newText: string; edited: boolean; editedAt: string }) => {
+    if (currentGroup) {
+      chatStore.editChatMessage(currentGroup, data.messageId, data.newText, data.editedAt);
+    }
+  });
+
+  socket.on('message-deleted', (data: { messageId: string; deleteFor: string; userId?: string }) => {
+    if (currentGroup) {
+      chatStore.deleteChatMessage(currentGroup, data.messageId, data.deleteFor, data.userId);
+    }
   });
 
   return socket;
@@ -112,6 +199,7 @@ export function disconnect() {
     socket = null;
   }
   currentGroup = null;
+  chatStore.clearCache();
 }
 
 /**
