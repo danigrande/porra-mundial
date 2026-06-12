@@ -196,13 +196,6 @@ export default function ChatScreen() {
     const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - threshold;
     isAtBottomRef.current = isAtBottom;
     chatStore.setActiveChatAtBottom(isAtBottom);
-    
-    if (isAtBottom && messages.length > 0) {
-      const lastId = messages[messages.length - 1]._id;
-      if (lastId !== lastReadId) {
-        chatStore.updateLastRead(groupName, lastId);
-      }
-    }
   };
 
   async function loadHistory() {
@@ -479,7 +472,7 @@ export default function ChatScreen() {
 
   return (
     <BottomSheetModalProvider>
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
 
       {/* Barra de estado de conexión */}
       {!socketConnected && (
@@ -531,6 +524,10 @@ export default function ChatScreen() {
         contentContainerStyle={styles.listContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 100,
+        }}
         onScrollToIndexFailed={info => {
           const wait = new Promise(resolve => setTimeout(resolve, 500));
           wait.then(() => {
