@@ -161,12 +161,16 @@ export default function ChatScreen() {
                 viewPosition: 0,
                 viewOffset: 20
               });
+              chatStore.updateLastRead(groupName, messages[messages.length - 1]._id);
             }, 100);
             return;
           }
         }
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: false });
+          if (messages.length > 0) {
+            chatStore.updateLastRead(groupName, messages[messages.length - 1]._id);
+          }
         }, 100);
       };
       doInitialScroll();
@@ -524,10 +528,6 @@ export default function ChatScreen() {
         contentContainerStyle={styles.listContent}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-          autoscrollToTopThreshold: 100,
-        }}
         onScrollToIndexFailed={info => {
           const wait = new Promise(resolve => setTimeout(resolve, 500));
           wait.then(() => {

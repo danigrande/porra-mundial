@@ -309,6 +309,7 @@ const translations = {
       "personality_roncero": "Tomás Roncero (Pasional)",
       "personality_vader": "Darth Vader (Imperial)",
       "personality_trump": "Donald Trump (Bombastic)",
+      "personality_fabrizio": "Fabrizio Romano (Fichajes)",
       "success": "¡Perfil guardado!",
       "pin_success": "PIN actualizado"
     }
@@ -621,6 +622,7 @@ const translations = {
       "personality_roncero": "Tomás Roncero (Passionate)",
       "personality_vader": "Darth Vader (Imperial)",
       "personality_trump": "Donald Trump (Bombastic)",
+      "personality_fabrizio": "Fabrizio Romano (Transfer News)",
       "success": "Profile saved!",
       "pin_success": "PIN updated"
     }

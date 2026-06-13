@@ -48,7 +48,8 @@ export default function ProfileScreen() {
     { id: 'pedrerol', nameKey: 'profile.personality_pedrerol', icon: '🇪🇸' },
     { id: 'roncero', nameKey: 'profile.personality_roncero', icon: '🇪🇸' },
     { id: 'darth_vader', nameKey: 'profile.personality_vader', icon: '🇬🇧' },
-    { id: 'trump', nameKey: 'profile.personality_trump', icon: '🇬🇧' }
+    { id: 'trump', nameKey: 'profile.personality_trump', icon: '🇬🇧' },
+    { id: 'fabrizio_romano', nameKey: 'profile.personality_fabrizio', icon: '🇮🇹' }
   ];
 
   // Biometric State
