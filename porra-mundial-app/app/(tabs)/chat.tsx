@@ -5,6 +5,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { getAuth } from '../../stores/authStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as socketService from '../../services/socket';
@@ -21,6 +22,7 @@ export default function ChatScreen() {
   const { groupName: paramGroupName } = useLocalSearchParams<{ groupName: string }>();
   const { t } = useTranslation();
   const navigation = useNavigation();
+  const headerHeight = useHeaderHeight();
 
   // Suscribirse a chatStore
   const [chatState, setChatState] = useState(() => chatStore.getChatState(paramGroupName || getAuth()?.currentGroup || ''));
@@ -91,9 +93,12 @@ export default function ChatScreen() {
     hasAutoScrolled.current = false;
   }, [groupName]);
 
-  // Track keyboard height to adjust "at bottom" detection
+  // Track keyboard height and scroll to end so keyboard doesn't cover latest messages
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', e => setKeyboardHeight(e.endCoordinates.height));
+    const showSub = Keyboard.addListener('keyboardDidShow', e => {
+      setKeyboardHeight(e.endCoordinates.height);
+      flatListRef.current?.scrollToEnd({ animated: false });
+    });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
     return () => { showSub.remove(); hideSub.remove(); };
   }, []);
@@ -475,8 +480,8 @@ export default function ChatScreen() {
   if (loading && messages.length === 0) return <View style={styles.centered}><ActivityIndicator size="large" color="#f5a623" /></View>;
 
   return (
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={headerHeight}>
     <BottomSheetModalProvider>
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={0}>
 
       {/* Barra de estado de conexión */}
       {!socketConnected && (
@@ -678,8 +683,8 @@ export default function ChatScreen() {
         onBlock={(msg) => handleBlockSheet(msg)}
         onReact={(msg, emoji) => handleSheetReact(msg, emoji)}
       />
-    </KeyboardAvoidingView>
     </BottomSheetModalProvider>
+    </KeyboardAvoidingView>
   );
 }
 
