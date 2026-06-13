@@ -106,10 +106,10 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
   let effectiveDeadline = currentPhase.end;
 
   if (currentPhase.id === 'GROUP_STAGE' && lockedMatchIds.length < 72) {
-    const extendedDeadline = new Date('2026-06-13T21:00:00Z').getTime();
+    const extendedDeadline = new Date('2026-06-13T19:00:00Z').getTime();
     if (now < extendedDeadline) {
       effectiveUnlocks = ['groups', 'honor'];
-      effectiveDeadline = new Date('2026-06-13T21:00:00Z').toISOString();
+      effectiveDeadline = new Date('2026-06-13T19:00:00Z').toISOString();
     }
   }
 
