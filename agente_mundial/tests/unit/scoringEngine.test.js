@@ -3,7 +3,25 @@ import { calculateScore, getStandings, isRealTeam } from '../../scoringEngine.js
 describe('Motor de Puntuación (Scoring Engine)', () => {
   
   describe('Evaluación de Partidos', () => {
-    
+
+    it('debe otorgar puntos por signo y diferencia en empate no exacto (2-2 vs 1-1)', () => {
+      const reality = { gA_m0_h: 1, gA_m0_a: 1 };
+      const prediction = { gA_m0_h: 2, gA_m0_a: 2 };
+
+      const result = calculateScore(prediction, reality);
+      expect(result.totalPts).toBe(20); // 10 (signo) + 10 (diferencia, desvio=0)
+      expect(result.exactHits).toBe(0);
+    });
+
+    it('debe otorgar el máximo de puntos por empate exacto (1-1 vs 1-1)', () => {
+      const reality = { gA_m0_h: 1, gA_m0_a: 1 };
+      const prediction = { gA_m0_h: 1, gA_m0_a: 1 };
+
+      const result = calculateScore(prediction, reality);
+      expect(result.totalPts).toBe(30); // 10 (signo) + 10 (diferencia) + 10 (exacto)
+      expect(result.exactHits).toBe(1);
+    });
+
     it('debe otorgar 0 puntos si la predicción es incorrecta en signo', () => {
       // Realidad: 2-0 (Gana Local)
       const reality = { gA_m0_h: 2, gA_m0_a: 0 };

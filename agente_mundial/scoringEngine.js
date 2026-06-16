@@ -250,7 +250,7 @@ export function calculateScore(prediction, reality, rules = {}) {
         reasons.push(`Exacto (+${pRules.exact + pRules.diff})`);
         exactHits++;
       } else {
-        const desvio = rSign === 'X' ? Math.abs(rH - pH) : Math.abs((rH - rA) - (pH - pA));
+        const desvio = Math.abs((rH - rA) - (pH - pA));
         let diffPoints = (desvio === 0) ? pRules.diff : 0;
         if (diffPoints > 0) {
           mPts += diffPoints;
