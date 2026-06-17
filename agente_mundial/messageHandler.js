@@ -5,9 +5,13 @@
 import config from './config.js';
 import * as dataFetcher from './dataFetcher.js';
 import { calculateLeaderboard, resolveMatchName } from './scoringEngine.js';
-import { generateResponse, generateDailySummary } from './groqEngine.js';
+import { generateResponse, generateWithQualityGate, getSystemPrompt } from './groqEngine.js';
+import { generateDailySummary } from './groqEngine.js';
 import { searchWeb } from './webSearchService.js';
 import { getTournamentState, TOURNAMENT_PHASES } from './tournamentState.js';
+import { detectTargetLanguage, isTranscreationNeeded } from './languageRouter.js';
+import { getAnchors, getSourceLanguage } from './anchors.js';
+import { transcreateWithQualityGate } from './transcreationService.js';
 
 import { Group } from './models/Group.js';
 
@@ -246,12 +250,14 @@ export async function processMessage(text, senderUserId, groupName) {
 
         const rulesContext = buildRulesContext(groupName, cache.rules);
         const matchDrama = buildMatchDrama(cache.reality);
+        const profile = playerName ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName]) : null;
+        const personalityId = profile?.ai_personality || 'andres_montes';
 
         const context = {
           groupName,
           ranking: cache.leaderboard,
           playerStats: null,
-          profile: playerName ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName]) : null,
+          profile,
           leaderboard: cache.leaderboard,
           chatContext: '',
           webContext,
@@ -259,8 +265,24 @@ export async function processMessage(text, senderUserId, groupName) {
           matchDrama
         };
 
-        const response = await generateResponse(playerName || 'Desconocido', text, context);
-        return response;
+        const targetLang = detectTargetLanguage(text, personalityId);
+        const anchors = getAnchors(personalityId);
+        const result = await generateWithQualityGate(playerName || 'Desconocido', text, context, {
+          personalityId,
+          anchors,
+          targetLanguage: isTranscreationNeeded(targetLang) ? getSourceLanguage(personalityId) : targetLang,
+          source: 'chat',
+          maxAttempts: config.evals?.maxRetries || 3
+        });
+
+        if (isTranscreationNeeded(targetLang) && result.judgment?.passed) {
+          const transcreated = await transcreateWithQualityGate(
+            result.response, getSourceLanguage(personalityId), targetLang,
+            personalityId, anchors, context, getSystemPrompt(personalityId)
+          );
+          return transcreated.text;
+        }
+        return result.response;
       }
     }
     // Si tenemos datos locales o no hay resultados web, cae al flujo general
@@ -279,6 +301,7 @@ export async function processMessage(text, senderUserId, groupName) {
         p.name.trim().toLowerCase() === playerName?.trim().toLowerCase()
     );
     const profile = cache.profiles ? (cache.profiles[playerName] || Object.values(cache.profiles).find(pr => pr.nickname === playerName)) : null;
+    const personalityId = profile?.ai_personality || 'andres_montes';
     
     // --- RAG: Buscar contexto de este jugador ---
     let chatContext = "";
@@ -302,14 +325,45 @@ export async function processMessage(text, senderUserId, groupName) {
       matchDrama: buildMatchDrama(cache.reality)
     };
 
-    console.log(`🤖 Generando respuesta IA para ${playerName || 'Desconocido'} con ${chatContext.length > 50 ? 'contexto RAG' : 'sin RAG'}...`);
-    const response = await generateResponse(playerName || 'Desconocido', text, context);
-    return response;
+    // --- Language routing ---
+    const targetLang = detectTargetLanguage(text, personalityId);
+    const anchors = getAnchors(personalityId);
+    const needsTranscreation = isTranscreationNeeded(targetLang);
+    const generationLang = needsTranscreation ? getSourceLanguage(personalityId) : targetLang;
+
+    console.log(`🤖 Generando respuesta IA para ${playerName || 'Desconocido'} | lang=${targetLang} | transcreation=${needsTranscreation} | RAG=${chatContext.length > 50 ? 'OK' : 'sin datos'}...`);
+
+    const result = await generateWithQualityGate(playerName || 'Desconocido', text, context, {
+      personalityId,
+      anchors,
+      targetLanguage: generationLang,
+      source: 'chat',
+      maxAttempts: config.evals?.maxRetries || 3
+    });
+
+    // --- Transcreación si es necesaria y la respuesta pasó el Judge ---
+    if (needsTranscreation && (result.judgment?.passed || result.forceApproved)) {
+      const systemPrompt = getSystemPrompt(personalityId);
+      const transcreated = await transcreateWithQualityGate(
+        result.response,
+        getSourceLanguage(personalityId),
+        targetLang,
+        personalityId,
+        anchors,
+        context,
+        systemPrompt
+      );
+      console.log(`🌐 [Transcreation] ${transcreated.usedFallback ? 'FALLBACK al original' : `OK en ${targetLang}`} (${transcreated.attempts} intentos)`);
+      return transcreated.text;
+    }
+
+    return result.response;
   }
 
   // 4. Construir contexto (fallback para otros intents)
   const profile = playerName ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName]) : null;
   const playerStats = playerName ? (cache.leaderboard?.find(p => p.name === playerName)) : null;
+  const personalityId = profile?.ai_personality || 'andres_montes';
 
   const context = {
     groupName,
@@ -329,7 +383,27 @@ export async function processMessage(text, senderUserId, groupName) {
     effectiveQuestion = `[Usuario no identificado pregunta]: ${text}. Dile que no sé quién es y que debe registrarse en la web para el grupo ${groupName}.`;
   }
 
-  return await generateResponse(effectiveName, effectiveQuestion, context);
+  const targetLang = detectTargetLanguage(text, personalityId);
+  const anchors = getAnchors(personalityId);
+  const needsTranscreation = isTranscreationNeeded(targetLang);
+
+  const result = await generateWithQualityGate(effectiveName, effectiveQuestion, context, {
+    personalityId,
+    anchors,
+    targetLanguage: needsTranscreation ? getSourceLanguage(personalityId) : targetLang,
+    source: 'chat',
+    maxAttempts: config.evals?.maxRetries || 3
+  });
+
+  if (needsTranscreation && (result.judgment?.passed || result.forceApproved)) {
+    const transcreated = await transcreateWithQualityGate(
+      result.response, getSourceLanguage(personalityId), targetLang,
+      personalityId, anchors, context, getSystemPrompt(personalityId)
+    );
+    return transcreated.text;
+  }
+
+  return result.response;
 }
 
 /**

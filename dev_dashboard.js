@@ -75,13 +75,14 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-  const tabs = ['health', 'logs', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'usage'];
+  const tabs = ['health', 'logs', 'evals', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'usage'];
   const idx = tabs.indexOf(name);
   document.querySelectorAll('.tab')[idx]?.classList.add('active');
   document.getElementById(`panel-${name}`)?.classList.add('active');
 
   // Lazy load
   if (name === 'logs') loadLogs();
+  if (name === 'evals') { loadEvalsStats(); loadEvals(); }
   if (name === 'rag') { loadRagStats(); loadRagMessages(); }
   if (name === 'groups') loadGroups();
   if (name === 'users') loadUsers();
@@ -99,6 +100,7 @@ function switchTab(name) {
 function loadAll() {
   loadHealth();
   setInterval(loadHealth, 30000); // Refresh health every 30s
+  // NOTE: No cargamos logs/evals aquí — se cargan lazy al hacer click en la tab
 }
 
 // ==========================================
@@ -310,6 +312,161 @@ document.getElementById('log-modal').addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
 });
+
+// ==========================================
+// EVALS PANEL
+// ==========================================
+
+let currentEvalsPage = 1;
+
+async function loadEvalsStats() {
+  try {
+    const data = await devFetch('/evals/stats');
+    const ov = data.overview;
+
+    const passRateColor = ov.passRate === null ? 'var(--text-muted)'
+      : ov.passRate >= 80 ? 'var(--accent-green)'
+      : ov.passRate >= 60 ? 'var(--accent-amber)'
+      : 'var(--accent-red)';
+
+    document.getElementById('evals-cards').innerHTML = `
+      <div class="card">
+        <div class="card-label">Pass Rate (${ov.period})</div>
+        <div class="card-value" style="color:${passRateColor}">${ov.passRate !== null ? ov.passRate + '%' : 'Sin datos'}</div>
+        <div class="card-sub">${ov.passed} passed · ${ov.failed} failed · ${ov.totalEvals} total</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Avg Language Purity</div>
+        <div class="card-value ${(ov.avgLangPurity || 0) >= 8 ? 'green' : 'red'}">${(ov.avgLangPurity || 0).toFixed(1)}/10</div>
+        <div class="card-sub">Threshold: 8/10 — sin mezcla de idiomas</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Avg Quality</div>
+        <div class="card-value ${(ov.avgQuality || 0) >= 6 ? 'cyan' : 'amber'}">${(ov.avgQuality || 0).toFixed(1)}/10</div>
+        <div class="card-sub">Threshold: 6/10 — humor y personalidad</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Avg Intentos/Respuesta</div>
+        <div class="card-value ${(ov.avgAttempts || 1) <= 1.5 ? 'green' : 'amber'}">${(ov.avgAttempts || 1).toFixed(2)}</div>
+        <div class="card-sub">1.0 = aprobado a la primera · >2 = problema</div>
+      </div>
+    `;
+
+    // Breakdown por idioma
+    const langEl = document.getElementById('evals-lang-breakdown');
+    if (data.byLanguage?.length) {
+      let html = '<table><thead><tr><th>Idioma</th><th>Total</th><th>Pass%</th><th>Lang</th><th>Quality</th></tr></thead><tbody>';
+      data.byLanguage.forEach(row => {
+        const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
+        const color = pct >= 80 ? 'green' : pct >= 60 ? 'amber' : 'red';
+        html += `<tr>
+          <td><strong>${row._id || 'N/A'}</strong></td>
+          <td>${row.total}</td>
+          <td><span class="badge badge-${color}">${pct}%</span></td>
+          <td>${(row.avgLangPurity || 0).toFixed(1)}</td>
+          <td>${(row.avgQuality || 0).toFixed(1)}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      langEl.innerHTML = html;
+    } else {
+      langEl.innerHTML = '<div class="loading">Sin datos de idioma todavía</div>';
+    }
+
+    // Breakdown por personalidad
+    const persEl = document.getElementById('evals-personality-breakdown');
+    if (data.byPersonality?.length) {
+      let html = '<table><thead><tr><th>Personalidad</th><th>Total</th><th>Pass%</th><th>Lang</th><th>Quality</th></tr></thead><tbody>';
+      data.byPersonality.forEach(row => {
+        const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
+        const color = pct >= 80 ? 'green' : pct >= 60 ? 'amber' : 'red';
+        html += `<tr>
+          <td><strong>${row._id || 'N/A'}</strong></td>
+          <td>${row.total}</td>
+          <td><span class="badge badge-${color}">${pct}%</span></td>
+          <td>${(row.avgLangPurity || 0).toFixed(1)}</td>
+          <td>${(row.avgQuality || 0).toFixed(1)}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      persEl.innerHTML = html;
+    } else {
+      persEl.innerHTML = '<div class="loading">Sin datos de personalidad todavía</div>';
+    }
+  } catch (e) {
+    document.getElementById('evals-cards').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
+  }
+}
+
+async function loadEvals() {
+  const passed = document.getElementById('filter-evals-passed')?.value;
+  const lang   = document.getElementById('filter-evals-lang')?.value;
+
+  let query = `?page=${currentEvalsPage}&limit=25`;
+  if (passed !== '') query += `&passed=${passed}`;
+  if (lang)         query += `&targetLanguage=${lang}`;
+
+  const container = document.getElementById('evals-table-body');
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando evals...</div>';
+
+  try {
+    const data = await devFetch(`/evals${query}`);
+
+    if (!data.logs.length) {
+      container.innerHTML = '<div class="loading">Sin evaluaciones todavía. Genera interacciones con el bot primero.</div>';
+      document.getElementById('evals-pagination').innerHTML = '';
+      return;
+    }
+
+    let html = `<table><thead><tr>
+      <th>Tiempo</th><th>Jugador</th><th>Idioma</th><th>Personalidad</th>
+      <th>Lang 🌐</th><th>Quality 🎭</th><th>Status</th><th>Intentos</th><th>Transcreation</th><th>Feedback</th>
+    </tr></thead><tbody>`;
+
+    data.logs.forEach(log => {
+      const time = new Date(log.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const statusBadge = log.evalSkipped
+        ? '<span class="badge" style="background:rgba(255,255,255,0.1)">SKIP</span>'
+        : log.evalPassed
+          ? '<span class="badge badge-success">✅ PASS</span>'
+          : '<span class="badge badge-error">❌ FAIL</span>';
+
+      const langScore = log.evalScores?.language_purity;
+      const qualScore = log.evalScores?.quality;
+      const langColor = langScore === undefined ? 'var(--text-muted)' : langScore >= 8 ? 'var(--accent-green)' : langScore >= 5 ? 'var(--accent-amber)' : 'var(--accent-red)';
+      const qualColor = qualScore === undefined ? 'var(--text-muted)' : qualScore >= 6 ? 'var(--accent-cyan)' : qualScore >= 4 ? 'var(--accent-amber)' : 'var(--accent-red)';
+
+      const transcreationBadge = log.wasTranscreated
+        ? (log.transcreationFallback ? '<span class="badge badge-error" title="Fallback al original">⚠️ FB</span>' : `<span class="badge badge-success">${log.targetLanguage}✓</span>`)
+        : '<span style="color:var(--text-muted)">—</span>';
+
+      html += `<tr>
+        <td style="white-space:nowrap">${time}</td>
+        <td>${log.playerName}</td>
+        <td><strong>${log.targetLanguage || '?'}</strong></td>
+        <td style="font-size:0.75rem">${log.anchorsUsed || '—'}</td>
+        <td style="color:${langColor};font-weight:700">${langScore !== undefined ? langScore + '/10' : '—'}</td>
+        <td style="color:${qualColor};font-weight:700">${qualScore !== undefined ? qualScore + '/10' : '—'}</td>
+        <td>${statusBadge}</td>
+        <td>${log.evalAttempts || 1}</td>
+        <td>${transcreationBadge}</td>
+        <td style="font-size:0.72rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(log.evalFeedback || '')}">${escapeHtml((log.evalFeedback || '—').substring(0, 60))}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    const p = data.pagination;
+    document.getElementById('evals-pagination').innerHTML = `
+      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentEvalsPage--; loadEvals()">← Prev</button>
+      <span class="page-info">${p.page} / ${p.pages} (${p.total} total)</span>
+      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentEvalsPage++; loadEvals()">Next →</button>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
 
 // ==========================================
 // RAG EXPLORER
@@ -926,10 +1083,8 @@ async function openFeedbackDetail(id) {
   title.textContent = '💬 Detalle de Feedback';
 
   try {
-    // Get feedback data
-    const data = await devFetch(`/feedback?limit=1`);
-    const fb = data.feedback.find(f => f._id === id);
-    if (!fb) { body.innerHTML = '<div class="loading">Feedback no encontrado</div>'; return; }
+    const fb = await devFetch(`/feedback/${id}`);
+    if (!fb || !fb._id) { body.innerHTML = '<div class="loading">Feedback no encontrado</div>'; return; }
 
     const time = new Date(fb.createdAt).toLocaleString('es-ES');
 
@@ -1082,9 +1237,8 @@ async function openPRDDetail(id) {
   title.textContent = '📄 Detalle de PRD';
 
   try {
-    const data = await devFetch(`/prds?limit=1`);
-    const prd = data.prds.find(p => p._id === id);
-    if (!prd) { body.innerHTML = '<div class="loading">PRD no encontrado</div>'; return; }
+    const prd = await devFetch(`/prds/${id}`);
+    if (!prd || !prd._id) { body.innerHTML = '<div class="loading">PRD no encontrado</div>'; return; }
 
     const time = new Date(prd.createdAt).toLocaleString('es-ES');
 

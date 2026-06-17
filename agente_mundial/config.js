@@ -39,6 +39,33 @@ const config = {
     maxResults: 5,
   },
 
+  // --- Eval System (LLM-as-a-Judge) ---
+  evals: {
+    enabled: process.env.EVALS_ENABLED !== 'false',
+    judgeModel: process.env.JUDGE_MODEL || 'llama-3.1-8b-instant',
+    judgeTemperature: 0.1,
+    minLanguagePurity: 8,  // threshold no negociable — detecta mezcla de idiomas
+    minQuality: 6,          // threshold de humor + personalidad
+    maxRetries: 3,          // max intentos de regeneración
+    // sampleRate: 1.0 = evalúa todas las respuestas | 0.5 = evalúa 50% (para producción)
+    sampleRate: parseFloat(process.env.EVAL_SAMPLE_RATE || '1.0'),
+  },
+
+  // --- Transcreation (ES/EN → idiomas culturalmente distantes) ---
+  transcreation: {
+    enabled: process.env.TRANSCREATION_ENABLED !== 'false',
+    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+    temperature: 0.7,
+    maxRetries: 2,  // max reintentos de transcreación antes de fallback al original
+    distantLanguages: ['ko', 'th', 'ar', 'ja', 'ru', 'zh', 'vi', 'hi'],
+  },
+
+  // --- Multilingual Support ---
+  multilingual: {
+    supportedLanguages: ['es', 'en', 'fr', 'pt', 'it', 'de', 'ko', 'th', 'ar', 'ja', 'ru', 'zh', 'vi', 'hi'],
+    defaultLanguage: 'es',
+  },
+
   // --- RSS Breaking News ---
   rss: {
     enabled: true,

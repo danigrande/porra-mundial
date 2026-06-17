@@ -19,6 +19,9 @@ import { Feedback } from '../models/Feedback.js';
 import { PRD } from '../models/PRD.js';
 import { runLangFlow, extractPRDFromAnalysis } from '../langflowService.js';
 import config from '../config.js';
+import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
+import { getRssStats } from '../rssFeedService.js';
+import { getWebSearchStats } from '../webSearchService.js';
 
 const router = express.Router();
 
@@ -257,8 +260,139 @@ router.get('/rag/stats', async (req, res) => {
 });
 
 // ==========================================
-// USAGE — Métricas de uso de Groq
+// EVALS — Stats y logs de calidad de respuestas
 // ==========================================
+
+/**
+ * GET /evals/stats — Métricas agregadas de calidad
+ * Devuelve: pass rate, scores medios, breakdown por idioma y personalidad
+ */
+router.get('/evals/stats', async (req, res) => {
+  try {
+    const { days = 7 } = req.query;
+    const since = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000);
+
+    const [overview, byLanguage, byPersonality, failedRecent, transcreationStats] = await Promise.all([
+
+      // Overview global
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: since }, evalPassed: { $exists: true }, evalSkipped: { $ne: true } } },
+        { $group: {
+          _id: null,
+          totalEvals: { $sum: 1 },
+          passed: { $sum: { $cond: ['$evalPassed', 1, 0] } },
+          failed: { $sum: { $cond: ['$evalPassed', 0, 1] } },
+          avgLangPurity: { $avg: '$evalScores.language_purity' },
+          avgQuality: { $avg: '$evalScores.quality' },
+          avgAttempts: { $avg: '$evalAttempts' }
+        }}
+      ]),
+
+      // Breakdown por idioma
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: since }, evalPassed: { $exists: true }, evalSkipped: { $ne: true } } },
+        { $group: {
+          _id: '$targetLanguage',
+          total: { $sum: 1 },
+          passed: { $sum: { $cond: ['$evalPassed', 1, 0] } },
+          avgLangPurity: { $avg: '$evalScores.language_purity' },
+          avgQuality: { $avg: '$evalScores.quality' }
+        }},
+        { $sort: { total: -1 } }
+      ]),
+
+      // Breakdown por personalidad
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: since }, evalPassed: { $exists: true }, evalSkipped: { $ne: true }, anchorsUsed: { $ne: '' } } },
+        { $group: {
+          _id: '$anchorsUsed',
+          total: { $sum: 1 },
+          passed: { $sum: { $cond: ['$evalPassed', 1, 0] } },
+          avgLangPurity: { $avg: '$evalScores.language_purity' },
+          avgQuality: { $avg: '$evalScores.quality' }
+        }},
+        { $sort: { total: -1 } }
+      ]),
+
+      // Últimos 5 fallos (para diagnóstico rápido)
+      AILog.find({
+        createdAt: { $gte: since },
+        evalPassed: false,
+        evalSkipped: { $ne: true }
+      })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('playerName targetLanguage evalScores evalFeedback anchorsUsed createdAt'),
+
+      // Stats de transcreación
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: since }, wasTranscreated: true } },
+        { $group: {
+          _id: '$targetLanguage',
+          total: { $sum: 1 },
+          fallbacks: { $sum: { $cond: ['$transcreationFallback', 1, 0] } }
+        }},
+        { $sort: { total: -1 } }
+      ])
+    ]);
+
+    const ov = overview[0] || { totalEvals: 0, passed: 0, failed: 0, avgLangPurity: 0, avgQuality: 0, avgAttempts: 1 };
+    const passRate = ov.totalEvals > 0 ? Math.round((ov.passed / ov.totalEvals) * 100) : null;
+
+    res.json({
+      overview: {
+        ...ov,
+        passRate,
+        period: `${days} días`
+      },
+      byLanguage,
+      byPersonality,
+      failedRecent,
+      transcreationStats
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /evals — Log paginado de evaluaciones con filtros
+ */
+router.get('/evals', async (req, res) => {
+  try {
+    const { page = 1, limit = 25, passed, targetLanguage, playerName } = req.query;
+
+    const filter = { evalPassed: { $exists: true } };
+    if (passed !== undefined && passed !== '') filter.evalPassed = passed === 'true';
+    if (targetLanguage) filter.targetLanguage = targetLanguage;
+    if (playerName) filter.playerName = { $regex: playerName, $options: 'i' };
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [logs, total] = await Promise.all([
+      AILog.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select('playerName groupName targetLanguage evalScores evalFeedback evalPassed evalAttempts evalSkipped wasTranscreated transcreationFallback anchorsUsed latencyMs createdAt'),
+      AILog.countDocuments(filter)
+    ]);
+
+    res.json({
+      logs,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 router.get('/usage', async (req, res) => {
   try {
     const now = new Date();
@@ -621,10 +755,7 @@ router.delete('/users/:userName', async (req, res) => {
 
 // ==========================================
 // SIMULATE TIME (Para Testing Opción B)
-// ==========================================
-import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
-import { getRssStats } from '../rssFeedService.js';
-import { getWebSearchStats } from '../webSearchService.js';
+// ===========================================
 
 router.post('/simulate-time', async (req, res) => {
   try {
@@ -739,6 +870,19 @@ router.post('/feedback/analyze-all', async (req, res) => {
 });
 
 // ==========================================
+// FEEDBACK — Detalle individual
+// ==========================================
+router.get('/feedback/:id', async (req, res) => {
+  try {
+    const fb = await Feedback.findById(req.params.id);
+    if (!fb) return res.status(404).json({ error: 'Feedback no encontrado' });
+    res.json(fb);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
 // FEEDBACK — Editar campos de análisis manualmente
 // ==========================================
 router.put('/feedback/:id', async (req, res) => {
@@ -775,6 +919,19 @@ router.get('/prds', async (req, res) => {
     ]);
 
     res.json({ prds, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// PRD — Detalle individual
+// ==========================================
+router.get('/prds/:id', async (req, res) => {
+  try {
+    const prd = await PRD.findById(req.params.id).populate('feedbackId', 'subject type detail userName');
+    if (!prd) return res.status(404).json({ error: 'PRD no encontrado' });
+    res.json(prd);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

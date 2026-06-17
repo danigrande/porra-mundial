@@ -40,8 +40,6 @@ export default function ChatScreen() {
   // Variables mapeadas del store
   const messages = chatState.messages;
   const lastReadId = chatState.lastReadId;
-  const unreadCount = chatState.unreadCount;
-  const showUnreadMarker = chatState.showUnreadMarker;
   const typingUsers = chatState.typingUsers;
   const loading = chatState.loading;
   const socketConnected = chatStore.isSocketConnected();
@@ -79,7 +77,34 @@ export default function ChatScreen() {
       return true;
     });
   }, [messages, blockedUsers, auth]);
-  
+
+  // Bug fix 2 & 3: Derive unread count and marker from `uniqueMessages`
+  // (the visible, filtered list) instead of the raw store values.
+  // This ensures:
+  //   - Blocked users' messages don't inflate the badge count.
+  //   - If lastReadId points to a blocked/deleted message, we fall back
+  //     to a timestamp comparison so the marker still appears correctly.
+  const { effectiveUnreadCount, effectiveShowMarker } = useMemo(() => {
+    if (!lastReadId || uniqueMessages.length === 0) {
+      return { effectiveUnreadCount: 0, effectiveShowMarker: false };
+    }
+    const idx = uniqueMessages.findIndex(m => m._id === lastReadId);
+    if (idx !== -1) {
+      // Happy path: anchor message is visible
+      if (idx < uniqueMessages.length - 1) {
+        return { effectiveUnreadCount: uniqueMessages.length - 1 - idx, effectiveShowMarker: true };
+      }
+      return { effectiveUnreadCount: 0, effectiveShowMarker: false };
+    }
+    // lastReadId is from a blocked/deleted message — use timestamp fallback:
+    // find the raw message to get its timestamp, then count visible messages after it.
+    const anchor = messages.find(m => m._id === lastReadId);
+    if (!anchor) return { effectiveUnreadCount: 0, effectiveShowMarker: false };
+    const anchorTime = new Date(anchor.timestamp).getTime();
+    const count = uniqueMessages.filter(m => new Date(m.timestamp).getTime() > anchorTime).length;
+    return { effectiveUnreadCount: count, effectiveShowMarker: count > 0 };
+  }, [uniqueMessages, lastReadId, messages]);
+
   const [userFeedback, setUserFeedback] = useState<{[msgId: string]: 'up' | 'down'} | null>(null);
   const [feedbackMessageId, setFeedbackMessageId] = useState<string | null>(null);
 
@@ -93,11 +118,16 @@ export default function ChatScreen() {
     hasAutoScrolled.current = false;
   }, [groupName]);
 
-  // Track keyboard height and scroll to end so keyboard doesn't cover latest messages
+  // Track keyboard height — on iOS, KeyboardAvoidingView already handles
+  // scrolling the content up, so we must NOT call scrollToEnd here or it
+  // will fight the native animation and cause flickering.
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', e => {
       setKeyboardHeight(e.endCoordinates.height);
-      flatListRef.current?.scrollToEnd({ animated: false });
+      // iOS: skip the extra scrollToEnd — KeyboardAvoidingView handles it
+      if (Platform.OS !== 'ios' && isAtBottomRef.current) {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
     return () => { showSub.remove(); hideSub.remove(); };
@@ -152,9 +182,13 @@ export default function ChatScreen() {
   }, [navigation, groupName, messages]);
 
   // Auto-scroll inicial a mensajes no leídos o al fondo
+  // Use a single 300ms delay on iOS to ensure layout is complete before
+  // scrolling — shorter delays (50–100ms) can fire mid-layout on iOS and
+  // cause a visible flicker/jump.
   useEffect(() => {
     if (messages.length > 0 && chatState.lastReadLoaded && !hasAutoScrolled.current) {
       hasAutoScrolled.current = true;
+      const delay = Platform.OS === 'ios' ? 300 : 100;
       const doInitialScroll = () => {
         if (lastReadId) {
           const index = messages.findIndex(m => m._id === lastReadId);
@@ -167,7 +201,7 @@ export default function ChatScreen() {
                 viewOffset: 20
               });
               chatStore.updateLastRead(groupName, messages[messages.length - 1]._id);
-            }, 100);
+            }, delay);
             return;
           }
         }
@@ -176,7 +210,7 @@ export default function ChatScreen() {
           if (messages.length > 0) {
             chatStore.updateLastRead(groupName, messages[messages.length - 1]._id);
           }
-        }, 100);
+        }, delay);
       };
       doInitialScroll();
     }
@@ -187,10 +221,11 @@ export default function ChatScreen() {
     if (!hasAutoScrolled.current) return;
     if (messages.length > prevMessagesLen.current) {
       const lastMsg = messages[messages.length - 1];
+      const delay = Platform.OS === 'ios' ? 150 : 50;
       if (lastMsg.senderId === auth?.userId) {
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), delay);
       } else if (isAtBottomRef.current) {
-        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), delay);
       }
     }
     prevMessagesLen.current = messages.length;
@@ -205,6 +240,16 @@ export default function ChatScreen() {
     const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - threshold;
     isAtBottomRef.current = isAtBottom;
     chatStore.setActiveChatAtBottom(isAtBottom);
+
+    // Bug fix: if the user manually scrolls to the bottom, clear the unread
+    // marker immediately. Without this, the marker stays visible until the
+    // next incoming message, even though the user has already seen everything.
+    if (isAtBottom && messages.length > 0) {
+      const lastId = messages[messages.length - 1]._id;
+      if (chatState.showUnreadMarker) {
+        chatStore.updateLastRead(groupName, lastId);
+      }
+    }
   };
 
   async function loadHistory() {
@@ -417,9 +462,12 @@ export default function ChatScreen() {
 
   const renderMessage = ({ item, index }: { item: socketService.ChatMessage, index: number }) => {
     const isMe = item.senderId === auth?.userId;
-    const showDate = index === 0 || new Date(messages[index - 1]?.timestamp).toDateString() !== new Date(item.timestamp).toDateString();
+    // Bug fix 3: use uniqueMessages indices, not the raw messages array.
+    // The FlatList renders uniqueMessages, so index refers to uniqueMessages.
+    // Using messages[index-1] was wrong when blocked messages were filtered out.
+    const showDate = index === 0 || new Date(uniqueMessages[index - 1]?.timestamp).toDateString() !== new Date(item.timestamp).toDateString();
     const dateLabel = new Date(item.timestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
-    const isFirstUnread = showUnreadMarker && lastReadId && messages[index - 1]?._id === lastReadId;
+    const isFirstUnread = effectiveShowMarker && lastReadId && uniqueMessages[index - 1]?._id === lastReadId;
     const isEditing = editingMessageId === item._id;
 
     return (
@@ -429,17 +477,17 @@ export default function ChatScreen() {
         showDate={showDate}
         dateLabel={dateLabel}
         isFirstUnread={!!isFirstUnread}
-        unreadCount={unreadCount}
+        unreadCount={effectiveUnreadCount}
         isEditing={isEditing}
         selectMode={selectMode}
         selectedIds={selectedIds}
         playingId={playingId}
         playbackStatus={playbackStatus}
         messageIndex={index}
-        totalMessages={messages.length}
+        totalMessages={uniqueMessages.length}
         lastReadId={lastReadId}
-        showUnreadMarker={showUnreadMarker}
-        messages={messages}
+        showUnreadMarker={effectiveShowMarker}
+        messages={uniqueMessages}
         authUserId={auth?.userId || ''}
         groupName={groupName}
         onToggleSelect={(id) => {
@@ -540,12 +588,16 @@ export default function ChatScreen() {
           });
         }}
         removeClippedSubviews={Platform.OS === 'android'}
-        windowSize={5}
-        maxToRenderPerBatch={15}
-        initialNumToRender={12}
+        // Larger windowSize prevents iOS from unmounting/remounting cells
+        // during fast scrolls, which is the main cause of flickering
+        windowSize={Platform.OS === 'ios' ? 21 : 5}
+        maxToRenderPerBatch={10}
+        initialNumToRender={20}
+        // Prevents the list from jumping when older messages load at the top
+        maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
       />
 
-      {showUnreadMarker && (
+      {effectiveShowMarker && (
         <TouchableOpacity 
           style={styles.floatingUnread} 
           onPress={() => {

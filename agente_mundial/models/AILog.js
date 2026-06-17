@@ -41,6 +41,23 @@ const aiLogSchema = new mongoose.Schema({
   // Status
   success: { type: Boolean, default: true },
   errorMessage: { type: String, default: '' },
+
+  // ── Eval System (LLM-as-a-Judge) ──
+  evalScores: {
+    language_purity: { type: Number },
+    quality: { type: Number }
+  },
+  evalFeedback: { type: String, default: '' },
+  evalPassed: { type: Boolean },
+  evalAttempts: { type: Number, default: 1 },
+  evalSkipped: { type: Boolean, default: false },   // true si saltó por sample rate
+  anchorsUsed: { type: String, default: '' },        // personalityId
+
+  // ── Language & Transcreation ──
+  targetLanguage: { type: String, default: 'es' },
+  wasTranscreated: { type: Boolean, default: false },
+  transcreationSource: { type: String, default: '' }, // texto fuente antes de transcreación
+  transcreationFallback: { type: Boolean, default: false }, // true si se usó fallback al original
   
   createdAt: { type: Date, default: Date.now }
 });
@@ -49,5 +66,8 @@ const aiLogSchema = new mongoose.Schema({
 aiLogSchema.index({ createdAt: -1 });
 aiLogSchema.index({ playerName: 1, createdAt: -1 });
 aiLogSchema.index({ type: 1, createdAt: -1 });
+aiLogSchema.index({ evalPassed: 1, createdAt: -1 });      // para dashboard de evals
+aiLogSchema.index({ targetLanguage: 1, createdAt: -1 });  // para breakdown por idioma
 
 export const AILog = mongoose.models.AILog || mongoose.model('AILog', aiLogSchema);
+

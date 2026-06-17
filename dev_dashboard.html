@@ -30,6 +30,7 @@
     <div class="tabs">
       <div class="tab active" onclick="switchTab('health')">📡 Health</div>
       <div class="tab" onclick="switchTab('logs')">📋 AI Logs</div>
+      <div class="tab" onclick="switchTab('evals')">⚖️ Evals</div>
       <div class="tab" onclick="switchTab('rag')">🧠 RAG Explorer</div>
       <div class="tab" onclick="switchTab('rss')">📰 RSS Feeds</div>
       <div class="tab" onclick="switchTab('websearch')">🔍 Web Search</div>
@@ -70,6 +71,54 @@
         </div>
         <div id="logs-table-body"><div class="loading"><span class="spinner"></span> Cargando logs...</div></div>
         <div class="pagination" id="logs-pagination"></div>
+      </div>
+    </div>
+
+    <!-- EVALS PANEL -->
+    <div class="panel" id="panel-evals">
+      <div class="cards" id="evals-cards"></div>
+      
+      <!-- Breakdown Language -->
+      <div style="display:flex; gap:1.5rem; margin-top:1.5rem;">
+        <div style="flex:1" class="table-wrap">
+          <div class="table-header">
+            <h3>🌐 Rendimiento por Idioma</h3>
+          </div>
+          <div id="evals-lang-breakdown"></div>
+        </div>
+        
+        <!-- Breakdown Personality -->
+        <div style="flex:1" class="table-wrap">
+          <div class="table-header">
+            <h3>🎭 Rendimiento por Personalidad</h3>
+          </div>
+          <div id="evals-personality-breakdown"></div>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:1.5rem;">
+        <div class="table-header">
+          <h3>⚖️ Log de Evaluaciones Recientes</h3>
+          <div class="table-filters">
+            <select id="filter-evals-passed" onchange="loadEvals()">
+              <option value="">Todas (Pass + Fail)</option>
+              <option value="true">✅ Passed</option>
+              <option value="false">❌ Failed</option>
+            </select>
+            <select id="filter-evals-lang" onchange="loadEvals()">
+              <option value="">Todos los idiomas</option>
+              <option value="es">Español</option>
+              <option value="en">Inglés</option>
+              <option value="ko">Coreano (Transcreation)</option>
+              <option value="ar">Árabe (Transcreation)</option>
+              <option value="th">Tailandés (Transcreation)</option>
+              <option value="ja">Japonés (Transcreation)</option>
+            </select>
+            <button onclick="loadEvalsStats(); loadEvals();" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄</button>
+          </div>
+        </div>
+        <div id="evals-table-body"><div class="loading"><span class="spinner"></span> Cargando evals...</div></div>
+        <div class="pagination" id="evals-pagination"></div>
       </div>
     </div>
 
