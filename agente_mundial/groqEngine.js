@@ -10,6 +10,9 @@ import config from './config.js';
 import { AILog } from './models/AILog.js';
 import { User } from './models/User.js';
 import { Group } from './models/Group.js';
+import { getAnchors, buildAnchorBlock, getSourceLanguage } from './anchors.js';
+import { buildLanguageInstruction } from './languageRouter.js';
+import { judgeResponse } from './judgeService.js';
 
 const groq = new Groq({
   apiKey: config.groq.apiKey,
@@ -152,15 +155,51 @@ Reglas:
 - Menciona el nombre del grupo como si fuera el club involucrado en el fichaje
 - Si no tienes datos suficientes, no te inventes nada
 - Usa emojis con moderación (1-2 por mensaje)
-- No uses markdown complejo, mantén un estilo limpio para el chat.`
+- No uses markdown complejo, mantén un estilo limpio para el chat.`,
+
+  juez_dredd: `Eres el "Agente Mundial" 🏆, un chatbot para varios grupos de amigos que participan en una "Predicción del Mundial 2026" (pronósticos de resultados de fútbol entre amigos, sin dinero real).
+
+Tu personalidad es como la del JUEZ DREDD: autoritario, implacable, impartes justicia en esta porra como si fuera la ley en Mega-City One. Cada predicción es una declaración jurada, cada acierto un veredicto. Eres el juez, el jurado y, cuando hace falta, el verdugo humorístico.
+
+Reglas:
+- Responde SIEMPRE en español
+- Sé breve (máximo 3-4 frases) a menos que te pidan detalles
+- VARIEDAD CRÍTICA: NO repitas las mismas sentencias en cada mensaje. Alterna entre "I am the law", "queda sentenciado", "caso cerrado", "a la sala", "señoría", "cadena perpetua", "libertad condicional"
+- El líder de la clasificación es un "ciudadano ejemplar", el último está "sentenciado a los ISO-Cubes" o "en libertad condicional revocada"
+- Trata los errores como "delitos", las malas rachas como "condenas", los aciertos como "indultos"
+- Usa terminología judicial: "veredicto", "sentencia", "apelación", "pruebas", "testigos", "tribunal"
+- Cuando hables de un jugador, usa su nickname y ten en cuenta sus gustos y dislikes
+- Menciona el grupo como "el tribunal" o "esta sala"
+- Tono: autoritario pero con humor negro bien dosificado, sin pasarse
+- Si no tienes datos suficientes, no te inventes nada
+- Usa emojis con moderación (1-2 por mensaje y solo si son útiles)
+- No uses markdown complejo ni formateo especial, mantén un estilo limpio para el chat.`
 };
 
 /**
  * Returns the system prompt for a given personality ID.
  * Defaults to Andrés Montes if the personality is unknown.
  */
-function getSystemPrompt(personalityId) {
+export function getSystemPrompt(personalityId) {
   return PERSONALITY_PROMPTS[personalityId] || PERSONALITY_PROMPTS.andres_montes;
+}
+
+/**
+ * Builds an enhanced system prompt by injecting:
+ *   1. Aggressive language instruction (prefix + suffix) to prevent language mixing
+ *   2. Structured humor anchor block for the personality
+ *
+ * @param {string} personalityId
+ * @param {string} targetLanguage - ISO code of expected output language
+ * @param {string[]} [recentCatchphrases] - recently used catchphrases to avoid
+ * @returns {string} Enhanced system prompt
+ */
+function buildEnhancedSystemPrompt(personalityId, targetLanguage, recentCatchphrases = []) {
+  const basePrompt = getSystemPrompt(personalityId);
+  const { prefix: langPrefix, suffix: langSuffix } = buildLanguageInstruction(targetLanguage);
+  const anchorBlock = buildAnchorBlock(personalityId, recentCatchphrases);
+
+  return `${langPrefix}\n\n${basePrompt}\n${anchorBlock}\n\n${langSuffix}`;
 }
 
 /**
@@ -181,7 +220,8 @@ function getPersonalityName(personalityId) {
     roncero: 'Tomás Roncero',
     darth_vader: 'Darth Vader',
     trump: 'Donald Trump',
-    fabrizio_romano: 'Fabrizio Romano'
+    fabrizio_romano: 'Fabrizio Romano',
+    juez_dredd: 'Juez Dredd'
   };
   return names[personalityId] || 'Andrés Montes';
 }
@@ -200,14 +240,18 @@ function saveAILog(logData) {
  * @param {string} playerName - Nombre del jugador
  * @param {string} question - Pregunta del usuario
  * @param {Object} context - Datos contextuales (ranking, stats, perfil)
- * @param {Object} [meta] - Metadatos opcionales (source)
+ * @param {Object} [meta] - Metadatos opcionales (source, targetLanguage, judgesFeedback)
  * @returns {string} Respuesta del bot
  */
 export async function generateResponse(playerName, question, context, meta = {}) {
   const { groupName, ranking, playerStats, profile, leaderboard } = context;
 
-  const personalityId = profile?.ai_personality || 'andres_montes';
-  const systemPrompt = getSystemPrompt(personalityId);
+  const personalityId = profile?.ai_personality || meta.personalityId || 'andres_montes';
+  const targetLanguage = meta.targetLanguage || getSourceLanguage(personalityId);
+  const recentOutputs = getRecentOutputs(personalityId);
+
+  // Usar el system prompt mejorado con anchors e instrucción de idioma agresiva
+  const systemPrompt = buildEnhancedSystemPrompt(personalityId, targetLanguage, recentOutputs.slice(0, 2));
   const personalityName = getPersonalityName(personalityId);
   const lang = getPersonalityLang(personalityId);
 
@@ -235,13 +279,15 @@ export async function generateResponse(playerName, question, context, meta = {})
     ? `Responde como ${personalityName}, personaliza la respuesta para ${profile?.nickname || playerName}. Si hay historial de chat, úsalo para hacer una broma o referencia a algo que se haya dicho recientemente. Si se ha proporcionado 'INFORMACIÓN ACTUALIZADA DE INTERNET', úsala como fuente verídica y actual para responder.`
     : `Respond as ${personalityName}, personalize the response for ${profile?.nickname || playerName}. If there is recent chat history, use it to make a joke or reference to something said recently. If 'UPDATED INTERNET INFORMATION' is provided, use it as a truthful and current source to answer.`;
 
-  // Retrieve recent bot messages for this personality to avoid catchphrase repetition
-  const recentOutputs = getRecentOutputs(personalityId);
-  const recentContext = recentOutputs.length > 0
+  // Feedback del Judge del intento anterior (si hay) — inyectado al final del user prompt
+  const judgesFeedbackBlock = meta.judgesFeedback
     ? (lang === 'es'
-      ? `TUS MENSAJES RECIENTES (no te repitas ni uses las mismas frases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`
-      : `YOUR RECENT MESSAGES (do not repeat yourself or reuse the same catchphrases):\n${recentOutputs.map((t, i) => `[${i + 1}] ${t.substring(0, 200)}`).join('\n')}\n\n`)
+      ? `\n\n⚠️ CORRECCIÓN REQUERIDA (intento anterior rechazado): ${meta.judgesFeedback}\nCorrige específicamente ese problema en esta respuesta.`
+      : `\n\n⚠️ CORRECTION REQUIRED (previous attempt rejected): ${meta.judgesFeedback}\nSpecifically fix that issue in this response.`)
     : '';
+
+  // Contexto de outputs recientes (ya gestionado en el system prompt via buildEnhancedSystemPrompt)
+  const recentContext = '';
 
   const userMessage = `DATOS DEL GRUPO: ${groupName || 'Privado'}
   
@@ -255,7 +301,7 @@ ${recentContext}${context.rulesContext ? `CONTEXTO DEL TORNEO:\n${context.rulesC
 ${context.webContext ? `INFORMACIÓN ACTUALIZADA DE INTERNET:\n${context.webContext}\n` : ''}
 PREGUNTA: "${question}"
 
-${instruction}`;
+${instruction}${judgesFeedbackBlock}`;
 
   const startTime = Date.now();
 
@@ -335,7 +381,9 @@ ${instruction}`;
       completionTokens: usage.completion_tokens || 0,
       latencyMs,
       source: meta.source || 'chat',
-      success: true
+      success: true,
+      // Eval fields — se rellenan desde generateWithQualityGate si se usa ese path
+      ...(meta._evalData || {})
     });
 
     return responseText;
@@ -366,6 +414,74 @@ ${instruction}`;
     console.error('[Groq] Ambos fallaron (HF + Groq):', error.message);
     return '❌ ¡Uy! El Agente Mundial ha tenido un tropiezo técnico. Inténtalo en un momento.';
   }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// QUALITY GATE — Genera respuesta + evalúa con Judge + reintenta si falla
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Genera una respuesta pasando por el Quality Gate:
+ *   1. Genera respuesta con generateResponse()
+ *   2. Evalúa con judgeResponse() (LLM-as-a-Judge)
+ *   3. Si falla, regenera con el feedback del Judge inyectado
+ *   4. Máximo meta.maxAttempts intentos (default 3)
+ *   5. Si agota intentos, devuelve el último resultado con forceApproved=true
+ *
+ * @param {string} playerName
+ * @param {string} question
+ * @param {Object} context
+ * @param {Object} meta - { personalityId, anchors, targetLanguage, maxAttempts, source }
+ * @returns {Promise<{response: string, judgment: Object, attempts: number, forceApproved: boolean}>}
+ */
+export async function generateWithQualityGate(playerName, question, context, meta = {}) {
+  // Si los evals están deshabilitados, pasar directamente
+  if (!config.evals?.enabled) {
+    const response = await generateResponse(playerName, question, context, meta);
+    return { response, judgment: { passed: true, scores: {}, feedback: 'evals disabled' }, attempts: 1, forceApproved: false };
+  }
+
+  const personalityId = meta.personalityId || context.profile?.ai_personality || 'andres_montes';
+  const anchors = meta.anchors || getAnchors(personalityId);
+  const targetLanguage = meta.targetLanguage || getSourceLanguage(personalityId);
+  const maxAttempts = meta.maxAttempts || config.evals.maxRetries || 3;
+
+  let attempts = 0;
+  let lastFeedback = '';
+  let lastResponse = '';
+  let lastJudgment = null;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+
+    const response = await generateResponse(playerName, question, context, {
+      ...meta,
+      personalityId,
+      targetLanguage,
+      judgesFeedback: lastFeedback,
+      _evalData: null // Se rellenará después del Judge
+    });
+
+    lastResponse = response;
+
+    // Evaluar con el Judge
+    const systemPrompt = buildEnhancedSystemPrompt(personalityId, targetLanguage);
+    const judgment = await judgeResponse(response, systemPrompt, anchors, targetLanguage);
+    lastJudgment = judgment;
+
+    console.log(`⚖️ [QualityGate] Intento ${attempts}/${maxAttempts}: lang=${judgment.scores?.language_purity} quality=${judgment.scores?.quality} → ${judgment.passed ? '✅ PASS' : '❌ FAIL'}`);
+
+    if (judgment.passed) {
+      return { response, judgment, attempts, forceApproved: false };
+    }
+
+    lastFeedback = judgment.feedback;
+    console.log(`🔄 [QualityGate] Regenerando. Feedback: ${judgment.feedback}`);
+  }
+
+  // Agotados los intentos — devolver el último resultado con flag
+  console.warn(`⚠️ [QualityGate] Agotados ${maxAttempts} intentos. Forzando aprobación.`);
+  return { response: lastResponse, judgment: lastJudgment, attempts, forceApproved: true };
 }
 
 /**

@@ -310,6 +310,7 @@ const translations = {
       "personality_vader": "Darth Vader (Imperial)",
       "personality_trump": "Donald Trump (Bombastic)",
       "personality_fabrizio": "Fabrizio Romano (Fichajes)",
+      "personality_dredd": "Juez Dredd (Justiciero)",
       "success": "¡Perfil guardado!",
       "pin_success": "PIN actualizado"
     }
@@ -623,6 +624,7 @@ const translations = {
       "personality_vader": "Darth Vader (Imperial)",
       "personality_trump": "Donald Trump (Bombastic)",
       "personality_fabrizio": "Fabrizio Romano (Transfer News)",
+      "personality_dredd": "Judge Dredd (Lawbringer)",
       "success": "Profile saved!",
       "pin_success": "PIN updated"
     }

@@ -1,0 +1,127 @@
+[
+  {
+    "id": "es_andres_my_status",
+    "query": "¿Cómo voy en la clasificación?",
+    "personality": "andres_montes",
+    "targetLanguage": "es",
+    "expectedHumorMechanism": "street_wisdom",
+    "needsTranscreation": false,
+    "description": "Consulta básica en español — ruta directa"
+  },
+  {
+    "id": "es_roncero_ranking",
+    "query": "¿Quién va primero?",
+    "personality": "roncero",
+    "targetLanguage": "es",
+    "expectedHumorMechanism": "exaggerated_emotion",
+    "needsTranscreation": false,
+    "description": "Consulta de ranking con personalidad pasional"
+  },
+  {
+    "id": "en_trump_status",
+    "query": "Who's winning?",
+    "personality": "trump",
+    "targetLanguage": "en",
+    "expectedHumorMechanism": "superlative",
+    "needsTranscreation": false,
+    "description": "Consulta en inglés — personalidad Trump"
+  },
+  {
+    "id": "en_darth_ranking",
+    "query": "Show me the leaderboard",
+    "personality": "darth_vader",
+    "targetLanguage": "en",
+    "expectedHumorMechanism": "menacing_wit",
+    "needsTranscreation": false,
+    "description": "Consulta de ranking — Darth Vader"
+  },
+  {
+    "id": "ko_andres_my_status",
+    "query": "나는 어떻게 지내고 있나요?",
+    "personality": "andres_montes",
+    "targetLanguage": "ko",
+    "expectedHumorMechanism": "street_wisdom",
+    "needsTranscreation": true,
+    "description": "Consulta en coreano — requiere transcreación. El flavor de Andrés Montes debe ser exótico-español."
+  },
+  {
+    "id": "ar_pedrerol_ranking",
+    "query": "أين أنا في الترتيب؟",
+    "personality": "pedrerol",
+    "targetLanguage": "ar",
+    "expectedHumorMechanism": "dramatic_reveal",
+    "needsTranscreation": true,
+    "description": "Consulta en árabe — la revelación dramática de Pedrerol en árabe"
+  },
+  {
+    "id": "th_roncero_ranking",
+    "query": "ฉันอยู่อันดับเท่าไหร่",
+    "personality": "roncero",
+    "targetLanguage": "th",
+    "expectedHumorMechanism": "exaggerated_emotion",
+    "needsTranscreation": true,
+    "description": "Consulta en tailandés — emoción exagerada adaptada a cultura tailandesa"
+  },
+  {
+    "id": "ja_fabrizio_status",
+    "query": "私の順位はどうですか？",
+    "personality": "fabrizio_romano",
+    "targetLanguage": "ja",
+    "expectedHumorMechanism": "breaking_news_factual",
+    "needsTranscreation": true,
+    "description": "Consulta en japonés — breaking news estilo Fabrizio en japonés"
+  },
+  {
+    "id": "edge_arabic_chars_in_es_response",
+    "query": "¿Cómo estoy?",
+    "personality": "andres_montes",
+    "targetLanguage": "es",
+    "expectedHumorMechanism": "street_wisdom",
+    "needsTranscreation": false,
+    "description": "EDGE CASE: Respuesta esperada en español — el Judge debe detectar contaminación árabe/coreana y rechazar",
+    "simulatedBadResponse": "¡Ráfaga! 🏆 مرحبا vas en 3ª posición 안녕하세요 con 45 puntos, ¡jugón!",
+    "expectedJudgePassed": false,
+    "expectedIssue": "language"
+  },
+  {
+    "id": "edge_generic_boring_response",
+    "query": "¿Quién gana?",
+    "personality": "andres_montes",
+    "targetLanguage": "es",
+    "expectedHumorMechanism": "street_wisdom",
+    "needsTranscreation": false,
+    "description": "EDGE CASE: Respuesta genérica sin personalidad — debe fallar en quality",
+    "simulatedBadResponse": "El jugador que va primero tiene más puntos que los demás. Felicitaciones.",
+    "expectedJudgePassed": false,
+    "expectedIssue": "humor"
+  },
+  {
+    "id": "edge_perfect_response_es",
+    "query": "¿Cómo va la porra?",
+    "personality": "andres_montes",
+    "targetLanguage": "es",
+    "expectedHumorMechanism": "street_wisdom",
+    "needsTranscreation": false,
+    "description": "EDGE CASE: Respuesta perfecta — debe pasar en el primer intento",
+    "simulatedGoodResponse": "¡Jugón! 🏆 Mira cómo está el barrio: el Paco lidera con 78 puntos, como el que llega al mercadillo antes que nadie y se lleva todos los mangos. Y el Juanma en el faroliyo con 42... eso sí que es un abismo callejero.",
+    "expectedJudgePassed": true
+  },
+  {
+    "id": "es_dredd_my_status",
+    "query": "¿Cómo voy en la clasificación?",
+    "personality": "juez_dredd",
+    "targetLanguage": "es",
+    "expectedHumorMechanism": "authoritarian_judgment",
+    "needsTranscreation": false,
+    "description": "Consulta básica en español — personalidad Juez Dredd autoritaria"
+  },
+  {
+    "id": "es_dredd_perfect",
+    "query": "¿Quién lidera la porra?",
+    "personality": "juez_dredd",
+    "targetLanguage": "es",
+    "expectedHumorMechanism": "authoritarian_judgment",
+    "needsTranscreation": false,
+    "description": "EDGE CASE: Respuesta perfecta — debe pasar"
+  }
+]
