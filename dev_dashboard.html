@@ -42,6 +42,7 @@
       <div class="tab" onclick="switchTab('feedback')">💬 Feedback</div>
       <div class="tab" onclick="switchTab('prds')">📄 PRDs</div>
       <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
+      <div class="tab" onclick="switchTab('help-evals')">❓ Help-Evals</div>
     </div>
 
   <div class="content">
@@ -339,6 +340,297 @@
       </div>
       <div class="cards" id="usage-breakdown"></div>
     </div>
+
+    <!-- HELP-EVALS PANEL -->
+    <div class="panel" id="panel-help-evals">
+      <div style="max-width:1000px;margin:0 auto;padding:1rem;">
+
+        <!-- TITLE -->
+        <div style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(139,92,246,0.1));border:1px solid rgba(59,130,246,0.25);border-radius:16px;padding:2rem;margin-bottom:2rem;text-align:center;">
+          <h2 style="font-size:1.6rem;margin:0 0 0.5rem">⚖️ Evals System — Complete Guide</h2>
+          <p style="color:var(--text-muted);margin:0;font-size:0.95rem;max-width:700px;margin-left:auto;margin-right:auto">
+            How the AI evaluates itself, when humans step in, and how to run & interpret benchmarks.
+          </p>
+        </div>
+
+        <!-- 1. QUALITY GATE FLOW -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-blue);display:flex;align-items:center;gap:0.5rem;">
+            <span>1.</span> Quality Gate Pipeline
+          </h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+            Every response the AI generates passes through the <strong>Quality Gate</strong> — a loop that generates, judges, and retries if the quality is below threshold. This prevents bad responses from reaching users.
+          </p>
+          <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:1.5rem;font-family:var(--mono);font-size:0.75rem;line-height:1.7;color:var(--text-primary);overflow-x:auto;white-space:nowrap;">
+            <div style="color:var(--accent-cyan);margin-bottom:0.5rem;">┌─ QUALITY GATE ──────────────────────────────────────────────────┐</div>
+            <div>│                                                                    │</div>
+            <div>│   User Query                                                    │</div>
+            <div>│      │                                                          │</div>
+            <div>│      ▼                                                          │</div>
+            <div>│   ┌──────────────────┐                                          │</div>
+            <div>│   │ generateResponse │  ← system prompt + anchors + lang guard  │</div>
+            <div>│   └────────┬─────────┘                                          │</div>
+            <div>│            │                                                     │</div>
+            <div>│            ▼                                                     │</div>
+            <div>│   ┌──────────────────┐    ┌─────────────┐                        │</div>
+            <div>│   │  judgeResponse   │───→│ fast-path    │──→ regex detects      │</div>
+            <div>│   │  (LLM-as-Judge)  │    │ script check │   script mix → FAIL   │</div>
+            <div>│   └────────┬─────────┘    └─────────────┘                        │</div>
+            <div>│            │                                                     │</div>
+            <div>│            ▼                                                     │</div>
+            <div>│   ┌──────────────┐                                               │</div>
+            <div>│   │  lang ≥ 8    │   quality ≥ 6    →  ✅ PASS → return to user  │</div>
+            <div>│   │  &           │────────────────────────────────────────────   │</div>
+            <div>│   │  quality ≥ 6 │   otherwise       →  ❌ FAIL                  │</div>
+            <div>│   └──────────┬───┘                                               │</div>
+            <div>│              │                                                    │</div>
+            <div>│              ▼  (retry with judge feedback injected)              │</div>
+            <div>│   attempts < 3 ──────────→ generateResponse (attempt N+1)        │</div>
+            <div>│   attempts ≥ 3 ──────────→ forceApproved ⚠️ (reaches user anyway)│</div>
+            <div>│                                                                    │</div>
+            <div>└────────────────────────────────────────────────────────────────────┘</div>
+          </div>
+          <div style="margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap;">
+            <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:0.6rem 1rem;flex:1;min-width:150px;">
+              <div style="font-size:0.7rem;color:var(--accent-green);font-weight:700;">PASS THRESHOLDS</div>
+              <div style="font-size:0.8rem;color:var(--text-primary);margin-top:0.25rem;">language_purity ≥ 8<br>quality ≥ 6</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.6rem 1rem;flex:1;min-width:150px;">
+              <div style="font-size:0.7rem;color:var(--accent-red);font-weight:700;">MAX RETRIES</div>
+              <div style="font-size:0.8rem;color:var(--text-primary);margin-top:0.25rem;">3 attempts before<br>force approval</div>
+            </div>
+            <div style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2);border-radius:8px;padding:0.6rem 1rem;flex:1;min-width:150px;">
+              <div style="font-size:0.7rem;color:var(--accent-amber);font-weight:700;">SAMPLE RATE</div>
+              <div style="font-size:0.8rem;color:var(--text-primary);margin-top:0.25rem;">configurable (1.0 = all)<br>production may use 0.5</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. LLM-AS-A-JUDGE -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-cyan);display:flex;align-items:center;gap:0.5rem;">
+            <span>2.</span> LLM-as-a-Judge
+          </h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+            The judge is a separate LLM call (default: <code style="background:rgba(0,0,0,0.3);padding:0.1rem 0.4rem;border-radius:4px;">llama-3.1-8b-instant</code> at temperature 0.1) that evaluates responses on two axes. It receives the system prompt, humor anchors, and expected language, then returns a JSON verdict.
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:0.6rem;color:var(--accent-cyan);font-weight:700;">Axis</th>
+                <th style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">Range</th>
+                <th style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">Threshold</th>
+                <th style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">What it measures</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:0.6rem;"><span style="color:var(--accent-green);font-weight:700;">language_purity</span></td>
+                <td style="padding:0.6rem;">0 – 10</td>
+                <td style="padding:0.6rem;">≥ 8</td>
+                <td style="padding:0.6rem;">Correct language? No mixed scripts? Grammar & register appropriate?</td>
+              </tr>
+              <tr>
+                <td style="padding:0.6rem;"><span style="color:var(--accent-amber);font-weight:700;">quality</span></td>
+                <td style="padding:0.6rem;">0 – 10</td>
+                <td style="padding:0.6rem;">≥ 6</td>
+                <td style="padding:0.6rem;">Humor mechanism used? Fits personality tone? Avoids being robotic/cringe?</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:1rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.75rem;font-family:var(--mono);color:var(--text-muted);">
+            <span style="color:var(--accent-cyan);">// Judge JSON output format</span><br>
+            { "scores": { "language_purity": 8, "quality": 7 }, "feedback": "Good personality but slight language mix", "main_issue": "language" }
+          </div>
+        </div>
+
+        <!-- 3. RULE-BASED FAST-PATH -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-purple);display:flex;align-items:center;gap:0.5rem;">
+            <span>3.</span> Rule-based Fast-path
+          </h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+            Before calling the LLM judge, a <strong>regex-based script detector</strong> scans the response. If it finds characters from a non-expected script (e.g. Korean hangul in a Spanish response), the response is automatically failed with <code>language_purity = 0</code> — no LLM call needed. This saves tokens and catches obvious language mixing instantly.
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Detected Script</th>
+                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Unicode Range</th>
+                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Language</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Hangul</td><td style="padding:0.5rem;"><code>AC00-D7AF</code></td><td style="padding:0.5rem;">Korean</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Thai</td><td style="padding:0.5rem;"><code>0E00-0E7F</code></td><td style="padding:0.5rem;">Thai</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Arabic</td><td style="padding:0.5rem;"><code>0600-06FF</code></td><td style="padding:0.5rem;">Arabic, Persian, Urdu</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">CJK</td><td style="padding:0.5rem;"><code>4E00-9FFF</code> + <code>3040-30FF</code></td><td style="padding:0.5rem;">Chinese, Japanese</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Cyrillic</td><td style="padding:0.5rem;"><code>0400-04FF</code></td><td style="padding:0.5rem;">Russian, Bulgarian, etc.</td></tr>
+              <tr><td style="padding:0.5rem;">Devanagari</td><td style="padding:0.5rem;"><code>0900-097F</code></td><td style="padding:0.5rem;">Hindi, Sanskrit, etc.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4. TRANSCREATION -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-gold);display:flex;align-items:center;gap:0.5rem;">
+            <span>4.</span> Transcreation (Cultural Adaptation)
+          </h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+            For non-Latin scripts, the generator first produces a response in the source language (Spanish or English), then <strong>transcreationService.js</strong> adapts it culturally to the target language. This preserves humor mechanisms while localizing references.
+          </p>
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">ko (Korean)</span>
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">th (Thai)</span>
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">ar (Arabic)</span>
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">ja (Japanese)</span>
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">ru (Russian)</span>
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">zh (Chinese)</span>
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">vi (Vietnamese)</span>
+            <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">hi (Hindi)</span>
+          </div>
+          <p style="color:var(--text-muted);font-size:0.8rem;">If transcreation fails after 2 retries, the original Spanish/English response is used as fallback (marked with ⚠️ FB in the evals table).</p>
+        </div>
+
+        <!-- 5. BENCHMARKS -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-green);display:flex;align-items:center;gap:0.5rem;">
+            <span>5.</span> Benchmarks
+          </h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+            A benchmark runs the entire <strong>golden dataset</strong> through the Quality Gate and records pass rates, scores, and regressions. Results are stored in the <code>EvalRun</code> collection and displayed in the <strong>📊 Benchmarks</strong> tab.
+          </p>
+          <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:1rem;margin-bottom:1rem;">
+            <div style="font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:0.5rem;">📁 Dataset files</div>
+            <div style="font-size:0.75rem;font-family:var(--mono);line-height:1.8;">
+              <span style="color:var(--accent-cyan);">tests/evals/test_queries.json</span> — main personality + edge case tests<br>
+              <span style="color:var(--accent-cyan);">tests/evals/golden_datasets/</span> — intent, personality, language, transcreation, edge datasets<br>
+              <span style="color:var(--accent-cyan);">tests/evals/golden_datasets/local_overrides.json</span> — promoted from HITL
+            </div>
+          </div>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;">
+            The <strong>regression detection</strong> automatically compares the latest run against the previous one. If pass rate drops by 5% or more, a <span style="color:var(--accent-red);">🔴 regression banner</span> appears. You can also compare two specific runs side-by-side.
+          </p>
+          <div style="margin-top:0.75rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem 0.8rem;font-size:0.75rem;">
+              <span style="color:var(--text-muted);">Datasets:</span> <span style="color:var(--text-primary);">all, intent, personality, language, transcreation, edge, summary</span>
+            </div>
+            <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem 0.8rem;font-size:0.75rem;">
+              <span style="color:var(--text-muted);">Models:</span> <span style="color:var(--text-primary);">llama-3.3-70b-versatile, Qwen2.5-7B-Instruct</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. HUMAN-IN-THE-LOOP -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-amber);display:flex;align-items:center;gap:0.5rem;">
+            <span>6.</span> Human-in-the-Loop (HITL)
+          </h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+            The HITL system captures responses that need human review. A human can verify the judge's decision, correct it, and optionally promote good examples to the golden dataset.
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:1rem;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Source</th>
+                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">When it triggers</th>
+                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Priority</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:0.5rem;"><code>force_approved</code></td>
+                <td style="padding:0.5rem;">Quality Gate exhausted 3 retries</td>
+                <td style="padding:0.5rem;"><span style="color:var(--accent-red);font-weight:700;">Highest</span></td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:0.5rem;"><code>user_downvote</code></td>
+                <td style="padding:0.5rem;">User gave a thumbs-down in the chat</td>
+                <td style="padding:0.5rem;"><span style="color:var(--accent-amber);font-weight:700;">High</span></td>
+              </tr>
+              <tr>
+                <td style="padding:0.5rem;"><code>judge_disagree</code></td>
+                <td style="padding:0.5rem;">Human disagrees with the judge's verdict</td>
+                <td style="padding:0.5rem;"><span style="color:var(--accent-cyan);font-weight:700;">Normal</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;">
+            In the <strong>👁️ Human Review</strong> tab you can see pending reviews, submit verdicts (pass/fail with confidence level), and <strong>promote</strong> good responses to the golden dataset. The stats card shows agreement rate, false positives (judge said pass, human said fail) and false negatives (judge said fail, human said pass).
+          </p>
+        </div>
+
+        <!-- 7. GOLDEN DATASET TABLE -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-blue);display:flex;align-items:center;gap:0.5rem;">
+            <span>7.</span> Golden Dataset (13 test queries)
+          </h3>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+            The golden dataset is the canonical set of test cases used by benchmarks. Each entry specifies the input, expected personality, language, and whether transcreation is needed. Edge cases test specific failure modes.
+          </p>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border);">
+                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">#</th>
+                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">ID</th>
+                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Personality</th>
+                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Lang</th>
+                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Input</th>
+                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Expected Mechanism</th>
+                  <th style="text-align:center;padding:0.4rem;color:var(--text-muted);">Edge?</th>
+                  <th style="text-align:center;padding:0.4rem;color:var(--text-muted);">Transcreation?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">1</td><td style="padding:0.4rem;">es_andres_my_status</td><td style="padding:0.4rem;">andres_montes</td><td style="padding:0.4rem;">🇪🇸 es</td><td style="padding:0.4rem;">"¿Cómo voy en la clasificación?"</td><td style="padding:0.4rem;">street_wisdom</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">N</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">2</td><td style="padding:0.4rem;">es_roncero_ranking</td><td style="padding:0.4rem;">roncero</td><td style="padding:0.4rem;">🇪🇸 es</td><td style="padding:0.4rem;">"¿Quién va primero?"</td><td style="padding:0.4rem;">exaggerated_emotion</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">N</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">3</td><td style="padding:0.4rem;">en_trump_status</td><td style="padding:0.4rem;">trump</td><td style="padding:0.4rem;">🇬🇧 en</td><td style="padding:0.4rem;">"Who's winning?"</td><td style="padding:0.4rem;">superlative</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">N</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">4</td><td style="padding:0.4rem;">en_darth_ranking</td><td style="padding:0.4rem;">darth_vader</td><td style="padding:0.4rem;">🇬🇧 en</td><td style="padding:0.4rem;">"Show me the leaderboard"</td><td style="padding:0.4rem;">menacing_wit</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">N</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">5</td><td style="padding:0.4rem;">ko_andres_my_status</td><td style="padding:0.4rem;">andres_montes</td><td style="padding:0.4rem;">🇰🇷 ko</td><td style="padding:0.4rem;">"나는 어떻게 지내고 있나요?"</td><td style="padding:0.4rem;">street_wisdom</td><td style="text-align:center;padding:0.4rem;color:var(--accent-amber);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--accent-cyan);">✅ ko</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">6</td><td style="padding:0.4rem;">ar_pedrerol_ranking</td><td style="padding:0.4rem;">pedrerol</td><td style="padding:0.4rem;">🇸🇦 ar</td><td style="padding:0.4rem;">"أين أنا في الترتيب؟"</td><td style="padding:0.4rem;">dramatic_reveal</td><td style="text-align:center;padding:0.4rem;color:var(--accent-amber);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--accent-cyan);">✅ ar</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">7</td><td style="padding:0.4rem;">th_roncero_ranking</td><td style="padding:0.4rem;">roncero</td><td style="padding:0.4rem;">🇹🇭 th</td><td style="padding:0.4rem;">"ฉันอยู่อันดับเท่าไหร่"</td><td style="padding:0.4rem;">exaggerated_emotion</td><td style="text-align:center;padding:0.4rem;color:var(--accent-amber);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--accent-cyan);">✅ th</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">8</td><td style="padding:0.4rem;">ja_fabrizio_status</td><td style="padding:0.4rem;">fabrizio_romano</td><td style="padding:0.4rem;">🇯🇵 ja</td><td style="padding:0.4rem;">"私の順位はどうですか？"</td><td style="padding:0.4rem;">breaking_news_factual</td><td style="text-align:center;padding:0.4rem;color:var(--accent-amber);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--accent-cyan);">✅ ja</td></tr>
+                <tr style="border-bottom:1px solid rgba(239,68,68,0.2);"><td style="padding:0.4rem;">9</td><td style="padding:0.4rem;">edge_arabic_chars</td><td style="padding:0.4rem;">andres_montes</td><td style="padding:0.4rem;">🇪🇸 es</td><td style="padding:0.4rem;">"¿Cómo estoy?"</td><td style="padding:0.4rem;">❌ FAIL (script mix)</td><td style="text-align:center;padding:0.4rem;color:var(--accent-red);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr style="border-bottom:1px solid rgba(239,68,68,0.2);"><td style="padding:0.4rem;">10</td><td style="padding:0.4rem;">edge_boring_response</td><td style="padding:0.4rem;">andres_montes</td><td style="padding:0.4rem;">🇪🇸 es</td><td style="padding:0.4rem;">"¿Quién gana?"</td><td style="padding:0.4rem;">❌ FAIL (generic)</td><td style="text-align:center;padding:0.4rem;color:var(--accent-red);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr style="border-bottom:1px solid rgba(16,185,129,0.2);"><td style="padding:0.4rem;">11</td><td style="padding:0.4rem;">edge_perfect_response</td><td style="padding:0.4rem;">andres_montes</td><td style="padding:0.4rem;">🇪🇸 es</td><td style="padding:0.4rem;">"¿Cómo va la porra?"</td><td style="padding:0.4rem;">✅ PASS (perfect)</td><td style="text-align:center;padding:0.4rem;color:var(--accent-green);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:0.4rem;">12</td><td style="padding:0.4rem;">es_dredd_my_status</td><td style="padding:0.4rem;">juez_dredd</td><td style="padding:0.4rem;">👮‍♂️ es</td><td style="padding:0.4rem;">"¿Cómo voy en la clasificación?"</td><td style="padding:0.4rem;">authoritarian_judgment</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">N</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+                <tr><td style="padding:0.4rem;">13</td><td style="padding:0.4rem;">es_dredd_perfect</td><td style="padding:0.4rem;">juez_dredd</td><td style="padding:0.4rem;">👮‍♂️ es</td><td style="padding:0.4rem;">"¿Quién lidera la porra?"</td><td style="padding:0.4rem;">✅ PASS</td><td style="text-align:center;padding:0.4rem;color:var(--accent-amber);">Y</td><td style="text-align:center;padding:0.4rem;color:var(--text-muted);">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- QUICK LEGEND -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--text-muted);display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;">
+            📖 How to read the Evals table
+          </h3>
+          <div style="display:flex;flex-wrap:wrap;gap:1.5rem;font-size:0.8rem;">
+            <div>
+              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;">Status badges</div>
+              <div><span class="badge badge-success">✅ PASS</span> — both thresholds met</div>
+              <div><span class="badge badge-error">❌ FAIL</span> — below threshold</div>
+              <div><span class="badge" style="background:rgba(255,255,255,0.1)">SKIP</span> — skipped by sample rate</div>
+            </div>
+            <div>
+              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;">Score colors</div>
+              <div><span style="color:var(--accent-green);">green</span> = lang ≥ 8 / quality ≥ 6</div>
+              <div><span style="color:var(--accent-amber);">amber</span> = lang 5-7 / quality 4-5</div>
+              <div><span style="color:var(--accent-red);">red</span> = lang &lt; 5 / quality &lt; 4</div>
+            </div>
+            <div>
+              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;">Transcreation</div>
+              <div><span class="badge badge-success">🇰🇷✓</span> — transcreated successfully</div>
+              <div><span class="badge badge-error">⚠️ FB</span> — fallback to original used</div>
+              <div style="color:var(--text-muted);">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 </div>
 

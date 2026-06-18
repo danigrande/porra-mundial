@@ -75,7 +75,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-  const tabs = ['health', 'logs', 'evals', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'usage'];
+  const tabs = ['health', 'logs', 'evals', 'benchmarks', 'reviews', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'usage', 'help-evals'];
   const idx = tabs.indexOf(name);
   document.querySelectorAll('.tab')[idx]?.classList.add('active');
   document.getElementById(`panel-${name}`)?.classList.add('active');
