@@ -1545,15 +1545,30 @@ async function renderPassRateChart() {
       options: {
         responsive: true,
         plugins: {
-          legend: { labels: { color: '#c0c0c0' } },
+          legend: {
+            labels: { color: '#c0c0c0', usePointStyle: true },
+            onHover: function(e) { if (e.native) e.native.target.style.cursor = 'pointer'; },
+            onLeave: function(e) { if (e.native) e.native.target.style.cursor = 'default'; }
+          },
           tooltip: {
             callbacks: {
               afterBody: function(items) {
                 if (!items.length) return '';
                 const idx = items[0].dataIndex;
+                const dsIdx = items[0].datasetIndex;
                 const r = runs[idx];
                 if (!r) return '';
-                return `Run: ${r.runId || '—'}\nModel: ${r.model || 'default'}\nTemp: ${r.temperature}`;
+                const key = datasetKeys[dsIdx];
+                const ds = key && r.perDataset?.[key];
+                const parts = [];
+                if (ds && ds.totalTests > 0) {
+                  const pct = ((ds.passed || 0) / ds.totalTests * 100).toFixed(1);
+                  parts.push(`Pass: ${ds.passed || 0}/${ds.totalTests} (${pct}%)`);
+                  if (ds.avgQuality != null) parts.push(`Quality: ${ds.avgQuality}/10`);
+                  if (ds.avgLanguagePurity != null) parts.push(`Language: ${ds.avgLanguagePurity}/10`);
+                }
+                parts.push(`───\nRun: ${r.runId || '—'} | ${r.model || 'default'} | ${r.temperature}°`);
+                return parts.join('\n');
               }
             }
           }
@@ -1611,15 +1626,28 @@ async function renderScoresChart() {
       options: {
         responsive: true,
         plugins: {
-          legend: { labels: { color: '#c0c0c0' } },
+          legend: {
+            labels: { color: '#c0c0c0', usePointStyle: true },
+            onHover: function(e) { if (e.native) e.native.target.style.cursor = 'pointer'; },
+            onLeave: function(e) { if (e.native) e.native.target.style.cursor = 'default'; }
+          },
           tooltip: {
             callbacks: {
               afterBody: function(items) {
                 if (!items.length) return '';
                 const idx = items[0].dataIndex;
+                const dsIdx = items[0].datasetIndex;
                 const r = runs[idx];
                 if (!r) return '';
-                return `Run: ${r.runId || '—'}\nModel: ${r.model || 'default'}\nTemp: ${r.temperature}`;
+                const key = datasetKeys[dsIdx];
+                const ds = key && r.perDataset?.[key];
+                const parts = [];
+                if (ds) {
+                  if (ds.avgQuality != null) parts.push(`Quality: ${ds.avgQuality}/10`);
+                  if (ds.avgLanguagePurity != null) parts.push(`Language: ${ds.avgLanguagePurity}/10`);
+                }
+                parts.push(`───\nRun: ${r.runId || '—'}`);
+                return parts.join('\n');
               }
             }
           }
