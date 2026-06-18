@@ -640,6 +640,40 @@ tr.row-selected td:first-child { border-left: 3px solid var(--accent-blue); }
   .charts-row { grid-template-columns: 1fr !important; }
 }
 
+/* Expand row for benchmark run details */
+.expand-row td { padding: 0; background: var(--bg-secondary); }
+.expand-content {
+  padding: 1rem 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+.dataset-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  transition: border-color 0.2s;
+}
+.dataset-card:hover { border-color: var(--border-glow); }
+.dataset-card .ds-name { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem; }
+.dataset-card .ds-stat { font-size: 0.85rem; font-family: var(--mono); color: var(--text-primary); }
+.dataset-card .ds-stat small { color: var(--text-muted); font-size: 0.7rem; }
+.dataset-bar-wrap { margin: 0.4rem 0; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; }
+.dataset-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.dataset-card .ds-actions { margin-top: 0.4rem; }
+
+/* Test detail table inside modal */
+.test-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.test-table th { text-align: left; padding: 0.5rem 0.6rem; background: var(--bg-secondary); color: var(--text-muted); font-weight: 500; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); }
+.test-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-family: var(--mono); font-size: 0.75rem; }
+.test-table tr { cursor: pointer; transition: background 0.15s; }
+.test-table tr:hover td { background: var(--bg-card-hover); }
+.test-table tr.test-detail-row td { padding: 0; background: var(--bg-primary); }
+.test-detail-content { padding: 0.8rem 1rem; font-size: 0.78rem; line-height: 1.6; border-bottom: 1px solid var(--border); }
+.test-detail-content .detail-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.15rem; }
+.test-detail-content .detail-value { color: var(--text-primary); margin-bottom: 0.6rem; white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 0.75rem; background: var(--bg-card); padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border); }
+
 /* Responsive */
 @media (max-width: 768px) {
   header { padding: 0.8rem 1rem; }

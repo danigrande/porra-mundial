@@ -1425,8 +1425,7 @@ function viewContent(title, content) {
 
 let passRateChart = null;
 let scoresChart = null;
-let selectedRunId = null;
-let selectedRunData = null;
+const runDataCache = new Map();
 const DATASET_COLORS = {
   intent: { border: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
   personality: { border: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
@@ -1437,68 +1436,13 @@ const DATASET_COLORS = {
 };
 const DATASET_NAMES = { intent: 'Intent', personality: 'Personality', language: 'Language', transcreation: 'Transcreation', edge: 'Edge', summary: 'Summary' };
 
-function renderCards(r) {
-  const banner = document.getElementById('regression-banner');
-  if (r.comparisonWithPrevious?.regressions?.length) {
-    banner.style.display = 'block';
-    banner.innerHTML = `⚠️ <strong>${r.comparisonWithPrevious.regressions.length}</strong> regression(s) detected vs previous run. <a href="#" onclick="showComparison('${r._id}', '${r.comparisonWithPrevious.previousRunId}');return false;">Compare</a>`;
-  } else {
-    banner.style.display = 'none';
-  }
-
-  const isSelected = selectedRunId != null;
-  document.getElementById('benchmark-cards').innerHTML = `
-    ${isSelected ? `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
-      <span style="font-size:0.85rem;color:var(--accent-cyan);">📌 Run #${(r.runId || r._id).substring(0, 8)}</span>
-      <button onclick="clearSelection()" style="background:var(--accent-cyan);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.75rem;color:white;border:none;cursor:pointer;">🔝 Latest</button>
-    </div>` : ''}
-    <div class="card-sm"><div class="label">Run ID</div><div class="value">${r.runId || r._id}</div></div>
-    <div class="card-sm"><div class="label">Model</div><div class="value">${r.model || 'default'}</div></div>
-    <div class="card-sm"><div class="label">Temperature</div><div class="value">${r.temperature}</div></div>
-    <div class="card-sm"><div class="label">Pass Rate</div><div class="value">${(r.passRate || 0).toFixed(1)}%</div></div>
-    <div class="card-sm"><div class="label">Avg Quality</div><div class="value">${(()=>{const q=r.results?.filter(x=>x.scores?.quality).reduce((s,x)=>s+(x.scores.quality||0),0); const n=r.results?.filter(x=>x.scores?.quality).length; return n ? (q/n).toFixed(2) : '—';})()}</div></div>
-    <div class="card-sm"><div class="label">Datasets</div><div class="value">${r.datasets?.join(', ') || 'N/A'}</div></div>
-    <div class="card-sm"><div class="label">Date</div><div class="value">${new Date(r.createdAt || r.timestamp).toLocaleString()}</div></div>
-  `;
-}
-
-async function selectRun(runId) {
-  selectedRunId = runId;
-  selectedRunData = null;
-  try {
-    const data = await devFetch(`/evals/runs/${runId}`);
-    if (!data || data.error) throw new Error(data?.error || 'Run not found');
-    selectedRunData = data;
-    renderCards(data);
-    renderPassRateChart();
-    renderScoresChart();
-    loadRunHistory();
-  } catch (e) {
-    console.error('selectRun error:', e);
-    selectedRunId = null;
-  }
-}
-
-async function clearSelection() {
-  selectedRunId = null;
-  selectedRunData = null;
-  loadBenchmarks();
-}
-
 async function loadBenchmarks() {
-  selectedRunId = null;
-  selectedRunData = null;
   try {
-    const data = await devFetch('/evals/runs/latest');
-    const r = data.run;
-    if (!r) { document.getElementById('benchmark-cards').innerHTML = '<div class="text-muted">No benchmark runs yet.</div>'; return; }
-
-    renderCards(r);
     renderPassRateChart();
     renderScoresChart();
     loadRunHistory();
   } catch (e) {
-    document.getElementById('benchmark-cards').innerHTML = `<div class="text-muted">Error loading benchmarks: ${e.message}</div>`;
+    console.error('loadBenchmarks error:', e);
   }
 }
 
@@ -1525,17 +1469,9 @@ async function renderPassRateChart() {
       fill: false,
       tension: 0.3,
       pointRadius: 3,
-      pointBackgroundColor: runs.map(r => {
-        if (selectedRunId && r.runId === selectedRunId) return '#fff';
-        return DATASET_COLORS[key].border;
-      }),
-      pointBorderColor: runs.map(r => {
-        if (selectedRunId && r.runId === selectedRunId) return DATASET_COLORS[key].border;
-        return 'transparent';
-      }),
-      pointBorderWidth: runs.map(r => {
-        return selectedRunId && r.runId === selectedRunId ? 2 : 0;
-      }),
+      pointBackgroundColor: DATASET_COLORS[key].border,
+      pointBorderColor: 'transparent',
+      pointBorderWidth: 0,
       spanGaps: false,
     }));
 
@@ -1606,17 +1542,9 @@ async function renderScoresChart() {
       fill: false,
       tension: 0.3,
       pointRadius: 3,
-      pointBackgroundColor: runs.map(r => {
-        if (selectedRunId && r.runId === selectedRunId) return '#fff';
-        return DATASET_COLORS[key].border;
-      }),
-      pointBorderColor: runs.map(r => {
-        if (selectedRunId && r.runId === selectedRunId) return DATASET_COLORS[key].border;
-        return 'transparent';
-      }),
-      pointBorderWidth: runs.map(r => {
-        return selectedRunId && r.runId === selectedRunId ? 2 : 0;
-      }),
+      pointBackgroundColor: DATASET_COLORS[key].border,
+      pointBorderColor: 'transparent',
+      pointBorderWidth: 0,
       spanGaps: false,
     }));
 
@@ -1690,10 +1618,10 @@ async function loadRunHistory() {
         </thead>
         <tbody>
           ${runs.map(r => {
+            runDataCache.set(r._id, r);
             const avgQ = (()=>{const q=r.results?.filter(x=>x.scores?.quality).reduce((s,x)=>s+(x.scores.quality||0),0); const n=r.results?.filter(x=>x.scores?.quality).length; return n ? (q/n).toFixed(2) : '—';})();
             const pct = r.passRate != null ? r.passRate.toFixed(1) + '%' : '—';
-            const selected = selectedRunId === r.runId || selectedRunId === String(r._id);
-            return `<tr data-id="${r._id}" data-run-id="${r.runId}" onclick="selectRun('${r._id}')" class="${selected ? 'row-selected' : ''}">
+            return `<tr data-id="${r._id}" data-run-id="${r.runId}" onclick="toggleRunExpand('${r._id}', this)">
               <td><code>${(r.runId || r._id).substring(0, 12)}</code></td>
               <td>${r.model || 'default'}</td>
               <td>${r.temperature}</td>
@@ -1708,9 +1636,119 @@ async function loadRunHistory() {
       </table>
     `;
 
+    // Check latest run for regression banner
+    const latest = runs[0];
+    if (latest?.comparisonWithPrevious?.regressions?.length) {
+      document.getElementById('regression-banner').style.display = 'block';
+      document.getElementById('regression-banner').innerHTML = `⚠️ <strong>${latest.comparisonWithPrevious.regressions.length}</strong> regression(s) detected vs previous run. <a href="#" onclick="showComparison('${latest._id}', '${latest.comparisonWithPrevious.previousRunId}');return false;">Compare</a>`;
+    } else {
+      document.getElementById('regression-banner').style.display = 'none';
+    }
+
   } catch (e) {
     document.getElementById('run-history-body').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
   }
+}
+
+function toggleRunExpand(runId, tr) {
+  const tbody = tr.parentNode;
+  const existingExpand = tr.nextElementSibling;
+  if (existingExpand && existingExpand.classList.contains('expand-row')) {
+    existingExpand.remove();
+    tr.classList.remove('row-selected');
+    return;
+  }
+  tbody.querySelectorAll('.expand-row').forEach(el => el.remove());
+  tbody.querySelectorAll('.row-selected').forEach(el => el.classList.remove('row-selected'));
+  tr.classList.add('row-selected');
+
+  const run = runDataCache.get(runId);
+  if (!run) return;
+
+  const datasetKeys = Object.keys(run.perDataset || {});
+  if (!datasetKeys.length) {
+    const emptyTr = document.createElement('tr');
+    emptyTr.className = 'expand-row';
+    emptyTr.innerHTML = '<td colspan="8"><div class="expand-content"><div class="text-muted">No dataset data available.</div></div></td>';
+    tr.after(emptyTr);
+    return;
+  }
+
+  const cardsHtml = datasetKeys.map(key => {
+    const ds = run.perDataset[key];
+    const pct = ds && ds.totalTests > 0 ? ((ds.passed || 0) / ds.totalTests * 100).toFixed(1) : '—';
+    const qual = ds && ds.avgQuality != null ? ds.avgQuality.toFixed(2) : '—';
+    const lang = ds && ds.avgLanguagePurity != null ? ds.avgLanguagePurity.toFixed(2) : '—';
+    const color = DATASET_COLORS[key]?.border || '#888';
+    return `<div class="dataset-card">
+      <div class="ds-name">${DATASET_NAMES[key] || key}</div>
+      <div class="ds-stat">${pct}% pass <small>(${ds?.passed || 0}/${ds?.totalTests || 0})</small></div>
+      <div class="ds-bar-wrap" style="margin:0.4rem 0;height:6px;background:var(--bg-input);border-radius:3px;overflow:hidden;"><div class="ds-bar-fill" style="height:100%;border-radius:3px;width:${pct};background:${color};"></div></div>
+      <div class="ds-stat">Quality: ${qual} ${lang !== '—' ? `<small>· Language: ${lang}</small>` : ''}</div>
+      <div class="ds-actions"><button class="btn-sm" onclick="openDatasetDetail('${runId}', '${key}')">View Tests</button></div>
+    </div>`;
+  }).join('');
+
+  const expandTr = document.createElement('tr');
+  expandTr.className = 'expand-row';
+  expandTr.innerHTML = `<td colspan="8"><div class="expand-content">${cardsHtml}</div></td>`;
+  tr.after(expandTr);
+}
+
+function openDatasetDetail(runId, datasetKey) {
+  const run = runDataCache.get(runId);
+  if (!run) return;
+
+  const tests = (run.results || []).filter(r => r.dataset === datasetKey);
+  const dsName = DATASET_NAMES[datasetKey] || datasetKey;
+
+  document.getElementById('modal-title').textContent = `${dsName} — ${tests.length} Tests`;
+
+  const tableRows = tests.map((t, i) => {
+    const statusIcon = t.passed ? '✅' : '❌';
+    const qual = t.scores?.quality != null ? t.scores.quality.toFixed(1) : '—';
+    const lang2 = t.scores?.languagePurity != null ? t.scores.languagePurity.toFixed(1) : '—';
+    return `<tr onclick="toggleTestDetail(this, ${i})">
+      <td>${statusIcon}</td>
+      <td><code>${t.testId || '—'}</code></td>
+      <td>${qual}</td>
+      <td>${lang2}</td>
+    </tr>
+    <tr class="test-detail-row" style="display:none;">
+      <td colspan="4">
+        <div class="test-detail-content">
+          <div class="detail-label">Response</div>
+          <div class="detail-value">${escapeHtml(String(t.response || ''))}</div>
+          <div class="detail-label">Golden Response</div>
+          <div class="detail-value">${escapeHtml(String(t.goldenResponse || ''))}</div>
+          <div class="detail-label">Scores</div>
+          <div class="detail-value">${t.scores ? JSON.stringify(t.scores, null, 2) : '—'}</div>
+          <div class="detail-label">Feedback</div>
+          <div class="detail-value">${escapeHtml(String(t.feedback || ''))}</div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <table class="test-table">
+      <thead><tr><th style="width:32px"></th><th>Test</th><th style="width:60px">Quality</th><th style="width:60px">Lang</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+  `;
+  document.getElementById('log-modal').style.display = 'block';
+}
+
+function toggleTestDetail(tr, idx) {
+  const detailRow = tr.nextElementSibling;
+  if (!detailRow || !detailRow.classList.contains('test-detail-row')) return;
+  detailRow.style.display = detailRow.style.display === 'none' ? '' : 'none';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 async function showComparison(runIdA, runIdB) {
@@ -1733,14 +1771,46 @@ async function showComparison(runIdA, runIdB) {
     const reg = data.comparison?.regressions || [];
     const impr = data.comparison?.improvements || [];
     const same = data.comparison?.unchanged || [];
+    const rA = data.runA || {};
+    const rB = data.runB || {};
+
+    function fmtItem(item) {
+      if (item.type === 'pass_flip') {
+        const from = item.before ? '✅ Pass' : '❌ Fail';
+        const to = item.after ? '✅ Pass' : '❌ Fail';
+        return `<code>${item.dataset}.${item.testId}</code> — ${from} → ${to}`;
+      }
+      if (item.type === 'quality_change') {
+        const beforeStr = item.before != null ? item.before.toFixed(1) : '—';
+        const afterStr = item.after != null ? item.after.toFixed(1) : '—';
+        let delta = '';
+        if (item.before != null && item.after != null && item.before > 0) {
+          const pct = ((item.after - item.before) / item.before * 100);
+          delta = ` (${pct > 0 ? '+' : ''}${pct.toFixed(0)}%)`;
+        } else if (item.before != null && item.after != null && item.before === 0) {
+          delta = ' (new)';
+        }
+        return `<code>${item.dataset}.${item.testId}</code> — quality: ${beforeStr} → ${afterStr}${delta}`;
+      }
+      return `<code>${item.dataset}.${item.testId}</code>`;
+    }
 
     document.getElementById('comparison-view').style.display = 'block';
     document.getElementById('comparison-view').innerHTML = `
       <div class="comparison-section">
         ${data.comparison?.temperatureMismatch ? `<div class="alert-warning">⚠️ Temperature mismatch between runs</div>` : ''}
         <h4 style="font-size:0.85rem;margin-bottom:0.75rem;">📊 Run Comparison</h4>
-        ${reg.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#ef4444;">Regressions (${reg.length})</strong><ul>${reg.map(r => `<li>${r.dataset}.${r.testId} — ${r.before > r.after ? `quality dropped ${((r.before - r.after) / r.before * 100).toFixed(0)}%` : `pass: ${r.before}→${r.after}`}</li>`).join('')}</ul></div>` : ''}
-        ${impr.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#22c55e;">Improvements (${impr.length})</strong><ul>${impr.map(r => `<li>${r.dataset}.${r.testId} — quality ${((r.after - r.before) / r.before * 100).toFixed(0)}% better</li>`).join('')}</ul></div>` : ''}
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem;">
+          <strong>Run A:</strong> ${rA.runId?.substring(0,12) || '—'} (${rA.model || '?'} · temp ${rA.temperature != null ? rA.temperature : '?'}) &nbsp;|&nbsp;
+          <strong>Run B:</strong> ${rB.runId?.substring(0,12) || '—'} (${rB.model || '?'} · temp ${rB.temperature != null ? rB.temperature : '?'})
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-bottom:1rem;">
+          <div class="card-sm"><div class="label">Pass Rate Delta</div><div class="value" style="color:${(data.comparison?.passRateDelta||0) >= 0 ? 'var(--accent-green)' : '#ef4444'}">${data.comparison?.passRateDelta != null ? (data.comparison.passRateDelta > 0 ? '+' : '') + data.comparison.passRateDelta + '%' : '—'}</div></div>
+          <div class="card-sm"><div class="label">Quality Delta</div><div class="value" style="color:${(data.comparison?.qualityDelta||0) >= 0 ? 'var(--accent-green)' : '#ef4444'}">${data.comparison?.qualityDelta != null ? (data.comparison.qualityDelta > 0 ? '+' : '') + data.comparison.qualityDelta.toFixed(2) : '—'}</div></div>
+          <div class="card-sm"><div class="label">Language Delta</div><div class="value" style="color:${(data.comparison?.languageDelta||0) >= 0 ? 'var(--accent-green)' : '#ef4444'}">${data.comparison?.languageDelta != null ? (data.comparison.languageDelta > 0 ? '+' : '') + data.comparison.languageDelta.toFixed(2) : '—'}</div></div>
+        </div>
+        ${reg.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#ef4444;">Regressions (${reg.length})</strong><ul style="margin:0.3rem 0 0 1rem;font-size:0.78rem;">${reg.map(r => `<li style="margin-bottom:0.2rem;">${fmtItem(r)}</li>`).join('')}</ul></div>` : ''}
+        ${impr.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#22c55e;">Improvements (${impr.length})</strong><ul style="margin:0.3rem 0 0 1rem;font-size:0.78rem;">${impr.map(r => `<li style="margin-bottom:0.2rem;">${fmtItem(r)}</li>`).join('')}</ul></div>` : ''}
         ${same.length ? `<div><strong style="color:#999;">Unchanged (${same.length})</strong></div>` : ''}
         <button class="btn-sm" onclick="document.getElementById('comparison-view').style.display='none'" style="margin-top:0.75rem;">Close</button>
       </div>
@@ -1785,7 +1855,7 @@ async function runBenchmark() {
   } catch (e) {
     btn.disabled = false;
     btn.textContent = '▶ Run Benchmark';
-    document.getElementById('benchmark-cards').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+    console.error('runBenchmark error:', e.message);
   }
 }
 

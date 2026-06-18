@@ -508,9 +508,15 @@ router.get('/evals/trends', async (req, res) => {
  */
 router.get('/evals/compare/:runIdA/:runIdB', async (req, res) => {
   try {
+    async function findRun(id) {
+      if (!id) return null;
+      let run = await EvalRun.findById(id).lean();
+      if (!run) run = await EvalRun.findOne({ runId: id }).lean();
+      return run;
+    }
     const [runA, runB] = await Promise.all([
-      EvalRun.findById(req.params.runIdA).lean(),
-      EvalRun.findById(req.params.runIdB).lean()
+      findRun(req.params.runIdA),
+      findRun(req.params.runIdB)
     ]);
 
     if (!runA || !runB) {
@@ -552,12 +558,30 @@ router.get('/evals/compare/:runIdA/:runIdB', async (req, res) => {
         const resultB = mapB[resultA.testId];
         if (!resultB) continue;
 
-        if (resultA.passed && !resultB.passed) {
-          regressions.push({ testId: resultA.testId, dataset: resultA.dataset, before: resultA.passed ? 1 : 0, after: resultB.passed ? 1 : 0, qualBefore: resultA.scores?.quality, qualAfter: resultB.scores?.quality });
-        } else if (!resultA.passed && resultB.passed) {
-          improvements.push({ testId: resultA.testId, dataset: resultA.dataset, before: resultA.passed ? 1 : 0, after: resultB.passed ? 1 : 0, qualBefore: resultA.scores?.quality, qualAfter: resultB.scores?.quality });
+        if (resultA.passed !== resultB.passed) {
+          const item = {
+            testId: resultA.testId,
+            dataset: resultA.dataset,
+            type: 'pass_flip',
+            before: resultA.passed ? 1 : 0,
+            after: resultB.passed ? 1 : 0,
+            qualBefore: resultA.scores?.quality,
+            qualAfter: resultB.scores?.quality,
+          };
+          if (resultA.passed && !resultB.passed) regressions.push(item);
+          else improvements.push(item);
+        } else if (resultA.scores?.quality != null && resultB.scores?.quality != null && resultA.scores.quality !== resultB.scores.quality) {
+          const item = {
+            testId: resultA.testId,
+            dataset: resultA.dataset,
+            type: 'quality_change',
+            before: resultA.scores.quality,
+            after: resultB.scores.quality,
+          };
+          if (resultA.scores.quality > resultB.scores.quality) regressions.push(item);
+          else improvements.push(item);
         } else {
-          unchanged.push({ testId: resultA.testId, dataset: resultA.dataset, before: resultA.scores?.quality, after: resultB.scores?.quality });
+          unchanged.push({ testId: resultA.testId, dataset: resultA.dataset });
         }
       }
     }
