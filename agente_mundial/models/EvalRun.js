@@ -63,6 +63,8 @@ const evalRunSchema = new mongoose.Schema({
     response: String,
     goldenResponse: String,
     feedback: String,
+    input: String,
+    description: String,
     latencyMs: Number,
     attempts: Number,
     forceApproved: Boolean

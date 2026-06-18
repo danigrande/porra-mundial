@@ -181,6 +181,8 @@ async function runIntentTest(test) {
       response: actualIntent,
       goldenResponse: test.expectedIntent,
       feedback: passed ? 'OK' : `Expected ${test.expectedIntent}, got ${actualIntent}`,
+      input: test.query || '',
+      description: test.description || '',
       latencyMs: Date.now() - start,
       attempts: 1,
       forceApproved: false
@@ -195,9 +197,8 @@ async function runIntentTest(test) {
       response: '',
       goldenResponse: test.expectedIntent,
       feedback: `Error: ${err.message}`,
-      latencyMs: Date.now() - start,
-      attempts: 1,
-      forceApproved: false
+      input: test.query || '',
+      description: test.description || '',
     };
   }
 }
@@ -225,6 +226,8 @@ async function runJudgeTest(test) {
       response: test.simulatedResponse.substring(0, 200),
       goldenResponse: '',
       feedback: judgment.feedback,
+      input: test.simulatedResponse?.substring(0, 200) || '',
+      description: test.description || '',
       latencyMs: Date.now() - start,
       attempts: 1,
       forceApproved: false
@@ -239,9 +242,8 @@ async function runJudgeTest(test) {
       response: test.simulatedResponse?.substring(0, 200) || '',
       goldenResponse: '',
       feedback: `Error: ${err.message}`,
-      latencyMs: Date.now() - start,
-      attempts: 1,
-      forceApproved: false
+      input: test.simulatedResponse?.substring(0, 200) || '',
+      description: test.description || '',
     };
   }
 }
@@ -274,6 +276,8 @@ async function runPersonalityTest(test) {
       response: result.response,
       goldenResponse: test.goldenResponse || '',
       feedback: result.judgment?.feedback || '',
+      input: test.query || '',
+      description: test.description || '',
       latencyMs: Date.now() - start,
       attempts: result.attempts,
       forceApproved: result.forceApproved || false
@@ -288,9 +292,8 @@ async function runPersonalityTest(test) {
       response: '',
       goldenResponse: test.goldenResponse || '',
       feedback: `Error: ${err.message}`,
-      latencyMs: Date.now() - start,
-      attempts: 1,
-      forceApproved: false
+      input: test.query || '',
+      description: test.description || '',
     };
   }
 }
@@ -331,6 +334,8 @@ async function runTranscreationTest(test) {
       response: result.text || '',
       goldenResponse: test.goldenResponse || '',
       feedback: result.judgment?.feedback || '',
+      input: test.sourceResponse?.substring(0, 200) || '',
+      description: test.description || '',
       latencyMs: Date.now() - start,
       attempts: result.attempts || 1,
       forceApproved: false
@@ -345,9 +350,8 @@ async function runTranscreationTest(test) {
       response: '',
       goldenResponse: test.goldenResponse || '',
       feedback: `Error: ${err.message}`,
-      latencyMs: Date.now() - start,
-      attempts: 1,
-      forceApproved: false
+      input: test.sourceResponse?.substring(0, 200) || '',
+      description: test.description || '',
     };
   }
 }
@@ -375,6 +379,8 @@ async function runEdgeTest(test) {
         response: test.simulatedResponse.substring(0, 200),
         goldenResponse: '',
         feedback: judgment.feedback,
+        input: test.simulatedResponse?.substring(0, 200) || '',
+        description: test.description || '',
         latencyMs: Date.now() - start,
         attempts: 1,
         forceApproved: false
@@ -383,7 +389,8 @@ async function runEdgeTest(test) {
       return {
         testId: test.id, dataset: 'edge', passed: false, scores: {},
         expectedScores: {}, response: '', goldenResponse: '',
-        feedback: `Error: ${err.message}`, latencyMs: Date.now() - start, attempts: 1, forceApproved: false
+        feedback: `Error: ${err.message}`, input: test.simulatedResponse?.substring(0, 200) || '',
+        description: test.description || '', latencyMs: Date.now() - start, attempts: 1, forceApproved: false
       };
     }
   }
@@ -426,6 +433,8 @@ async function runSummaryTest(test) {
       response: responseText,
       goldenResponse: test.goldenResponse || '',
       feedback: passed ? 'OK' : 'Failed structural checks',
+      input: '',
+      description: test.description || '',
       latencyMs: Date.now() - start,
       attempts: 1,
       forceApproved: false
@@ -434,7 +443,8 @@ async function runSummaryTest(test) {
     return {
       testId: test.id, dataset: 'summary', passed: false, scores: {},
       expectedScores: {}, response: '', goldenResponse: '',
-      feedback: `Error: ${err.message}`, latencyMs: Date.now() - start, attempts: 1, forceApproved: false
+      feedback: `Error: ${err.message}`, input: '',
+      description: test.description || '', latencyMs: Date.now() - start, attempts: 1, forceApproved: false
     };
   }
 }

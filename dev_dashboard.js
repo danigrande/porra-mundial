@@ -1706,25 +1706,56 @@ function openDatasetDetail(runId, datasetKey) {
 
   const tableRows = tests.map((t, i) => {
     const statusIcon = t.passed ? '✅' : '❌';
-    const qual = t.scores?.quality != null ? t.scores.quality.toFixed(1) : '—';
-    const lang2 = t.scores?.languagePurity != null ? t.scores.languagePurity.toFixed(1) : '—';
+    const qualStr = t.scores?.quality != null ? t.scores.quality.toFixed(1) : '—';
+    const qualExp = t.expectedScores?.quality != null ? t.expectedScores.quality.toFixed(1) : null;
+    const langStr = t.scores?.languagePurity != null ? t.scores.languagePurity.toFixed(1) : '—';
+    const langExp = t.expectedScores?.languagePurity != null ? t.expectedScores.languagePurity.toFixed(1) : null;
+    const desc = t.description || '';
+    const latency = t.latencyMs != null ? `${t.latencyMs}ms` : '—';
     return `<tr onclick="toggleTestDetail(this, ${i})">
       <td>${statusIcon}</td>
-      <td><code>${t.testId || '—'}</code></td>
-      <td>${qual}</td>
-      <td>${lang2}</td>
+      <td><code>${t.testId || '—'}</code>${desc ? `<br><span style="font-size:0.7rem;color:var(--text-muted);">${escapeHtml(desc)}</span>` : ''}</td>
+      <td>${qualStr}${qualExp != null ? `<br><span style="font-size:0.65rem;color:var(--text-muted);">exp ${qualExp}</span>` : ''}</td>
+      <td>${langStr}${langExp != null ? `<br><span style="font-size:0.65rem;color:var(--text-muted);">exp ${langExp}</span>` : ''}</td>
+      <td style="font-size:0.7rem;color:var(--text-muted);">${latency}</td>
     </tr>
     <tr class="test-detail-row" style="display:none;">
-      <td colspan="4">
+      <td colspan="5">
         <div class="test-detail-content">
-          <div class="detail-label">Response</div>
-          <div class="detail-value">${escapeHtml(String(t.response || ''))}</div>
-          <div class="detail-label">Golden Response</div>
-          <div class="detail-value">${escapeHtml(String(t.goldenResponse || ''))}</div>
-          <div class="detail-label">Scores</div>
-          <div class="detail-value">${t.scores ? JSON.stringify(t.scores, null, 2) : '—'}</div>
-          <div class="detail-label">Feedback</div>
-          <div class="detail-value">${escapeHtml(String(t.feedback || ''))}</div>
+          ${t.input ? `<div class="detail-label">Input</div><div class="detail-value">${escapeHtml(String(t.input).substring(0, 500))}</div>` : ''}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div>
+              <div class="detail-label">Response</div>
+              <div class="detail-value">${escapeHtml(String(t.response || '(empty)')).substring(0, 1000)}</div>
+            </div>
+            <div>
+              <div class="detail-label">Golden Response</div>
+              <div class="detail-value">${escapeHtml(String(t.goldenResponse || '(none)')).substring(0, 1000)}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.5rem;">
+            <div>
+              <div class="detail-label">Scores</div>
+              <div class="detail-value" style="background:var(--bg-card);padding:0.4rem;border-radius:4px;border:1px solid var(--border);font-size:0.75rem;">
+                ${t.scores && Object.keys(t.scores).length ? Object.entries(t.scores).map(([k,v]) => {
+                  const expV = t.expectedScores?.[k];
+                  const ok = expV != null ? (v >= expV ? '✅' : '❌') : '';
+                  return `<div>${k}: <strong>${v != null ? v.toFixed(1) : '—'}</strong>${expV != null ? ` (expected ${expV}) ${ok}` : ''}</div>`;
+                }).join('') : '<span style="color:var(--text-muted);">No score data</span>'}
+                ${t.expectedScores && Object.keys(t.expectedScores).length && (!t.scores || !Object.keys(t.scores).length) ?
+                  Object.entries(t.expectedScores).map(([k,v]) => `<div style="color:var(--text-muted);">${k}: expected <strong>${v}</strong> (no actual)</div>`).join('') : ''}
+              </div>
+            </div>
+            <div>
+              <div class="detail-label">Feedback</div>
+              <div class="detail-value" style="white-space:pre-wrap;">${escapeHtml(String(t.feedback || '(none)'))}</div>
+            </div>
+          </div>
+          <div style="margin-top:0.5rem;display:flex;gap:1rem;font-size:0.7rem;color:var(--text-muted);">
+            <span>⚡ ${latency}</span>
+            <span>🔄 Attempts: ${t.attempts != null ? t.attempts : '—'}</span>
+            ${t.forceApproved ? '<span style="color:var(--accent-cyan);">✓ Force approved</span>' : ''}
+          </div>
         </div>
       </td>
     </tr>`;
@@ -1732,11 +1763,11 @@ function openDatasetDetail(runId, datasetKey) {
 
   document.getElementById('modal-body').innerHTML = `
     <table class="test-table">
-      <thead><tr><th style="width:32px"></th><th>Test</th><th style="width:60px">Quality</th><th style="width:60px">Lang</th></tr></thead>
+      <thead><tr><th style="width:32px"></th><th>Test</th><th style="width:70px">Quality</th><th style="width:70px">Lang</th><th style="width:60px">Latency</th></tr></thead>
       <tbody>${tableRows}</tbody>
     </table>
   `;
-  document.getElementById('log-modal').style.display = 'block';
+  document.getElementById('log-modal').classList.add('show');
 }
 
 function toggleTestDetail(tr, idx) {
