@@ -832,7 +832,7 @@ async function loadUsage() {
         <div class="card-sub">${data.month.calls || 0} llamadas</div>
       </div>
       <div class="card">
-        <div class="card-label">Uso Diario Groq</div>
+        <div class="card-label">Uso Diario Total</div>
         <div class="card-value ${barClass}">${usagePct}%</div>
         <div class="progress-bar"><div class="progress-fill ${barClass}" style="width:${Math.min(usagePct, 100)}%"></div></div>
         <div class="card-sub">${todayCalls} / ${dailyLimit.toLocaleString()} requests</div>
@@ -841,13 +841,13 @@ async function loadUsage() {
 
     // Latency card
     const lat = data.latency;
-    document.getElementById('usage-breakdown').innerHTML = `
+    let breakdownHtml = `
       <div class="card">
         <div class="card-label">Latencia Media</div>
         <div class="card-value cyan">${Math.round(lat.avg || 0)}ms</div>
         <div class="card-sub">min: ${lat.min || 0}ms · max: ${lat.max || 0}ms</div>
       </div>
-      ${data.byType.map(t => `
+      ${(data.byType || []).map(t => `
         <div class="card">
           <div class="card-label">${t._id?.toUpperCase() || 'N/A'}</div>
           <div class="card-value amber">${(t.tokens || 0).toLocaleString()} tok</div>
@@ -855,6 +855,19 @@ async function loadUsage() {
         </div>
       `).join('')}
     `;
+
+    // Provider breakdown
+    if (data.byModel && data.byModel.length) {
+      breakdownHtml += data.byModel.map(m => `
+        <div class="card">
+          <div class="card-label">${m._id || 'Unknown'}</div>
+          <div class="card-value cyan">${(m.tokens || 0).toLocaleString()} tok</div>
+          <div class="card-sub">${m.calls} calls · avg ${Math.round(m.avgLatency || 0)}ms</div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('usage-breakdown').innerHTML = breakdownHtml;
 
     // Bar chart
     renderBarChart(data.byDay);
@@ -1429,8 +1442,8 @@ async function loadBenchmarks() {
       <div class="card-sm"><div class="label">Run ID</div><div class="value">${r.runId || r._id}</div></div>
       <div class="card-sm"><div class="label">Model</div><div class="value">${r.model || 'default'}</div></div>
       <div class="card-sm"><div class="label">Temperature</div><div class="value">${r.temperature}</div></div>
-      <div class="card-sm"><div class="label">Pass Rate</div><div class="value">${((r.overallPassed/r.overallTotal*100)||0).toFixed(1)}%</div></div>
-      <div class="card-sm"><div class="label">Avg Quality</div><div class="value">${(r.overallAvgQuality||0).toFixed(2)}</div></div>
+      <div class="card-sm"><div class="label">Pass Rate</div><div class="value">${(r.passRate || 0).toFixed(1)}%</div></div>
+      <div class="card-sm"><div class="label">Avg Quality</div><div class="value">${(()=>{const q=r.results?.filter(x=>x.scores?.quality).reduce((s,x)=>s+(x.scores.quality||0),0); const n=r.results?.filter(x=>x.scores?.quality).length; return n ? (q/n).toFixed(2) : '—';})()}</div></div>
       <div class="card-sm"><div class="label">Datasets</div><div class="value">${r.datasets?.join(', ') || 'N/A'}</div></div>
       <div class="card-sm"><div class="label">Date</div><div class="value">${new Date(r.createdAt).toLocaleString()}</div></div>
     `;
@@ -1449,7 +1462,7 @@ async function renderPassRateChart() {
     const runs = trends?.runs || [];
     if (!runs.length) return;
 
-    const labels = runs.map(r => new Date(r.createdAt).toLocaleDateString());
+    const labels = runs.map(r => new Date(r.timestamp).toLocaleDateString());
     const rates = runs.map(r => r.overallTotal > 0 ? ((r.overallPassed / r.overallTotal) * 100).toFixed(1) : 0);
 
     const ctx = document.getElementById('chart-passrate').getContext('2d');
@@ -1488,8 +1501,8 @@ async function renderScoresChart() {
     const runs = trends?.runs || [];
     if (!runs.length) return;
 
-    const labels = runs.map(r => new Date(r.createdAt).toLocaleDateString());
-    const quality = runs.map(r => r.overallAvgQuality || 0);
+    const labels = runs.map(r => new Date(r.timestamp).toLocaleDateString());
+    const quality = runs.map(r => r.avgQuality || 0);
 
     const ctx = document.getElementById('chart-scores').getContext('2d');
     if (scoresChart) { scoresChart.destroy(); }
@@ -1549,14 +1562,15 @@ async function loadRunHistory() {
         </thead>
         <tbody>
           ${runs.map(r => {
-            const passRate = r.overallTotal > 0 ? ((r.overallPassed / r.overallTotal) * 100).toFixed(1) + '%' : '—';
+            const avgQ = (()=>{const q=r.results?.filter(x=>x.scores?.quality).reduce((s,x)=>s+(x.scores.quality||0),0); const n=r.results?.filter(x=>x.scores?.quality).length; return n ? (q/n).toFixed(2) : '—';})();
+            const pct = r.passRate != null ? r.passRate.toFixed(1) + '%' : '—';
             return `<tr>
               <td><code>${(r.runId || r._id).substring(0, 12)}</code></td>
               <td>${r.model || 'default'}</td>
               <td>${r.temperature}</td>
               <td>${r.datasets?.join(', ') || '—'}</td>
-              <td>${passRate}</td>
-              <td>${(r.overallAvgQuality || 0).toFixed(2)}</td>
+              <td>${pct}</td>
+              <td>${avgQ}</td>
               <td>${new Date(r.createdAt).toLocaleDateString()}</td>
               <td><button class="btn-sm" onclick="showComparison('${r._id}')">Compare</button></td>
             </tr>`;
@@ -1595,8 +1609,8 @@ async function showComparison(runIdA, runIdB) {
       <div class="comparison-section">
         ${data.comparison?.temperatureMismatch ? `<div class="alert-warning">⚠️ Temperature mismatch between runs</div>` : ''}
         <h4 style="font-size:0.85rem;margin-bottom:0.75rem;">📊 Run Comparison</h4>
-        ${reg.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#ef4444;">Regressions (${reg.length})</strong><ul>${reg.map(r => `<li>${r.dataset}.${r.testName} — ${r.before > r.after ? `quality dropped ${((r.before - r.after) / r.before * 100).toFixed(0)}%` : `pass: ${r.before}→${r.after}`}</li>`).join('')}</ul></div>` : ''}
-        ${impr.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#22c55e;">Improvements (${impr.length})</strong><ul>${impr.map(r => `<li>${r.dataset}.${r.testName} — quality ${((r.after - r.before) / r.before * 100).toFixed(0)}% better</li>`).join('')}</ul></div>` : ''}
+        ${reg.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#ef4444;">Regressions (${reg.length})</strong><ul>${reg.map(r => `<li>${r.dataset}.${r.testId} — ${r.before > r.after ? `quality dropped ${((r.before - r.after) / r.before * 100).toFixed(0)}%` : `pass: ${r.before}→${r.after}`}</li>`).join('')}</ul></div>` : ''}
+        ${impr.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#22c55e;">Improvements (${impr.length})</strong><ul>${impr.map(r => `<li>${r.dataset}.${r.testId} — quality ${((r.after - r.before) / r.before * 100).toFixed(0)}% better</li>`).join('')}</ul></div>` : ''}
         ${same.length ? `<div><strong style="color:#999;">Unchanged (${same.length})</strong></div>` : ''}
         <button class="btn-sm" onclick="document.getElementById('comparison-view').style.display='none'" style="margin-top:0.75rem;">Close</button>
       </div>

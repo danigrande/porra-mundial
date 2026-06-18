@@ -412,7 +412,7 @@ router.get('/evals/runs', async (req, res) => {
         .sort({ timestamp: -1 })
         .skip((parseInt(page) - 1) * parseInt(limit))
         .limit(parseInt(limit))
-        .select('runId timestamp completedAt model temperature datasets totalTests passed failed passRate perDataset comparisonWithPrevious error')
+        .select('runId timestamp completedAt model temperature datasets totalTests passed failed passRate perDataset results comparisonWithPrevious error')
         .lean(),
       EvalRun.countDocuments(filter)
     ]);
@@ -438,6 +438,7 @@ router.get('/evals/runs/latest', async (req, res) => {
   try {
     const run = await EvalRun.findOne({ error: { $exists: false } })
       .sort({ timestamp: -1 })
+      .select('runId timestamp completedAt createdAt model temperature datasets totalTests passed failed passRate perDataset results comparisonWithPrevious error')
       .lean();
     res.json({ run: run || null });
   } catch (error) {
@@ -470,22 +471,29 @@ router.get('/evals/trends', async (req, res) => {
       .select('runId timestamp model temperature totalTests passed failed passRate perDataset')
       .lean();
 
-    // Extract pipeline-level metrics for charting
+    // Extract pipeline-level metrics for charting (aggregate across all datasets)
     const trends = runs.reverse().map(r => {
-      const dsPersonality = r.perDataset?.personality || {};
+      let totalQ = 0, countQ = 0, totalL = 0, countL = 0;
+      if (r.perDataset) {
+        for (const ds of Object.values(r.perDataset)) {
+          if (ds.avgQuality != null) { totalQ += ds.avgQuality; countQ++; }
+          if (ds.avgLanguagePurity != null) { totalL += ds.avgLanguagePurity; countL++; }
+        }
+      }
       return {
         runId: r.runId,
         timestamp: r.timestamp,
         model: r.model,
         temperature: r.temperature,
         passRate: r.passRate,
-        avgLanguagePurity: dsPersonality.avgLanguagePurity || 0,
-        avgQuality: dsPersonality.avgQuality || 0,
-        avgAttempts: dsPersonality.avgAttempts || 0
+        overallTotal: r.totalTests,
+        overallPassed: r.passed,
+        avgLanguagePurity: countL ? Math.round((totalL / countL) * 10) / 10 : 0,
+        avgQuality: countQ ? Math.round((totalQ / countQ) * 10) / 10 : 0,
       };
     });
 
-    res.json(trends);
+    res.json({ runs: trends });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -497,16 +505,35 @@ router.get('/evals/trends', async (req, res) => {
 router.get('/evals/compare/:runIdA/:runIdB', async (req, res) => {
   try {
     const [runA, runB] = await Promise.all([
-      EvalRun.findOne({ runId: req.params.runIdA }).lean(),
-      EvalRun.findOne({ runId: req.params.runIdB }).lean()
+      EvalRun.findById(req.params.runIdA).lean(),
+      EvalRun.findById(req.params.runIdB).lean()
     ]);
 
     if (!runA || !runB) {
       return res.status(404).json({ error: 'One or both runs not found' });
     }
 
-    const dsA = runA.perDataset?.personality || {};
-    const dsB = runB.perDataset?.personality || {};
+    // Aggregate quality across all datasets
+    function calcAvgQuality(perDataset) {
+      if (!perDataset) return 0;
+      let totalQ = 0, count = 0;
+      for (const ds of Object.values(perDataset)) {
+        if (ds.avgQuality != null) { totalQ += ds.avgQuality; count++; }
+      }
+      return count ? Math.round((totalQ / count) * 100) / 100 : 0;
+    }
+    function calcAvgLang(perDataset) {
+      if (!perDataset) return 0;
+      let totalL = 0, count = 0;
+      for (const ds of Object.values(perDataset)) {
+        if (ds.avgLanguagePurity != null) { totalL += ds.avgLanguagePurity; count++; }
+      }
+      return count ? Math.round((totalL / count) * 100) / 100 : 0;
+    }
+    const qualA = calcAvgQuality(runA.perDataset);
+    const qualB = calcAvgQuality(runB.perDataset);
+    const langA = calcAvgLang(runA.perDataset);
+    const langB = calcAvgLang(runB.perDataset);
 
     const regressions = [];
     const improvements = [];
@@ -522,25 +549,27 @@ router.get('/evals/compare/:runIdA/:runIdB', async (req, res) => {
         if (!resultB) continue;
 
         if (resultA.passed && !resultB.passed) {
-          regressions.push({ testId: resultA.testId, dataset: resultA.dataset, old: resultA, newResult: resultB });
+          regressions.push({ testId: resultA.testId, dataset: resultA.dataset, before: resultA.passed ? 1 : 0, after: resultB.passed ? 1 : 0, qualBefore: resultA.scores?.quality, qualAfter: resultB.scores?.quality });
         } else if (!resultA.passed && resultB.passed) {
-          improvements.push({ testId: resultA.testId, dataset: resultA.dataset, old: resultA, newResult: resultB });
+          improvements.push({ testId: resultA.testId, dataset: resultA.dataset, before: resultA.passed ? 1 : 0, after: resultB.passed ? 1 : 0, qualBefore: resultA.scores?.quality, qualAfter: resultB.scores?.quality });
         } else {
-          unchanged.push({ testId: resultA.testId, dataset: resultA.dataset, old: resultA, newResult: resultB });
+          unchanged.push({ testId: resultA.testId, dataset: resultA.dataset, before: resultA.scores?.quality, after: resultB.scores?.quality });
         }
       }
     }
 
     res.json({
-      runA: { runId: runA.runId, model: runA.model, temperature: runA.temperature, timestamp: runA.timestamp, passRate: runA.passRate, avgQuality: dsA.avgQuality, avgLanguagePurity: dsA.avgLanguagePurity },
-      runB: { runId: runB.runId, model: runB.model, temperature: runB.temperature, timestamp: runB.timestamp, passRate: runB.passRate, avgQuality: dsB.avgQuality, avgLanguagePurity: dsB.avgLanguagePurity },
-      passRateDelta: Math.round(((runB.passRate || 0) - (runA.passRate || 0)) * 10) / 10,
-      qualityDelta: Math.round(((dsB.avgQuality || 0) - (dsA.avgQuality || 0)) * 10) / 10,
-      languageDelta: Math.round(((dsB.avgLanguagePurity || 0) - (dsA.avgLanguagePurity || 0)) * 10) / 10,
-      regressions,
-      improvements,
-      unchanged,
-      temperatureMismatch: runA.temperature !== runB.temperature
+      runA: { runId: runA.runId, model: runA.model, temperature: runA.temperature, timestamp: runA.timestamp, passRate: runA.passRate, avgQuality: qualA, avgLanguagePurity: langA },
+      runB: { runId: runB.runId, model: runB.model, temperature: runB.temperature, timestamp: runB.timestamp, passRate: runB.passRate, avgQuality: qualB, avgLanguagePurity: langB },
+      comparison: {
+        passRateDelta: Math.round(((runB.passRate || 0) - (runA.passRate || 0)) * 10) / 10,
+        qualityDelta: Math.round((qualB - qualA) * 100) / 100,
+        languageDelta: Math.round((langB - langA) * 100) / 100,
+        regressions,
+        improvements,
+        unchanged,
+        temperatureMismatch: runA.temperature !== runB.temperature
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -794,7 +823,7 @@ router.get('/usage', async (req, res) => {
     const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    const [today, week, month, byType, byDay, avgLatency] = await Promise.all([
+    const [today, week, month, byType, byDay, avgLatency, byModel] = await Promise.all([
       // Tokens hoy
       AILog.aggregate([
         { $match: { createdAt: { $gte: todayStart } } },
@@ -839,6 +868,18 @@ router.get('/usage', async (req, res) => {
       AILog.aggregate([
         { $match: { createdAt: { $gte: weekStart }, latencyMs: { $gt: 0 } } },
         { $group: { _id: null, avg: { $avg: '$latencyMs' }, max: { $max: '$latencyMs' }, min: { $min: '$latencyMs' } } }
+      ]),
+
+      // Desglose por modelo/proveedor (últimos 7 días)
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: weekStart } } },
+        { $group: { 
+          _id: '$model', 
+          calls: { $sum: 1 }, 
+          tokens: { $sum: '$tokensUsed' },
+          avgLatency: { $avg: '$latencyMs' }
+        }},
+        { $sort: { tokens: -1 } }
       ])
     ]);
     
@@ -848,12 +889,12 @@ router.get('/usage', async (req, res) => {
       month: month[0] || { totalTokens: 0, calls: 0 },
       byType,
       byDay,
+      byModel,
       latency: avgLatency[0] || { avg: 0, max: 0, min: 0 },
       limits: {
-        // Groq free tier limits (aproximados)
         dailyRequests: 14400,
         tokensPerMinute: 500000,
-        note: 'Límites del tier gratuito de Groq (llama-3.3-70b)'
+        note: 'Límites aproximados — los datos combinan HF + Groq'
       }
     });
   } catch (error) {
