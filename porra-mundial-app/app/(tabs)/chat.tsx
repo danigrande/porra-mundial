@@ -436,17 +436,7 @@ export default function ChatScreen() {
     toggleReaction(message._id, emoji, auth?.userId);
   };
 
-  const handleFeedbackUp = useCallback(async (msgId: string) => {
-    if (!auth?.userId || !auth?.name) return;
-    try {
-      await api.submitChatbotFeedback({ messageId: msgId, userId: auth.userId, userName: auth.name, rating: 5 });
-      setUserFeedback(prev => ({ ...prev, [msgId]: 5 }));
-    } catch (e) {
-      console.error('Feedback up error:', e);
-    }
-  }, [auth]);
-
-  const handleFeedbackDown = useCallback((msgId: string) => {
+  const handleOpenFeedback = useCallback((msgId: string) => {
     if (!auth?.userId || !auth?.name) return;
     setFeedbackMessageId(msgId);
   }, [auth]);
@@ -501,8 +491,7 @@ export default function ChatScreen() {
         onToggleReaction={(id, emoji, uid) => toggleReaction(id, emoji, uid)}
         onScrollToMessage={handleScrollToMessage}
         onSetSelectedImage={setSelectedImageUrl}
-        onFeedbackUp={handleFeedbackUp}
-        onFeedbackDown={handleFeedbackDown}
+        onOpenFeedback={handleOpenFeedback}
         userFeedback={userFeedback}
       />
     );

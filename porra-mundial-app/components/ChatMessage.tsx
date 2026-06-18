@@ -54,8 +54,7 @@ interface Props {
   onToggleReaction: (id: string, emoji: string, userId: string | undefined) => void;
   onScrollToMessage: (id: string) => void;
   onSetSelectedImage: (url: string | null) => void;
-  onFeedbackUp: (msgId: string) => void;
-  onFeedbackDown: (msgId: string) => void;
+  onOpenFeedback: (msgId: string) => void;
   userFeedback: { [msgId: string]: number } | null;
 }
 
@@ -133,7 +132,7 @@ function ChatMessageComponent({
   selectMode, selectedIds, playingId, playbackStatus, messageIndex, totalMessages,
   lastReadId, showUnreadMarker, messages, authUserId, groupName,
   onToggleSelect, onLongPress, onReply, onPlayAudio, onToggleReaction,
-  onScrollToMessage, onSetSelectedImage, onFeedbackUp, onFeedbackDown, userFeedback
+  onScrollToMessage, onSetSelectedImage, onOpenFeedback, userFeedback
 }: Props) {
   const { t } = useTranslation();
 
@@ -142,8 +141,7 @@ function ChatMessageComponent({
   const handleReply = useCallback(() => onReply(item), [item, onReply]);
   const handlePlayAudio = useCallback(() => onPlayAudio(item._id, item.mediaUrl || ''), [item._id, item.mediaUrl, onPlayAudio]);
   const handleImagePress = useCallback(() => onSetSelectedImage(item.mediaUrl || null), [item.mediaUrl, onSetSelectedImage]);
-  const handleFeedbackUp = useCallback(() => onFeedbackUp(item._id), [item._id, onFeedbackUp]);
-  const handleFeedbackDown = useCallback(() => onFeedbackDown(item._id), [item._id, onFeedbackDown]);
+  const handleOpenFeedback = useCallback(() => onOpenFeedback(item._id), [item._id, onOpenFeedback]);
 
   const reactions = item.reactions || {};
   const fb = userFeedback?.[item._id];
@@ -289,23 +287,16 @@ function ChatMessageComponent({
               );
             })()}
 
-            {/* Feedback footer for bot messages — 5-star rating */}
+            {/* Feedback footer for bot messages */}
             {item.isBot && item.type === 'text' && !isEditing && (
               <View style={styles.feedbackFooter}>
                 <TouchableOpacity
-                  style={[styles.feedbackBtn, fb !== undefined && fb >= 4 && styles.feedbackBtnActive]}
-                  onPress={handleFeedbackUp}
+                  style={styles.feedbackBtn}
+                  onPress={handleOpenFeedback}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MaterialIcons name="star" size={16} color={fb !== undefined && fb >= 4 ? '#f5a623' : '#64748b'} />
-                </TouchableOpacity>
-                <Text style={styles.feedbackRating}>{fb !== undefined ? fb + '/5' : ''}</Text>
-                <TouchableOpacity
-                  style={[styles.feedbackBtn, fb !== undefined && fb <= 2 && styles.feedbackBtnActive]}
-                  onPress={handleFeedbackDown}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <MaterialIcons name="star-outline" size={16} color={fb !== undefined && fb <= 2 ? '#f5a623' : '#64748b'} />
+                  <MaterialIcons name={fb !== undefined ? 'star' : 'star-outline'} size={16} color={fb !== undefined ? '#f5a623' : '#64748b'} />
+                  <Text style={styles.feedbackLabel}>{fb !== undefined ? fb + '/5' : 'Rate'}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -401,7 +392,7 @@ const styles = StyleSheet.create({
   unreadTag: { backgroundColor: '#3b82f6', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 },
   unreadText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
   feedbackFooter: { flexDirection: 'row', marginTop: 6, gap: 8, alignItems: 'center', alignSelf: 'flex-end' },
-  feedbackBtn: { padding: 2, borderRadius: 4 },
-  feedbackRating: { color: '#f5a623', fontSize: 11, fontWeight: '700', marginHorizontal: 4 },
+  feedbackBtn: { flexDirection: 'row', alignItems: 'center', padding: 2, borderRadius: 4, gap: 3 },
+  feedbackLabel: { color: '#64748b', fontSize: 11 },
   feedbackBtnActive: { backgroundColor: 'rgba(245,166,35,0.15)' },
 });
