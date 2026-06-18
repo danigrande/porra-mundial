@@ -1422,32 +1422,75 @@ function viewContent(title, content) {
 
 let passRateChart = null;
 let scoresChart = null;
+let selectedRunId = null;
+let selectedRunData = null;
+const DATASET_COLORS = {
+  intent: { border: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
+  personality: { border: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  language: { border: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  transcreation: { border: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
+  edge: { border: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  summary: { border: '#ec4899', bg: 'rgba(236,72,153,0.1)' },
+};
+const DATASET_NAMES = { intent: 'Intent', personality: 'Personality', language: 'Language', transcreation: 'Transcreation', edge: 'Edge', summary: 'Summary' };
+
+function renderCards(r) {
+  const banner = document.getElementById('regression-banner');
+  if (r.comparisonWithPrevious?.regressions?.length) {
+    banner.style.display = 'block';
+    banner.innerHTML = `⚠️ <strong>${r.comparisonWithPrevious.regressions.length}</strong> regression(s) detected vs previous run. <a href="#" onclick="showComparison('${r._id}', '${r.comparisonWithPrevious.previousRunId}');return false;">Compare</a>`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  const isSelected = selectedRunId != null;
+  document.getElementById('benchmark-cards').innerHTML = `
+    ${isSelected ? `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+      <span style="font-size:0.85rem;color:var(--accent-cyan);">📌 Run #${(r.runId || r._id).substring(0, 8)}</span>
+      <button onclick="clearSelection()" style="background:var(--accent-cyan);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.75rem;color:white;border:none;cursor:pointer;">🔝 Latest</button>
+    </div>` : ''}
+    <div class="card-sm"><div class="label">Run ID</div><div class="value">${r.runId || r._id}</div></div>
+    <div class="card-sm"><div class="label">Model</div><div class="value">${r.model || 'default'}</div></div>
+    <div class="card-sm"><div class="label">Temperature</div><div class="value">${r.temperature}</div></div>
+    <div class="card-sm"><div class="label">Pass Rate</div><div class="value">${(r.passRate || 0).toFixed(1)}%</div></div>
+    <div class="card-sm"><div class="label">Avg Quality</div><div class="value">${(()=>{const q=r.results?.filter(x=>x.scores?.quality).reduce((s,x)=>s+(x.scores.quality||0),0); const n=r.results?.filter(x=>x.scores?.quality).length; return n ? (q/n).toFixed(2) : '—';})()}</div></div>
+    <div class="card-sm"><div class="label">Datasets</div><div class="value">${r.datasets?.join(', ') || 'N/A'}</div></div>
+    <div class="card-sm"><div class="label">Date</div><div class="value">${new Date(r.createdAt || r.timestamp).toLocaleString()}</div></div>
+  `;
+}
+
+async function selectRun(runId) {
+  selectedRunId = runId;
+  selectedRunData = null;
+  try {
+    const data = await devFetch(`/evals/runs/${runId}`);
+    if (!data || data.error) throw new Error(data?.error || 'Run not found');
+    selectedRunData = data;
+    renderCards(data);
+    renderPassRateChart();
+    renderScoresChart();
+    loadRunHistory();
+  } catch (e) {
+    console.error('selectRun error:', e);
+    selectedRunId = null;
+  }
+}
+
+async function clearSelection() {
+  selectedRunId = null;
+  selectedRunData = null;
+  loadBenchmarks();
+}
 
 async function loadBenchmarks() {
+  selectedRunId = null;
+  selectedRunData = null;
   try {
     const data = await devFetch('/evals/runs/latest');
     const r = data.run;
     if (!r) { document.getElementById('benchmark-cards').innerHTML = '<div class="text-muted">No benchmark runs yet.</div>'; return; }
 
-    // Regression banner
-    const banner = document.getElementById('regression-banner');
-    if (r.comparisonWithPrevious?.regressions?.length) {
-      banner.style.display = 'block';
-      banner.innerHTML = `⚠️ <strong>${r.comparisonWithPrevious.regressions.length}</strong> regression(s) detected vs previous run. <a href="#" onclick="showComparison('${r._id}', '${r.comparisonWithPrevious.previousRunId}');return false;">Compare</a>`;
-    } else {
-      banner.style.display = 'none';
-    }
-
-    document.getElementById('benchmark-cards').innerHTML = `
-      <div class="card-sm"><div class="label">Run ID</div><div class="value">${r.runId || r._id}</div></div>
-      <div class="card-sm"><div class="label">Model</div><div class="value">${r.model || 'default'}</div></div>
-      <div class="card-sm"><div class="label">Temperature</div><div class="value">${r.temperature}</div></div>
-      <div class="card-sm"><div class="label">Pass Rate</div><div class="value">${(r.passRate || 0).toFixed(1)}%</div></div>
-      <div class="card-sm"><div class="label">Avg Quality</div><div class="value">${(()=>{const q=r.results?.filter(x=>x.scores?.quality).reduce((s,x)=>s+(x.scores.quality||0),0); const n=r.results?.filter(x=>x.scores?.quality).length; return n ? (q/n).toFixed(2) : '—';})()}</div></div>
-      <div class="card-sm"><div class="label">Datasets</div><div class="value">${r.datasets?.join(', ') || 'N/A'}</div></div>
-      <div class="card-sm"><div class="label">Date</div><div class="value">${new Date(r.createdAt).toLocaleString()}</div></div>
-    `;
-
+    renderCards(r);
     renderPassRateChart();
     renderScoresChart();
     loadRunHistory();
@@ -1462,30 +1505,59 @@ async function renderPassRateChart() {
     const runs = trends?.runs || [];
     if (!runs.length) return;
 
-    const labels = runs.map(r => new Date(r.timestamp).toLocaleDateString());
-    const rates = runs.map(r => r.overallTotal > 0 ? ((r.overallPassed / r.overallTotal) * 100).toFixed(1) : 0);
+    const labels = runs.map(r => new Date(r.createdAt || r.timestamp).toLocaleDateString());
+    const datasetKeys = ['intent', 'personality', 'language', 'transcreation', 'edge', 'summary'];
+
+    const datasets = datasetKeys.map(key => ({
+      label: DATASET_NAMES[key],
+      data: runs.map(r => {
+        const ds = r.perDataset?.[key];
+        if (ds && ds.totalTests > 0) {
+          return ((ds.passed || 0) / ds.totalTests * 100).toFixed(1);
+        }
+        return null;
+      }),
+      borderColor: DATASET_COLORS[key].border,
+      backgroundColor: DATASET_COLORS[key].bg,
+      fill: false,
+      tension: 0.3,
+      pointRadius: 3,
+      pointBackgroundColor: runs.map(r => {
+        if (selectedRunId && r.runId === selectedRunId) return '#fff';
+        return DATASET_COLORS[key].border;
+      }),
+      pointBorderColor: runs.map(r => {
+        if (selectedRunId && r.runId === selectedRunId) return DATASET_COLORS[key].border;
+        return 'transparent';
+      }),
+      pointBorderWidth: runs.map(r => {
+        return selectedRunId && r.runId === selectedRunId ? 2 : 0;
+      }),
+      spanGaps: false,
+    }));
 
     const ctx = document.getElementById('chart-passrate').getContext('2d');
     if (passRateChart) { passRateChart.destroy(); }
 
     passRateChart = new Chart(ctx, {
       type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Pass Rate %',
-          data: rates,
-          borderColor: '#22c55e',
-          backgroundColor: 'rgba(34,197,94,0.1)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: '#22c55e'
-        }]
-      },
+      data: { labels, datasets },
       options: {
         responsive: true,
-        plugins: { legend: { labels: { color: '#c0c0c0' } } },
+        plugins: {
+          legend: { labels: { color: '#c0c0c0' } },
+          tooltip: {
+            callbacks: {
+              afterBody: function(items) {
+                if (!items.length) return '';
+                const idx = items[0].dataIndex;
+                const r = runs[idx];
+                if (!r) return '';
+                return `Run: ${r.runId || '—'}\nModel: ${r.model || 'default'}\nTemp: ${r.temperature}`;
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { color: '#999' } },
           y: { min: 0, max: 100, ticks: { color: '#999', callback: v => v + '%' } }
@@ -1501,32 +1573,57 @@ async function renderScoresChart() {
     const runs = trends?.runs || [];
     if (!runs.length) return;
 
-    const labels = runs.map(r => new Date(r.timestamp).toLocaleDateString());
-    const quality = runs.map(r => r.avgQuality || 0);
+    const labels = runs.map(r => new Date(r.createdAt || r.timestamp).toLocaleDateString());
+    const datasetKeys = ['intent', 'personality', 'language', 'transcreation', 'edge', 'summary'];
+
+    const datasets = datasetKeys.map(key => ({
+      label: `${DATASET_NAMES[key]} Quality`,
+      data: runs.map(r => {
+        const ds = r.perDataset?.[key];
+        if (ds && ds.avgQuality != null) return ds.avgQuality;
+        return null;
+      }),
+      borderColor: DATASET_COLORS[key].border,
+      backgroundColor: DATASET_COLORS[key].bg,
+      fill: false,
+      tension: 0.3,
+      pointRadius: 3,
+      pointBackgroundColor: runs.map(r => {
+        if (selectedRunId && r.runId === selectedRunId) return '#fff';
+        return DATASET_COLORS[key].border;
+      }),
+      pointBorderColor: runs.map(r => {
+        if (selectedRunId && r.runId === selectedRunId) return DATASET_COLORS[key].border;
+        return 'transparent';
+      }),
+      pointBorderWidth: runs.map(r => {
+        return selectedRunId && r.runId === selectedRunId ? 2 : 0;
+      }),
+      spanGaps: false,
+    }));
 
     const ctx = document.getElementById('chart-scores').getContext('2d');
     if (scoresChart) { scoresChart.destroy(); }
 
     scoresChart = new Chart(ctx, {
       type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Avg Quality',
-            data: quality,
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59,130,246,0.1)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 4,
-            pointBackgroundColor: '#3b82f6'
-          }
-        ]
-      },
+      data: { labels, datasets },
       options: {
         responsive: true,
-        plugins: { legend: { labels: { color: '#c0c0c0' } } },
+        plugins: {
+          legend: { labels: { color: '#c0c0c0' } },
+          tooltip: {
+            callbacks: {
+              afterBody: function(items) {
+                if (!items.length) return '';
+                const idx = items[0].dataIndex;
+                const r = runs[idx];
+                if (!r) return '';
+                return `Run: ${r.runId || '—'}\nModel: ${r.model || 'default'}\nTemp: ${r.temperature}`;
+              }
+            }
+          }
+        },
         scales: {
           x: { ticks: { color: '#999' } },
           y: { beginAtZero: true, ticks: { color: '#999' } }
@@ -1564,20 +1661,22 @@ async function loadRunHistory() {
           ${runs.map(r => {
             const avgQ = (()=>{const q=r.results?.filter(x=>x.scores?.quality).reduce((s,x)=>s+(x.scores.quality||0),0); const n=r.results?.filter(x=>x.scores?.quality).length; return n ? (q/n).toFixed(2) : '—';})();
             const pct = r.passRate != null ? r.passRate.toFixed(1) + '%' : '—';
-            return `<tr>
+            const selected = selectedRunId === r.runId || selectedRunId === String(r._id);
+            return `<tr data-id="${r._id}" data-run-id="${r.runId}" onclick="selectRun('${r._id}')" class="${selected ? 'row-selected' : ''}">
               <td><code>${(r.runId || r._id).substring(0, 12)}</code></td>
               <td>${r.model || 'default'}</td>
               <td>${r.temperature}</td>
               <td>${r.datasets?.join(', ') || '—'}</td>
               <td>${pct}</td>
               <td>${avgQ}</td>
-              <td>${new Date(r.createdAt).toLocaleDateString()}</td>
-              <td><button class="btn-sm" onclick="showComparison('${r._id}')">Compare</button></td>
+              <td>${r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</td>
+              <td><button class="btn-sm" onclick="event.stopPropagation();showComparison('${r._id}')">Compare</button></td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>
     `;
+
   } catch (e) {
     document.getElementById('run-history-body').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
   }
@@ -1588,7 +1687,7 @@ async function showComparison(runIdA, runIdB) {
   const b = runIdB || (() => {
     const rows = document.querySelectorAll('#run-history-body tbody tr');
     if (rows.length < 2) return null;
-    return rows[1].querySelector('td').textContent.trim();
+    return rows[1].dataset.id;
   })();
 
   if (!b) {

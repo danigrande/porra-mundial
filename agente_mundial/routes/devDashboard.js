@@ -412,7 +412,7 @@ router.get('/evals/runs', async (req, res) => {
         .sort({ timestamp: -1 })
         .skip((parseInt(page) - 1) * parseInt(limit))
         .limit(parseInt(limit))
-        .select('runId timestamp completedAt model temperature datasets totalTests passed failed passRate perDataset results comparisonWithPrevious error')
+        .select('runId timestamp completedAt createdAt model temperature datasets totalTests passed failed passRate perDataset results comparisonWithPrevious error')
         .lean(),
       EvalRun.countDocuments(filter)
     ]);
@@ -451,7 +451,10 @@ router.get('/evals/runs/latest', async (req, res) => {
  */
 router.get('/evals/runs/:runId', async (req, res) => {
   try {
-    const run = await EvalRun.findOne({ runId: req.params.runId }).lean();
+    const id = req.params.runId;
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const query = isObjectId ? { _id: id } : { runId: id };
+    const run = await EvalRun.findOne(query).lean();
     if (!run) return res.status(404).json({ error: 'Run not found' });
     res.json(run);
   } catch (error) {
@@ -468,10 +471,9 @@ router.get('/evals/trends', async (req, res) => {
     const runs = await EvalRun.find({ error: { $exists: false } })
       .sort({ timestamp: -1 })
       .limit(parseInt(limit))
-      .select('runId timestamp model temperature totalTests passed failed passRate perDataset')
+      .select('runId timestamp createdAt model temperature totalTests passed failed passRate perDataset')
       .lean();
 
-    // Extract pipeline-level metrics for charting (aggregate across all datasets)
     const trends = runs.reverse().map(r => {
       let totalQ = 0, countQ = 0, totalL = 0, countL = 0;
       if (r.perDataset) {
@@ -483,6 +485,7 @@ router.get('/evals/trends', async (req, res) => {
       return {
         runId: r.runId,
         timestamp: r.timestamp,
+        createdAt: r.createdAt,
         model: r.model,
         temperature: r.temperature,
         passRate: r.passRate,
@@ -490,6 +493,7 @@ router.get('/evals/trends', async (req, res) => {
         overallPassed: r.passed,
         avgLanguagePurity: countL ? Math.round((totalL / countL) * 10) / 10 : 0,
         avgQuality: countQ ? Math.round((totalQ / countQ) * 10) / 10 : 0,
+        perDataset: r.perDataset || {},
       };
     });
 

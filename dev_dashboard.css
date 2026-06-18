@@ -172,6 +172,30 @@ header h1 span { color: var(--accent-cyan); }
 .panel { display: none; }
 .panel.active { display: block; }
 
+/* Card small (benchmark summary) */
+.card-sm {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.2rem;
+  transition: border-color 0.2s;
+}
+.card-sm:hover { border-color: var(--border-glow); }
+.card-sm .label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+.card-sm .value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
 /* Cards Grid */
 .cards {
   display: grid;
@@ -261,6 +285,8 @@ td {
 
 tr:hover td { background: var(--bg-card-hover); }
 tr { cursor: pointer; transition: background 0.15s; }
+tr.row-selected td { background: rgba(59,130,246,0.15); border-bottom-color: var(--accent-blue); }
+tr.row-selected td:first-child { border-left: 3px solid var(--accent-blue); }
 
 .badge {
   display: inline-block;
