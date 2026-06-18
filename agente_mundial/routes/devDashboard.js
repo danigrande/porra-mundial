@@ -439,7 +439,7 @@ router.get('/evals/runs/latest', async (req, res) => {
     const run = await EvalRun.findOne({ error: { $exists: false } })
       .sort({ timestamp: -1 })
       .lean();
-    res.json(run || null);
+    res.json({ run: run || null });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
