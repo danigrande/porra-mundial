@@ -142,9 +142,9 @@ function buildMatchIdMapping(zafronixData) {
     const pairs = [
       [g.teams[0], g.teams[1]],
       [g.teams[2], g.teams[3]],
+      [g.teams[3], g.teams[1]],
       [g.teams[0], g.teams[2]],
-      [g.teams[1], g.teams[3]],
-      [g.teams[0], g.teams[3]],
+      [g.teams[3], g.teams[0]],
       [g.teams[1], g.teams[2]],
     ];
     pairs.forEach((pair, i) => {
