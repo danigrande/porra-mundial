@@ -1,0 +1,126 @@
+[
+  {
+    "id": "trans_andres_ranking_ko",
+    "sourceResponse": "¡Ráfaga! El Paco va primero con 78 puntos. Tú vas segundo con 42. ¡Toma toma toma!",
+    "targetLanguage": "ko",
+    "personalityId": "andres_montes",
+    "expectedHumorMechanism": "street_wisdom",
+    "mockContext": {
+      "leaderboard": [{ "name": "Paco", "score": 78 }, { "name": "TestUser", "score": 42 }],
+      "playerStats": { "score": 42, "position": 2 }
+    },
+    "expectations": {
+      "mustContainScript": "[\uAC00-\uD7AF]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Andrés Montes ranking response transcreated to Korean"
+  },
+  {
+    "id": "trans_andres_ranking_ar",
+    "sourceResponse": "¡Ráfaga! El Paco va primero con 78 puntos. Tú vas segundo con 42. ¡Toma toma toma!",
+    "targetLanguage": "ar",
+    "personalityId": "andres_montes",
+    "expectedHumorMechanism": "street_wisdom",
+    "expectations": {
+      "mustContainScript": "[\u0600-\u06FF]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Andrés Montes ranking response transcreated to Arabic"
+  },
+  {
+    "id": "trans_andres_ranking_th",
+    "sourceResponse": "¡Ráfaga! El Paco va primero con 78 puntos. Tú vas segundo con 42. ¡Toma toma toma!",
+    "targetLanguage": "th",
+    "personalityId": "andres_montes",
+    "expectedHumorMechanism": "street_wisdom",
+    "expectations": {
+      "mustContainScript": "[\u0E00-\u0E7F]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Andrés Montes ranking response transcreated to Thai"
+  },
+  {
+    "id": "trans_andres_ranking_ja",
+    "sourceResponse": "¡Ráfaga! El Paco va primero con 78 puntos. Tú vas segundo con 42. ¡Toma toma toma!",
+    "targetLanguage": "ja",
+    "personalityId": "andres_montes",
+    "expectedHumorMechanism": "street_wisdom",
+    "expectations": {
+      "mustContainScript": "[\u3040-\u30FF\u4E00-\u9FFF]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Andrés Montes ranking response transcreated to Japanese"
+  },
+  {
+    "id": "trans_roncero_ranking_ko",
+    "sourceResponse": "¡ESTO ES HISTÓRICO! El Paco está arrasando con 78 puntos. Tú estás segundo con 42. ¡ESTO ES BRUTAL!",
+    "targetLanguage": "ko",
+    "personalityId": "roncero",
+    "expectedHumorMechanism": "exaggerated_emotion",
+    "expectations": {
+      "mustContainScript": "[\uAC00-\uD7AF]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Roncero ranking response transcreated to Korean with exaggerated emotion preserved"
+  },
+  {
+    "id": "trans_fabrizio_ranking_ko",
+    "sourceResponse": "Here we go! Paco leads with 78 points. You are second with 42. Exclusive update. HERE WE GO!",
+    "targetLanguage": "ko",
+    "personalityId": "fabrizio_romano",
+    "expectedHumorMechanism": "breaking_news_factual",
+    "expectations": {
+      "mustContainScript": "[\uAC00-\uD7AF]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Fabrizio Romano ranking response transcreated to Korean with here-we-go style"
+  },
+  {
+    "id": "trans_pedrerol_ranking_ar",
+    "sourceResponse": "¡ATENTOS! Esto es una EXCLUSIVA: el Paco es el líder con 78 puntos. Tú vas segundo con 42. ¡Esto es la guerra!",
+    "targetLanguage": "ar",
+    "personalityId": "pedrerol",
+    "expectedHumorMechanism": "dramatic_reveal",
+    "expectations": {
+      "mustContainScript": "[\u0600-\u06FF]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Pedrerol ranking response transcreated to Arabic with dramatic reveal preserved"
+  },
+  {
+    "id": "trans_roncero_ranking_th",
+    "sourceResponse": "¡ESTO ES HISTÓRICO! El Paco está arrasando con 78 puntos. Tú estás segundo con 42. ¡DIOS MÍO, ES BRUTAL!",
+    "targetLanguage": "th",
+    "personalityId": "roncero",
+    "expectedHumorMechanism": "exaggerated_emotion",
+    "expectations": {
+      "mustContainScript": "[\u0E00-\u0E7F]",
+      "minLengthRatio": 0.5,
+      "maxLengthRatio": 1.5,
+      "minLanguagePurity": 8,
+      "minQuality": 6
+    },
+    "description": "Roncero ranking response transcreated to Thai with exaggerated emotion preserved"
+  }
+]

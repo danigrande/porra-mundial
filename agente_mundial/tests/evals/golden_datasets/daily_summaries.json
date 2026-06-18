@@ -1,0 +1,117 @@
+[
+  {
+    "id": "summary_daily_basic_01",
+    "type": "daily",
+    "personalityId": "andres_montes",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3, "groupPts": 55, "koPts": 20, "honorPts": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1, "groupPts": 30, "koPts": 10, "honorPts": 2 },
+        { "name": "Antonio", "totalPts": 38, "position": 3, "exactHits": 0, "groupPts": 28, "koPts": 8, "honorPts": 2 },
+        { "name": "Manuel", "totalPts": 35, "position": 4, "exactHits": 2, "groupPts": 22, "koPts": 10, "honorPts": 3 },
+        { "name": "Luis", "totalPts": 28, "position": 5, "exactHits": 1, "groupPts": 18, "koPts": 8, "honorPts": 2 }
+      ],
+      "reality": [
+        { "match": "España vs Brasil", "result": "2-1", "winner": "España" },
+        { "match": "Argentina vs Francia", "result": "1-1", "winner": "draw" }
+      ],
+      "rules": { "predictionMode": "exact_score" }
+    },
+    "expectations": {
+      "minQuality": 6,
+      "maxLength": 800,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "Resumen de la jornada: Partidazo España-Brasil 2-1. El Paco sigue liderando con 78 puntos, como un gallito en su corral. La batalla por el podio está que arde.",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "tags": ["daily", "andres_montes"]
+  },
+  {
+    "id": "summary_daily_pedrerol_01",
+    "type": "daily",
+    "personalityId": "pedrerol",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3, "groupPts": 55, "koPts": 20, "honorPts": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1, "groupPts": 30, "koPts": 10, "honorPts": 2 },
+        { "name": "Antonio", "totalPts": 38, "position": 3, "exactHits": 0, "groupPts": 28, "koPts": 8, "honorPts": 2 }
+      ],
+      "reality": [
+        { "match": "España vs Brasil", "result": "2-1", "winner": "España" }
+      ],
+      "rules": { "predictionMode": "exact_score" }
+    },
+    "expectations": {
+      "minQuality": 6,
+      "maxLength": 800,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "¡ATENTOS! Resumen de la jornada: España 2-1 Brasil. El Paco sigue líder con 78 puntos. ¡EXCLUSIVA! La lucha por el podio está al rojo vivo. ¡Esto es la PORRA!",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "tags": ["daily", "pedrerol"]
+  },
+  {
+    "id": "summary_daily_roncero_01",
+    "type": "daily",
+    "personalityId": "roncero",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3, "groupPts": 55, "koPts": 20, "honorPts": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1, "groupPts": 30, "koPts": 10, "honorPts": 2 }
+      ],
+      "reality": [
+        { "match": "Argentina vs Francia", "result": "1-1", "winner": "draw" }
+      ],
+      "rules": { "predictionMode": "exact_score" }
+    },
+    "expectations": {
+      "minQuality": 6,
+      "maxLength": 800,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "¡ESTO ES HISTÓRICO! Resumen de la jornada: Argentina 1-1 Francia. El Paco arrasa con 78 puntos, UN ABISMO. La emoción está por las nubes. ¡DIOS MÍO, QUÉ JORNADA!",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "tags": ["daily", "roncero"]
+  },
+  {
+    "id": "summary_daily_empty_leaderboard",
+    "type": "daily",
+    "personalityId": "andres_montes",
+    "mockContext": {
+      "leaderboard": [],
+      "reality": [],
+      "rules": { "predictionMode": "exact_score" }
+    },
+    "expectations": {
+      "minQuality": 5,
+      "maxLength": 300,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "No hay datos de la jornada todavía. En cuanto tengamos resultados, te cuento todo.",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 6 },
+    "tags": ["daily", "edge"]
+  },
+  {
+    "id": "summary_personality_basic_01",
+    "type": "personality",
+    "personalityId": "juez_dredd",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3, "groupPts": 55, "koPts": 20, "honorPts": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1, "groupPts": 30, "koPts": 10, "honorPts": 2 }
+      ],
+      "reality": [
+        { "match": "España vs Brasil", "result": "2-1", "winner": "España" }
+      ],
+      "rules": { "predictionMode": "exact_score" }
+    },
+    "expectations": {
+      "minQuality": 6,
+      "maxLength": 600,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "I AM THE LAW. Resumen de la jornada para la porra. Paco, sentenciado a liderar con 78 puntos. Juanma, segundo con 42. Caso cerrado. España 2-1 Brasil. El veredicto es firme.",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 8 },
+    "tags": ["personality", "juez_dredd"]
+  }
+]

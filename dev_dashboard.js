@@ -83,6 +83,8 @@ function switchTab(name) {
   // Lazy load
   if (name === 'logs') loadLogs();
   if (name === 'evals') { loadEvalsStats(); loadEvals(); }
+  if (name === 'benchmarks') loadBenchmarks();
+  if (name === 'reviews') { loadReviewStats(); loadReviewQueue(); }
   if (name === 'rag') { loadRagStats(); loadRagMessages(); }
   if (name === 'groups') loadGroups();
   if (name === 'users') loadUsers();
@@ -1399,6 +1401,400 @@ function viewContent(title, content) {
     </div>
   `;
   overlay.style.display = 'flex';
+}
+
+// ==========================================
+// BENCHMARKS
+// ==========================================
+
+let passRateChart = null;
+let scoresChart = null;
+
+async function loadBenchmarks() {
+  try {
+    const res = await fetch('/dev-dashboard/api/evals/runs/latest');
+    if (!res.ok) { document.getElementById('benchmark-cards').innerHTML = '<div class="text-muted">No benchmark runs yet.</div>'; return; }
+    const data = await res.json();
+    const r = data.run;
+    if (!r) { document.getElementById('benchmark-cards').innerHTML = '<div class="text-muted">No benchmark runs yet.</div>'; return; }
+
+    // Regression banner
+    const banner = document.getElementById('regression-banner');
+    if (r.comparisonWithPrevious?.regressions?.length) {
+      banner.style.display = 'block';
+      banner.innerHTML = `⚠️ <strong>${r.comparisonWithPrevious.regressions.length}</strong> regression(s) detected vs previous run. <a href="#" onclick="showComparison('${r._id}', '${r.comparisonWithPrevious.previousRunId}');return false;">Compare</a>`;
+    } else {
+      banner.style.display = 'none';
+    }
+
+    document.getElementById('benchmark-cards').innerHTML = `
+      <div class="card-sm"><div class="label">Run ID</div><div class="value">${r.runId || r._id}</div></div>
+      <div class="card-sm"><div class="label">Model</div><div class="value">${r.model || 'default'}</div></div>
+      <div class="card-sm"><div class="label">Temperature</div><div class="value">${r.temperature}</div></div>
+      <div class="card-sm"><div class="label">Pass Rate</div><div class="value">${((r.overallPassed/r.overallTotal*100)||0).toFixed(1)}%</div></div>
+      <div class="card-sm"><div class="label">Avg Quality</div><div class="value">${(r.overallAvgQuality||0).toFixed(2)}</div></div>
+      <div class="card-sm"><div class="label">Datasets</div><div class="value">${r.datasets?.join(', ') || 'N/A'}</div></div>
+      <div class="card-sm"><div class="label">Date</div><div class="value">${new Date(r.createdAt).toLocaleString()}</div></div>
+    `;
+
+    renderPassRateChart();
+    renderScoresChart();
+    loadRunHistory();
+  } catch (e) {
+    document.getElementById('benchmark-cards').innerHTML = `<div class="text-muted">Error loading benchmarks: ${e.message}</div>`;
+  }
+}
+
+async function renderPassRateChart() {
+  try {
+    const res = await fetch('/dev-dashboard/api/evals/trends');
+    const trends = await res.json();
+    const runs = trends?.runs || [];
+    if (!runs.length) return;
+
+    const labels = runs.map(r => new Date(r.createdAt).toLocaleDateString());
+    const rates = runs.map(r => r.overallTotal > 0 ? ((r.overallPassed / r.overallTotal) * 100).toFixed(1) : 0);
+
+    const ctx = document.getElementById('chart-passrate').getContext('2d');
+    if (passRateChart) { passRateChart.destroy(); }
+
+    passRateChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Pass Rate %',
+          data: rates,
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: '#22c55e'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#c0c0c0' } } },
+        scales: {
+          x: { ticks: { color: '#999' } },
+          y: { min: 0, max: 100, ticks: { color: '#999', callback: v => v + '%' } }
+        }
+      }
+    });
+  } catch (_) {}
+}
+
+async function renderScoresChart() {
+  try {
+    const res = await fetch('/dev-dashboard/api/evals/trends');
+    const trends = await res.json();
+    const runs = trends?.runs || [];
+    if (!runs.length) return;
+
+    const labels = runs.map(r => new Date(r.createdAt).toLocaleDateString());
+    const quality = runs.map(r => r.overallAvgQuality || 0);
+
+    const ctx = document.getElementById('chart-scores').getContext('2d');
+    if (scoresChart) { scoresChart.destroy(); }
+
+    scoresChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Avg Quality',
+            data: quality,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointBackgroundColor: '#3b82f6'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#c0c0c0' } } },
+        scales: {
+          x: { ticks: { color: '#999' } },
+          y: { beginAtZero: true, ticks: { color: '#999' } }
+        }
+      }
+    });
+  } catch (_) {}
+}
+
+async function loadRunHistory() {
+  try {
+    const res = await fetch('/dev-dashboard/api/evals/runs?limit=20');
+    const data = await res.json();
+    const runs = data?.runs || [];
+
+    if (!runs.length) {
+      document.getElementById('run-history-body').innerHTML = '<div class="text-muted" style="padding:1rem;">No runs yet.</div>';
+      return;
+    }
+
+    document.getElementById('run-history-body').innerHTML = `
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Run ID</th>
+            <th>Model</th>
+            <th>Temp</th>
+            <th>Datasets</th>
+            <th>Pass Rate</th>
+            <th>Quality</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${runs.map(r => {
+            const passRate = r.overallTotal > 0 ? ((r.overallPassed / r.overallTotal) * 100).toFixed(1) + '%' : '—';
+            return `<tr>
+              <td><code>${(r.runId || r._id).substring(0, 12)}</code></td>
+              <td>${r.model || 'default'}</td>
+              <td>${r.temperature}</td>
+              <td>${r.datasets?.join(', ') || '—'}</td>
+              <td>${passRate}</td>
+              <td>${(r.overallAvgQuality || 0).toFixed(2)}</td>
+              <td>${new Date(r.createdAt).toLocaleDateString()}</td>
+              <td><button class="btn-sm" onclick="showComparison('${r._id}')">Compare</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    document.getElementById('run-history-body').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+  }
+}
+
+async function showComparison(runIdA, runIdB) {
+  const a = runIdA;
+  const b = runIdB || (() => {
+    const rows = document.querySelectorAll('#run-history-body tbody tr');
+    if (rows.length < 2) return null;
+    return rows[1].querySelector('td').textContent.trim();
+  })();
+
+  if (!b) {
+    document.getElementById('comparison-view').innerHTML = '<div class="text-muted">Need at least 2 runs to compare.</div>';
+    document.getElementById('comparison-view').style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/dev-dashboard/api/evals/compare/${a}/${b}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const reg = data.comparison?.regressions || [];
+    const impr = data.comparison?.improvements || [];
+    const same = data.comparison?.unchanged || [];
+
+    document.getElementById('comparison-view').style.display = 'block';
+    document.getElementById('comparison-view').innerHTML = `
+      <div class="comparison-section">
+        ${data.comparison?.temperatureMismatch ? `<div class="alert-warning">⚠️ Temperature mismatch between runs</div>` : ''}
+        <h4 style="font-size:0.85rem;margin-bottom:0.75rem;">📊 Run Comparison</h4>
+        ${reg.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#ef4444;">Regressions (${reg.length})</strong><ul>${reg.map(r => `<li>${r.dataset}.${r.testName} — ${r.before > r.after ? `quality dropped ${((r.before - r.after) / r.before * 100).toFixed(0)}%` : `pass: ${r.before}→${r.after}`}</li>`).join('')}</ul></div>` : ''}
+        ${impr.length ? `<div style="margin-bottom:0.75rem;"><strong style="color:#22c55e;">Improvements (${impr.length})</strong><ul>${impr.map(r => `<li>${r.dataset}.${r.testName} — quality ${((r.after - r.before) / r.before * 100).toFixed(0)}% better</li>`).join('')}</ul></div>` : ''}
+        ${same.length ? `<div><strong style="color:#999;">Unchanged (${same.length})</strong></div>` : ''}
+        <button class="btn-sm" onclick="document.getElementById('comparison-view').style.display='none'" style="margin-top:0.75rem;">Close</button>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('comparison-view').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+    document.getElementById('comparison-view').style.display = 'block';
+  }
+}
+
+async function runBenchmark() {
+  const btn = document.getElementById('btn-run-benchmark');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running...';
+
+  try {
+    const model = document.getElementById('benchmark-model').value;
+    const dataset = document.getElementById('benchmark-dataset').value;
+    const params = new URLSearchParams();
+    if (model) params.set('model', model);
+    if (dataset && dataset !== 'all') params.set('dataset', dataset);
+
+    const res = await fetch('/dev-dashboard/api/evals/run', { method: 'POST', body: params, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const pollId = data.runId;
+    const pollInterval = setInterval(async () => {
+      try {
+        const pr = await fetch(`/dev-dashboard/api/evals/runs?runId=${pollId}`);
+        const pd = await pr.json();
+        const run = pd.runs?.[0];
+        if (run && run.status === 'completed') {
+          clearInterval(pollInterval);
+          btn.disabled = false;
+          btn.textContent = '▶ Run Benchmark';
+          loadBenchmarks();
+        }
+      } catch (_) {}
+    }, 3000);
+
+    setTimeout(() => {
+      if (pollInterval) { clearInterval(pollInterval); btn.disabled = false; btn.textContent = '▶ Run Benchmark'; }
+    }, 600000);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '▶ Run Benchmark';
+    document.getElementById('benchmark-cards').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+  }
+}
+
+// ==========================================
+// HUMAN REVIEW
+// ==========================================
+
+async function loadReviewStats() {
+  try {
+    const res = await fetch('/dev-dashboard/api/evals/hitl/stats');
+    const stats = await res.json();
+
+    if (!stats) {
+      document.getElementById('review-stats-cards').innerHTML = '<div class="text-muted">No review data yet.</div>';
+      return;
+    }
+
+    const tot = stats.total || 0;
+    const rev = stats.reviewed || 0;
+    const agree = stats.overallAgreement != null ? (stats.overallAgreement * 100).toFixed(0) + '%' : '—';
+
+    document.getElementById('review-stats-cards').innerHTML = `
+      <div class="card-sm"><div class="label">Total Reviews</div><div class="value">${tot}</div></div>
+      <div class="card-sm"><div class="label">Reviewed</div><div class="value">${rev}</div></div>
+      <div class="card-sm"><div class="label">Agreement Rate</div><div class="value">${agree}</div></div>
+      <div class="card-sm"><div class="label">Pending</div><div class="value">${stats.pending || 0}</div></div>
+      <div class="card-sm"><div class="label">False Positives</div><div class="value">${stats.falsePositiveRate != null ? (stats.falsePositiveRate * 100).toFixed(0) + '%' : '—'}</div></div>
+      <div class="card-sm"><div class="label">False Negatives</div><div class="value">${stats.falseNegativeRate != null ? (stats.falseNegativeRate * 100).toFixed(0) + '%' : '—'}</div></div>
+    `;
+  } catch (e) {
+    document.getElementById('review-stats-cards').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+  }
+}
+
+async function loadReviewQueue() {
+  try {
+    const status = document.getElementById('filter-review-status').value;
+    const source = document.getElementById('filter-review-source').value;
+    const params = new URLSearchParams({ limit: 20 });
+    if (status && status !== 'all') params.set('status', status);
+    if (source) params.set('source', source);
+
+    const res = await fetch(`/dev-dashboard/api/evals/hitl/pending?${params}`);
+    const data = await res.json();
+    const reviews = data?.reviews || [];
+
+    if (!reviews.length) {
+      document.getElementById('review-queue-body').innerHTML = '<div class="text-muted" style="padding:1rem;">No reviews match the current filters.</div>';
+      return;
+    }
+
+    document.getElementById('review-queue-body').innerHTML = reviews.map(r => `
+      <div class="review-card" data-id="${r._id}">
+        <div class="review-meta">
+          <span class="badge badge-source-${r.source}">${r.source}</span>
+          <span class="badge badge-status-${r.status}">${r.status}</span>
+          <span class="badge badge-personality">${r.personalityId || '—'}</span>
+          <span class="text-muted">${new Date(r.createdAt).toLocaleDateString()}</span>
+        </div>
+        <div class="review-query"><strong>Query:</strong> ${escapeHtml(r.query || '—')}</div>
+        <div class="review-response"><strong>Response:</strong> ${escapeHtml((r.response || '').substring(0, 300))}${(r.response || '').length > 300 ? '...' : ''}</div>
+        ${r.judgeScores ? `<div class="review-scores">Judge: ${r.judgePassed ? '✅ Pass' : '❌ Fail'} | Relevance: ${r.judgeScores.relevanceScore?.toFixed(1)} | Accuracy: ${r.judgeScores.accuracyScore?.toFixed(1)} | Language: ${r.judgeScores.languageScore?.toFixed(1)} | Personality: ${r.judgeScores.personalityScore?.toFixed(1)}</div>` : ''}
+        ${r.status === 'pending' ? `
+          <div class="review-actions">
+            <button class="btn-sm btn-pass" onclick="submitReview('${r._id}', true)">✅ Pass</button>
+            <button class="btn-sm btn-fail" onclick="submitReview('${r._id}', false)">❌ Fail</button>
+            <button class="btn-sm" onclick="showReviewNuance('${r._id}')">⚙️ Nuance</button>
+            <button class="btn-sm btn-promote" onclick="promoteToGolden('${r._id}')">💎 Promote</button>
+          </div>
+        ` : `<div class="review-verdict">Human Verdict: ${r.humanPassed ? '✅ Passed' : '❌ Failed'} (confidence: ${r.humanConfidence || 1}/5)</div>`}
+        ${r.promotedToGolden ? `<div class="review-promoted">💎 Promoted to golden dataset</div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('review-queue-body').innerHTML = `<div class="text-muted">Error: ${e.message}</div>`;
+  }
+}
+
+async function submitReview(id, passed) {
+  try {
+    const res = await fetch(`/dev-dashboard/api/evals/hitl/${id}/verdict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ humanPassed: passed, humanConfidence: 3 })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    loadReviewQueue();
+    loadReviewStats();
+  } catch (e) {
+    alert(`Error submitting review: ${e.message}`);
+  }
+}
+
+function showReviewNuance(id) {
+  const html = `
+    <div id="nuance-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;width:400px;max-width:90vw;">
+        <h4 style="margin-bottom:1rem;">Nuanced Review</h4>
+        <label style="display:block;margin-bottom:0.5rem;">Confidence (1-5):
+          <input type="number" id="nuance-confidence" min="1" max="5" value="3" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem;margin-top:0.25rem;">
+        </label>
+        <label style="display:block;margin-bottom:1rem;">Pass?
+          <select id="nuance-passed" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem;margin-top:0.25rem;">
+            <option value="true">Pass</option>
+            <option value="false">Fail</option>
+          </select>
+        </label>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+          <button class="btn-sm" onclick="document.getElementById('nuance-modal').remove()">Cancel</button>
+          <button class="btn-sm btn-pass" onclick="submitNuanceVerdict('${id}')">Submit</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function submitNuanceVerdict(id) {
+  const passed = document.getElementById('nuance-passed').value === 'true';
+  const confidence = parseInt(document.getElementById('nuance-confidence').value) || 3;
+  try {
+    const res = await fetch(`/dev-dashboard/api/evals/hitl/${id}/verdict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ humanPassed: passed, humanConfidence: confidence })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    document.getElementById('nuance-modal').remove();
+    loadReviewQueue();
+    loadReviewStats();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function promoteToGolden(id) {
+  try {
+    const res = await fetch(`/dev-dashboard/api/evals/hitl/${id}/promote`, { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    loadReviewQueue();
+  } catch (e) {
+    alert(`Error promoting: ${e.message}`);
+  }
 }
 
 loadHealth();

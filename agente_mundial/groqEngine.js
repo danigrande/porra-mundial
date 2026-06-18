@@ -7,6 +7,7 @@
 import Groq from 'groq-sdk';
 import { HfInference } from '@huggingface/inference';
 import config from './config.js';
+import { HumanReview } from './models/HumanReview.js';
 import { AILog } from './models/AILog.js';
 import { User } from './models/User.js';
 import { Group } from './models/Group.js';
@@ -194,7 +195,7 @@ export function getSystemPrompt(personalityId) {
  * @param {string[]} [recentCatchphrases] - recently used catchphrases to avoid
  * @returns {string} Enhanced system prompt
  */
-function buildEnhancedSystemPrompt(personalityId, targetLanguage, recentCatchphrases = []) {
+export function buildEnhancedSystemPrompt(personalityId, targetLanguage, recentCatchphrases = []) {
   const basePrompt = getSystemPrompt(personalityId);
   const { prefix: langPrefix, suffix: langSuffix } = buildLanguageInstruction(targetLanguage);
   const anchorBlock = buildAnchorBlock(personalityId, recentCatchphrases);
@@ -230,8 +231,9 @@ function getPersonalityName(personalityId) {
  * Guarda un log de interacción con la IA (fire-and-forget).
  */
 function saveAILog(logData) {
-  AILog.create(logData).catch(err => {
+  return AILog.create(logData).catch(err => {
     console.error('[AILog] Error guardando log:', err.message);
+    return null;
   });
 }
 
@@ -324,7 +326,7 @@ ${instruction}${judgesFeedbackBlock}`;
       }
       if (hfResponse) {
         addRecentOutput(personalityId, hfResponse);
-        saveAILog({
+        const savedLog = await saveAILog({
           type: 'response',
           playerName,
           groupName: groupName || 'Privado',
@@ -339,6 +341,7 @@ ${instruction}${judgesFeedbackBlock}`;
           source: meta.source || 'chat',
           success: true
         });
+        if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
         return hfResponse;
       }
     } catch (hfError) {
@@ -363,7 +366,7 @@ ${instruction}${judgesFeedbackBlock}`;
 
     addRecentOutput(personalityId, responseText);
 
-    saveAILog({
+    const savedLog = await saveAILog({
       type: 'response',
       playerName,
       groupName: groupName || 'Privado',
@@ -385,12 +388,13 @@ ${instruction}${judgesFeedbackBlock}`;
       // Eval fields — se rellenan desde generateWithQualityGate si se usa ese path
       ...(meta._evalData || {})
     });
+    if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
 
     return responseText;
   } catch (error) {
     const latencyMs = Date.now() - startTime;
 
-    saveAILog({
+    const savedLog = await saveAILog({
       type: 'response',
       playerName,
       groupName: groupName || 'Privado',
@@ -406,6 +410,7 @@ ${instruction}${judgesFeedbackBlock}`;
       success: false,
       errorMessage: error.message
     });
+    if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
 
     if (error.status === 429) {
       return '⚡ ¡Ratatatatata! He hablado demasiado rápido y me han mandado al banquillo. Espera un minutillo y vuelve a preguntar, ¡jugón! ⏳';
@@ -438,7 +443,7 @@ export async function generateWithQualityGate(playerName, question, context, met
   // Si los evals están deshabilitados, pasar directamente
   if (!config.evals?.enabled) {
     const response = await generateResponse(playerName, question, context, meta);
-    return { response, judgment: { passed: true, scores: {}, feedback: 'evals disabled' }, attempts: 1, forceApproved: false };
+    return { response, judgment: { passed: true, scores: {}, feedback: 'evals disabled' }, attempts: 1, forceApproved: false, ailogId: null };
   }
 
   const personalityId = meta.personalityId || context.profile?.ai_personality || 'andres_montes';
@@ -450,18 +455,22 @@ export async function generateWithQualityGate(playerName, question, context, met
   let lastFeedback = '';
   let lastResponse = '';
   let lastJudgment = null;
+  let ailogId = null;
 
   while (attempts < maxAttempts) {
     attempts++;
+    const crossRef = {};
 
     const response = await generateResponse(playerName, question, context, {
       ...meta,
       personalityId,
       targetLanguage,
       judgesFeedback: lastFeedback,
-      _evalData: null // Se rellenará después del Judge
+      _evalData: null,
+      _crossRef: crossRef
     });
 
+    ailogId = crossRef.ailogId || null;
     lastResponse = response;
 
     // Evaluar con el Judge
@@ -472,7 +481,7 @@ export async function generateWithQualityGate(playerName, question, context, met
     console.log(`⚖️ [QualityGate] Intento ${attempts}/${maxAttempts}: lang=${judgment.scores?.language_purity} quality=${judgment.scores?.quality} → ${judgment.passed ? '✅ PASS' : '❌ FAIL'}`);
 
     if (judgment.passed) {
-      return { response, judgment, attempts, forceApproved: false };
+      return { response, judgment, attempts, forceApproved: false, ailogId };
     }
 
     lastFeedback = judgment.feedback;
@@ -481,7 +490,32 @@ export async function generateWithQualityGate(playerName, question, context, met
 
   // Agotados los intentos — devolver el último resultado con flag
   console.warn(`⚠️ [QualityGate] Agotados ${maxAttempts} intentos. Forzando aprobación.`);
-  return { response: lastResponse, judgment: lastJudgment, attempts, forceApproved: true };
+
+  // Auto-queue forceApproved for human review
+  if (ailogId) {
+    try {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayCount = await HumanReview.countDocuments({ createdAt: { $gte: todayStart } });
+      if (todayCount < (config.hitl?.maxDailyReviews || 20)) {
+        await HumanReview.create({
+          source: 'force_approved',
+          aiLogId: ailogId,
+          query: question,
+          response: lastResponse,
+          personalityId,
+          targetLanguage,
+          judgeScores: lastJudgment?.scores,
+          judgePassed: false,
+          status: 'pending'
+        });
+      }
+    } catch (e) {
+      console.error('[QualityGate] Error creating HumanReview:', e.message);
+    }
+  }
+
+  return { response: lastResponse, judgment: lastJudgment, attempts, forceApproved: true, ailogId };
 }
 
 /**

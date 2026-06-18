@@ -17,6 +17,8 @@ import { Report } from '../models/Report.js';
 import { PushToken } from '../models/PushToken.js';
 import { Feedback } from '../models/Feedback.js';
 import { PRD } from '../models/PRD.js';
+import { EvalRun } from '../models/EvalRun.js';
+import { HumanReview } from '../models/HumanReview.js';
 import { runLangFlow, extractPRDFromAnalysis } from '../langflowService.js';
 import config from '../config.js';
 import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
@@ -392,6 +394,398 @@ router.get('/evals', async (req, res) => {
   }
 });
 
+// ==========================================
+// BENCHMARKS — Golden Dataset Eval Runs
+// ==========================================
+
+/**
+ * GET /evals/runs — List all eval runs with pagination
+ */
+router.get('/evals/runs', async (req, res) => {
+  try {
+    const { page = 1, limit = 20, dataset } = req.query;
+    const filter = {};
+    if (dataset && dataset !== 'all') filter.datasets = dataset;
+
+    const [runs, total] = await Promise.all([
+      EvalRun.find(filter)
+        .sort({ timestamp: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit))
+        .select('runId timestamp completedAt model temperature datasets totalTests passed failed passRate perDataset comparisonWithPrevious error')
+        .lean(),
+      EvalRun.countDocuments(filter)
+    ]);
+
+    res.json({
+      runs,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /evals/runs/latest — Latest run with comparison data
+ */
+router.get('/evals/runs/latest', async (req, res) => {
+  try {
+    const run = await EvalRun.findOne({ error: { $exists: false } })
+      .sort({ timestamp: -1 })
+      .lean();
+    res.json(run || null);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /evals/runs/:runId — Full detail of a specific run
+ */
+router.get('/evals/runs/:runId', async (req, res) => {
+  try {
+    const run = await EvalRun.findOne({ runId: req.params.runId }).lean();
+    if (!run) return res.status(404).json({ error: 'Run not found' });
+    res.json(run);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /evals/trends — Time-series data for charts
+ */
+router.get('/evals/trends', async (req, res) => {
+  try {
+    const { limit = 20 } = req.query;
+    const runs = await EvalRun.find({ error: { $exists: false } })
+      .sort({ timestamp: -1 })
+      .limit(parseInt(limit))
+      .select('runId timestamp model temperature totalTests passed failed passRate perDataset')
+      .lean();
+
+    // Extract pipeline-level metrics for charting
+    const trends = runs.reverse().map(r => {
+      const dsPersonality = r.perDataset?.personality || {};
+      return {
+        runId: r.runId,
+        timestamp: r.timestamp,
+        model: r.model,
+        temperature: r.temperature,
+        passRate: r.passRate,
+        avgLanguagePurity: dsPersonality.avgLanguagePurity || 0,
+        avgQuality: dsPersonality.avgQuality || 0,
+        avgAttempts: dsPersonality.avgAttempts || 0
+      };
+    });
+
+    res.json(trends);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /evals/compare/:runIdA/:runIdB — Side-by-side comparison
+ */
+router.get('/evals/compare/:runIdA/:runIdB', async (req, res) => {
+  try {
+    const [runA, runB] = await Promise.all([
+      EvalRun.findOne({ runId: req.params.runIdA }).lean(),
+      EvalRun.findOne({ runId: req.params.runIdB }).lean()
+    ]);
+
+    if (!runA || !runB) {
+      return res.status(404).json({ error: 'One or both runs not found' });
+    }
+
+    const dsA = runA.perDataset?.personality || {};
+    const dsB = runB.perDataset?.personality || {};
+
+    const regressions = [];
+    const improvements = [];
+    const unchanged = [];
+
+    // Compare individual test results if available
+    if (runA.results && runB.results) {
+      const mapB = {};
+      runB.results.forEach(r => { mapB[r.testId] = r; });
+
+      for (const resultA of runA.results) {
+        const resultB = mapB[resultA.testId];
+        if (!resultB) continue;
+
+        if (resultA.passed && !resultB.passed) {
+          regressions.push({ testId: resultA.testId, dataset: resultA.dataset, old: resultA, newResult: resultB });
+        } else if (!resultA.passed && resultB.passed) {
+          improvements.push({ testId: resultA.testId, dataset: resultA.dataset, old: resultA, newResult: resultB });
+        } else {
+          unchanged.push({ testId: resultA.testId, dataset: resultA.dataset, old: resultA, newResult: resultB });
+        }
+      }
+    }
+
+    res.json({
+      runA: { runId: runA.runId, model: runA.model, temperature: runA.temperature, timestamp: runA.timestamp, passRate: runA.passRate, avgQuality: dsA.avgQuality, avgLanguagePurity: dsA.avgLanguagePurity },
+      runB: { runId: runB.runId, model: runB.model, temperature: runB.temperature, timestamp: runB.timestamp, passRate: runB.passRate, avgQuality: dsB.avgQuality, avgLanguagePurity: dsB.avgLanguagePurity },
+      passRateDelta: Math.round(((runB.passRate || 0) - (runA.passRate || 0)) * 10) / 10,
+      qualityDelta: Math.round(((dsB.avgQuality || 0) - (dsA.avgQuality || 0)) * 10) / 10,
+      languageDelta: Math.round(((dsB.avgLanguagePurity || 0) - (dsA.avgLanguagePurity || 0)) * 10) / 10,
+      regressions,
+      improvements,
+      unchanged,
+      temperatureMismatch: runA.temperature !== runB.temperature
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /evals/run — Trigger a new benchmark run
+ */
+router.post('/evals/run', async (req, res) => {
+  try {
+    const { model, dataset = 'all', temperature = 0 } = req.body;
+    const { spawn } = await import('child_process');
+    const runId = crypto.randomUUID();
+
+    const child = spawn('node', [
+      'tests/evals/evalRunner.js',
+      '--dataset', dataset,
+      '--temperature', String(temperature),
+      '--run-id', runId
+    ].concat(model ? ['--model', model] : []), {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: process.env,
+      cwd: process.cwd()
+    });
+
+    child.stdout.on('data', data => console.log(`[EvalRunner] ${data}`));
+    child.stderr.on('data', data => console.error(`[EvalRunner] ${data}`));
+
+    child.on('exit', (code) => {
+      if (code !== 0) {
+        EvalRun.updateOne({ runId }, { $set: { error: `Exited with code ${code}` } }).catch(() => {});
+      }
+    });
+
+    child.on('error', (err) => {
+      EvalRun.updateOne({ runId }, { $set: { error: err.message } }).catch(() => {});
+    });
+
+    res.json({ runId, status: 'started' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /evals/coverage — Personality × language coverage map
+ */
+router.get('/evals/coverage', async (req, res) => {
+  try {
+    const filePath = process.cwd() + '/tests/evals/golden_datasets/personality_responses.json';
+    let entries = [];
+    try {
+      entries = JSON.parse(require('fs').readFileSync(filePath, 'utf-8'));
+    } catch (e) {
+      return res.json({ coverage: [] });
+    }
+
+    const coverage = {};
+    for (const entry of entries) {
+      const key = `${entry.personalityId}_${entry.targetLanguage}`;
+      if (!coverage[key]) coverage[key] = { personality: entry.personalityId, language: entry.targetLanguage, count: 0, intents: [] };
+      coverage[key].count++;
+      if (entry.query) {
+        const intent = entry.id?.split('_').slice(1).join('_') || 'unknown';
+        if (!coverage[key].intents.includes(intent)) coverage[key].intents.push(intent);
+      }
+    }
+
+    res.json({ coverage: Object.values(coverage) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// HUMAN REVIEW — HITL Queue
+// ==========================================
+
+/**
+ * GET /evals/hitl/pending — Pending human review items
+ */
+router.get('/evals/hitl/pending', async (req, res) => {
+  try {
+    const { page = 1, limit = 25, source, personality, status = 'pending' } = req.query;
+    const filter = { status };
+    if (source) filter.source = source;
+    if (personality) filter.personalityId = personality;
+
+    const [reviews, total] = await Promise.all([
+      HumanReview.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit))
+        .lean(),
+      HumanReview.countDocuments(filter)
+    ]);
+
+    res.json({
+      reviews,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /evals/hitl/stats — Agreement rate, FP/FN rates
+ */
+router.get('/evals/hitl/stats', async (req, res) => {
+  try {
+    const total = await HumanReview.countDocuments({ status: 'reviewed' });
+    const agreements = await HumanReview.countDocuments({
+      status: 'reviewed',
+      $expr: { $eq: ['$humanPassed', '$judgePassed'] }
+    });
+    const disagreements = total - agreements;
+    const agreementRate = total > 0 ? Math.round((agreements / total) * 100) : 0;
+
+    const falsePositives = await HumanReview.countDocuments({
+      status: 'reviewed',
+      judgePassed: true,
+      humanPassed: false
+    });
+    const falseNegatives = await HumanReview.countDocuments({
+      status: 'reviewed',
+      judgePassed: false,
+      humanPassed: true
+    });
+    const totalJudgePassed = await HumanReview.countDocuments({ status: 'reviewed', judgePassed: true });
+    const totalJudgeFailed = await HumanReview.countDocuments({ status: 'reviewed', judgePassed: false });
+
+    const pending = await HumanReview.countDocuments({ status: 'pending' });
+
+    const bySource = await HumanReview.aggregate([
+      { $match: { status: 'reviewed' } },
+      { $group: { _id: '$source', count: { $sum: 1 }, agreements: { $sum: { $cond: [{ $eq: ['$humanPassed', '$judgePassed'] }, 1, 0] } } } }
+    ]);
+
+    res.json({
+      totalReviews: total,
+      agreements,
+      disagreements,
+      agreementRate,
+      falsePositives,
+      falseNegatives,
+      falsePositiveRate: totalJudgePassed > 0 ? Math.round((falsePositives / totalJudgePassed) * 100) : 0,
+      falseNegativeRate: totalJudgeFailed > 0 ? Math.round((falseNegatives / totalJudgeFailed) * 100) : 0,
+      pending,
+      bySource
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /evals/hitl/:id/verdict — Submit a human review verdict
+ */
+router.post('/evals/hitl/:id/verdict', async (req, res) => {
+  try {
+    const { humanPassed, humanConfidence, humanScores, humanNotes, reviewedBy } = req.body;
+
+    const review = await HumanReview.findById(req.params.id);
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+
+    review.status = 'reviewed';
+    review.humanPassed = humanPassed;
+    if (humanConfidence !== undefined) review.humanConfidence = humanConfidence;
+    if (humanScores) {
+      if (humanScores.language_purity !== undefined) review.humanScores.language_purity = humanScores.language_purity;
+      if (humanScores.quality !== undefined) review.humanScores.quality = humanScores.quality;
+    }
+    if (humanNotes) review.humanNotes = humanNotes;
+    review.reviewedBy = reviewedBy || 'dashboard';
+    review.reviewedAt = new Date();
+
+    await review.save();
+
+    res.json({ success: true, review });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /evals/hitl/:id/promote — Promote a review to the golden dataset
+ */
+router.post('/evals/hitl/:id/promote', async (req, res) => {
+  try {
+    const review = await HumanReview.findById(req.params.id);
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+    if (review.status !== 'reviewed') {
+      return res.status(400).json({ error: 'Review must be in "reviewed" status to promote' });
+    }
+
+    const overrideEntry = {
+      id: `promoted_${review._id}`,
+      query: review.query,
+      personalityId: review.personalityId,
+      targetLanguage: review.targetLanguage,
+      type: 'personality',
+      mockContext: { leaderboard: [], playerStats: null },
+      expectations: {
+        minLanguagePurity: 8,
+        minQuality: 6,
+        maxLength: 500,
+        mustNotContain: ['```', '##', '**']
+      },
+      goldenResponse: review.response,
+      goldenJudgeScores: review.humanScores || review.judgeScores,
+      tags: ['promoted'],
+      source: 'promoted_from_hitl',
+      promotedAt: new Date().toISOString()
+    };
+
+    const fs = await import('fs');
+    const path = await import('path');
+    const dir = process.cwd();
+    const overridesPath = path.default.join(dir, 'tests/evals/golden_datasets/local_overrides.json');
+
+    let overrides = [];
+    try {
+      overrides = JSON.parse(fs.default.readFileSync(overridesPath, 'utf-8'));
+    } catch (e) { /* file doesn't exist yet */ }
+
+    overrides.push(overrideEntry);
+    fs.default.writeFileSync(overridesPath, JSON.stringify(overrides, null, 2));
+
+    review.status = 'promoted';
+    review.promotedToGolden = true;
+    review.goldenDatasetCategory = 'personality';
+    await review.save();
+
+    res.json({ success: true, entry: overrideEntry });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 router.get('/usage', async (req, res) => {
   try {

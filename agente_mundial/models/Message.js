@@ -14,6 +14,7 @@ const messageSchema = new mongoose.Schema({
   editedAt: { type: Date, default: null },
   deletedFor: { type: [String], default: [] },
   embedding: { type: [Number] },
+  aiLogId: { type: mongoose.Schema.Types.ObjectId, ref: 'AILog', default: null },
   timestamp: { type: Date, default: Date.now }
 });
 

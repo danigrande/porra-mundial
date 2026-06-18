@@ -1,11 +1,70 @@
 import express from 'express';
 import { ChatbotFeedback } from '../models/ChatbotFeedback.js';
+import { HumanReview } from '../models/HumanReview.js';
+import { AILog } from '../models/AILog.js';
 import { Message } from '../models/Message.js';
 import { createResponse } from './helpers.js';
+import config from '../config.js';
 
 const router = express.Router();
 
 const DOWN_REASONS = ['incorrect', 'not_helpful', 'off_topic', 'rude', 'other'];
+
+async function maybeCreateHumanReview(rating, messageId, feedbackId) {
+  try {
+    const message = await Message.findById(messageId).select('aiLogId').lean();
+    if (!message?.aiLogId) return;
+
+    const aiLog = await AILog.findById(message.aiLogId).lean();
+    if (!aiLog) return;
+
+    // Daily cap check
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayCount = await HumanReview.countDocuments({ createdAt: { $gte: today } });
+    if (todayCount >= (config.hitl?.maxDailyReviews || 20)) return;
+
+    // Dedupe: skip if too many similar cases already queued this week
+    const weekAgo = new Date(Date.now() - (config.hitl?.dedupeWindow || 7) * 86400000);
+    const similar = await HumanReview.countDocuments({
+      personalityId: aiLog.anchorsUsed,
+      targetLanguage: aiLog.targetLanguage,
+      createdAt: { $gte: weekAgo }
+    });
+    if (similar >= 3) return;
+
+    if (rating === 'down') {
+      await HumanReview.create({
+        source: 'user_downvote',
+        aiLogId: aiLog._id,
+        chatbotFeedbackId: feedbackId,
+        query: aiLog.userPrompt,
+        response: aiLog.groqResponse,
+        personalityId: aiLog.anchorsUsed,
+        targetLanguage: aiLog.targetLanguage,
+        judgeScores: aiLog.evalScores,
+        judgePassed: aiLog.evalPassed,
+        status: 'pending'
+      });
+    } else if (rating === 'up' && aiLog.evalPassed === false) {
+      // User upvoted but Judge failed — calibration signal
+      await HumanReview.create({
+        source: 'judge_disagree',
+        aiLogId: aiLog._id,
+        chatbotFeedbackId: feedbackId,
+        query: aiLog.userPrompt,
+        response: aiLog.groqResponse,
+        personalityId: aiLog.anchorsUsed,
+        targetLanguage: aiLog.targetLanguage,
+        judgeScores: aiLog.evalScores,
+        judgePassed: aiLog.evalPassed,
+        status: 'pending'
+      });
+    }
+  } catch (e) {
+    console.error('[HumanReview] Error auto-creating review:', e.message);
+  }
+}
 
 router.post('/chatbot-feedback', async (req, res) => {
   try {
@@ -31,6 +90,9 @@ router.post('/chatbot-feedback', async (req, res) => {
       { messageId, userId, userName, rating, reason: reason || null },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    // Auto-create HumanReview for relevant feedback (fire-and-forget)
+    maybeCreateHumanReview(rating, messageId, feedback._id);
 
     res.json(createResponse('success', {
       _id: feedback._id,

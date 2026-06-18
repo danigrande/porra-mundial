@@ -1,0 +1,152 @@
+[
+  {
+    "id": "lang_clean_es_01",
+    "simulatedResponse": "¡Ráfaga! El Paco va primero con 78 puntos. Tú vas segundo con 42. ¡Toma toma toma!",
+    "expectedJudgePassed": true,
+    "expectedIssue": "none",
+    "expectedFastPath": false,
+    "targetLanguage": "es",
+    "personalityId": "andres_montes",
+    "description": "Positive control: clean Spanish response with street_wisdom humor"
+  },
+  {
+    "id": "lang_clean_en_01",
+    "simulatedResponse": "Impressive. Paco commands the lead with 78 points. Your 42 points are adequate. The Force is strong with this leaderboard.",
+    "expectedJudgePassed": true,
+    "expectedIssue": "none",
+    "expectedFastPath": false,
+    "targetLanguage": "en",
+    "personalityId": "darth_vader",
+    "description": "Positive control: clean English response with menacing_wit"
+  },
+  {
+    "id": "lang_clean_ko_01",
+    "simulatedResponse": "Paco가 78점으로 선두입니다. 당신은 42점으로 2위입니다. 계속 힘내세요!",
+    "expectedJudgePassed": true,
+    "expectedIssue": "none",
+    "expectedFastPath": false,
+    "targetLanguage": "ko",
+    "personalityId": "andres_montes",
+    "description": "Positive control: clean Korean response (must contain Hangul)"
+  },
+  {
+    "id": "lang_arabic_in_es",
+    "simulatedResponse": "¡Ráfaga! 🏆 مرحبا vas en 3ª posición 안녕하세요 con 45 puntos, ¡jugón!",
+    "expectedJudgePassed": false,
+    "expectedIssue": "language",
+    "expectedFastPath": true,
+    "targetLanguage": "es",
+    "personalityId": "andres_montes",
+    "description": "EDGE: Arabic + Hangul characters in Spanish response — fast-path should catch this"
+  },
+  {
+    "id": "lang_hangul_in_en",
+    "simulatedResponse": "Paco is winning with 78 points. 안녕하세요 You are in second place with 42. That is impressive.",
+    "expectedJudgePassed": false,
+    "expectedIssue": "language",
+    "expectedFastPath": true,
+    "targetLanguage": "en",
+    "personalityId": "darth_vader",
+    "description": "EDGE: Hangul characters in English response — fast-path should catch this"
+  },
+  {
+    "id": "lang_cjk_in_es",
+    "simulatedResponse": "El Paco lidera con 78 puntos y 中国 tu vas segundo con 42. ¡Qué barbaridad!",
+    "expectedJudgePassed": false,
+    "expectedIssue": "language",
+    "expectedFastPath": true,
+    "targetLanguage": "es",
+    "personalityId": "andres_montes",
+    "description": "EDGE: Chinese characters in Spanish response — fast-path should catch this"
+  },
+  {
+    "id": "lang_thai_in_es",
+    "simulatedResponse": "Paco va primero con 78 puntos สวัสดีครับ y tú segundo con 42. ¡Épico!",
+    "expectedJudgePassed": false,
+    "expectedIssue": "language",
+    "expectedFastPath": true,
+    "targetLanguage": "es",
+    "personalityId": "roncero",
+    "description": "EDGE: Thai characters in Spanish response — fast-path should catch this"
+  },
+  {
+    "id": "lang_cyrillic_in_es",
+    "simulatedResponse": "El líder es Paco con 78 puntos. Привет Tú tienes 42 puntos. ¡Sigue así!",
+    "expectedJudgePassed": false,
+    "expectedIssue": "language",
+    "expectedFastPath": true,
+    "targetLanguage": "es",
+    "personalityId": "andres_montes",
+    "description": "EDGE: Cyrillic characters in Spanish response — fast-path should catch this"
+  },
+  {
+    "id": "lang_subtle_arabic_in_es",
+    "simulatedResponse": "¡ATENTOS! El Paco es el líder con 78 puntos, una auténtica máquina. Tú tienes 42 puntos y estás en una posición fantástica. ¡Qué maravilla de clasificación!",
+    "expectedJudgePassed": true,
+    "expectedIssue": "none",
+    "expectedFastPath": false,
+    "targetLanguage": "es",
+    "personalityId": "pedrerol",
+    "description": "EDGE: Previously misidentified as contaminated — actually clean Spanish. Tests LLM judge subtlety."
+  },
+  {
+    "id": "lang_generic_boring_es",
+    "simulatedResponse": "El jugador que va primero tiene más puntos que los demás. Felicitaciones.",
+    "expectedJudgePassed": false,
+    "expectedIssue": "humor",
+    "expectedFastPath": false,
+    "targetLanguage": "es",
+    "personalityId": "andres_montes",
+    "description": "EDGE: Generic response with no personality or humor — should fail quality"
+  },
+  {
+    "id": "lang_perfect_andres_es",
+    "simulatedResponse": "¡Jugón! 🏆 Mira cómo está el barrio: el Paco lidera con 78 puntos, como el que llega al mercadillo antes que nadie y se lleva todos los mangos. Y tú en el faroliyo con 42... eso sí que es un abismo callejero.",
+    "expectedJudgePassed": true,
+    "expectedIssue": "none",
+    "expectedFastPath": false,
+    "targetLanguage": "es",
+    "personalityId": "andres_montes",
+    "description": "EDGE: Perfect Andrés Montes response with street_wisdom — should pass on first try"
+  },
+  {
+    "id": "lang_perfect_pedrerol_es",
+    "simulatedResponse": "¡ATENTOS! Esto es una EXCLUSIVA: el Paco es el líder con 78 puntos. Tú vas segundo con 42, pero esto no ha hecho más que empezar. ¡Señores, esto es la PORRA MUNDIAL!",
+    "expectedJudgePassed": true,
+    "expectedIssue": "none",
+    "expectedFastPath": false,
+    "targetLanguage": "es",
+    "personalityId": "pedrerol",
+    "description": "EDGE: Perfect Pedrerol response with dramatic_reveal — should pass on first try"
+  },
+  {
+    "id": "lang_perfect_dredd_es",
+    "simulatedResponse": "I AM THE LAW. Paco sentenciado a la primera posición con 78 puntos. Tú, segundo con 42. Caso cerrado. El veredicto es claro: necesitas mejorar tus pronósticos si quieres la libertad condicional.",
+    "expectedJudgePassed": true,
+    "expectedIssue": "none",
+    "expectedFastPath": false,
+    "targetLanguage": "es",
+    "personalityId": "juez_dredd",
+    "description": "EDGE: Perfect Juez Dredd response with authoritarian_judgment — should pass on first try"
+  },
+  {
+    "id": "lang_wrong_personality_es",
+    "simulatedResponse": "¡ATENTOS! Esto es una EXCLUSIVA — Paco es el líder con 78 puntos. TREMENDO. Nadie sabe de puntos más que yo. CREO QUE ES LA MEJOR LIGA DEL MUNDO. ¡SEÑORES!",
+    "expectedJudgePassed": false,
+    "expectedIssue": "personality",
+    "expectedFastPath": false,
+    "targetLanguage": "es",
+    "personalityId": "roncero",
+    "description": "EDGE: Mixed pedrerol + trump voice when personality is roncero — should fail quality on wrong personality"
+  },
+  {
+    "id": "lang_empty_response",
+    "simulatedResponse": "",
+    "expectedJudgePassed": false,
+    "expectedIssue": "language",
+    "expectedFastPath": true,
+    "targetLanguage": "es",
+    "personalityId": "andres_montes",
+    "description": "EDGE: Empty response — fast-path script contamination returns 0 for empty text"
+  }
+]

@@ -66,6 +66,13 @@ const config = {
     defaultLanguage: 'es',
   },
 
+  // --- Human-in-the-Loop (HITL) ---
+  hitl: {
+    maxDailyReviews: parseInt(process.env.HITL_MAX_DAILY || '20'),
+    dedupeWindow: parseInt(process.env.HITL_DEDUPE_WINDOW_DAYS || '7'),
+    priorityOrder: ['force_approved', 'user_downvote', 'judge_disagree'],
+  },
+
   // --- RSS Breaking News ---
   rss: {
     enabled: true,

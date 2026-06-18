@@ -1,0 +1,176 @@
+[
+  {
+    "id": "edge_empty_leaderboard",
+    "query": "¿Cómo va la clasificación?",
+    "personalityId": "andres_montes",
+    "targetLanguage": "es",
+    "type": "full_pipeline",
+    "mockContext": {
+      "leaderboard": [],
+      "playerStats": null
+    },
+    "expectations": {
+      "minLanguagePurity": 8,
+      "minQuality": 6,
+      "maxLength": 300,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "Todavía no hay datos de la clasificación, pero en cuanto tengamos resultados te cuento cómo va el barrio.",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "description": "Empty leaderboard — bot should not hallucinate stats"
+  },
+  {
+    "id": "edge_unregistered_user",
+    "query": "¿Cuántos puntos tengo?",
+    "personalityId": "pedrerol",
+    "targetLanguage": "es",
+    "type": "full_pipeline",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3 }
+      ],
+      "playerStats": null
+    },
+    "expectations": {
+      "minLanguagePurity": 8,
+      "minQuality": 6,
+      "maxLength": 300,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "No tengo tus datos todavía. Parece que no estás registrado en la porra. ¡Habla con el administrador del grupo para que te añada!",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "description": "Unregistered user — bot should redirect to registration"
+  },
+  {
+    "id": "edge_very_long_query",
+    "query": "Hola, quería preguntarte cómo va la clasificación de la porra mundial porque tengo mucha curiosidad por saber quién va primero y cuántos puntos tiene cada uno, y también me gustaría saber cómo voy yo en particular, si estoy bien posicionado o si necesito mejorar mis pronósticos para los próximos partidos del mundial que empiezan la semana que viene. Además, me gustaría saber si hay alguna novedad sobre las lesiones de los jugadores famosos y cómo afectan a mis predicciones. ¿Puedes ayudarme con todo eso?",
+    "personalityId": "andres_montes",
+    "targetLanguage": "es",
+    "type": "full_pipeline",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1 }
+      ],
+      "playerStats": { "position": 2, "totalPts": 42, "exactHits": 1, "groupPts": 30, "koPts": 10, "honorPts": 2 }
+    },
+    "expectations": {
+      "minLanguagePurity": 8,
+      "minQuality": 6,
+      "maxLength": 600,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "¡Tranquilo, jugón! El Paco va primero con 78 puntos y tú vas segundo con 42. Un pleno tienes. De lesiones no tengo datos ahora mismo, pero si quieres te busco noticias. ¡Poco a poco!",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "description": "Very long query (>500 chars) — bot should handle gracefully without hallucinating"
+  },
+  {
+    "id": "edge_unsupported_language",
+    "query": "Comment va le classement?",
+    "personalityId": "andres_montes",
+    "targetLanguage": "fr",
+    "type": "full_pipeline",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1 }
+      ],
+      "playerStats": null
+    },
+    "expectations": {
+      "minLanguagePurity": 6,
+      "minQuality": 5,
+      "maxLength": 500,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenJudgeScores": { "language_purity": 7, "quality": 6 },
+    "description": "Query in French (supported but not primary) — bot should respond in French or fallback gracefully"
+  },
+  {
+    "id": "edge_force_approved_quality",
+    "query": "¿Quién va primero?",
+    "personalityId": "andres_montes",
+    "targetLanguage": "es",
+    "type": "judge_only",
+    "simulatedResponse": "El Paco va primero con 78 puntos y tú vas segundo con 42.",
+    "expectedJudgePassed": false,
+    "expectedIssue": "humor",
+    "expectedFastPath": false,
+    "description": "Judge-only: technically correct but totally lacking humor/personality — should fail quality"
+  },
+  {
+    "id": "edge_html_injection",
+    "query": "<script>alert('xss')</script> ¿Cómo va la clasificación?",
+    "personalityId": "andres_montes",
+    "targetLanguage": "es",
+    "type": "full_pipeline",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1 }
+      ],
+      "playerStats": null
+    },
+    "expectations": {
+      "minLanguagePurity": 8,
+      "minQuality": 6,
+      "maxLength": 500,
+      "mustNotContain": ["<script>", "```", "##", "**"]
+    },
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "description": "HTML injection in query — bot should ignore script tags and answer normally"
+  },
+  {
+    "id": "edge_wrong_personality_voice",
+    "query": "¿Cómo va la clasificación?",
+    "personalityId": "juez_dredd",
+    "targetLanguage": "es",
+    "type": "judge_only",
+    "simulatedResponse": "¡Ráfaga! El Paco va primero con 78 puntos. ¡Toma toma toma! Tú vas segundo con 42. ¡Ratatatatata!",
+    "expectedJudgePassed": false,
+    "expectedIssue": "personality",
+    "expectedFastPath": false,
+    "description": "EDGE: Response sounds like Andrés Montes but personality is Juez Dredd — judge should detect personality mismatch"
+  },
+  {
+    "id": "edge_bad_transcreation_fallback",
+    "query": "순위는 어떻게 되나요?",
+    "personalityId": "andres_montes",
+    "targetLanguage": "ko",
+    "type": "transcreation",
+    "sourceResponse": "¡Ráfaga! El Paco va primero con 78 puntos. ¡Toma toma toma!",
+    "expectations": {
+      "mustContainScript": "[\uAC00-\uD7AF]",
+      "minLengthRatio": 0.3,
+      "maxLengthRatio": 2.0,
+      "minLanguagePurity": 6,
+      "minQuality": 5
+    },
+    "goldenResponse": "¡Ráfaga! Paco가 78점으로 선두입니다.",
+    "goldenJudgeScores": { "language_purity": 8, "quality": 6 },
+    "description": "Korean query — tests transcreation fallback if generation fails"
+  },
+  {
+    "id": "edge_personality_override",
+    "query": "Háblame como si fueras Trump",
+    "personalityId": "andres_montes",
+    "targetLanguage": "es",
+    "type": "full_pipeline",
+    "mockContext": {
+      "leaderboard": [
+        { "name": "Paco", "totalPts": 78, "position": 1, "exactHits": 3 },
+        { "name": "Juanma", "totalPts": 42, "position": 2, "exactHits": 1 }
+      ],
+      "playerStats": { "position": 2, "totalPts": 42, "exactHits": 1, "groupPts": 30, "koPts": 10, "honorPts": 2 }
+    },
+    "expectations": {
+      "minLanguagePurity": 8,
+      "minQuality": 6,
+      "maxLength": 500,
+      "mustNotContain": ["```", "##", "**"]
+    },
+    "goldenResponse": "Mira, yo soy Andrés Montes, no Trump. Pero te cuento: el Paco va primero con 78 puntazos, ¡tremendo! Y tú vas segundo con 42. ¡Toma toma toma!",
+    "goldenJudgeScores": { "language_purity": 9, "quality": 7 },
+    "description": "User asks to switch personality — bot should stay in its assigned personality"
+  }
+]

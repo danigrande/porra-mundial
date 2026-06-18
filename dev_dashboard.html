@@ -6,6 +6,7 @@
   <title>🛠️ Agente Mundial — DevOps Panel</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="dev_dashboard.css">
+  <script src="chart.umd.js"></script>
 </head>
 <body>
 
@@ -31,6 +32,8 @@
       <div class="tab active" onclick="switchTab('health')">📡 Health</div>
       <div class="tab" onclick="switchTab('logs')">📋 AI Logs</div>
       <div class="tab" onclick="switchTab('evals')">⚖️ Evals</div>
+      <div class="tab" onclick="switchTab('benchmarks')">📊 Benchmarks</div>
+      <div class="tab" onclick="switchTab('reviews')">👁️ Human Review</div>
       <div class="tab" onclick="switchTab('rag')">🧠 RAG Explorer</div>
       <div class="tab" onclick="switchTab('rss')">📰 RSS Feeds</div>
       <div class="tab" onclick="switchTab('websearch')">🔍 Web Search</div>
@@ -120,6 +123,77 @@
         <div id="evals-table-body"><div class="loading"><span class="spinner"></span> Cargando evals...</div></div>
         <div class="pagination" id="evals-pagination"></div>
       </div>
+    </div>
+
+    <!-- BENCHMARKS PANEL -->
+    <div class="panel" id="panel-benchmarks">
+      <div class="alert-banner alert-red" id="regression-banner" style="display:none;margin-bottom:1rem;"></div>
+
+      <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center;">
+        <select id="benchmark-model" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
+          <option value="">Default model</option>
+          <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+          <option value="Qwen/Qwen2.5-7B-Instruct">Qwen2.5-7B-Instruct</option>
+        </select>
+        <select id="benchmark-dataset" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
+          <option value="all">All datasets</option>
+          <option value="intent">Intent Classification</option>
+          <option value="personality">Personality Responses</option>
+          <option value="language">Language Purity</option>
+          <option value="transcreation">Transcreation</option>
+          <option value="edge">Edge Cases</option>
+          <option value="summary">Daily Summaries</option>
+        </select>
+        <button id="btn-run-benchmark" onclick="runBenchmark()" style="background:var(--accent-blue);padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">▶ Run Benchmark</button>
+        <button onclick="loadBenchmarks()" style="background:var(--accent-cyan);padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">🔄</button>
+      </div>
+
+      <div class="cards" id="benchmark-cards"></div>
+
+      <div class="charts-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+        <div class="chart-container" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+          <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Pass Rate Over Time</h4>
+          <canvas id="chart-passrate"></canvas>
+        </div>
+        <div class="chart-container" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+          <h4 style="font-size:0.85rem;margin-bottom:0.5rem;">Avg Quality & Language Purity</h4>
+          <canvas id="chart-scores"></canvas>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:1.5rem;">
+        <div class="table-header">
+          <h3>📋 Run History</h3>
+        </div>
+        <div id="run-history-body"><div class="loading"><span class="spinner"></span> Loading runs...</div></div>
+        <div class="pagination" id="run-history-pagination"></div>
+      </div>
+
+      <div id="comparison-view" style="display:none;margin-top:1rem;"></div>
+    </div>
+
+    <!-- HUMAN REVIEW PANEL -->
+    <div class="panel" id="panel-reviews">
+      <div class="cards" id="review-stats-cards"></div>
+
+      <div class="table-filters" style="margin-bottom:1rem;">
+        <select id="filter-review-status" onchange="loadReviewQueue()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
+          <option value="pending">Pending</option>
+          <option value="reviewed">Reviewed</option>
+          <option value="all">All</option>
+        </select>
+        <select id="filter-review-source" onchange="loadReviewQueue()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
+          <option value="">All sources</option>
+          <option value="user_downvote">User Downvote</option>
+          <option value="judge_disagree">Judge Disagree</option>
+          <option value="force_approved">Force Approved</option>
+          <option value="manual">Manual</option>
+        </select>
+        <button onclick="loadReviewQueue(); loadReviewStats();" style="background:var(--accent-blue);padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">🔄</button>
+      </div>
+
+      <div id="review-queue-body"><div class="loading"><span class="spinner"></span> Loading review queue...</div></div>
+      <div class="pagination" id="review-queue-pagination"></div>
     </div>
 
     <!-- RAG PANEL -->

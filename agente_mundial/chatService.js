@@ -250,25 +250,30 @@ export function initChatServer(httpServer) {
             // Pequeño delay para simular "pensando"
             await new Promise(r => setTimeout(r, 500));
 
+            // processMessage returns a string (help/summary paths) or an object (generateWithQualityGate)
+            const botText = typeof botResponse === 'object' ? botResponse.response : botResponse;
+            const ailogId = typeof botResponse === 'object' ? (botResponse.ailogId || null) : null;
+
             // 5. Guardar respuesta del bot
             const botMessage = await Message.create({
               chatId: groupName,
               senderId: 'agente-mundial',
               senderName: 'Agente Mundial 🏆',
-              text: botResponse,
+              text: botText,
               type: 'text',
-              isBot: true
+              isBot: true,
+              aiLogId: ailogId
             });
 
             // 5.1 Vectorizar respuesta del bot para el RAG
-            vectorizeMessage(botMessage._id, botResponse);
+            vectorizeMessage(botMessage._id, botText);
 
             const botPayload = {
               _id: botMessage._id.toString(),
               chatId: groupName,
               senderName: 'Agente Mundial 🏆',
               senderId: 'agente-mundial',
-              text: botResponse,
+              text: botText,
               type: 'text',
               isBot: true,
               timestamp: botMessage.timestamp
@@ -282,7 +287,7 @@ export function initChatServer(httpServer) {
             pushService.sendToGroup(
               groupName,
               'Agente Mundial 🏆',
-              botResponse.substring(0, 100) + (botResponse.length > 100 ? '...' : ''),
+              botText.substring(0, 100) + (botText.length > 100 ? '...' : ''),
               { screen: 'chat', groupName },
               userId,
               true // es el agente

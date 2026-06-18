@@ -1,0 +1,258 @@
+[
+  {
+    "id": "intent_ranking_es_01",
+    "query": "¿Cómo va la clasificación?",
+    "expectedIntent": "ranking",
+    "targetLanguage": "es",
+    "description": "Basic ranking query in Spanish",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_ranking_es_02",
+    "query": "¿Quién va primero?",
+    "expectedIntent": "ranking",
+    "targetLanguage": "es",
+    "description": "Who is in first place",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_ranking_es_03",
+    "query": "Enséñame la tabla de posiciones",
+    "expectedIntent": "ranking",
+    "targetLanguage": "es",
+    "description": "Show me the standings table",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_ranking_es_04",
+    "query": "¿Cómo vamos en el grupo?",
+    "expectedIntent": "ranking",
+    "targetLanguage": "es",
+    "description": "How are we doing in the group",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_ranking_en_01",
+    "query": "Show me the leaderboard",
+    "expectedIntent": "ranking",
+    "targetLanguage": "en",
+    "description": "Leaderboard query in English",
+    "tags": ["core", "en"]
+  },
+  {
+    "id": "intent_my_status_es_01",
+    "query": "¿Cómo voy en la porra?",
+    "expectedIntent": "my_status",
+    "targetLanguage": "es",
+    "description": "How am I doing in the pool",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_my_status_es_02",
+    "query": "¿Cuántos puntos tengo?",
+    "expectedIntent": "my_status",
+    "targetLanguage": "es",
+    "description": "How many points do I have",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_my_status_es_03",
+    "query": "¿En qué posición estoy?",
+    "expectedIntent": "my_status",
+    "targetLanguage": "es",
+    "description": "What position am I in",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_my_status_en_01",
+    "query": "What's my score?",
+    "expectedIntent": "my_status",
+    "targetLanguage": "en",
+    "description": "Score query in English",
+    "tags": ["core", "en"]
+  },
+  {
+    "id": "intent_explain_score_es_01",
+    "query": "¿Por qué tengo tan pocos puntos?",
+    "expectedIntent": "explain_score",
+    "targetLanguage": "es",
+    "description": "Why do I have so few points",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_explain_score_es_02",
+    "query": "¿Dónde perdí puntos?",
+    "expectedIntent": "explain_score",
+    "targetLanguage": "es",
+    "description": "Where did I lose points",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_explain_score_es_03",
+    "query": "¿Qué me falta para subir posiciones?",
+    "expectedIntent": "explain_score",
+    "targetLanguage": "es",
+    "description": "What do I need to climb positions",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_summary_es_01",
+    "query": "Haz un resumen de la jornada",
+    "expectedIntent": "summary",
+    "targetLanguage": "es",
+    "description": "Generate a summary of the matchday",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_summary_en_01",
+    "query": "Give me a summary",
+    "expectedIntent": "summary",
+    "targetLanguage": "en",
+    "description": "Summary request in English",
+    "tags": ["core", "en"]
+  },
+  {
+    "id": "intent_help_es_01",
+    "query": "Ayuda, ¿qué puedes hacer?",
+    "expectedIntent": "help",
+    "targetLanguage": "es",
+    "description": "Help request in Spanish",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_help_es_02",
+    "query": "¿Qué comandos tienes?",
+    "expectedIntent": "help",
+    "targetLanguage": "es",
+    "description": "What commands do you have",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_help_en_01",
+    "query": "What can you do?",
+    "expectedIntent": "help",
+    "targetLanguage": "en",
+    "description": "Help request in English",
+    "tags": ["core", "en"]
+  },
+  {
+    "id": "intent_greeting_es_01",
+    "query": "Hola",
+    "expectedIntent": "greeting",
+    "targetLanguage": "es",
+    "description": "Simple greeting in Spanish",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_greeting_es_02",
+    "query": "Buenas tardes",
+    "expectedIntent": "greeting",
+    "targetLanguage": "es",
+    "description": "Good afternoon greeting",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_greeting_en_01",
+    "query": "Hey",
+    "expectedIntent": "greeting",
+    "targetLanguage": "en",
+    "description": "Casual greeting in English",
+    "tags": ["core", "en"]
+  },
+  {
+    "id": "intent_factual_es_01",
+    "query": "¿Quién ganó el último partido?",
+    "expectedIntent": "factual",
+    "targetLanguage": "es",
+    "description": "Who won the last match",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_factual_es_02",
+    "query": "Busca noticias del mundial",
+    "expectedIntent": "factual",
+    "targetLanguage": "es",
+    "description": "Search for World Cup news",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_factual_es_03",
+    "query": "¿Qué sabes de la selección argentina?",
+    "expectedIntent": "factual",
+    "targetLanguage": "es",
+    "description": "What do you know about Argentina's team",
+    "tags": ["core", "es"]
+  },
+  {
+    "id": "intent_factual_en_01",
+    "query": "Who are the favorites to win?",
+    "expectedIntent": "factual",
+    "targetLanguage": "en",
+    "description": "Tournament favorites query",
+    "tags": ["core", "en"]
+  },
+  {
+    "id": "intent_general_es_01",
+    "query": "¿Qué tal el día?",
+    "expectedIntent": "general",
+    "targetLanguage": "es",
+    "description": "Generic chat — no intent match",
+    "tags": ["general", "es"]
+  },
+  {
+    "id": "intent_general_es_02",
+    "query": "Cuéntame un chiste",
+    "expectedIntent": "general",
+    "targetLanguage": "es",
+    "description": "Tell me a joke — no intent match",
+    "tags": ["general", "es"]
+  },
+  {
+    "id": "intent_general_en_01",
+    "query": "What's up?",
+    "expectedIntent": "general",
+    "targetLanguage": "en",
+    "description": "Generic chat in English",
+    "tags": ["general", "en"]
+  },
+  {
+    "id": "intent_boundary_es_01",
+    "query": "¿Cómo vamos de puntos?",
+    "expectedIntent": "my_status",
+    "targetLanguage": "es",
+    "description": "Ambiguous: could be ranking or my_status — regex prefers my_status",
+    "tags": ["boundary", "es"]
+  },
+  {
+    "id": "intent_boundary_es_02",
+    "query": "¿Dónde estoy?",
+    "expectedIntent": "my_status",
+    "targetLanguage": "es",
+    "description": "Ambiguous: positional query — should not match ranking",
+    "tags": ["boundary", "es"]
+  },
+  {
+    "id": "intent_boundary_es_03",
+    "query": "¿Qué necesito para ganar?",
+    "expectedIntent": "explain_score",
+    "targetLanguage": "es",
+    "description": "Ambiguous between help and explain_score",
+    "tags": ["boundary", "es"]
+  },
+  {
+    "id": "intent_boundary_ko_01",
+    "query": "순위는 어떻게 되나요?",
+    "expectedIntent": "ranking",
+    "targetLanguage": "ko",
+    "description": "Ranking query in Korean — tests non-Latin regex handling",
+    "tags": ["boundary", "ko"]
+  },
+  {
+    "id": "intent_boundary_ko_02",
+    "query": "안녕하세요",
+    "expectedIntent": "general",
+    "targetLanguage": "ko",
+    "description": "Korean greeting — detectIntent uses regex which may not match Korean chars",
+    "tags": ["boundary", "ko"]
+  }
+]
