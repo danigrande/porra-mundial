@@ -1412,9 +1412,7 @@ let scoresChart = null;
 
 async function loadBenchmarks() {
   try {
-    const res = await fetch(`${API_BASE}/evals/runs/latest`);
-    if (!res.ok) { document.getElementById('benchmark-cards').innerHTML = '<div class="text-muted">No benchmark runs yet.</div>'; return; }
-    const data = await res.json();
+    const data = await devFetch('/evals/runs/latest');
     const r = data.run;
     if (!r) { document.getElementById('benchmark-cards').innerHTML = '<div class="text-muted">No benchmark runs yet.</div>'; return; }
 
@@ -1447,8 +1445,7 @@ async function loadBenchmarks() {
 
 async function renderPassRateChart() {
   try {
-    const res = await fetch(`${API_BASE}/evals/trends`);
-    const trends = await res.json();
+    const trends = await devFetch('/evals/trends');
     const runs = trends?.runs || [];
     if (!runs.length) return;
 
@@ -1487,8 +1484,7 @@ async function renderPassRateChart() {
 
 async function renderScoresChart() {
   try {
-    const res = await fetch(`${API_BASE}/evals/trends`);
-    const trends = await res.json();
+    const trends = await devFetch('/evals/trends');
     const runs = trends?.runs || [];
     if (!runs.length) return;
 
@@ -1529,8 +1525,7 @@ async function renderScoresChart() {
 
 async function loadRunHistory() {
   try {
-    const res = await fetch(`${API_BASE}/evals/runs?limit=20`);
-    const data = await res.json();
+    const data = await devFetch('/evals/runs?limit=20');
     const runs = data?.runs || [];
 
     if (!runs.length) {
@@ -1589,9 +1584,7 @@ async function showComparison(runIdA, runIdB) {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/evals/compare/${a}/${b}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await devFetch(`/evals/compare/${a}/${b}`);
 
     const reg = data.comparison?.regressions || [];
     const impr = data.comparison?.improvements || [];
@@ -1622,19 +1615,16 @@ async function runBenchmark() {
   try {
     const model = document.getElementById('benchmark-model').value;
     const dataset = document.getElementById('benchmark-dataset').value;
-    const params = new URLSearchParams();
-    if (model) params.set('model', model);
-    if (dataset && dataset !== 'all') params.set('dataset', dataset);
+    const body = {};
+    if (model) body.model = model;
+    if (dataset && dataset !== 'all') body.dataset = dataset;
 
-    const res = await fetch(`${API_BASE}/evals/run`, { method: 'POST', body: params, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await devFetchPost('/evals/run', body);
 
     const pollId = data.runId;
     const pollInterval = setInterval(async () => {
       try {
-        const pr = await fetch(`${API_BASE}/evals/runs?runId=${pollId}`);
-        const pd = await pr.json();
+        const pd = await devFetch(`/evals/runs?runId=${pollId}`);
         const run = pd.runs?.[0];
         if (run && run.status === 'completed') {
           clearInterval(pollInterval);
@@ -1661,8 +1651,7 @@ async function runBenchmark() {
 
 async function loadReviewStats() {
   try {
-    const res = await fetch(`${API_BASE}/evals/hitl/stats`);
-    const stats = await res.json();
+    const stats = await devFetch('/evals/hitl/stats');
 
     if (!stats) {
       document.getElementById('review-stats-cards').innerHTML = '<div class="text-muted">No review data yet.</div>';
@@ -1694,8 +1683,7 @@ async function loadReviewQueue() {
     if (status && status !== 'all') params.set('status', status);
     if (source) params.set('source', source);
 
-    const res = await fetch(`${API_BASE}/evals/hitl/pending?${params}`);
-    const data = await res.json();
+    const data = await devFetch(`/evals/hitl/pending?${params}`);
     const reviews = data?.reviews || [];
 
     if (!reviews.length) {
@@ -1732,12 +1720,7 @@ async function loadReviewQueue() {
 
 async function submitReview(id, passed) {
   try {
-    const res = await fetch(`${API_BASE}/evals/hitl/${id}/verdict`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ humanPassed: passed, humanConfidence: 3 })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await devFetchPost(`/evals/hitl/${id}/verdict`, { humanPassed: passed, humanConfidence: 3 });
     loadReviewQueue();
     loadReviewStats();
   } catch (e) {
@@ -1773,12 +1756,7 @@ async function submitNuanceVerdict(id) {
   const passed = document.getElementById('nuance-passed').value === 'true';
   const confidence = parseInt(document.getElementById('nuance-confidence').value) || 3;
   try {
-    const res = await fetch(`${API_BASE}/evals/hitl/${id}/verdict`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ humanPassed: passed, humanConfidence: confidence })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await devFetchPost(`/evals/hitl/${id}/verdict`, { humanPassed: passed, humanConfidence: confidence });
     document.getElementById('nuance-modal').remove();
     loadReviewQueue();
     loadReviewStats();
@@ -1789,8 +1767,7 @@ async function submitNuanceVerdict(id) {
 
 async function promoteToGolden(id) {
   try {
-    const res = await fetch(`${API_BASE}/evals/hitl/${id}/promote`, { method: 'POST' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await devFetchPost(`/evals/hitl/${id}/promote`, {});
     loadReviewQueue();
   } catch (e) {
     alert(`Error promoting: ${e.message}`);
