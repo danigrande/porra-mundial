@@ -478,6 +478,18 @@ export async function generateWithQualityGate(playerName, question, context, met
     const judgment = await judgeResponse(response, systemPrompt, anchors, targetLanguage);
     lastJudgment = judgment;
 
+    // Persistir resultados del judge en el AILog
+    if (ailogId) {
+      await AILog.findByIdAndUpdate(ailogId, {
+        evalScores: judgment.scores,
+        evalPassed: judgment.passed,
+        evalFeedback: judgment.feedback || '',
+        evalAttempts: attempts,
+        targetLanguage,
+        anchorsUsed: personalityId,
+      }).catch(err => console.error('[QualityGate] Error updating AILog:', err.message));
+    }
+
     console.log(`⚖️ [QualityGate] Intento ${attempts}/${maxAttempts}: lang=${judgment.scores?.language_purity} quality=${judgment.scores?.quality} → ${judgment.passed ? '✅ PASS' : '❌ FAIL'}`);
 
     if (judgment.passed) {
