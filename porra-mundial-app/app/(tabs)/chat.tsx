@@ -105,7 +105,7 @@ export default function ChatScreen() {
     return { effectiveUnreadCount: count, effectiveShowMarker: count > 0 };
   }, [uniqueMessages, lastReadId, messages]);
 
-  const [userFeedback, setUserFeedback] = useState<{[msgId: string]: 'up' | 'down'} | null>(null);
+  const [userFeedback, setUserFeedback] = useState<{[msgId: string]: number} | null>(null);
   const [feedbackMessageId, setFeedbackMessageId] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
@@ -439,8 +439,8 @@ export default function ChatScreen() {
   const handleFeedbackUp = useCallback(async (msgId: string) => {
     if (!auth?.userId || !auth?.name) return;
     try {
-      await api.submitChatbotFeedback({ messageId: msgId, userId: auth.userId, userName: auth.name, rating: 'up' });
-      setUserFeedback(prev => ({ ...prev, [msgId]: 'up' }));
+      await api.submitChatbotFeedback({ messageId: msgId, userId: auth.userId, userName: auth.name, rating: 5 });
+      setUserFeedback(prev => ({ ...prev, [msgId]: 5 }));
     } catch (e) {
       console.error('Feedback up error:', e);
     }
@@ -451,7 +451,7 @@ export default function ChatScreen() {
     setFeedbackMessageId(msgId);
   }, [auth]);
 
-  const handleFeedbackSubmitted = useCallback((msgId: string, rating: 'up' | 'down', _reason?: string) => {
+  const handleFeedbackSubmitted = useCallback((msgId: string, rating: number, _reason?: string) => {
     setUserFeedback(prev => ({ ...prev, [msgId]: rating }));
   }, []);
 

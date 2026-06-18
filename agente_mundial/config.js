@@ -66,6 +66,14 @@ const config = {
     defaultLanguage: 'es',
   },
 
+  // --- Conversational Corrections ---
+  corrections: {
+    enabled: process.env.CORRECTIONS_ENABLED !== 'false',
+    sampleRate: parseFloat(process.env.CORRECTIONS_SAMPLE_RATE || '1.0'),
+    maxPerUserWindow: 3,      // max correcciones por usuario en ventana de tiempo
+    dedupeWindowMinutes: 30,  // ventana de tiempo para dedup
+  },
+
   // --- Human-in-the-Loop (HITL) ---
   hitl: {
     maxDailyReviews: parseInt(process.env.HITL_MAX_DAILY || '20'),

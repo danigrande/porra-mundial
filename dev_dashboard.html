@@ -41,6 +41,9 @@
       <div class="tab" onclick="switchTab('users')">👤 Manage Users</div>
       <div class="tab" onclick="switchTab('feedback')">💬 Feedback</div>
       <div class="tab" onclick="switchTab('prds')">📄 PRDs</div>
+      <div class="tab" onclick="switchTab('feedback-stats')">⭐ Feedback Stats</div>
+      <div class="tab" onclick="switchTab('corrections')">✏️ Corrections</div>
+      <div class="tab" onclick="switchTab('retention')">📈 Retention</div>
       <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
       <div class="tab" onclick="switchTab('help-evals')">❓ Help-Evals</div>
     </div>
@@ -341,6 +344,64 @@
       <div class="cards" id="usage-breakdown"></div>
     </div>
 
+    <!-- FEEDBACK STATS PANEL -->
+    <div class="panel" id="panel-feedback-stats">
+      <div class="cards" id="feedback-stats-cards"></div>
+      <div style="display:flex;gap:1.5rem;margin-top:1.5rem;">
+        <div style="flex:1" class="table-wrap">
+          <div class="table-header"><h3>⭐ Promedio por Personalidad</h3></div>
+          <div id="feedback-stats-personality"></div>
+        </div>
+        <div style="flex:1" class="table-wrap">
+          <div class="table-header"><h3>⭐ Promedio por Idioma</h3></div>
+          <div id="feedback-stats-language"></div>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-top:1.5rem;">
+        <div class="table-header"><h3>📋 Ratings Recientes</h3></div>
+        <div id="feedback-stats-table"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
+        <div class="pagination" id="feedback-stats-pagination"></div>
+      </div>
+    </div>
+
+    <!-- CORRECTIONS PANEL -->
+    <div class="panel" id="panel-corrections">
+      <div class="cards" id="corrections-cards"></div>
+      <div class="table-wrap" style="margin-top:1.5rem;">
+        <div class="table-header">
+          <h3>✏️ Correcciones Conversacionales</h3>
+          <div class="table-filters">
+            <select id="filter-correction-status" onchange="loadCorrections()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;">
+              <option value="">Todos</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="promoted">Promoted</option>
+            </select>
+            <button onclick="loadCorrections(); loadCorrectionsStats();" style="background:var(--accent-blue);padding:4px 8px;border-radius:4px;font-size:0.7rem;color:white;border:none;cursor:pointer;">🔄</button>
+          </div>
+        </div>
+        <div id="corrections-table-body"><div class="loading"><span class="spinner"></span> Cargando correcciones...</div></div>
+        <div class="pagination" id="corrections-pagination"></div>
+      </div>
+    </div>
+
+    <!-- RETENTION PANEL -->
+    <div class="panel" id="panel-retention">
+      <div class="cards" id="retention-cards"></div>
+      <div class="chart-placeholder" style="margin-top:1.5rem;">
+        <h3>📈 Active Users & Bot Calls (30 días)</h3>
+        <div class="bar-chart" id="retention-trend-chart"></div>
+      </div>
+      <div class="table-wrap" style="margin-top:1.5rem;">
+        <div class="table-header">
+          <h3>👥 Comparativa por Grupo</h3>
+          <button onclick="loadRetention()" style="background:var(--accent-blue);padding:4px 8px;border-radius:4px;font-size:0.7rem;color:white;border:none;cursor:pointer;">🔄</button>
+        </div>
+        <div id="retention-group-table"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
+      </div>
+    </div>
+
     <!-- HELP-EVALS PANEL -->
     <div class="panel" id="panel-help-evals">
       <div style="max-width:1000px;margin:0 auto;padding:1rem;">
@@ -545,7 +606,7 @@
               </tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
                 <td style="padding:0.5rem;"><code>user_downvote</code></td>
-                <td style="padding:0.5rem;">User gave a thumbs-down in the chat</td>
+                <td style="padding:0.5rem;">User gave a rating of 1-2 ⭐ in the chat</td>
                 <td style="padding:0.5rem;"><span style="color:var(--accent-amber);font-weight:700;">High</span></td>
               </tr>
               <tr>

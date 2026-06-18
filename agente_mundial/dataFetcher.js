@@ -156,6 +156,11 @@ export async function apiCall(params = {}, options = {}) {
       method = 'POST';
       body = { userId: params.userId };
       break;
+    case 'chatbotFeedback':
+      endpoint = `/chatbot-feedback`;
+      method = 'POST';
+      body = { messageId: params.messageId, userId: params.userId, userName: params.userName, rating: params.rating, reason: params.reason };
+      break;
     default:
       console.warn(`[API] Acción no implementada en la nueva API: ${action}`);
       return { status: 'error', message: 'Not implemented' };

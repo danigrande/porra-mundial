@@ -56,7 +56,7 @@ interface Props {
   onSetSelectedImage: (url: string | null) => void;
   onFeedbackUp: (msgId: string) => void;
   onFeedbackDown: (msgId: string) => void;
-  userFeedback: { [msgId: string]: 'up' | 'down' } | null;
+  userFeedback: { [msgId: string]: number } | null;
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -289,22 +289,23 @@ function ChatMessageComponent({
               );
             })()}
 
-            {/* Feedback footer for bot messages */}
+            {/* Feedback footer for bot messages — 5-star rating */}
             {item.isBot && item.type === 'text' && !isEditing && (
               <View style={styles.feedbackFooter}>
                 <TouchableOpacity
-                  style={[styles.feedbackBtn, fb === 'up' && styles.feedbackBtnActive]}
+                  style={[styles.feedbackBtn, fb !== undefined && fb >= 4 && styles.feedbackBtnActive]}
                   onPress={handleFeedbackUp}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MaterialIcons name="thumb-up" size={16} color={fb === 'up' ? '#f5a623' : '#64748b'} />
+                  <MaterialIcons name="star" size={16} color={fb !== undefined && fb >= 4 ? '#f5a623' : '#64748b'} />
                 </TouchableOpacity>
+                <Text style={styles.feedbackRating}>{fb !== undefined ? fb + '/5' : ''}</Text>
                 <TouchableOpacity
-                  style={[styles.feedbackBtn, fb === 'down' && styles.feedbackBtnActive]}
+                  style={[styles.feedbackBtn, fb !== undefined && fb <= 2 && styles.feedbackBtnActive]}
                   onPress={handleFeedbackDown}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MaterialIcons name="thumb-down" size={16} color={fb === 'down' ? '#f5a623' : '#64748b'} />
+                  <MaterialIcons name="star-outline" size={16} color={fb !== undefined && fb <= 2 ? '#f5a623' : '#64748b'} />
                 </TouchableOpacity>
               </View>
             )}
@@ -401,5 +402,6 @@ const styles = StyleSheet.create({
   unreadText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
   feedbackFooter: { flexDirection: 'row', marginTop: 6, gap: 8, alignItems: 'center', alignSelf: 'flex-end' },
   feedbackBtn: { padding: 2, borderRadius: 4 },
+  feedbackRating: { color: '#f5a623', fontSize: 11, fontWeight: '700', marginHorizontal: 4 },
   feedbackBtnActive: { backgroundColor: 'rgba(245,166,35,0.15)' },
 });

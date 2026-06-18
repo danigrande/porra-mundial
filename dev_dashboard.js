@@ -75,7 +75,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-  const tabs = ['health', 'logs', 'evals', 'benchmarks', 'reviews', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'usage', 'help-evals'];
+  const tabs = ['health', 'logs', 'evals', 'benchmarks', 'reviews', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'feedback-stats', 'corrections', 'retention', 'usage', 'help-evals'];
   const idx = tabs.indexOf(name);
   document.querySelectorAll('.tab')[idx]?.classList.add('active');
   document.getElementById(`panel-${name}`)?.classList.add('active');
@@ -92,6 +92,9 @@ function switchTab(name) {
   if (name === 'websearch') loadWebSearchStats();
   if (name === 'feedback') loadFeedback();
   if (name === 'prds') loadPRDs();
+  if (name === 'feedback-stats') loadFeedbackStats();
+  if (name === 'corrections') { loadCorrectionsStats(); loadCorrections(); }
+  if (name === 'retention') loadRetention();
   if (name === 'usage') loadUsage();
 }
 
@@ -1912,6 +1915,330 @@ async function promoteToGolden(id) {
     loadReviewQueue();
   } catch (e) {
     alert(`Error promoting: ${e.message}`);
+  }
+}
+
+// ==========================================
+// FEEDBACK STATS PANEL
+// ==========================================
+
+let currentFeedbackStatsPage = 1;
+
+async function loadFeedbackStats() {
+  try {
+    const data = await devFetch('/evals/stats?days=30');
+    const ov = data.overview;
+
+    // También obtener stats de ChatbotFeedback
+    const fbStats = await devFetch('/evals/hitl/stats');
+
+    const avgScore = fbStats.totalReviews > 0
+      ? Math.round(((fbStats.agreements || 0) / Math.max(fbStats.totalReviews, 1)) * 100)
+      : null;
+
+    document.getElementById('feedback-stats-cards').innerHTML = `
+      <div class="card">
+        <div class="card-label">Avg User Rating (proxy)</div>
+        <div class="card-value ${(ov.avgQuality || 0) >= 6 ? 'green' : 'amber'}">${(ov.avgQuality || 0).toFixed(1)}/10</div>
+        <div class="card-sub">Quality score from Judge (eval proxy)</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Judge ⇔ Human Agreement</div>
+        <div class="card-value ${avgScore >= 70 ? 'green' : avgScore >= 50 ? 'amber' : 'red'}">${avgScore !== null ? avgScore + '%' : 'Sin datos'}</div>
+        <div class="card-sub">${fbStats.agreements || 0} agreements · ${fbStats.disagreements || 0} disagreements</div>
+      </div>
+      <div class="card">
+        <div class="card-label">False Positives (Judge said PASS)</div>
+        <div class="card-value red">${fbStats.falsePositives || 0}</div>
+        <div class="card-sub">Rate: ${fbStats.falsePositiveRate || 0}%</div>
+      </div>
+      <div class="card">
+        <div class="card-label">False Negatives (Judge said FAIL)</div>
+        <div class="card-value amber">${fbStats.falseNegatives || 0}</div>
+        <div class="card-sub">Rate: ${fbStats.falseNegativeRate || 0}%</div>
+      </div>
+    `;
+
+    // Breakdown por personalidad (from evals stats)
+    const persEl = document.getElementById('feedback-stats-personality');
+    if (data.byPersonality?.length) {
+      let html = '<table><thead><tr><th>Personalidad</th><th>Total</th><th>Pass%</th><th>Quality</th></tr></thead><tbody>';
+      data.byPersonality.forEach(row => {
+        const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
+        html += `<tr>
+          <td><strong>${row._id || 'N/A'}</strong></td>
+          <td>${row.total}</td>
+          <td><span class="badge badge-${pct >= 80 ? 'success' : pct >= 60 ? 'amber' : 'error'}">${pct}%</span></td>
+          <td>${(row.avgQuality || 0).toFixed(1)}/10</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      persEl.innerHTML = html;
+    } else {
+      persEl.innerHTML = '<div class="loading">Sin datos</div>';
+    }
+
+    // Breakdown por idioma
+    const langEl = document.getElementById('feedback-stats-language');
+    if (data.byLanguage?.length) {
+      let html = '<table><thead><tr><th>Idioma</th><th>Total</th><th>Pass%</th><th>Quality</th></tr></thead><tbody>';
+      data.byLanguage.forEach(row => {
+        const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
+        html += `<tr>
+          <td><strong>${row._id || 'N/A'}</strong></td>
+          <td>${row.total}</td>
+          <td><span class="badge badge-${pct >= 80 ? 'success' : pct >= 60 ? 'amber' : 'error'}">${pct}%</span></td>
+          <td>${(row.avgQuality || 0).toFixed(1)}/10</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      langEl.innerHTML = html;
+    } else {
+      langEl.innerHTML = '<div class="loading">Sin datos</div>';
+    }
+
+    // Tabla de ratings recientes (from /evals)
+    const evalsData = await devFetch(`/evals?page=${currentFeedbackStatsPage}&limit=20`);
+    const tableEl = document.getElementById('feedback-stats-table');
+    if (evalsData.logs?.length) {
+      let html = '<table><thead><tr><th>Fecha</th><th>Jugador</th><th>Personalidad</th><th>Lang</th><th>Quality</th><th>Status</th></tr></thead><tbody>';
+      evalsData.logs.forEach(log => {
+        const time = new Date(log.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const statusBadge = log.evalSkipped
+          ? '<span class="badge" style="background:rgba(255,255,255,0.1)">SKIP</span>'
+          : log.evalPassed
+            ? '<span class="badge badge-success">✅ PASS</span>'
+            : '<span class="badge badge-error">❌ FAIL</span>';
+        html += `<tr>
+          <td style="white-space:nowrap">${time}</td>
+          <td>${log.playerName}</td>
+          <td style="font-size:0.75rem">${log.anchorsUsed || '—'}</td>
+          <td>${log.targetLanguage || '?'}</td>
+          <td style="color:${(log.evalScores?.quality || 0) >= 6 ? 'var(--accent-green)' : 'var(--accent-red)'};font-weight:700">${log.evalScores?.quality != null ? log.evalScores.quality + '/10' : '—'}</td>
+          <td>${statusBadge}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      tableEl.innerHTML = html;
+    } else {
+      tableEl.innerHTML = '<div class="loading">Sin evaluaciones</div>';
+    }
+
+    const p = evalsData.pagination;
+    document.getElementById('feedback-stats-pagination').innerHTML = p ? `
+      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentFeedbackStatsPage--; loadFeedbackStats()">← Prev</button>
+      <span class="page-info">${p.page} / ${p.pages} (${p.total} total)</span>
+      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentFeedbackStatsPage++; loadFeedbackStats()">Next →</button>
+    ` : '';
+  } catch (e) {
+    document.getElementById('feedback-stats-cards').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
+  }
+}
+
+// ==========================================
+// CORRECTIONS PANEL
+// ==========================================
+
+let currentCorrectionsPage = 1;
+
+async function loadCorrectionsStats() {
+  try {
+    const data = await devFetch('/corrections/stats');
+    document.getElementById('corrections-cards').innerHTML = `
+      <div class="card">
+        <div class="card-label">Total Corrections</div>
+        <div class="card-value cyan">${data.total}</div>
+        <div class="card-sub">Across all groups</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Pending Review</div>
+        <div class="card-value ${data.pending > 0 ? 'amber' : 'green'}">${data.pending}</div>
+        <div class="card-sub">${data.pending > 0 ? 'Needs human review' : 'All reviewed'}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Promoted to Golden</div>
+        <div class="card-value green">${data.promoted}</div>
+        <div class="card-sub">Dataset entries from corrections</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Avg Detector Confidence</div>
+        <div class="card-value ${data.avgConfidence >= 0.7 ? 'green' : 'amber'}">${(data.avgConfidence * 100).toFixed(0)}%</div>
+        <div class="card-sub">LLM-based correction detector</div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('corrections-cards').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
+  }
+}
+
+async function loadCorrections() {
+  const status = document.getElementById('filter-correction-status')?.value || '';
+  let query = `?page=${currentCorrectionsPage}&limit=20`;
+  if (status) query += `&status=${status}`;
+
+  const container = document.getElementById('corrections-table-body');
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando correcciones...</div>';
+
+  try {
+    const data = await devFetch(`/corrections${query}`);
+    if (!data.corrections?.length) {
+      container.innerHTML = '<div class="loading">No hay correcciones todavía. Cuando un usuario corrija al bot, aparecerán aquí.</div>';
+      document.getElementById('corrections-pagination').innerHTML = '';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>Fecha</th><th>Usuario</th><th>Grupo</th><th>Personalidad</th><th>Original</th><th>Corrección</th><th>Confianza</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>';
+
+    data.corrections.forEach(c => {
+      const time = new Date(c.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const statusColors = { pending: 'amber', approved: 'green', rejected: 'red', promoted: 'cyan' };
+      const statusBadge = `<span class="badge badge-${statusColors[c.status] || 'amber'}">${c.status}</span>`;
+
+      let actions = '';
+      if (c.status === 'pending') {
+        actions = `
+          <button class="btn-sm" onclick="approveCorrection('${c._id}')" style="background:rgba(16,185,129,0.2);color:var(--accent-green);padding:2px 6px">✅ Approve</button>
+          <button class="btn-sm" onclick="rejectCorrection('${c._id}')" style="background:rgba(239,68,68,0.2);color:var(--accent-red);padding:2px 6px">❌ Reject</button>
+        `;
+      } else if (c.status === 'approved') {
+        actions = `<button class="btn-sm" onclick="promoteCorrection('${c._id}')" style="background:rgba(59,130,246,0.2);color:var(--accent-blue);padding:2px 6px">⭐ Promote to Golden</button>`;
+      } else if (c.status === 'promoted') {
+        actions = '<span style="color:var(--accent-green);font-size:0.75rem">✅ In golden dataset</span>';
+      }
+
+      html += `<tr>
+        <td style="white-space:nowrap;font-size:0.72rem">${time}</td>
+        <td><strong>${c.userName || c.userId}</strong></td>
+        <td style="font-size:0.75rem">${c.groupName}</td>
+        <td style="font-size:0.72rem">${c.personalityId || '—'}</td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.72rem" title="${escapeHtml(c.originalResponse)}">${escapeHtml(c.originalResponse.substring(0, 60))}…</td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.72rem;color:var(--accent-green)" title="${escapeHtml(c.correctedText)}">${escapeHtml(c.correctedText.substring(0, 60))}…</td>
+        <td style="font-size:0.75rem">${c.detectorConfidence ? Math.round(c.detectorConfidence * 100) + '%' : '—'}</td>
+        <td>${statusBadge}</td>
+        <td style="white-space:nowrap">${actions}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    const p = data.pagination;
+    document.getElementById('corrections-pagination').innerHTML = `
+      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentCorrectionsPage--; loadCorrections()">← Prev</button>
+      <span class="page-info">${p.page} / ${p.pages} (${p.total} total)</span>
+      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentCorrectionsPage++; loadCorrections()">Next →</button>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+async function approveCorrection(id) {
+  try {
+    await devFetchPost(`/corrections/${id}/approve`, {});
+    loadCorrections();
+    loadCorrectionsStats();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function rejectCorrection(id) {
+  try {
+    await devFetchPost(`/corrections/${id}/reject`, {});
+    loadCorrections();
+    loadCorrectionsStats();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+}
+
+async function promoteCorrection(id) {
+  try {
+    await devFetchPost(`/corrections/${id}/promote`, {});
+    loadCorrections();
+    loadCorrectionsStats();
+  } catch (e) {
+    alert(`Error promoting: ${e.message}`);
+  }
+}
+
+// ==========================================
+// RETENTION PANEL
+// ==========================================
+
+async function loadRetention() {
+  try {
+    const data = await devFetch('/analytics/retention?days=30');
+
+    const retentionColor = data.retentionRate >= 50 ? 'green' : data.retentionRate >= 30 ? 'amber' : 'red';
+
+    document.getElementById('retention-cards').innerHTML = `
+      <div class="card">
+        <div class="card-label">Active Users (last 15d)</div>
+        <div class="card-value cyan">${data.activeUsers}</div>
+        <div class="card-sub">Of ${data.totalUsers} total users</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Retention Rate</div>
+        <div class="card-value ${retentionColor}">${data.retentionRate}%</div>
+        <div class="card-sub">${data.retainedUsers} retained · ${data.churnedUsers} churned</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Total Bot Calls (30d)</div>
+        <div class="card-value purple">${data.totalBotCalls}</div>
+        <div class="card-sub">Avg ${data.avgBotCallsPerUser} calls/user</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Period</div>
+        <div class="card-value amber" style="font-size:0.9rem">${data.period}</div>
+        <div class="card-sub">Rolling window</div>
+      </div>
+    `;
+
+    // Trend chart (simple bar chart)
+    const chartEl = document.getElementById('retention-trend-chart');
+    if (data.trend?.length) {
+      let html = '<div style="display:flex;align-items:end;gap:3px;height:120px;padding:0 0.5rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem;">';
+      const maxVal = Math.max(...data.trend.map(d => Math.max(d.activeUsers, Math.ceil(d.botCalls / 3))), 1);
+      data.trend.slice(-30).forEach(d => {
+        const hUsers = (d.activeUsers / maxVal) * 100;
+        const hCalls = (Math.ceil(d.botCalls / 3) / maxVal) * 100;
+        html += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">
+          <div style="width:100%;height:${hCalls}px;background:rgba(59,130,246,0.4);border-radius:2px 2px 0 0;min-height:1px;" title="Calls: ${d.botCalls}"></div>
+          <div style="width:100%;height:${hUsers}px;background:rgba(16,185,129,0.6);border-radius:2px 2px 0 0;min-height:1px;" title="Users: ${d.activeUsers}"></div>
+        </div>`;
+      });
+      html += '</div>';
+      html += '<div style="display:flex;gap:1rem;font-size:0.7rem;color:var(--text-muted);padding:0 0.5rem;">';
+      html += '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(16,185,129,0.6);border-radius:2px;margin-right:4px;"></span> Active Users</span>';
+      html += '<span><span style="display:inline-block;width:10px;height:10px;background:rgba(59,130,246,0.4);border-radius:2px;margin-right:4px;"></span> Bot Calls (/3)</span>';
+      html += '</div>';
+      chartEl.innerHTML = html;
+    } else {
+      chartEl.innerHTML = '<div class="loading">No hay datos de tendencia todavía</div>';
+    }
+
+    // Group comparison table
+    const groupEl = document.getElementById('retention-group-table');
+    if (data.groupComparison?.length) {
+      let html = '<table><thead><tr><th>Grupo</th><th>Calls</th><th>Active Users</th><th>Retention</th></tr></thead><tbody>';
+      data.groupComparison.slice(0, 20).forEach(g => {
+        const retColor = g.retentionRate >= 50 ? 'green' : g.retentionRate >= 30 ? 'amber' : 'red';
+        html += `<tr>
+          <td><strong>${g.groupName}</strong></td>
+          <td>${g.calls}</td>
+          <td>${g.activeUsers}</td>
+          <td><span class="badge badge-${retColor}">${g.retentionRate}%</span></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      groupEl.innerHTML = html;
+    } else {
+      groupEl.innerHTML = '<div class="loading">No hay datos de grupos</div>';
+    }
+  } catch (e) {
+    document.getElementById('retention-cards').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
   }
 }
 

@@ -383,7 +383,7 @@ export async function submitChatbotFeedback(data: {
   messageId: string;
   userId: string;
   userName: string;
-  rating: 'up' | 'down';
+  rating: number;
   reason?: string;
 }) {
   return apiFetch('/chatbot-feedback', { method: 'POST', body: JSON.stringify(data) });

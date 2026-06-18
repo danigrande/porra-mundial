@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../i18n/i18n';
 import * as api from '../services/api';
 
@@ -10,7 +10,7 @@ interface Props {
   userId: string;
   userName: string;
   onClose: () => void;
-  onSubmitted: (messageId: string, rating: 'up' | 'down', reason?: string) => void;
+  onSubmitted: (messageId: string, rating: number, reason?: string) => void;
 }
 
 const REASONS = [
@@ -21,9 +21,12 @@ const REASONS = [
   { key: 'other', icon: 'ellipsis-horizontal' },
 ];
 
+const STAR_LABELS = ['', 'Terrible', 'Bad', 'Okay', 'Good', 'Excellent'];
+
 export default function ChatbotFeedbackSheet({ messageId, userId, userName, onClose, onSubmitted }: Props) {
   const { t } = useTranslation();
   const sheetRef = useRef<BottomSheetModal>(null);
+  const [selectedRating, setSelectedRating] = useState<number>(0);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,12 +35,14 @@ export default function ChatbotFeedbackSheet({ messageId, userId, userName, onCl
       sheetRef.current?.present();
     } else {
       sheetRef.current?.dismiss();
+      setSelectedRating(0);
       setSelectedReason(null);
     }
   }, [messageId]);
 
   const handleDismiss = useCallback(() => {
     onClose();
+    setSelectedRating(0);
     setSelectedReason(null);
   }, [onClose]);
 
@@ -49,19 +54,24 @@ export default function ChatbotFeedbackSheet({ messageId, userId, userName, onCl
   );
 
   const handleSubmit = useCallback(async () => {
-    if (!messageId || submitting) return;
+    if (!messageId || submitting || selectedRating === 0) return;
     setSubmitting(true);
     try {
-      await api.submitChatbotFeedback({ messageId, userId, userName, rating: 'down', reason: selectedReason || undefined });
-      onSubmitted(messageId, 'down', selectedReason || undefined);
+      await api.submitChatbotFeedback({
+        messageId, userId, userName,
+        rating: selectedRating,
+        reason: selectedRating <= 2 ? selectedReason || undefined : undefined
+      });
+      onSubmitted(messageId, selectedRating, selectedRating <= 2 ? selectedReason || undefined : undefined);
     } catch (e) {
       console.error('Failed to submit feedback:', e);
     } finally {
       setSubmitting(false);
       sheetRef.current?.dismiss();
+      setSelectedRating(0);
       setSelectedReason(null);
     }
-  }, [messageId, userId, userName, selectedReason, submitting, onSubmitted]);
+  }, [messageId, userId, userName, selectedRating, selectedReason, submitting, onSubmitted]);
 
   if (!messageId) return null;
 
@@ -69,7 +79,7 @@ export default function ChatbotFeedbackSheet({ messageId, userId, userName, onCl
     <BottomSheetModal
       ref={sheetRef}
       index={0}
-      snapPoints={['45%']}
+      snapPoints={['50%']}
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}
@@ -79,41 +89,66 @@ export default function ChatbotFeedbackSheet({ messageId, userId, userName, onCl
         <Text style={styles.title}>{t('chat.feedback_title')}</Text>
         <Text style={styles.subtitle}>{t('chat.feedback_subtitle')}</Text>
 
-        <View style={styles.reasonsList}>
-          {REASONS.map((r) => (
+        {/* Star rating */}
+        <View style={styles.starsRow}>
+          {[1, 2, 3, 4, 5].map((star) => (
             <TouchableOpacity
-              key={r.key}
-              style={[styles.reasonItem, selectedReason === r.key && styles.reasonItemActive]}
-              onPress={() => setSelectedReason(r.key === selectedReason ? null : r.key)}
+              key={star}
+              onPress={() => setSelectedRating(star === selectedRating ? 0 : star)}
               activeOpacity={0.6}
+              style={styles.starBtn}
             >
               <Ionicons
-                name={r.icon as any}
-                size={22}
-                color={selectedReason === r.key ? '#f5a623' : '#64748b'}
-                style={{ marginRight: 12 }}
+                name={star <= selectedRating ? 'star' : 'star-outline'}
+                size={36}
+                color={star <= selectedRating ? '#f5a623' : '#475569'}
               />
-              <Text style={[styles.reasonLabel, selectedReason === r.key && styles.reasonLabelActive]}>
-                {t(`chat.feedback_reason_${r.key}`)}
-              </Text>
-              {selectedReason === r.key && (
-                <Ionicons name="checkmark-circle" size={20} color="#f5a623" style={{ marginLeft: 'auto' }} />
-              )}
             </TouchableOpacity>
           ))}
         </View>
+        {selectedRating > 0 && (
+          <Text style={styles.starLabel}>{STAR_LABELS[selectedRating]}</Text>
+        )}
+
+        {/* Reason selector (only for rating 1-2) */}
+        {selectedRating >= 1 && selectedRating <= 2 && (
+          <View style={styles.reasonsList}>
+            <Text style={styles.reasonHeader}>What went wrong?</Text>
+            {REASONS.map((r) => (
+              <TouchableOpacity
+                key={r.key}
+                style={[styles.reasonItem, selectedReason === r.key && styles.reasonItemActive]}
+                onPress={() => setSelectedReason(r.key === selectedReason ? null : r.key)}
+                activeOpacity={0.6}
+              >
+                <Ionicons
+                  name={r.icon as any}
+                  size={22}
+                  color={selectedReason === r.key ? '#f5a623' : '#64748b'}
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={[styles.reasonLabel, selectedReason === r.key && styles.reasonLabelActive]}>
+                  {t(`chat.feedback_reason_${r.key}`)}
+                </Text>
+                {selectedReason === r.key && (
+                  <Ionicons name="checkmark-circle" size={20} color="#f5a623" style={{ marginLeft: 'auto' }} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.cancelBtn}
-            onPress={() => { sheetRef.current?.dismiss(); setSelectedReason(null); }}
+            onPress={() => { sheetRef.current?.dismiss(); setSelectedRating(0); setSelectedReason(null); }}
           >
             <Text style={styles.cancelText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.submitBtn, !selectedReason && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, selectedRating === 0 && styles.submitBtnDisabled]}
             onPress={handleSubmit}
-            disabled={!selectedReason || submitting}
+            disabled={selectedRating === 0 || submitting || (selectedRating <= 2 && !selectedReason)}
           >
             {submitting ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -133,7 +168,11 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
   title: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
   subtitle: { color: '#94a3b8', fontSize: 13, marginBottom: 16 },
+  starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 8 },
+  starBtn: { padding: 4 },
+  starLabel: { textAlign: 'center', color: '#f5a623', fontSize: 14, fontWeight: '600', marginBottom: 16 },
   reasonsList: { marginBottom: 20 },
+  reasonHeader: { color: '#94a3b8', fontSize: 13, fontWeight: '600', marginBottom: 8 },
   reasonItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 8, borderRadius: 10, marginBottom: 4, backgroundColor: '#334155' },
   reasonItemActive: { backgroundColor: 'rgba(245,166,35,0.15)', borderWidth: 1, borderColor: 'rgba(245,166,35,0.4)' },
   reasonLabel: { color: '#e2e8f0', fontSize: 15 },

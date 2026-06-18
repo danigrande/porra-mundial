@@ -14,10 +14,117 @@ import { getAnchors, getSourceLanguage } from './anchors.js';
 import { transcreateWithQualityGate } from './transcreationService.js';
 
 import { Group } from './models/Group.js';
+import { Correction } from './models/Correction.js';
+import Groq from 'groq-sdk';
 
 // Cache organizada por GroupName
 const caches = {};
 const CACHE_TTL = 30 * 1000; // 30 segundos — datos casi en tiempo real
+
+// Memoria de últimas respuestas del bot por {userId, groupName} para detección de correcciones
+const lastBotResponse = new Map();
+const LAST_BOT_TTL = 5 * 60 * 1000; // 5 minutos
+
+function getLastBotKey(userId, groupName) {
+  return `${userId}::${groupName}`;
+}
+
+export function storeLastBotResponse(userId, groupName, responseText, meta) {
+  const key = getLastBotKey(userId, groupName);
+  lastBotResponse.set(key, { response: responseText, meta, timestamp: Date.now() });
+}
+
+function getLastBotResponse(userId, groupName) {
+  const key = getLastBotKey(userId, groupName);
+  const entry = lastBotResponse.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > LAST_BOT_TTL) {
+    lastBotResponse.delete(key);
+    return null;
+  }
+  return entry;
+}
+
+// Pre-filter rápido: ¿el mensaje del usuario referencia la respuesta del bot?
+function hasCorrectionSignal(userText, botResponse) {
+  const lower = userText.toLowerCase();
+  // Palabras clave de corrección en español
+  const correctionMarkers = ['no es así', 'en realidad', 'deberías', 'no es correcto', 'te equivocas',
+    'quiero decir', 'me refiero a', 'corrige', 'no eso', 'eso no', 'no me refiero',
+    'mal', 'incorrecto', 'no tienes razón', 'no has entendido'];
+  if (correctionMarkers.some(m => lower.includes(m))) return true;
+
+  // Si el mensaje es muy corto (< 5 chars) podría ser "no", "mal" etc.
+  if (lower.length <= 5 && ['no', 'mal', 'nop', 'nope', 'incorrecto'].includes(lower.trim())) return true;
+
+  // Si el mensaje repite parte de la respuesta del bot con negación
+  const words = lower.split(/\s+/).filter(w => w.length > 3);
+  const botLower = botResponse.toLowerCase();
+  const matchingWords = words.filter(w => botLower.includes(w));
+  if (matchingWords.length >= 2 && lower.includes('no')) return true;
+
+  return false;
+}
+
+async function detectAndSaveCorrection(userText, senderUserId, playerName, groupName, lastBotEntry) {
+  // Pre-filter rápido — ahorra llamadas LLM
+  if (!hasCorrectionSignal(userText, lastBotEntry.response)) return;
+
+  // Rate limit: max correcciones por usuario en ventana
+  const windowStart = new Date(Date.now() - (config.corrections?.dedupeWindowMinutes || 30) * 60 * 1000);
+  const recentCount = await Correction.countDocuments({
+    userId: senderUserId,
+    createdAt: { $gte: windowStart }
+  });
+  if (recentCount >= (config.corrections?.maxPerUserWindow || 3)) return;
+
+  // LLM-based classification
+  const groq = new Groq({ apiKey: config.groq.apiKey });
+  const detectionPrompt = `Eres un clasificador. Analiza si el usuario está CORRIGIENDO al bot.
+
+BOT respondió: """${lastBotEntry.response.substring(0, 1000)}"""
+
+USUARIO respondió: """${userText.substring(0, 500)}"""
+
+Pregunta: ¿El usuario está corrigiendo al bot? (responde solo YES o NO)
+Si YES, extrae el TEXTO_CORREGIDO (lo que el usuario sugiere que el bot debería haber dicho).
+Si NO, responde solo NO.
+
+Formato: YES|NO||texto_corregido`;
+
+  let result;
+  try {
+    const completion = await groq.chat.completions.create({
+      model: config.evals.judgeModel || 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: detectionPrompt }],
+      temperature: 0.1,
+      max_tokens: 200
+    });
+    result = completion.choices?.[0]?.message?.content?.trim() || 'NO';
+  } catch (e) {
+    return; // Si falla el LLM, simplemente skip
+  }
+
+  if (!result.startsWith('YES')) return;
+
+  const correctedText = result.includes('||') ? result.split('||').slice(1).join('||').trim() : '';
+
+  await Correction.create({
+    originalResponse: lastBotEntry.response.substring(0, 2000),
+    correctedText: correctedText || userText.substring(0, 500),
+    userId: senderUserId,
+    userName: playerName || senderUserId,
+    groupName,
+    personalityId: lastBotEntry.meta?.personalityId,
+    targetLanguage: lastBotEntry.meta?.targetLanguage || 'es',
+    context: userText.substring(0, 500),
+    originalJudgeScores: lastBotEntry.meta?.judgeScores,
+    detectorConfidence: result.includes('||') ? 0.9 : 0.7,
+    status: 'pending'
+  });
+
+  console.log(`✏️ [Correction] Guardada corrección de ${playerName || senderUserId} en ${groupName}`);
+}
 
 /**
  * Invalida el cache de todos los grupos (para forzar refresco tras cambios de realidad).
@@ -230,6 +337,16 @@ export async function processMessage(text, senderUserId, groupName) {
   console.log(`🤖 [Identify] Resultado: ${playerName || 'No identificado'}`);
   
   const intent = detectIntent(text);
+
+  // Fire-and-forget: detección de corrección conversacional
+  if (config.corrections?.enabled !== false && Math.random() < (config.corrections?.sampleRate || 1.0)) {
+    const lastBotEntry = getLastBotResponse(senderUserId, groupName);
+    if (lastBotEntry) {
+      detectAndSaveCorrection(text, senderUserId, playerName, groupName, lastBotEntry).catch(e => {
+        if (process.env.NODE_ENV !== 'production') console.error('[Correction] Detection error:', e.message);
+      });
+    }
+  }
 
   if (intent === 'help') {
     return `🏆 *Agente Mundial* — Asistente del grupo *${groupName || 'Privado'}*

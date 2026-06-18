@@ -820,6 +820,104 @@ router.post('/evals/hitl/:id/promote', async (req, res) => {
   }
 });
 
+// ==========================================
+// RETENTION — Engagement analytics per group
+// ==========================================
+router.get('/analytics/retention', async (req, res) => {
+  try {
+    const { days = 30, groupName } = req.query;
+    const since = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000);
+
+    const matchFilter = groupName ? { groupName } : {};
+    const logFilter = { createdAt: { $gte: since } };
+    if (groupName) logFilter.groupName = groupName;
+
+    // Active users: distinct users who sent messages or triggered bot
+    const [activeUsersAgg, totalUsers, botCalls, trendAgg, groupComparison] = await Promise.all([
+      // Active users per day for trend
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: since }, playerName: { $exists: true, $ne: '' } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, users: { $addToSet: '$playerName' }, calls: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ]),
+
+      // Total distinct users in period
+      AILog.distinct('playerName', { createdAt: { $gte: since }, playerName: { $exists: true, $ne: '' } }),
+
+      // Total bot calls in period
+      AILog.countDocuments(logFilter),
+
+      // Score trends per day
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: since }, evalScores: { $exists: true }, evalSkipped: { $ne: true } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, avgScore: { $avg: '$evalScores.quality' }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ]),
+
+      // Group comparison (if not filtered to one group)
+      !groupName ? AILog.aggregate([
+        { $match: { createdAt: { $gte: since }, groupName: { $exists: true, $ne: '' } } },
+        { $group: { _id: '$groupName', calls: { $sum: 1 }, players: { $addToSet: '$playerName' } } },
+        { $project: { groupName: '$_id', calls: 1, activeUsers: { $size: '$players' }, _id: 0 } }
+      ]) : Promise.resolve([])
+    ]);
+
+    // Build trend array merging active users, bot calls, and avg scores
+    const userMap = {};
+    activeUsersAgg.forEach(d => { userMap[d._id] = { users: d.users.length, calls: d.calls }; });
+    const scoreMap = {};
+    trendAgg.forEach(d => { scoreMap[d._id] = { avgScore: d.avgScore, evalCount: d.count }; });
+
+    const allDates = [...new Set([...Object.keys(userMap), ...Object.keys(scoreMap)])].sort();
+    const trend = allDates.map(date => ({
+      date,
+      activeUsers: userMap[date]?.users || 0,
+      botCalls: userMap[date]?.calls || 0,
+      avgScore: scoreMap[date]?.avgScore ? Math.round(scoreMap[date].avgScore * 10) / 10 : null,
+      evalCount: scoreMap[date]?.evalCount || 0
+    }));
+
+    // Churn: users seen in first half but not in second half
+    const midPoint = new Date(since.getTime() + (Date.now() - since.getTime()) / 2);
+    const firstHalfUsers = await AILog.distinct('playerName', { createdAt: { $gte: since, $lt: midPoint }, playerName: { $exists: true, $ne: '' } });
+    const secondHalfUsers = await AILog.distinct('playerName', { createdAt: { $gte: midPoint }, playerName: { $exists: true, $ne: '' } });
+    const churnedUsers = firstHalfUsers.filter(u => !secondHalfUsers.includes(u));
+    const retainedUsers = firstHalfUsers.filter(u => secondHalfUsers.includes(u));
+
+    // Global averages for comparison
+    let globalAgg = { avgCalls: 0, avgUsers: 0, avgRetention: 0 };
+    if (!groupName && groupComparison.length > 0) {
+      const totalCalls = groupComparison.reduce((s, g) => s + g.calls, 0);
+      const totalUsers = groupComparison.reduce((s, g) => s + g.activeUsers, 0);
+      const totalGroups = groupComparison.length;
+      globalAgg = {
+        avgCalls: totalGroups > 0 ? Math.round(totalCalls / totalGroups) : 0,
+        avgUsers: totalGroups > 0 ? Math.round(totalUsers / totalGroups) : 0,
+        avgRetention: totalUsers > 0 ? Math.round((retainedUsers.length / totalUsers) * 100) : 0
+      };
+    }
+
+    res.json({
+      period: `${days} días`,
+      totalUsers: totalUsers.length,
+      activeUsers: secondHalfUsers.length,
+      retainedUsers: retainedUsers.length,
+      churnedUsers: churnedUsers.length,
+      retentionRate: totalUsers.length > 0 ? Math.round((retainedUsers.length / totalUsers.length) * 100) : 0,
+      totalBotCalls: botCalls,
+      avgBotCallsPerUser: totalUsers.length > 0 ? Math.round((botCalls / totalUsers.length) * 10) / 10 : 0,
+      trend,
+      groupComparison: groupComparison.map(g => ({
+        ...g,
+        retentionRate: g.activeUsers > 0 ? Math.round((retainedUsers.filter(u => g.players?.includes(u)).length / g.activeUsers) * 100) : 0
+      })),
+      globalAverages: globalAgg
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/usage', async (req, res) => {
   try {
     const now = new Date();

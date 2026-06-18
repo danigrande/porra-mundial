@@ -29,6 +29,7 @@ import adminRoutes from './routes/admin.js';
 import feedbackRoutes from './routes/feedback.js';
 import chatbotFeedbackRoutes from './routes/chatbotFeedback.js';
 import miscRoutes from './routes/misc.js';
+import correctionsRoutes from './routes/corrections.js';
 import devDashboardRoutes from './routes/devDashboard.js';
 import { initChatServer, sendBotMessage } from './chatService.js';
 import { startRssService } from './rssFeedService.js';
@@ -226,6 +227,7 @@ app.use('/api', miscRoutes);
 
 // Rutas de desarrollo (protegidas por x-dev-key)
 app.use('/api/dev', devDashboardRoutes);
+app.use('/api/dev', correctionsRoutes);
 
 // Endpoint para forzar un resumen (útil para testing)
 app.get('/trigger-summary', adminAuth, async (req, res) => {

@@ -33,7 +33,8 @@ async function maybeCreateHumanReview(rating, messageId, feedbackId) {
     });
     if (similar >= 3) return;
 
-    if (rating === 'down') {
+    // Rating 1-2 → user_downvote (como antes)
+    if (rating <= 2) {
       await HumanReview.create({
         source: 'user_downvote',
         aiLogId: aiLog._id,
@@ -46,8 +47,8 @@ async function maybeCreateHumanReview(rating, messageId, feedbackId) {
         judgePassed: aiLog.evalPassed,
         status: 'pending'
       });
-    } else if (rating === 'up' && aiLog.evalPassed === false) {
-      // User upvoted but Judge failed — calibration signal
+    } else if (rating >= 4 && aiLog.evalPassed === false) {
+      // Rating 4-5 pero Judge falló → señal de calibración (falso negativo)
       await HumanReview.create({
         source: 'judge_disagree',
         aiLogId: aiLog._id,
@@ -61,6 +62,7 @@ async function maybeCreateHumanReview(rating, messageId, feedbackId) {
         status: 'pending'
       });
     }
+    // Rating 3 → neutral, sin acción
   } catch (e) {
     console.error('[HumanReview] Error auto-creating review:', e.message);
   }
@@ -73,10 +75,11 @@ router.post('/chatbot-feedback', async (req, res) => {
     if (!messageId || !userId || !userName || !rating) {
       return res.status(400).json(createResponse('error', null, 'Faltan campos obligatorios'));
     }
-    if (!['up', 'down'].includes(rating)) {
-      return res.status(400).json(createResponse('error', null, 'Rating debe ser "up" o "down"'));
+    const ratingNum = Number(rating);
+    if (!Number.isInteger(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+      return res.status(400).json(createResponse('error', null, 'Rating debe ser un número entre 1 y 5'));
     }
-    if (rating === 'down' && reason && !DOWN_REASONS.includes(reason)) {
+    if (ratingNum <= 2 && reason && !DOWN_REASONS.includes(reason)) {
       return res.status(400).json(createResponse('error', null, 'Razón inválida'));
     }
 
@@ -87,12 +90,12 @@ router.post('/chatbot-feedback', async (req, res) => {
 
     const feedback = await ChatbotFeedback.findOneAndUpdate(
       { messageId, userId },
-      { messageId, userId, userName, rating, reason: reason || null },
+      { messageId, userId, userName, rating: ratingNum, reason: reason || null },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     // Auto-create HumanReview for relevant feedback (fire-and-forget)
-    maybeCreateHumanReview(rating, messageId, feedback._id);
+    maybeCreateHumanReview(ratingNum, messageId, feedback._id);
 
     res.json(createResponse('success', {
       _id: feedback._id,
@@ -105,6 +108,50 @@ router.post('/chatbot-feedback', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error en POST /chatbot-feedback:', error);
+    res.status(500).json(createResponse('error', null, error.message));
+  }
+});
+
+// PATCH para cambiar rating (útil si el usuario reconsidera)
+router.patch('/chatbot-feedback/:messageId', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { userId, rating, reason } = req.body;
+
+    if (!messageId || !userId || !rating) {
+      return res.status(400).json(createResponse('error', null, 'messageId, userId y rating requeridos'));
+    }
+    const ratingNum = Number(rating);
+    if (!Number.isInteger(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+      return res.status(400).json(createResponse('error', null, 'Rating debe ser un número entre 1 y 5'));
+    }
+
+    const existing = await ChatbotFeedback.findOne({ messageId, userId });
+    if (!existing) {
+      return res.status(404).json(createResponse('error', null, 'Feedback no encontrado'));
+    }
+
+    const oldRating = existing.rating;
+    existing.rating = ratingNum;
+    if (reason !== undefined) existing.reason = reason;
+    await existing.save();
+
+    // Si el rating cambió significativamente (cruzó threshold 2→3 o 4→3), re-evaluar HITL
+    if ((oldRating <= 2 && ratingNum >= 3) || (oldRating >= 4 && ratingNum <= 3)) {
+      // Podríamos remover HITL existente si el user rectificó, pero por ahora solo log
+      console.log(`[Feedback] User ${userId} changed rating from ${oldRating} to ${ratingNum} for message ${messageId}`);
+    }
+
+    res.json(createResponse('success', {
+      _id: existing._id,
+      messageId: existing.messageId,
+      userId: existing.userId,
+      rating: existing.rating,
+      reason: existing.reason,
+      createdAt: existing.createdAt,
+    }, 'Rating actualizado'));
+  } catch (error) {
+    console.error('❌ Error en PATCH /chatbot-feedback/:messageId:', error);
     res.status(500).json(createResponse('error', null, error.message));
   }
 });
