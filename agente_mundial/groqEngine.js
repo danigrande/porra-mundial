@@ -307,6 +307,53 @@ ${instruction}${judgesFeedbackBlock}`;
 
   const startTime = Date.now();
 
+  // Groq primary (mejor modelo, más fiable)
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      model: config.groq.model,
+      temperature: config.groq.temperature,
+      max_tokens: config.groq.maxTokens,
+    });
+
+    const latencyMs = Date.now() - startTime;
+    const responseText = completion.choices[0]?.message?.content || '¡Jugón! Algo ha fallado en mi cabeza. Inténtalo de nuevo. 🤯';
+    const usage = completion.usage || {};
+
+    addRecentOutput(personalityId, responseText);
+
+    const savedLog = await saveAILog({
+      type: 'response',
+      playerName,
+      groupName: groupName || 'Privado',
+      ragQuery: context.chatContext ? `Contexto de ${playerName}` : '',
+      ragResultCount: context.chatContext ? context.chatContext.split('\n').filter(l => l.trim()).length : 0,
+      ragContext: context.chatContext || '',
+      systemPrompt: systemPrompt,
+      userPrompt: userMessage,
+      groqResponse: responseText,
+      model: config.groq.model,
+      temperature: config.groq.temperature,
+      maxTokens: config.groq.maxTokens,
+      tokensUsed: usage.total_tokens || 0,
+      promptTokens: usage.prompt_tokens || 0,
+      completionTokens: usage.completion_tokens || 0,
+      latencyMs,
+      source: meta.source || 'chat',
+      success: true,
+      ...(meta._evalData || {})
+    });
+    if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
+
+    return responseText;
+  } catch (groqError) {
+    console.error('[Groq] Groq falló, intentando HF:', groqError.message);
+  }
+
+  // HF fallback (Qwen2.5-7B)
   if (hf) {
     try {
       const stream = hf.chatCompletionStream({
@@ -345,80 +392,36 @@ ${instruction}${judgesFeedbackBlock}`;
         return hfResponse;
       }
     } catch (hfError) {
-      console.error('[Groq] HF falló, intentando Groq:', hfError.message);
+      console.error('[Groq] HF también falló:', hfError.message);
     }
   }
 
-  try {
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      model: config.groq.model,
-      temperature: config.groq.temperature,
-      max_tokens: config.groq.maxTokens,
-    });
+  // Ambos proveedores fallaron
+  const latencyMs = Date.now() - startTime;
+  const savedLog = await saveAILog({
+    type: 'response',
+    playerName,
+    groupName: groupName || 'Privado',
+    ragContext: context.chatContext || '',
+    systemPrompt: systemPrompt,
+    userPrompt: userMessage,
+    groqResponse: '',
+    model: config.groq.model,
+    temperature: config.groq.temperature,
+    maxTokens: config.groq.maxTokens,
+    latencyMs,
+    source: meta.source || 'chat',
+    success: false,
+    errorMessage: groqError?.message || 'Both providers failed'
+  });
+  if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
 
-    const latencyMs = Date.now() - startTime;
-    const responseText = completion.choices[0]?.message?.content || '¡Jugón! Algo ha fallado en mi cabeza. Inténtalo de nuevo. 🤯';
-    const usage = completion.usage || {};
-
-    addRecentOutput(personalityId, responseText);
-
-    const savedLog = await saveAILog({
-      type: 'response',
-      playerName,
-      groupName: groupName || 'Privado',
-      ragQuery: context.chatContext ? `Contexto de ${playerName}` : '',
-      ragResultCount: context.chatContext ? context.chatContext.split('\n').filter(l => l.trim()).length : 0,
-      ragContext: context.chatContext || '',
-      systemPrompt: systemPrompt,
-      userPrompt: userMessage,
-      groqResponse: responseText,
-      model: config.groq.model,
-      temperature: config.groq.temperature,
-      maxTokens: config.groq.maxTokens,
-      tokensUsed: usage.total_tokens || 0,
-      promptTokens: usage.prompt_tokens || 0,
-      completionTokens: usage.completion_tokens || 0,
-      latencyMs,
-      source: meta.source || 'chat',
-      success: true,
-      // Eval fields — se rellenan desde generateWithQualityGate si se usa ese path
-      ...(meta._evalData || {})
-    });
-    if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
-
-    return responseText;
-  } catch (error) {
-    const latencyMs = Date.now() - startTime;
-
-    const savedLog = await saveAILog({
-      type: 'response',
-      playerName,
-      groupName: groupName || 'Privado',
-      ragContext: context.chatContext || '',
-      systemPrompt: systemPrompt,
-      userPrompt: userMessage,
-      groqResponse: '',
-      model: config.groq.model,
-      temperature: config.groq.temperature,
-      maxTokens: config.groq.maxTokens,
-      latencyMs,
-      source: meta.source || 'chat',
-      success: false,
-      errorMessage: error.message
-    });
-    if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
-
-    if (error.status === 429) {
-      return '⚡ ¡Ratatatatata! He hablado demasiado rápido y me han mandado al banquillo. Espera un minutillo y vuelve a preguntar, ¡jugón! ⏳';
-    }
-
-    console.error('[Groq] Ambos fallaron (HF + Groq):', error.message);
-    return '❌ ¡Uy! El Agente Mundial ha tenido un tropiezo técnico. Inténtalo en un momento.';
+  if (groqError?.status === 429) {
+    return '⚡ ¡Ratatatatata! He hablado demasiado rápido y me han mandado al banquillo. Espera un minutillo y vuelve a preguntar, ¡jugón! ⏳';
   }
+
+  console.error('[Groq] Ambos proveedores fallaron:', groqError?.message);
+  return '❌ ¡Uy! El Agente Mundial ha tenido un tropiezo técnico. Inténtalo en un momento.';
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -547,7 +550,7 @@ export async function generateDailySummary(leaderboard, profiles, groupName) {
     console.warn('Could not retrieve group admin personality:', e.message);
   }
 
-  const systemPrompt = getSystemPrompt(personalityId);
+  const systemPrompt = buildEnhancedSystemPrompt(personalityId, 'es');
   const personalityName = getPersonalityName(personalityId);
   const lang = getPersonalityLang(personalityId);
 
@@ -584,6 +587,43 @@ The summary must:
 
   const startTime = Date.now();
 
+  // Groq primary
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      model: config.groq.model,
+      temperature: config.groq.temperature,
+      max_tokens: 800,
+    });
+
+    const latencyMs = Date.now() - startTime;
+    const responseText = completion.choices[0]?.message?.content || '¡Jugón! No pude generar el resumen. ¡La tecnología también falla!';
+    const usage = completion.usage || {};
+
+    saveAILog({
+      type: 'summary',
+      playerName: 'Global',
+      groupName: groupName || 'Unknown',
+      systemPrompt: systemPrompt,
+      userPrompt: userMessage,
+      groqResponse: responseText,
+      model: config.groq.model,
+      temperature: config.groq.temperature,
+      maxTokens: 800,
+      tokensUsed: usage.total_tokens || 0,
+      latencyMs,
+      source: 'cron',
+      success: true
+    });
+    return responseText;
+  } catch (groqError) {
+    console.error('[Groq] Groq falló en resumen, intentando HF:', groqError.message);
+  }
+
+  // HF fallback
   if (hf) {
     try {
       const stream = hf.chatCompletionStream({
@@ -619,64 +659,11 @@ The summary must:
         return hfResponse;
       }
     } catch (hfError) {
-      console.error('[Groq] HF falló en resumen, intentando Groq:', hfError.message);
+      console.error('[Groq] HF también falló en resumen:', hfError.message);
     }
   }
 
-  try {
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      model: config.groq.model,
-      temperature: config.groq.temperature,
-      max_tokens: 800,
-    });
-
-    const latencyMs = Date.now() - startTime;
-    const responseText = completion.choices[0]?.message?.content || '¡Jugón! No pude generar el resumen. ¡La tecnología también falla!';
-    const usage = completion.usage || {};
-
-    saveAILog({
-      type: 'summary',
-      playerName: 'Global',
-      groupName: groupName || 'Unknown',
-      systemPrompt: systemPrompt,
-      userPrompt: userMessage,
-      groqResponse: responseText,
-      model: config.groq.model,
-      temperature: config.groq.temperature,
-      maxTokens: 800,
-      tokensUsed: usage.total_tokens || 0,
-      promptTokens: usage.prompt_tokens || 0,
-      completionTokens: usage.completion_tokens || 0,
-      latencyMs,
-      source: 'cron',
-      success: true
-    });
-
-    return responseText;
-  } catch (error) {
-    const latencyMs = Date.now() - startTime;
-    console.error('[Groq] Ambos fallaron en resumen:', error.message);
-
-    saveAILog({
-      type: 'summary',
-      playerName: 'Global',
-      groupName: groupName || 'Unknown',
-      systemPrompt: systemPrompt,
-      userPrompt: userMessage,
-      groqResponse: '',
-      model: config.groq.model,
-      latencyMs,
-      source: 'cron',
-      success: false,
-      errorMessage: error.message
-    });
-
-    return '❌ Error generando el resumen de la jornada. El Agente Mundial necesita un descanso.';
-  }
+  return '¡Jugón! No pude generar el resumen. ¡La tecnología también falla!';
 }
 
 /**
@@ -695,7 +682,7 @@ export async function generatePersonalitySummary(playerName, groupName, context)
     console.warn('Could not retrieve player personality:', e.message);
   }
 
-  const systemPrompt = getSystemPrompt(personalityId);
+  const systemPrompt = buildEnhancedSystemPrompt(personalityId, 'es');
   const personalityName = getPersonalityName(personalityId);
   const lang = getPersonalityLang(personalityId);
 
@@ -739,46 +726,7 @@ The summary must be a funny and motivational description in the style of ${perso
 
   const startTime = Date.now();
 
-  if (hf) {
-    try {
-      const stream = hf.chatCompletionStream({
-        model: 'Qwen/Qwen2.5-7B-Instruct',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage },
-        ],
-        temperature: 0.8,
-        max_tokens: 400,
-      });
-      let hfResponse = '';
-      for await (const chunk of stream) {
-        if (chunk.choices?.[0]?.delta?.content) {
-          hfResponse += chunk.choices[0].delta.content;
-        }
-      }
-      if (hfResponse) {
-        saveAILog({
-          type: 'personality',
-          playerName,
-          groupName: groupName || 'Unknown',
-          ragContext: chatContext || '',
-          systemPrompt: systemPrompt,
-          userPrompt: userMessage,
-          groqResponse: hfResponse,
-          model: 'Qwen/Qwen2.5-7B-Instruct (HF)',
-          temperature: 0.8,
-          maxTokens: 400,
-          latencyMs: Date.now() - startTime,
-          source: 'web',
-          success: true
-        });
-        return hfResponse;
-      }
-    } catch (hfError) {
-      console.error('[Groq] HF falló en personalidad, intentando Groq:', hfError.message);
-    }
-  }
-
+  // Groq primary
   try {
     const completion = await groq.chat.completions.create({
       messages: [
@@ -816,25 +764,67 @@ The summary must be a funny and motivational description in the style of ${perso
     });
 
     return responseText;
-  } catch (error) {
-    const latencyMs = Date.now() - startTime;
-    console.error('[Groq] Ambos fallaron en personalidad:', error);
-
-    saveAILog({
-      type: 'personality',
-      playerName,
-      groupName: groupName || 'Unknown',
-      ragContext: chatContext || '',
-      systemPrompt: systemPrompt,
-      userPrompt: userMessage,
-      groqResponse: '',
-      model: config.groq.model,
-      latencyMs,
-      source: 'web',
-      success: false,
-      errorMessage: error.message
-    });
-
-    return '¡Uy! No puedo comentar tu jugada ahora mismo.';
+  } catch (groqError) {
+    console.error('[Groq] Groq falló en personalidad, intentando HF:', groqError.message);
   }
+
+  // HF fallback
+  if (hf) {
+    try {
+      const stream = hf.chatCompletionStream({
+        model: 'Qwen/Qwen2.5-7B-Instruct',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        temperature: 0.8,
+        max_tokens: 400,
+      });
+      let hfResponse = '';
+      for await (const chunk of stream) {
+        if (chunk.choices?.[0]?.delta?.content) {
+          hfResponse += chunk.choices[0].delta.content;
+        }
+      }
+      if (hfResponse) {
+        saveAILog({
+          type: 'personality',
+          playerName,
+          groupName: groupName || 'Unknown',
+          ragContext: chatContext || '',
+          systemPrompt: systemPrompt,
+          userPrompt: userMessage,
+          groqResponse: hfResponse,
+          model: 'Qwen/Qwen2.5-7B-Instruct (HF)',
+          temperature: 0.8,
+          maxTokens: 400,
+          latencyMs: Date.now() - startTime,
+          source: 'web',
+          success: true
+        });
+        return hfResponse;
+      }
+    } catch (hfError) {
+      console.error('[Groq] HF también falló en personalidad:', hfError.message);
+    }
+  }
+
+  // Ambos fallaron
+  const latencyMs = Date.now() - startTime;
+  saveAILog({
+    type: 'personality',
+    playerName,
+    groupName: groupName || 'Unknown',
+    ragContext: chatContext || '',
+    systemPrompt: systemPrompt,
+    userPrompt: userMessage,
+    groqResponse: '',
+    model: config.groq.model,
+    latencyMs,
+    source: 'web',
+    success: false,
+    errorMessage: groqError?.message || 'Both providers failed'
+  });
+
+  return '¡Uy! No puedo comentar tu jugada ahora mismo.';
 }
