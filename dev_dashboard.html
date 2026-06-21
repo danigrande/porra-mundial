@@ -25,28 +25,52 @@
 <div id="dashboard">
   <header>
     <h1>🛠️ Agente Mundial <span>// DevOps</span></h1>
-    <div class="header-status" id="header-status"></div>
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <div class="header-status" id="header-status"></div>
+      <button id="hamburger-btn" onclick="toggleMenu()" aria-label="Menu">☰</button>
+    </div>
   </header>
 
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('health')">📡 Health</div>
-      <div class="tab" onclick="switchTab('logs')">📋 AI Logs</div>
-      <div class="tab" onclick="switchTab('evals')">⚖️ Evals</div>
-      <div class="tab" onclick="switchTab('benchmarks')">📊 Benchmarks</div>
-      <div class="tab" onclick="switchTab('reviews')">👁️ Human Review</div>
-      <div class="tab" onclick="switchTab('rag')">🧠 RAG Explorer</div>
-      <div class="tab" onclick="switchTab('rss')">📰 RSS Feeds</div>
-      <div class="tab" onclick="switchTab('websearch')">🔍 Web Search</div>
-      <div class="tab" onclick="switchTab('groups')">👥 Manage Groups</div>
-      <div class="tab" onclick="switchTab('users')">👤 Manage Users</div>
-      <div class="tab" onclick="switchTab('feedback')">💬 Feedback</div>
-      <div class="tab" onclick="switchTab('prds')">📄 PRDs</div>
-      <div class="tab" onclick="switchTab('feedback-stats')">⭐ Feedback Stats</div>
-      <div class="tab" onclick="switchTab('corrections')">✏️ Corrections</div>
-      <div class="tab" onclick="switchTab('retention')">📈 Retention</div>
-      <div class="tab" onclick="switchTab('usage')">📊 Usage</div>
-      <div class="tab" onclick="switchTab('help-evals')">❓ Help-Evals</div>
+  <div id="menu-overlay" onclick="closeMenu()"></div>
+  <nav id="hamburger-menu">
+    <div class="menu-group">
+      <div class="menu-group-header" onclick="toggleGroup(this)">📡 Health</div>
+      <div class="menu-items">
+        <div class="menu-item active" data-tab="health" onclick="switchTab('health')">Health</div>
+        <div class="menu-item" data-tab="rss" onclick="switchTab('rss')">RSS Feeds</div>
+        <div class="menu-item" data-tab="websearch" onclick="switchTab('websearch')">Web Search</div>
+        <div class="menu-item" data-tab="usage" onclick="switchTab('usage')">Usage</div>
+      </div>
     </div>
+    <div class="menu-group">
+      <div class="menu-group-header" onclick="toggleGroup(this)">👤 Manage</div>
+      <div class="menu-items">
+        <div class="menu-item" data-tab="users" onclick="switchTab('users')">Manage Users</div>
+        <div class="menu-item" data-tab="groups" onclick="switchTab('groups')">Manage Groups</div>
+      </div>
+    </div>
+    <div class="menu-group">
+      <div class="menu-group-header" onclick="toggleGroup(this)">💬 Feedback</div>
+      <div class="menu-items">
+        <div class="menu-item" data-tab="feedback" onclick="switchTab('feedback')">Feedback</div>
+        <div class="menu-item" data-tab="prds" onclick="switchTab('prds')">PRDs</div>
+      </div>
+    </div>
+    <div class="menu-group">
+      <div class="menu-group-header" onclick="toggleGroup(this)">🤖 AI</div>
+      <div class="menu-items">
+        <div class="menu-item" data-tab="logs" onclick="switchTab('logs')">AI Logs</div>
+        <div class="menu-item" data-tab="evals" onclick="switchTab('evals')">Evals</div>
+        <div class="menu-item" data-tab="benchmarks" onclick="switchTab('benchmarks')">Benchmarks</div>
+        <div class="menu-item" data-tab="reviews" onclick="switchTab('reviews')">Human Review</div>
+        <div class="menu-item" data-tab="rag" onclick="switchTab('rag')">RAG Explorer</div>
+        <div class="menu-item" data-tab="feedback-stats" onclick="switchTab('feedback-stats')">Feedback Stats</div>
+        <div class="menu-item" data-tab="corrections" onclick="switchTab('corrections')">Corrections</div>
+        <div class="menu-item" data-tab="retention" onclick="switchTab('retention')">Retention</div>
+        <div class="menu-item" data-tab="help-evals" onclick="switchTab('help-evals')">Help-Evals</div>
+      </div>
+    </div>
+  </nav>
 
   <div class="content">
     <!-- HEALTH PANEL -->

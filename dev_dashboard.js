@@ -71,14 +71,38 @@ async function devFetchPut(endpoint, body) {
 // TABS
 // ==========================================
 
+// ==========================================
+// MENU
+// ==========================================
+
+function toggleMenu() {
+  document.getElementById('hamburger-menu').classList.toggle('show');
+  document.getElementById('menu-overlay').classList.toggle('show');
+}
+function closeMenu() {
+  document.getElementById('hamburger-menu').classList.remove('show');
+  document.getElementById('menu-overlay').classList.remove('show');
+}
+function toggleGroup(el) {
+  el.classList.toggle('collapsed');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMenu();
+});
+
+// ==========================================
+// TABS
+// ==========================================
+
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
 
-  const tabs = ['health', 'logs', 'evals', 'benchmarks', 'reviews', 'rag', 'rss', 'websearch', 'groups', 'users', 'feedback', 'prds', 'feedback-stats', 'corrections', 'retention', 'usage', 'help-evals'];
-  const idx = tabs.indexOf(name);
-  document.querySelectorAll('.tab')[idx]?.classList.add('active');
+  document.querySelector(`.menu-item[data-tab="${name}"]`)?.classList.add('active');
   document.getElementById(`panel-${name}`)?.classList.add('active');
+
+  closeMenu();
 
   // Lazy load
   if (name === 'logs') loadLogs();
