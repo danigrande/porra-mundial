@@ -17,9 +17,12 @@ let activeTab = 'health';
 
 const LANG = {
   es: {
-    'auth.title': '🛠️ DevOps Panel',
-    'auth.subtitle': 'Agente Mundial — Developer Dashboard',
-    'auth.key_placeholder': 'Developer Key...',
+    'page.title': '🛠️ Agente Mundial — DevOps Panel',
+    'header.title': '🛠️ Agente Mundial',
+
+    'auth.title': '🛠️ Panel de DevOps',
+    'auth.subtitle': 'Agente Mundial — Panel de Desarrollador',
+    'auth.key_placeholder': 'Clave de Desarrollador...',
     'auth.login': 'Acceder',
     'auth.error': 'Clave incorrecta',
     'auth.unauthorized': 'Clave incorrecta o servidor no disponible',
@@ -235,6 +238,18 @@ const LANG = {
     'diag.llm_analysis_error': 'en análisis LLM',
 
     'modal.detail_title': 'Detalle de Interacción',
+    'modal.tokens_total': 'Tokens Total',
+    'modal.prompt_tokens': 'Tokens de Prompt',
+    'modal.completion_tokens': 'Tokens de Completion',
+    'modal.latency': 'Latencia',
+    'modal.model': 'Modelo',
+    'modal.rag_query': '🔍 RAG Query',
+    'modal.rag_context': '🧠 RAG Context ({n} mensajes recuperados)',
+    'modal.rag_context_empty': 'Sin contexto recuperado de la base de datos',
+    'modal.system_prompt': '🟣 System Prompt',
+    'modal.user_prompt': '💬 User Prompt (lo que se envió a Groq)',
+    'modal.groq_response': '🤖 Respuesta de Groq',
+    'modal.no_response': 'Sin respuesta (error)',
 
     'diag.title': '🔬 Diagnostics',
     'diag.analyze': '🔍 Analizar',
@@ -310,8 +325,44 @@ const LANG = {
     'help.hitl_high': 'High',
     'help.hitl_normal': 'Normal',
     'help.hitl_footer': 'In the <strong>👁️ Human Review</strong> tab you can see pending reviews, submit verdicts (pass/fail with confidence level), and <strong>promote</strong> good responses to the golden dataset.',
+    'help.eval_axis': 'Axis',
+    'help.eval_range': 'Range',
+    'help.eval_threshold': 'Threshold',
+    'help.eval_measures': 'What it measures',
+    'help.eval_lang_desc': 'Correct language? No mixed scripts? Grammar & register appropriate?',
+    'help.eval_quality_desc': 'Humor mechanism used? Fits personality tone? Avoids being robotic/cringe?',
+    'help.eval_json_label': '// Judge JSON output format',
+    'help.rule_script': 'Detected Script',
+    'help.rule_range': 'Unicode Range',
+    'help.rule_language': 'Language',
+    'help.rule_script_hangul': 'Hangul',
+    'help.rule_lang_hangul': 'Korean',
+    'help.rule_script_thai': 'Thai',
+    'help.rule_lang_thai': 'Thai',
+    'help.rule_script_arabic': 'Arabic',
+    'help.rule_lang_arabic': 'Arabic, Persian, Urdu',
+    'help.rule_script_cjk': 'CJK',
+    'help.rule_lang_cjk': 'Chinese, Japanese',
+    'help.rule_script_cyrillic': 'Cyrillic',
+    'help.rule_lang_cyrillic': 'Russian, Bulgarian, etc.',
+    'help.rule_script_devanagari': 'Devanagari',
+    'help.rule_lang_devanagari': 'Hindi, Sanskrit, etc.',
+    'help.hitl_force_src': 'force_approved',
+    'help.hitl_downvote_src': 'user_downvote',
+    'help.hitl_disagree_src': 'judge_disagree',
+    'help.ds_num': '#',
+    'help.ds_id': 'ID',
+    'help.ds_personality': 'Personality',
+    'help.ds_lang': 'Lang',
+    'help.ds_input': 'Input',
+    'help.ds_mechanism': 'Expected Mechanism',
+    'help.ds_edge': 'Edge?',
+    'help.ds_transcreation': 'Transcreation?',
   },
   en: {
+    'page.title': '🛠️ World Agent — DevOps Panel',
+    'header.title': '🛠️ World Agent',
+
     'auth.title': '🛠️ DevOps Panel',
     'auth.subtitle': 'Agente Mundial — Developer Dashboard',
     'auth.key_placeholder': 'Developer Key...',
@@ -530,6 +581,18 @@ const LANG = {
     'diag.llm_analysis_error': 'in LLM analysis',
 
     'modal.detail_title': 'Interaction Detail',
+    'modal.tokens_total': 'Total Tokens',
+    'modal.prompt_tokens': 'Prompt Tokens',
+    'modal.completion_tokens': 'Completion Tokens',
+    'modal.latency': 'Latency',
+    'modal.model': 'Model',
+    'modal.rag_query': '🔍 RAG Query',
+    'modal.rag_context': '🧠 RAG Context ({n} messages retrieved)',
+    'modal.rag_context_empty': 'No context retrieved from database',
+    'modal.system_prompt': '🟣 System Prompt',
+    'modal.user_prompt': '💬 User Prompt (sent to Groq)',
+    'modal.groq_response': '🤖 Groq Response',
+    'modal.no_response': 'No response (error)',
 
     'diag.title': '🔬 Diagnostics',
     'diag.analyze': '🔍 Analyze',
@@ -605,6 +668,39 @@ const LANG = {
     'help.hitl_high': 'High',
     'help.hitl_normal': 'Normal',
     'help.hitl_footer': 'In the <strong>👁️ Human Review</strong> tab you can see pending reviews, submit verdicts (pass/fail with confidence level), and <strong>promote</strong> good responses to the golden dataset.',
+    'help.eval_axis': 'Axis',
+    'help.eval_range': 'Range',
+    'help.eval_threshold': 'Threshold',
+    'help.eval_measures': 'What it measures',
+    'help.eval_lang_desc': 'Correct language? No mixed scripts? Grammar & register appropriate?',
+    'help.eval_quality_desc': 'Humor mechanism used? Fits personality tone? Avoids being robotic/cringe?',
+    'help.eval_json_label': '// Judge JSON output format',
+    'help.rule_script': 'Detected Script',
+    'help.rule_range': 'Unicode Range',
+    'help.rule_language': 'Language',
+    'help.rule_script_hangul': 'Hangul',
+    'help.rule_lang_hangul': 'Korean',
+    'help.rule_script_thai': 'Thai',
+    'help.rule_lang_thai': 'Thai',
+    'help.rule_script_arabic': 'Arabic',
+    'help.rule_lang_arabic': 'Arabic, Persian, Urdu',
+    'help.rule_script_cjk': 'CJK',
+    'help.rule_lang_cjk': 'Chinese, Japanese',
+    'help.rule_script_cyrillic': 'Cyrillic',
+    'help.rule_lang_cyrillic': 'Russian, Bulgarian, etc.',
+    'help.rule_script_devanagari': 'Devanagari',
+    'help.rule_lang_devanagari': 'Hindi, Sanskrit, etc.',
+    'help.hitl_force_src': 'force_approved',
+    'help.hitl_downvote_src': 'user_downvote',
+    'help.hitl_disagree_src': 'judge_disagree',
+    'help.ds_num': '#',
+    'help.ds_id': 'ID',
+    'help.ds_personality': 'Personality',
+    'help.ds_lang': 'Lang',
+    'help.ds_input': 'Input',
+    'help.ds_mechanism': 'Expected Mechanism',
+    'help.ds_edge': 'Edge?',
+    'help.ds_transcreation': 'Transcreation?',
   }
 };
 
@@ -904,15 +1000,16 @@ async function openLogDetail(id) {
 
   try {
     const log = await devFetch(`/logs/${id}`);
-    const time = new Date(log.createdAt).toLocaleString('es-ES');
+    const locale = currentLang === 'es' ? 'es-ES' : 'en-US';
+    const time = new Date(log.createdAt).toLocaleString(locale);
 
     body.innerHTML = `
       <div class="metrics-row" style="margin-bottom:1.5rem">
-        <div class="metric-chip"><div class="val">${log.tokensUsed || 0}</div><div class="lbl">Tokens Total</div></div>
-        <div class="metric-chip"><div class="val">${log.promptTokens || 0}</div><div class="lbl">Prompt Tokens</div></div>
-        <div class="metric-chip"><div class="val">${log.completionTokens || 0}</div><div class="lbl">Completion Tokens</div></div>
-        <div class="metric-chip"><div class="val" style="color:${log.latencyMs > 3000 ? 'var(--accent-red)' : 'var(--accent-green)'}">${log.latencyMs}ms</div><div class="lbl">Latencia</div></div>
-        <div class="metric-chip"><div class="val" style="font-size:0.8rem">${log.model}</div><div class="lbl">Modelo</div></div>
+        <div class="metric-chip"><div class="val">${log.tokensUsed || 0}</div><div class="lbl">${t('modal.tokens_total')}</div></div>
+        <div class="metric-chip"><div class="val">${log.promptTokens || 0}</div><div class="lbl">${t('modal.prompt_tokens')}</div></div>
+        <div class="metric-chip"><div class="val">${log.completionTokens || 0}</div><div class="lbl">${t('modal.completion_tokens')}</div></div>
+        <div class="metric-chip"><div class="val" style="color:${log.latencyMs > 3000 ? 'var(--accent-red)' : 'var(--accent-green)'}">${log.latencyMs}ms</div><div class="lbl">${t('modal.latency')}</div></div>
+        <div class="metric-chip"><div class="val" style="font-size:0.8rem">${log.model}</div><div class="lbl">${t('modal.model')}</div></div>
       </div>
 
       <div style="margin-bottom:1rem;font-size:0.8rem;color:var(--text-muted)">
@@ -922,31 +1019,31 @@ async function openLogDetail(id) {
 
       ${log.ragQuery ? `
         <div class="prompt-block">
-          <div class="prompt-label">🔍 RAG Query</div>
+          <div class="prompt-label">${t('modal.rag_query')}</div>
           <div class="prompt-content" style="border-left: 3px solid var(--accent-cyan)">${escapeHtml(log.ragQuery)}</div>
         </div>
       ` : ''}
 
       <div class="prompt-block">
-        <div class="prompt-label">🧠 RAG Context (${log.ragResultCount || 0} mensajes recuperados)</div>
+        <div class="prompt-label">${t('modal.rag_context').replace('{n}', log.ragResultCount || 0)}</div>
         <div class="prompt-content rag">
-          ${log.ragContext ? escapeHtml(log.ragContext) : '<span style="color:var(--text-muted);font-style:italic">Sin contexto recuperado de la base de datos</span>'}
+          ${log.ragContext ? escapeHtml(log.ragContext) : '<span style="color:var(--text-muted);font-style:italic">' + t('modal.rag_context_empty') + '</span>'}
         </div>
       </div>
 
       <div class="prompt-block">
-        <div class="prompt-label">🟣 System Prompt</div>
+        <div class="prompt-label">${t('modal.system_prompt')}</div>
         <div class="prompt-content system">${escapeHtml(log.systemPrompt)}</div>
       </div>
 
       <div class="prompt-block">
-        <div class="prompt-label">💬 User Prompt (lo que se envió a Groq)</div>
+        <div class="prompt-label">${t('modal.user_prompt')}</div>
         <div class="prompt-content user">${escapeHtml(log.userPrompt)}</div>
       </div>
 
       <div class="prompt-block">
-        <div class="prompt-label">🤖 Respuesta de Groq</div>
-        <div class="prompt-content ai">${escapeHtml(log.groqResponse || 'Sin respuesta (error)')}</div>
+        <div class="prompt-label">${t('modal.groq_response')}</div>
+        <div class="prompt-content ai">${escapeHtml(log.groqResponse || t('modal.no_response'))}</div>
       </div>
     `;
 
@@ -1135,7 +1232,8 @@ async function openEvalDetail(id) {
 
   try {
     const log = await devFetch(`/logs/${id}`);
-    const time = new Date(log.createdAt).toLocaleString('es-ES');
+    const locale = currentLang === 'es' ? 'es-ES' : 'en-US';
+    const time = new Date(log.createdAt).toLocaleString(locale);
 
     const langScore = log.evalScores?.language_purity;
     const qualScore = log.evalScores?.quality;
@@ -1693,7 +1791,7 @@ async function loadRssStats() {
       <div class="card">
         <div class="card-label">Poll Count</div>
         <div class="card-value cyan">${data.pollCount}</div>
-        <div class="card-sub">Último: ${data.lastPollTime ? new Date(data.lastPollTime).toLocaleString('es-ES') : 'nunca'}</div>
+        <div class="card-sub">${data.lastPollTime ? new Date(data.lastPollTime).toLocaleString(currentLang === 'es' ? 'es-ES' : 'en-US') : '—'}</div>
       </div>
       <div class="card">
         <div class="card-label">Artículos Parseados</div>
@@ -1772,7 +1870,7 @@ async function loadWebSearchStats() {
       <div class="card">
         <div class="card-label">Última Consulta</div>
         <div class="card-value amber" style="font-size:0.8rem">${data.lastQuery ? escapeHtml(data.lastQuery.substring(0, 60)) : '—'}</div>
-        <div class="card-sub">${data.lastQueryTime ? new Date(data.lastQueryTime).toLocaleString('es-ES') : 'nunca'}</div>
+        <div class="card-sub">${data.lastQueryTime ? new Date(data.lastQueryTime).toLocaleString(currentLang === 'es' ? 'es-ES' : 'en-US') : '—'}</div>
       </div>
       <div class="card">
         <div class="card-label">Errores</div>
@@ -1880,7 +1978,8 @@ async function openFeedbackDetail(id) {
     const fb = await devFetch(`/feedback/${id}`);
     if (!fb || !fb._id) { body.innerHTML = '<div class="loading">Feedback no encontrado</div>'; return; }
 
-    const time = new Date(fb.createdAt).toLocaleString('es-ES');
+    const locale = currentLang === 'es' ? 'es-ES' : 'en-US';
+    const time = new Date(fb.createdAt).toLocaleString(locale);
 
     body.innerHTML = `
       <div style="margin-bottom:1rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap">
@@ -1899,7 +1998,7 @@ async function openFeedbackDetail(id) {
       </div>
       ${fb.analyzedAt ? `
         <div style="margin-bottom:1rem">
-          <div class="prompt-label">Análisis (LangFlow) <small style="color:var(--text-muted);font-weight:normal">· ${new Date(fb.analyzedAt).toLocaleString('es-ES')}</small></div>
+          <div class="prompt-label">Análisis (LangFlow) <small style="color:var(--text-muted);font-weight:normal">· ${new Date(fb.analyzedAt).toLocaleString(locale)}</small></div>
           <div class="prompt-content system" style="max-height:none;white-space:pre-wrap">${escapeHtml(fb.analysis || 'Sin análisis')}</div>
         </div>
         <div style="margin-bottom:1rem">
@@ -2034,7 +2133,8 @@ async function openPRDDetail(id) {
     const prd = await devFetch(`/prds/${id}`);
     if (!prd || !prd._id) { body.innerHTML = '<div class="loading">PRD no encontrado</div>'; return; }
 
-    const time = new Date(prd.createdAt).toLocaleString('es-ES');
+    const locale = currentLang === 'es' ? 'es-ES' : 'en-US';
+    const time = new Date(prd.createdAt).toLocaleString(locale);
 
     body.innerHTML = `
       <div style="margin-bottom:1rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap">

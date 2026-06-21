@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🛠️ Agente Mundial — DevOps Panel</title>
+  <title data-i18n="page.title">🛠️ Agente Mundial — DevOps Panel</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="stylesheet" href="dev_dashboard.css">
   <script src="chart.umd.js"></script>
@@ -24,7 +24,7 @@
 <!-- Dashboard -->
 <div id="dashboard">
   <header>
-    <h1>🛠️ Agente Mundial <span>// DevOps</span></h1>
+    <h1><span data-i18n="header.title">🛠️ Agente Mundial</span> <span>// DevOps</span></h1>
     <div style="display:flex;align-items:center;gap:0.75rem;">
       <div class="header-status" id="header-status"></div>
       <button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);padding:4px 8px;font-size:0.75rem;cursor:pointer;">🌐 EN</button>
@@ -163,20 +163,20 @@
 
       <div style="display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center;">
         <select id="benchmark-model" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
-          <option value="">Default model</option>
+          <option value="" data-i18n="benchmarks.default_model">Default model</option>
           <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
           <option value="Qwen/Qwen2.5-7B-Instruct">Qwen2.5-7B-Instruct</option>
         </select>
         <select id="benchmark-dataset" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
-          <option value="all">All datasets</option>
-          <option value="intent">Intent Classification</option>
-          <option value="personality">Personality Responses</option>
-          <option value="language">Language Purity</option>
-          <option value="transcreation">Transcreation</option>
-          <option value="edge">Edge Cases</option>
-          <option value="summary">Daily Summaries</option>
+          <option value="all" data-i18n="benchmarks.all_datasets">All datasets</option>
+          <option value="intent" data-i18n="benchmarks.dataset_intent">Intent Classification</option>
+          <option value="personality" data-i18n="benchmarks.dataset_personality">Personality Responses</option>
+          <option value="language" data-i18n="benchmarks.dataset_language">Language Purity</option>
+          <option value="transcreation" data-i18n="benchmarks.dataset_transcreation">Transcreation</option>
+          <option value="edge" data-i18n="benchmarks.dataset_edge">Edge Cases</option>
+          <option value="summary" data-i18n="benchmarks.dataset_summary">Daily Summaries</option>
         </select>
-        <button id="btn-run-benchmark" onclick="runBenchmark()" style="background:var(--accent-blue);padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">▶ Run Benchmark</button>
+        <button id="btn-run-benchmark" onclick="runBenchmark()" style="background:var(--accent-blue);padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;" data-i18n="benchmarks.run">▶ Run Benchmark</button>
         <button onclick="loadBenchmarks()" style="background:var(--accent-cyan);padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">🔄</button>
       </div>
 
@@ -502,10 +502,10 @@
           <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
             <thead>
               <tr style="border-bottom:1px solid var(--border);">
-                <th style="text-align:left;padding:0.6rem;color:var(--accent-cyan);font-weight:700;">Axis</th>
-                <th style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">Range</th>
-                <th style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">Threshold</th>
-                <th style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">What it measures</th>
+                <th data-i18n="help.eval_axis" style="text-align:left;padding:0.6rem;color:var(--accent-cyan);font-weight:700;">Axis</th>
+                <th data-i18n="help.eval_range" style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">Range</th>
+                <th data-i18n="help.eval_threshold" style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">Threshold</th>
+                <th data-i18n="help.eval_measures" style="text-align:left;padding:0.6rem;color:var(--text-secondary);font-weight:600;">What it measures</th>
               </tr>
             </thead>
             <tbody>
@@ -513,18 +513,18 @@
                 <td style="padding:0.6rem;"><span style="color:var(--accent-green);font-weight:700;">language_purity</span></td>
                 <td style="padding:0.6rem;">0 – 10</td>
                 <td style="padding:0.6rem;">≥ 8</td>
-                <td style="padding:0.6rem;">Correct language? No mixed scripts? Grammar & register appropriate?</td>
+                <td data-i18n="help.eval_lang_desc" style="padding:0.6rem;">Correct language? No mixed scripts? Grammar & register appropriate?</td>
               </tr>
               <tr>
                 <td style="padding:0.6rem;"><span style="color:var(--accent-amber);font-weight:700;">quality</span></td>
                 <td style="padding:0.6rem;">0 – 10</td>
                 <td style="padding:0.6rem;">≥ 6</td>
-                <td style="padding:0.6rem;">Humor mechanism used? Fits personality tone? Avoids being robotic/cringe?</td>
+                <td data-i18n="help.eval_quality_desc" style="padding:0.6rem;">Humor mechanism used? Fits personality tone? Avoids being robotic/cringe?</td>
               </tr>
             </tbody>
           </table>
           <div style="margin-top:1rem;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.8rem;font-size:0.75rem;font-family:var(--mono);color:var(--text-muted);">
-            <span style="color:var(--accent-cyan);">// Judge JSON output format</span><br>
+            <span data-i18n="help.eval_json_label" style="color:var(--accent-cyan);">// Judge JSON output format</span><br>
             { "scores": { "language_purity": 8, "quality": 7 }, "feedback": "Good personality but slight language mix", "main_issue": "language" }
           </div>
         </div>
@@ -540,18 +540,18 @@
           <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
             <thead>
               <tr style="border-bottom:1px solid var(--border);">
-                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Detected Script</th>
-                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Unicode Range</th>
-                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Language</th>
+                <th data-i18n="help.rule_script" style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Detected Script</th>
+                <th data-i18n="help.rule_range" style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Unicode Range</th>
+                <th data-i18n="help.rule_language" style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Language</th>
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Hangul</td><td style="padding:0.5rem;"><code>AC00-D7AF</code></td><td style="padding:0.5rem;">Korean</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Thai</td><td style="padding:0.5rem;"><code>0E00-0E7F</code></td><td style="padding:0.5rem;">Thai</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Arabic</td><td style="padding:0.5rem;"><code>0600-06FF</code></td><td style="padding:0.5rem;">Arabic, Persian, Urdu</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">CJK</td><td style="padding:0.5rem;"><code>4E00-9FFF</code> + <code>3040-30FF</code></td><td style="padding:0.5rem;">Chinese, Japanese</td></tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td style="padding:0.5rem;">Cyrillic</td><td style="padding:0.5rem;"><code>0400-04FF</code></td><td style="padding:0.5rem;">Russian, Bulgarian, etc.</td></tr>
-              <tr><td style="padding:0.5rem;">Devanagari</td><td style="padding:0.5rem;"><code>0900-097F</code></td><td style="padding:0.5rem;">Hindi, Sanskrit, etc.</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td data-i18n="help.rule_script_hangul" style="padding:0.5rem;">Hangul</td><td style="padding:0.5rem;"><code>AC00-D7AF</code></td><td data-i18n="help.rule_lang_hangul" style="padding:0.5rem;">Korean</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td data-i18n="help.rule_script_thai" style="padding:0.5rem;">Thai</td><td style="padding:0.5rem;"><code>0E00-0E7F</code></td><td data-i18n="help.rule_lang_thai" style="padding:0.5rem;">Thai</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td data-i18n="help.rule_script_arabic" style="padding:0.5rem;">Arabic</td><td style="padding:0.5rem;"><code>0600-06FF</code></td><td data-i18n="help.rule_lang_arabic" style="padding:0.5rem;">Arabic, Persian, Urdu</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td data-i18n="help.rule_script_cjk" style="padding:0.5rem;">CJK</td><td style="padding:0.5rem;"><code>4E00-9FFF</code> + <code>3040-30FF</code></td><td data-i18n="help.rule_lang_cjk" style="padding:0.5rem;">Chinese, Japanese</td></tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.05);"><td data-i18n="help.rule_script_cyrillic" style="padding:0.5rem;">Cyrillic</td><td style="padding:0.5rem;"><code>0400-04FF</code></td><td data-i18n="help.rule_lang_cyrillic" style="padding:0.5rem;">Russian, Bulgarian, etc.</td></tr>
+              <tr><td data-i18n="help.rule_script_devanagari" style="padding:0.5rem;">Devanagari</td><td style="padding:0.5rem;"><code>0900-097F</code></td><td data-i18n="help.rule_lang_devanagari" style="padding:0.5rem;">Hindi, Sanskrit, etc.</td></tr>
             </tbody>
           </table>
         </div>
@@ -617,26 +617,26 @@
           <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:1rem;">
             <thead>
               <tr style="border-bottom:1px solid var(--border);">
-                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Source</th>
-                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">When it triggers</th>
-                <th style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Priority</th>
+                <th data-i18n="help.hitl_source" style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Source</th>
+                <th data-i18n="help.hitl_when" style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">When it triggers</th>
+                <th data-i18n="help.hitl_priority" style="text-align:left;padding:0.5rem;color:var(--text-secondary);font-weight:600;">Priority</th>
               </tr>
             </thead>
             <tbody>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                <td style="padding:0.5rem;"><code>force_approved</code></td>
-                <td style="padding:0.5rem;">Quality Gate exhausted 3 retries</td>
-                <td style="padding:0.5rem;"><span style="color:var(--accent-red);font-weight:700;">Highest</span></td>
+                <td style="padding:0.5rem;"><code data-i18n="help.hitl_force_src">force_approved</code></td>
+                <td data-i18n="help.hitl_force_desc" style="padding:0.5rem;">Quality Gate exhausted 3 retries</td>
+                <td style="padding:0.5rem;"><span data-i18n="help.hitl_highest" style="color:var(--accent-red);font-weight:700;">Highest</span></td>
               </tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                <td style="padding:0.5rem;"><code>user_downvote</code></td>
-                <td style="padding:0.5rem;">User gave a rating of 1-2 ⭐ in the chat</td>
-                <td style="padding:0.5rem;"><span style="color:var(--accent-amber);font-weight:700;">High</span></td>
+                <td style="padding:0.5rem;"><code data-i18n="help.hitl_downvote_src">user_downvote</code></td>
+                <td data-i18n="help.hitl_downvote_desc" style="padding:0.5rem;">User gave a rating of 1-2 ⭐ in the chat</td>
+                <td style="padding:0.5rem;"><span data-i18n="help.hitl_high" style="color:var(--accent-amber);font-weight:700;">High</span></td>
               </tr>
               <tr>
-                <td style="padding:0.5rem;"><code>judge_disagree</code></td>
-                <td style="padding:0.5rem;">Human disagrees with the judge's verdict</td>
-                <td style="padding:0.5rem;"><span style="color:var(--accent-cyan);font-weight:700;">Normal</span></td>
+                <td style="padding:0.5rem;"><code data-i18n="help.hitl_disagree_src">judge_disagree</code></td>
+                <td data-i18n="help.hitl_disagree_desc" style="padding:0.5rem;">Human disagrees with the judge's verdict</td>
+                <td style="padding:0.5rem;"><span data-i18n="help.hitl_normal" style="color:var(--accent-cyan);font-weight:700;">Normal</span></td>
               </tr>
             </tbody>
           </table>
@@ -657,14 +657,14 @@
             <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
               <thead>
                 <tr style="border-bottom:1px solid var(--border);">
-                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">#</th>
-                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">ID</th>
-                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Personality</th>
-                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Lang</th>
-                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Input</th>
-                  <th style="text-align:left;padding:0.4rem;color:var(--text-muted);">Expected Mechanism</th>
-                  <th style="text-align:center;padding:0.4rem;color:var(--text-muted);">Edge?</th>
-                  <th style="text-align:center;padding:0.4rem;color:var(--text-muted);">Transcreation?</th>
+                  <th data-i18n="help.ds_num" style="text-align:left;padding:0.4rem;color:var(--text-muted);">#</th>
+                  <th data-i18n="help.ds_id" style="text-align:left;padding:0.4rem;color:var(--text-muted);">ID</th>
+                  <th data-i18n="help.ds_personality" style="text-align:left;padding:0.4rem;color:var(--text-muted);">Personality</th>
+                  <th data-i18n="help.ds_lang" style="text-align:left;padding:0.4rem;color:var(--text-muted);">Lang</th>
+                  <th data-i18n="help.ds_input" style="text-align:left;padding:0.4rem;color:var(--text-muted);">Input</th>
+                  <th data-i18n="help.ds_mechanism" style="text-align:left;padding:0.4rem;color:var(--text-muted);">Expected Mechanism</th>
+                  <th data-i18n="help.ds_edge" style="text-align:center;padding:0.4rem;color:var(--text-muted);">Edge?</th>
+                  <th data-i18n="help.ds_transcreation" style="text-align:center;padding:0.4rem;color:var(--text-muted);">Transcreation?</th>
                 </tr>
               </thead>
               <tbody>
