@@ -48,6 +48,11 @@ const aiLogSchema = new mongoose.Schema({
     quality: { type: Number }
   },
   evalFeedback: { type: String, default: '' },
+  evalMainIssue: {
+    type: String,
+    enum: ['language', 'humor', 'personality', 'factuality', 'none', ''],
+    default: ''
+  },
   evalPassed: { type: Boolean },
   evalAttempts: { type: Number, default: 1 },
   evalSkipped: { type: Boolean, default: false },   // true si saltó por sample rate

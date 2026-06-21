@@ -487,6 +487,7 @@ export async function generateWithQualityGate(playerName, question, context, met
         evalScores: judgment.scores,
         evalPassed: judgment.passed,
         evalFeedback: judgment.feedback || '',
+        evalMainIssue: judgment.main_issue || '',
         evalAttempts: attempts,
         targetLanguage,
         anchorsUsed: personalityId,

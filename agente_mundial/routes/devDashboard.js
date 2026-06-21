@@ -24,6 +24,9 @@ import config from '../config.js';
 import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
 import { getRssStats } from '../rssFeedService.js';
 import { getWebSearchStats } from '../webSearchService.js';
+import Groq from 'groq-sdk';
+
+const groq = new Groq({ apiKey: config.groq.apiKey });
 
 const router = express.Router();
 
@@ -1563,6 +1566,429 @@ router.put('/prds/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ==========================================
+// DIAGNOSTICS — Pattern analysis + recommendations
+// ==========================================
+
+/**
+ * GET /diagnostics — Aggregate AILog data by issue and personality
+ */
+router.get('/diagnostics', async (req, res) => {
+  try {
+    const { days = 7, personality } = req.query;
+    const since = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000);
+
+    const matchFilter = {
+      createdAt: { $gte: since },
+      evalPassed: { $exists: true },
+      evalSkipped: { $ne: true }
+    };
+    if (personality) matchFilter.anchorsUsed = personality;
+
+    // 1. Overview — global metrics
+    const [overview] = await AILog.aggregate([
+      { $match: matchFilter },
+      { $group: {
+        _id: null,
+        totalEvaluations: { $sum: 1 },
+        passed: { $sum: { $cond: ['$evalPassed', 1, 0] } },
+        failed: { $sum: { $cond: ['$evalPassed', 0, 1] } },
+        avgQuality: { $avg: '$evalScores.quality' },
+        avgLanguagePurity: { $avg: '$evalScores.language_purity' },
+        avgAttempts: { $avg: '$evalAttempts' }
+      }}
+    ]);
+
+    const total = overview?.totalEvaluations || 0;
+    const passed = overview?.passed || 0;
+    const failed = overview?.failed || 0;
+    const passRate = total > 0 ? Math.round((passed / total) * 100) : null;
+
+    // 2. Breakdown by main issue
+    const byIssue = await AILog.aggregate([
+      { $match: { ...matchFilter, evalMainIssue: { $ne: '' } } },
+      { $group: {
+        _id: '$evalMainIssue',
+        count: { $sum: 1 },
+        avgQuality: { $avg: '$evalScores.quality' }
+      }},
+      { $sort: { count: -1 } }
+    ]);
+
+    // 3. Breakdown by personality
+    const byPersonality = await AILog.aggregate([
+      { $match: { ...matchFilter, anchorsUsed: { $ne: '' } } },
+      { $group: {
+        _id: '$anchorsUsed',
+        total: { $sum: 1 },
+        passed: { $sum: { $cond: ['$evalPassed', 1, 0] } },
+        avgQuality: { $avg: '$evalScores.quality' },
+        avgLanguagePurity: { $avg: '$evalScores.language_purity' },
+        avgAttempts: { $avg: '$evalAttempts' }
+      }},
+      { $sort: { total: -1 } }
+    ]);
+
+    // 4. Top issue per personality (separate aggregation)
+    const topIssueByPersonality = await AILog.aggregate([
+      { $match: { ...matchFilter, anchorsUsed: { $ne: '' }, evalMainIssue: { $ne: '', $ne: 'none' } } },
+      { $group: {
+        _id: { personality: '$anchorsUsed', issue: '$evalMainIssue' },
+        count: { $sum: 1 }
+      }},
+      { $sort: { count: -1 } },
+      { $group: {
+        _id: '$_id.personality',
+        topIssue: { $first: '$_id.issue' },
+        topIssueCount: { $first: '$count' },
+        totalIssues: { $sum: '$count' }
+      }}
+    ]);
+    const topIssueMap = {};
+    for (const row of topIssueByPersonality) {
+      topIssueMap[row._id] = {
+        issue: row.topIssue,
+        pct: row.totalIssues > 0 ? Math.round((row.topIssueCount / row.totalIssues) * 100) : 0
+      };
+    }
+
+    // 5. Force approved count
+    const forceApproved = await HumanReview.countDocuments({
+      source: 'force_approved',
+      createdAt: { $gte: since }
+    });
+
+    // 6. HITL correlation
+    const hitlReviewed = await HumanReview.countDocuments({ status: 'reviewed', createdAt: { $gte: since } });
+    const hitlDisagreements = await HumanReview.countDocuments({
+      status: 'reviewed',
+      createdAt: { $gte: since },
+      $expr: { $ne: ['$humanPassed', '$judgePassed'] }
+    });
+    const humanDownvotes = await HumanReview.countDocuments({
+      source: 'user_downvote',
+      createdAt: { $gte: since }
+    });
+
+    // 7. Compute health status
+    const failRate = total > 0 ? (failed / total) * 100 : 0;
+    const avgAttempts = overview?.avgAttempts || 1;
+    let health = 'good';
+    let healthLabel = '🟢 Buen estado';
+    if (failRate > 25 || forceApproved > 20 || avgAttempts > 2.0) {
+      health = 'critical';
+      healthLabel = '🔴 Requiere atención urgente';
+    } else if (failRate > 15 || forceApproved > 10 || avgAttempts > 1.5) {
+      health = 'attention';
+      healthLabel = '🟡 Atención recomendada';
+    }
+
+    // 8. Rule-based recommendations
+    const globalRecommendations = [];
+    const byPersonalityWithRecs = [];
+
+    for (const p of byPersonality) {
+      const pct = p.total > 0 ? Math.round(((p.total - p.passed) / p.total) * 100) : 0;
+      const top = topIssueMap[p._id] || { issue: 'none', pct: 0 };
+      const rec = generatePersonalityRecommendation(p._id, pct, top.issue, top.pct, p.avgAttempts);
+      byPersonalityWithRecs.push({
+        personalityId: p._id,
+        total: p.total,
+        passRate: Math.round((p.passed / p.total) * 100),
+        failRate: pct,
+        avgAttempts: Math.round(p.avgAttempts * 100) / 100,
+        avgQuality: p.avgQuality ? Math.round(p.avgQuality * 10) / 10 : null,
+        avgLanguagePurity: p.avgLanguagePurity ? Math.round(p.avgLanguagePurity * 10) / 10 : null,
+        topIssue: top.issue,
+        topIssuePct: top.pct,
+        recommendation: rec
+      });
+    }
+
+    // Global force_approved recommendation
+    if (forceApproved > 10) {
+      globalRecommendations.push({
+        type: 'force_approved',
+        severity: forceApproved > 20 ? 'high' : 'medium',
+        message: `Hay ${forceApproved} force_approved en ${days} días. El Quality Gate no logra producir respuestas válidas. Revisar reglas negativas en los prompts o relajar thresholds.`,
+        suggestedActions: [
+          { type: 'threshold', label: 'Aumentar maxRetries a 4', impact: 'low' },
+          { type: 'prompt_review', label: 'Revisar reglas contradictorias en system prompts', impact: 'high' }
+        ]
+      });
+    }
+
+    // Global HITL disagreement recommendation
+    const disagreeRate = hitlReviewed > 0 ? Math.round((hitlDisagreements / hitlReviewed) * 100) : 0;
+    if (disagreeRate > 15) {
+      globalRecommendations.push({
+        type: 'judge_calibration',
+        severity: 'medium',
+        message: `El juez y los humanos discrepan en ${disagreeRate}% de casos. El prompt del juez necesita calibración.`,
+        suggestedActions: [
+          { type: 'judge_prompt', label: 'Revisar buildJudgePrompt para alinear criterios', impact: 'high' }
+        ]
+      });
+    }
+
+    // Determine issue breakdown with trend (compare to previous period)
+    const prevSince = new Date(since.getTime() - parseInt(days) * 24 * 60 * 60 * 1000);
+    const prevByIssue = await AILog.aggregate([
+      { $match: {
+        createdAt: { $gte: prevSince, $lt: since },
+        evalPassed: { $exists: true },
+        evalSkipped: { $ne: true },
+        evalMainIssue: { $ne: '' }
+      }},
+      { $group: { _id: '$evalMainIssue', count: { $sum: 1 } } }
+    ]);
+    const prevIssueMap = {};
+    for (const row of prevByIssue) { prevIssueMap[row._id] = row.count; }
+
+    const breakdownByIssue = {};
+    for (const row of byIssue) {
+      const prevCount = prevIssueMap[row._id] || 0;
+      const trend = prevCount > 0 ? (row.count > prevCount ? 'up' : row.count < prevCount ? 'down' : 'stable') : 'new';
+      breakdownByIssue[row._id] = {
+        count: row.count,
+        pct: total > 0 ? Math.round((row.count / total) * 100) : 0,
+        trend,
+        avgQuality: row.avgQuality ? Math.round(row.avgQuality * 10) / 10 : null
+      };
+    }
+
+    // Period info
+    const fromDate = new Date(since);
+    const toDate = new Date();
+
+    res.json({
+      period: { days: parseInt(days), from: fromDate.toISOString().split('T')[0], to: toDate.toISOString().split('T')[0] },
+      overview: {
+        totalEvaluations: total,
+        passRate,
+        avgAttempts: overview?.avgAttempts ? Math.round(overview.avgAttempts * 100) / 100 : 1,
+        avgQuality: overview?.avgQuality ? Math.round(overview.avgQuality * 10) / 10 : null,
+        avgLanguagePurity: overview?.avgLanguagePurity ? Math.round(overview.avgLanguagePurity * 10) / 10 : null,
+        forceApproved,
+        humanDisagreements: hitlDisagreements,
+        humanDownvotes,
+        health,
+        healthLabel
+      },
+      breakdownByIssue,
+      byPersonality: byPersonalityWithRecs,
+      globalRecommendations,
+      _meta: { generatedAt: new Date().toISOString() }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /diagnostics/analyze — LLM-powered recommendations (on demand)
+ * Body: { aggregateData, personalities?: string[] }
+ * Returns: enriched recommendations with prompt diffs
+ */
+router.post('/diagnostics/analyze', async (req, res) => {
+  try {
+    const { aggregateData, personalities } = req.body;
+    if (!aggregateData) {
+      return res.status(400).json({ error: 'aggregateData is required' });
+    }
+
+    // Get current system prompts for affected personalities
+    const { getSystemPrompt } = await import('../groqEngine.js');
+    const targetPersonalities = personalities ||
+      (aggregateData.byPersonality || []).filter(p => p.recommendation).map(p => p.personalityId);
+
+    const prompts = {};
+    for (const pid of targetPersonalities) {
+      try {
+        prompts[pid] = getSystemPrompt(pid);
+      } catch (e) {
+        prompts[pid] = '(not found)';
+      }
+    }
+
+    // Build a compact summary for the LLM
+    const summary = {
+      overview: {
+        totalEvaluations: aggregateData.overview?.totalEvaluations || 0,
+        passRate: aggregateData.overview?.passRate || 0,
+        avgAttempts: aggregateData.overview?.avgAttempts || 1,
+        forceApproved: aggregateData.overview?.forceApproved || 0
+      },
+      breakdownByIssue: aggregateData.breakdownByIssue || {},
+      byPersonality: (aggregateData.byPersonality || []).map(p => ({
+        personalityId: p.personalityId,
+        passRate: p.passRate,
+        failRate: p.failRate,
+        avgAttempts: p.avgAttempts,
+        topIssue: p.topIssue,
+        topIssuePct: p.topIssuePct
+      })),
+      globalRecommendations: aggregateData.globalRecommendations || []
+    };
+
+    const llmPrompt = `Eres un experto en depuración de prompts para chatbots deportivos con personalidad. 
+Analiza estas métricas de evaluación y los prompts actuales, luego genera recomendaciones específicas.
+
+MÉTRICAS AGREGADAS (últimos ${aggregateData.period?.days || 7} días):
+${JSON.stringify(summary, null, 2)}
+
+PROMPTS ACTUALES DE LAS PERSONALIDADES AFECTADAS:
+${Object.entries(prompts).map(([pid, prompt]) => `--- ${pid} ---\n${prompt}`).join('\n\n')}
+
+INSTRUCCIONES:
+1. Identifica los patrones de fallo por personalidad (humor, language, personality, factuality).
+2. Para cada personalidad con alta tasa de fallos (>20%), sugiere cambios específicos en el prompt:
+   - ¿Qué línea o regla del prompt causa el problema?
+   - ¿Cómo reescribirías esa sección?
+   - Señala el número de línea aproximado y el texto a cambiar.
+3. Si el problema no es del prompt, sugiere: cambiar de modelo, ajustar thresholds, o mejorar RAG.
+4. Si todas las métricas son buenas, indícalo.
+
+RESPONDE SOLO CON JSON VÁLIDO:
+{
+  "personalities": [
+    {
+      "personalityId": "andres_montes",
+      "diagnosis": "texto explicando la causa raíz",
+      "diffSuggestion": "texto del cambio sugerido en el prompt (qué quitar y qué poner)",
+      "fileReference": "groqEngine.js:XX",
+      "impact": "high|medium|low",
+      "alternativeActions": ["opción 1", "opción 2"]
+    }
+  ],
+  "globalNotes": "cualquier observación adicional"
+}`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: llmPrompt }],
+      model: config.evals?.judgeModel || 'llama-3.1-8b-instant',
+      temperature: 0.2,
+      max_tokens: 1500,
+      response_format: { type: 'json_object' }
+    });
+
+    const raw = completion.choices[0]?.message?.content || '{}';
+    let analysis;
+    try {
+      analysis = JSON.parse(raw);
+    } catch (e) {
+      analysis = { error: 'Failed to parse LLM response', raw };
+    }
+
+    res.json({
+      analysis,
+      _meta: {
+        model: config.evals?.judgeModel || 'llama-3.1-8b-instant',
+        personalitiesAnalyzed: targetPersonalities,
+        generatedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function generatePersonalityRecommendation(personalityId, failRate, topIssue, topIssuePct, avgAttempts) {
+  if (failRate < 15 && avgAttempts < 1.5) return null;
+
+  const recs = {
+    andres_montes: {
+      humor: {
+        severity: avgAttempts > 2 ? 'high' : 'medium',
+        summary: `El mecanismo 'street_wisdom' no se activa en el ${topIssuePct}% de respuestas.`,
+        details: 'Las reglas de variedad forzada ("VARIEDAD CRÍTICA: NO repitas") están generando respuestas genéricas. El tono coloquial se pierde.',
+        suggestedActions: [
+          { type: 'prompt_adjustment', label: 'Suavizar regla de variedad en groqEngine.js:54', file: 'groqEngine.js:54', impact: 'high' },
+          { type: 'threshold_adjustment', label: 'Bajar minQuality a 5 para andres_montes', impact: 'low' }
+        ]
+      },
+      language: {
+        severity: 'medium',
+        summary: `Inconsistencias de idioma en ${topIssuePct}% de respuestas.`,
+        details: 'El prompt permite español pero el modelo a veces mezcla códigos con inglés.',
+        suggestedActions: [
+          { type: 'prompt_adjustment', label: 'Reforzar "Responde SIEMPRE en español" al final del prompt', file: 'groqEngine.js:52', impact: 'medium' }
+        ]
+      }
+    },
+    pedrerol: {
+      humor: {
+        severity: 'medium',
+        summary: `El dramatismo de Pedrerol no se transmite en el ${topIssuePct}% de respuestas.`,
+        details: 'Las frases como "EXCLUSIVA" y "ATENTOS" aparecen pero sin la intensidad esperada.',
+        suggestedActions: [
+          { type: 'prompt_adjustment', label: 'Añadir ejemplo de tono esperado en groqEngine.js:72-73', file: 'groqEngine.js:72', impact: 'medium' }
+        ]
+      },
+      language: {
+        severity: 'low',
+        summary: `Pedrerol tiene fallos de idioma en ${topIssuePct}% de casos. Generalmente falso positivo por emojis.`,
+        details: 'El uso intensivo de signos de exclamación puede confundir al juez.',
+        suggestedActions: []
+      }
+    },
+    roncero: {
+      humor: {
+        severity: 'high',
+        summary: `La exageración de Roncero no pasa el filtro de calidad en ${topIssuePct}% de intentos.`,
+        details: 'El tono ultra-pasional puede sonar "cringe" para el juez. Revisar ejemplos de intensidad sin caer en lo forzado.',
+        suggestedActions: [
+          { type: 'prompt_adjustment', label: 'Añadir ejemplos few-shot de exageración natural', file: 'groqEngine.js:90-93', impact: 'high' }
+        ]
+      }
+    },
+    juez_dredd: {
+      personality: {
+        severity: 'medium',
+        summary: `El tono de Juez Dredd no se distingue claramente en el ${topIssuePct}% de respuestas.`,
+        details: 'El setting de "I AM THE LAW" a veces se pierde en respuestas demasiado informativas.',
+        suggestedActions: [
+          { type: 'prompt_adjustment', label: 'Reforzar el tono judicial al inicio del prompt', file: 'groqEngine.js:100-105', impact: 'medium' }
+        ]
+      }
+    },
+    darth_vader: {
+      humor: {
+        severity: 'medium',
+        summary: `El humor oscuro de Darth Vader no siempre se activa (${topIssuePct}%).`,
+        details: 'El menacing_wit necesita ejemplos más explícitos de cómo combinar amenaza con humor.',
+        suggestedActions: [
+          { type: 'prompt_adjustment', label: 'Añadir ejemplos de menacing_wit en inglés', file: 'groqEngine.js:100-110', impact: 'medium' }
+        ]
+      }
+    },
+    trump: {
+      humor: {
+        severity: 'low',
+        summary: `Trump tiene buena tasa de aprobación. Fallos menores de humor (${topIssuePct}%).`,
+        details: 'Las superlatives a veces son demasiado repetitivas.',
+        suggestedActions: []
+      }
+    },
+    fabrizio_romano: {
+      language: {
+        severity: 'low',
+        summary: `Fabrizio tiene mezcla ES/EN ocasional (${topIssuePct}%).`,
+        details: 'El "Here we go!" en inglés puede confundir al juez cuando el idioma esperado es español.',
+        suggestedActions: []
+      }
+    }
+  };
+
+  const personalityRecs = recs[personalityId];
+  if (!personalityRecs) return null;
+
+  const issueRec = personalityRecs[topIssue];
+  if (!issueRec) return null;
+
+  return issueRec;
+}
 
 // ==========================================
 // HELPERS

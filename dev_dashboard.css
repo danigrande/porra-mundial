@@ -732,6 +732,32 @@ tr.row-selected td:first-child { border-left: 3px solid var(--accent-blue); }
 .test-detail-content .detail-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.15rem; }
 .test-detail-content .detail-value { color: var(--text-primary); margin-bottom: 0.6rem; white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 0.75rem; background: var(--bg-card); padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border); }
 
+/* ============================================
+   DIAGNOSTICS PANEL
+   ============================================ */
+.diag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+.diag-grid .issue-card {
+  transition: background 0.15s;
+  cursor: default;
+}
+.diag-grid .issue-card:hover {
+  background: var(--bg-card-hover);
+}
+.rec-row { display: none; }
+.rec-row td { background: var(--bg-secondary) !important; }
+.row-selected { background: rgba(59,130,246,0.08); }
+.rec-global {
+  transition: border-color 0.15s;
+}
+.rec-global:hover {
+  border-color: var(--border-glow);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   header { padding: 0.8rem 1rem; }

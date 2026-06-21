@@ -120,6 +120,7 @@ function switchTab(name) {
   if (name === 'corrections') { loadCorrectionsStats(); loadCorrections(); }
   if (name === 'retention') loadRetention();
   if (name === 'usage') loadUsage();
+  if (name === 'diagnostics') loadDiagnostics();
 }
 
 // ==========================================
@@ -2364,6 +2365,258 @@ async function loadRetention() {
     }
   } catch (e) {
     document.getElementById('retention-cards').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
+  }
+}
+
+// ==========================================
+// DIAGNOSTICS — Pattern analysis + recommendations
+// ==========================================
+
+let diagDataCache = null;
+
+async function loadDiagnostics() {
+  const days = document.getElementById('diag-days').value;
+  const personality = document.getElementById('diag-personality').value;
+  const params = new URLSearchParams({ days });
+  if (personality) params.set('personality', personality);
+
+  try {
+    const data = await devFetch(`/diagnostics?${params}`);
+    diagDataCache = data;
+
+    renderDiagHealth(data);
+    renderDiagIssueBreakdown(data);
+    renderDiagPersonalityTable(data);
+    renderDiagGlobalRecs(data);
+    document.getElementById('diag-llm-results').style.display = 'none';
+  } catch (e) {
+    document.getElementById('diagnostics-health').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
+  }
+}
+
+function renderDiagHealth(data) {
+  const ov = data.overview || {};
+  const healthColor = ov.health === 'critical' ? 'red' : ov.health === 'attention' ? 'amber' : 'green';
+  document.getElementById('diagnostics-health').innerHTML = `
+    <div class="card-sm">
+      <div class="label">${ov.healthLabel || 'Sin datos'}</div>
+      <div class="value" style="font-size:1.1rem;color:var(--accent-${healthColor})">${ov.passRate != null ? ov.passRate + '% pass' : '—'}</div>
+      <div class="card-sub">${ov.totalEvaluations || 0} evaluaciones · ${ov.period?.days || '?'} días</div>
+    </div>
+    <div class="card-sm">
+      <div class="label">Calidad media</div>
+      <div class="value cyan">${ov.avgQuality != null ? ov.avgQuality + '/10' : '—'}</div>
+      <div class="card-sub">Language: ${ov.avgLanguagePurity != null ? ov.avgLanguagePurity + '/10' : '—'}</div>
+    </div>
+    <div class="card-sm">
+      <div class="label">Intentos promedio</div>
+      <div class="value ${ov.avgAttempts > 2 ? 'red' : ov.avgAttempts > 1.5 ? 'amber' : 'green'}">${ov.avgAttempts || '1.0'}</div>
+      <div class="card-sub">${ov.forceApproved || 0} force_approved</div>
+    </div>
+    <div class="card-sm">
+      <div class="label">HITL</div>
+      <div class="value purple">${ov.humanDisagreements || 0}</div>
+      <div class="card-sub">${ov.humanDownvotes || 0} downvotes</div>
+    </div>
+  `;
+}
+
+function renderDiagIssueBreakdown(data) {
+  const issues = data.breakdownByIssue || {};
+  const total = Object.values(issues).reduce((s, i) => s + i.count, 0) || 1;
+  const ISSUE_LABELS = {
+    humor: { label: '😐 Humor', color: '#f59e0b' },
+    language: { label: '🌐 Idioma', color: '#ef4444' },
+    personality: { label: '🎭 Personalidad', color: '#a855f7' },
+    factuality: { label: '📊 Veracidad', color: '#3b82f6' },
+    none: { label: '✅ Sin issue', color: '#22c55e' }
+  };
+
+  const sorted = Object.entries(issues).sort((a, b) => b[1].count - a[1].count);
+  const html = sorted.map(([key, val]) => {
+    const meta = ISSUE_LABELS[key] || { label: key, color: '#888' };
+    const pct = Math.round((val.count / total) * 100);
+    const trendIcon = val.trend === 'up' ? '📈' : val.trend === 'down' ? '📉' : '➡️';
+    return `<div class="issue-card" style="border-left:3px solid ${meta.color};padding:0.6rem 0.8rem;background:var(--bg-card);border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:600;font-size:0.85rem;">${meta.label}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);">${val.count} casos · calidad ${val.avgQuality != null ? val.avgQuality + '/10' : '—'} ${trendIcon}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:1.1rem;font-weight:700;color:${meta.color};">${pct}%</div>
+        <div style="width:60px;height:4px;background:var(--bg-input);border-radius:2px;margin-top:2px;">
+          <div style="height:100%;border-radius:2px;width:${pct}%;background:${meta.color};"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('diag-breakdown-issue').innerHTML = html
+    ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0.5rem;">${html}</div>`
+    : '<div class="text-muted" style="padding:0.5rem;">Sin datos de issue — las evaluaciones existentes no tienen evalMainIssue (visible desde ahora en adelante).</div>';
+}
+
+function renderDiagPersonalityTable(data) {
+  const personalities = data.byPersonality || [];
+  if (!personalities.length) {
+    document.getElementById('diag-personality-table').innerHTML = '<div class="text-muted" style="padding:0.5rem;">Sin datos de personalidad.</div>';
+    return;
+  }
+
+  const rows = personalities.map(p => {
+    const passColor = p.passRate >= 80 ? 'green' : p.passRate >= 60 ? 'amber' : 'red';
+    const issueBadge = p.topIssue && p.topIssue !== 'none'
+      ? `<span class="badge badge-${p.topIssue === 'humor' ? 'error' : p.topIssue === 'language' ? 'error' : 'warning'}" style="font-size:0.65rem;">${p.topIssue} ${p.topIssuePct}%</span>`
+      : '<span style="color:var(--text-muted);font-size:0.7rem;">✅ estable</span>';
+
+    let recHtml = '';
+    if (p.recommendation) {
+      const sevColor = p.recommendation.severity === 'high' ? 'red' : p.recommendation.severity === 'medium' ? 'amber' : 'green';
+      recHtml = `
+        <div class="rec-block" style="background:rgba(255,255,255,0.03);border-radius:6px;padding:0.6rem;margin-top:0.4rem;border-left:3px solid var(--accent-${sevColor});">
+          <div style="font-size:0.75rem;color:var(--accent-${sevColor});font-weight:600;">${sevColor === 'red' ? '🔴' : sevColor === 'amber' ? '🟡' : '🟢'} ${p.recommendation.summary || ''}</div>
+          <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:0.25rem;">${p.recommendation.details || ''}</div>
+          ${p.recommendation.suggestedActions ? `
+            <div style="margin-top:0.4rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+              ${p.recommendation.suggestedActions.map(a => `
+                <span style="font-size:0.65rem;padding:0.2rem 0.4rem;border-radius:4px;background:rgba(59,130,246,0.1);color:var(--accent-cyan);border:1px solid rgba(59,130,246,0.15);">
+                  ${a.label} ${a.file ? `<code style="font-size:0.6rem;">${a.file}</code>` : ''}
+                </span>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>`;
+    }
+
+    return `
+    <tr onclick="this.classList.toggle('row-selected');const n=this.nextElementSibling;if(n&&n.classList.contains('rec-row'))n.style.display=n.style.display==='none'?'':'none';">
+      <td><strong>${p.personalityId}</strong></td>
+      <td><span class="badge badge-${passColor}">${p.passRate}%</span></td>
+      <td>${p.failRate}%</td>
+      <td>${p.avgAttempts}</td>
+      <td>${p.avgQuality != null ? p.avgQuality + '/10' : '—'}</td>
+      <td>${issueBadge}</td>
+    </tr>
+    <tr class="rec-row" style="display:none;">
+      <td colspan="6" style="padding:0 0.5rem 0.5rem 0.5rem;">${recHtml || '<div class="text-muted" style="padding:0.5rem;">Sin recomendaciones — métricas dentro de lo esperado.</div>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('diag-personality-table').innerHTML = `
+    <table class="tbl" style="font-size:0.8rem;">
+      <thead><tr>
+        <th>Personalidad</th><th>Pass Rate</th><th>Fallo</th><th>Intentos</th><th>Calidad</th><th>Problema principal</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderDiagGlobalRecs(data) {
+  const recs = data.globalRecommendations || [];
+  if (!recs.length) {
+    document.getElementById('diag-global-recs').innerHTML = '<div class="text-muted" style="padding:0.5rem;">Sin recomendaciones globales.</div>';
+    return;
+  }
+
+  const html = recs.map(r => `
+    <div class="rec-global" style="padding:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;border-left:3px solid ${r.severity === 'high' ? 'var(--accent-red)' : 'var(--accent-amber)'};">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div>
+          <div style="font-size:0.8rem;font-weight:600;">${r.type === 'force_approved' ? '⚠️ Force Approved' : r.type === 'judge_calibration' ? '⚖️ Calibración del Juez' : '💡 ' + r.type}</div>
+          <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.25rem;">${r.message}</div>
+        </div>
+        <span class="badge badge-${r.severity === 'high' ? 'error' : 'warning'}" style="font-size:0.65rem;">${r.severity}</span>
+      </div>
+      ${r.suggestedActions ? `
+        <div style="margin-top:0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          ${r.suggestedActions.map(a => `
+            <span style="font-size:0.65rem;padding:0.2rem 0.4rem;border-radius:4px;background:rgba(59,130,246,0.1);color:var(--accent-cyan);border:1px solid rgba(59,130,246,0.15);">
+              ${a.label} · impacto ${a.impact}
+            </span>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('diag-global-recs').innerHTML = html;
+}
+
+async function runDiagnosticLLM() {
+  if (!diagDataCache) {
+    await loadDiagnostics();
+    if (!diagDataCache) return;
+  }
+
+  const btn = document.getElementById('btn-diag-llm');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando...';
+
+  try {
+    const data = await devFetchPost('/diagnostics/analyze', {
+      aggregateData: diagDataCache
+    });
+
+    const analysis = data.analysis || {};
+    const container = document.getElementById('diag-llm-results');
+    container.style.display = 'block';
+
+    if (analysis.error) {
+      container.innerHTML = `<div class="alert-banner alert-red">Error en análisis LLM: ${analysis.error}</div>`;
+      return;
+    }
+
+    let html = `
+      <div style="background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(59,130,246,0.05));border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:1.25rem;margin-top:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="margin:0;font-size:0.95rem;">🔮 Análisis con IA</h3>
+          <span style="font-size:0.65rem;color:var(--text-muted);">${data._meta?.model || ''} · ${data._meta?.personalitiesAnalyzed?.length || 0} personalidades</span>
+        </div>
+        ${analysis.globalNotes ? `<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;padding:0.5rem;background:rgba(0,0,0,0.15);border-radius:6px;">${analysis.globalNotes}</div>` : ''}
+    `;
+
+    if (analysis.personalities && analysis.personalities.length) {
+      html += '<div style="display:grid;gap:0.75rem;">';
+      for (const p of analysis.personalities) {
+        const impColor = p.impact === 'high' ? 'red' : p.impact === 'medium' ? 'amber' : 'green';
+        html += `
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:0.75rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+              <strong style="font-size:0.85rem;">${p.personalityId}</strong>
+              <span class="badge badge-${impColor}" style="font-size:0.6rem;">impacto ${p.impact}</span>
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-secondary);">${p.diagnosis || ''}</div>
+            ${p.diffSuggestion ? `
+              <div style="margin-top:0.5rem;background:rgba(0,0,0,0.2);border-radius:4px;padding:0.4rem;font-family:var(--mono);font-size:0.7rem;color:var(--accent-cyan);white-space:pre-wrap;">
+                ${p.diffSuggestion}
+                ${p.fileReference ? `<br><span style="color:var(--text-muted);font-size:0.65rem;">📁 ${p.fileReference}</span>` : ''}
+              </div>
+            ` : ''}
+            ${p.alternativeActions && p.alternativeActions.length ? `
+              <div style="margin-top:0.4rem;display:flex;gap:0.3rem;flex-wrap:wrap;">
+                ${p.alternativeActions.map(a => `<span style="font-size:0.65rem;padding:0.15rem 0.35rem;border-radius:3px;background:rgba(255,255,255,0.05);color:var(--text-muted);">${a}</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    if (!analysis.personalities && !analysis.globalNotes) {
+      html += '<div class="text-muted" style="padding:0.5rem;">El análisis no devolvió recomendaciones estructuradas. Revisa que los datos de diagnóstico tengan suficiente volumen.</div>';
+    }
+
+    container.innerHTML = html;
+  } catch (e) {
+    document.getElementById('diag-llm-results').innerHTML = `<div class="alert-banner alert-red">Error: ${e.message}</div>`;
+    document.getElementById('diag-llm-results').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔮 Recomendaciones con IA';
   }
 }
 
