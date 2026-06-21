@@ -9,6 +9,630 @@ let currentRagPage = 1;
 let debounceTimer = null;
 
 // ==========================================
+// I18N
+// ==========================================
+
+let currentLang = 'es';
+let activeTab = 'health';
+
+const LANG = {
+  es: {
+    'auth.title': '🛠️ DevOps Panel',
+    'auth.subtitle': 'Agente Mundial — Developer Dashboard',
+    'auth.key_placeholder': 'Developer Key...',
+    'auth.login': 'Acceder',
+    'auth.error': 'Clave incorrecta',
+    'auth.unauthorized': 'Clave incorrecta o servidor no disponible',
+
+    'header.status.ok': '🟢 OK',
+    'header.status.degraded': '🟡 Degradado',
+    'header.status.error': '🔴 Error',
+
+    'loading': 'Cargando...',
+    'loading.data': 'Cargando datos...',
+
+    'health.title': 'Health',
+    'health.services': 'Servicios',
+    'health.db': 'Base de Datos',
+    'health.connected': 'Conectado',
+    'health.disconnected': 'Desconectado',
+    'health.players': 'Jugadores',
+    'health.groups': 'Grupos',
+    'health.messages': 'Mensajes',
+    'health.predictions': 'Pronósticos',
+    'health.summaries': 'Resúmenes',
+    'health.error': 'Error cargando health',
+
+    'logs.title': '📋 Interacciones con IA',
+    'logs.filter_type': 'Todos los tipos',
+    'logs.type_response': 'Response',
+    'logs.type_summary': 'Summary',
+    'logs.type_personality': 'Personality',
+    'logs.filter_source': 'Todas las fuentes',
+    'logs.source_chat': 'App Chat',
+    'logs.source_web': 'Web Panel',
+    'logs.source_cron': 'Automático (Cron)',
+    'logs.source_manual': 'Manual',
+    'logs.source_eval_runner': 'Eval Runner',
+    'logs.filter_player': 'Jugador...',
+    'logs.loading': 'Cargando logs...',
+    'logs.empty': 'No hay logs todavía. Genera una interacción con el bot primero.',
+    'logs.prev': '← Prev',
+    'logs.next': 'Next →',
+    'logs.total': 'total',
+
+    'evals.title': '⚖️ Log de Evaluaciones Recientes',
+    'evals.lang_title': '🌐 Rendimiento por Idioma',
+    'evals.personality_title': '🎭 Rendimiento por Personalidad',
+    'evals.filter_all': 'Todas (Pass + Fail)',
+    'evals.filter_passed': '✅ Passed',
+    'evals.filter_failed': '❌ Failed',
+    'evals.filter_all_langs': 'Todos los idiomas',
+    'evals.lang_es': 'Español',
+    'evals.lang_en': 'Inglés',
+    'evals.lang_ko': 'Coreano (Transcreation)',
+    'evals.lang_ar': 'Árabe (Transcreation)',
+    'evals.lang_th': 'Tailandés (Transcreation)',
+    'evals.lang_ja': 'Japonés (Transcreation)',
+    'evals.no_data_lang': 'Sin datos de idioma todavía',
+    'evals.no_data_personality': 'Sin datos de personalidad todavía',
+    'evals.loading': 'Cargando evals...',
+    'evals.empty': 'Sin evaluaciones todavía. Genera interacciones con el bot primero.',
+    'evals.col_time': 'Tiempo',
+    'evals.col_player': 'Jugador',
+    'evals.col_lang': 'Idioma',
+    'evals.col_personality': 'Personalidad',
+    'evals.col_lang_score': 'Lang 🌐',
+    'evals.col_quality': 'Quality 🎭',
+    'evals.col_status': 'Status',
+    'evals.col_attempts': 'Intentos',
+    'evals.col_transcreation': 'Transcreation',
+    'evals.col_feedback': 'Feedback',
+    'evals.pass': '✅ PASS',
+    'evals.fail': '❌ FAIL',
+    'evals.skip': 'SKIP',
+    'evals.detail_title': '⚖️ Eval Detail',
+    'evals.detail_score_lang': '🌐 Language Purity',
+    'evals.detail_score_quality': '🎭 Quality',
+    'evals.detail_attempts': 'intento(s)',
+    'evals.detail_force_approved': '⚠️ force_approved',
+    'evals.detail_query': '💬 Query',
+    'evals.detail_response': '🤖 Response',
+    'evals.detail_feedback': '⚖️ Judge Feedback',
+    'evals.detail_technical': '🔧 Technical details',
+    'evals.detail_tokens': 'Tokens',
+    'evals.detail_latency': 'Latencia',
+    'evals.detail_source': 'Fuente',
+    'evals.detail_type': 'Tipo',
+    'evals.detail_success': 'Éxito',
+    'evals.detail_transcreation_source': 'Transcreation Source',
+    'evals.detail_system_prompt': '🧠 System Prompt',
+    'evals.detail_rag': '🔍 RAG Context',
+
+    'benchmarks.title': 'Benchmarks',
+    'benchmarks.run': '▶ Run Benchmark',
+    'benchmarks.refresh': '🔄',
+    'benchmarks.all_datasets': 'All datasets',
+    'benchmarks.dataset_intent': 'Intent Classification',
+    'benchmarks.dataset_personality': 'Personality Responses',
+    'benchmarks.dataset_language': 'Language Purity',
+    'benchmarks.dataset_transcreation': 'Transcreation',
+    'benchmarks.dataset_edge': 'Edge Cases',
+    'benchmarks.dataset_summary': 'Daily Summaries',
+    'benchmarks.default_model': 'Default model',
+    'benchmarks.loading': 'Loading runs...',
+    'benchmarks.chart_passrate': 'Pass Rate Over Time',
+    'benchmarks.chart_scores': 'Avg Quality & Language Purity',
+    'benchmarks.hover': 'Hover for details · Click legend to toggle datasets',
+
+    'reviews.title': '👁️ Human Review',
+    'reviews.status_pending': 'Pending',
+    'reviews.status_reviewed': 'Reviewed',
+    'reviews.status_all': 'All',
+    'reviews.source_all': 'All sources',
+    'reviews.source_user_downvote': 'User Downvote',
+    'reviews.source_judge_disagree': 'Judge Disagree',
+    'reviews.source_force_approved': 'Force Approved',
+    'reviews.source_manual': 'Manual',
+    'reviews.loading': 'Loading review queue...',
+
+    'rag.title': '🧠 Mensajes almacenados en RAG',
+    'rag.stats_title': 'Total Mensajes RAG',
+    'rag.search': 'Buscar por nombre o texto...',
+    'rag.search_btn': 'Buscar',
+    'rag.loading': 'Cargando mensajes...',
+
+    'rss.title': '📰 Artículos Recientes Detectados',
+    'rss.refresh': '🔄 Refrescar',
+    'rss.loading': 'Cargando actividad RSS...',
+    'rss.no_breaking': 'No se han detectado noticias de última hora todavía.',
+
+    'websearch.title': '🔍 Últimas Consultas Web',
+    'websearch.refresh': '🔄 Refrescar',
+    'websearch.loading': 'Cargando consultas...',
+    'websearch.no_queries': 'No hay consultas registradas todavía.',
+
+    'groups.title': '👥 Gestión de Grupos',
+    'groups.refresh': '🔄 Refrescar',
+    'groups.loading': 'Cargando grupos...',
+    'groups.detail_title': 'Gestión de Grupo',
+
+    'users.title': '👤 Gestión de Usuarios',
+    'users.refresh': '🔄 Refrescar',
+    'users.loading': 'Cargando usuarios...',
+
+    'feedback.title': '💬 Feedback de Usuarios',
+    'feedback.p0': 'P0 - Crítico',
+    'feedback.p1': 'P1 - Alta',
+    'feedback.p2': 'P2 - Media',
+    'feedback.p3': 'P3 - Baja',
+    'feedback.ppending': 'P-PENDING - Sin analizar',
+    'feedback.filter_all_priorities': 'Todas las prioridades',
+    'feedback.filter_all_types': 'Todos los tipos',
+    'feedback.type_bug': 'Bug',
+    'feedback.type_feature': 'Feature',
+    'feedback.type_improvement': 'Improvement',
+    'feedback.type_other': 'Other',
+    'feedback.all': 'Todos',
+    'feedback.unanalyzed': 'Sin analizar',
+    'feedback.analyzed': 'Analizados',
+    'feedback.analyze_all': '🤖 Analizar todo (LangFlow)',
+    'feedback.loading': 'Cargando feedback...',
+    'feedback.refresh': 'Refrescar',
+    'feedback.detail_title': '💬 Detalle de Feedback',
+
+    'prds.title': '📄 PRDs Generados',
+    'prds.filter_all': 'Todos los estados',
+    'prds.status_draft': 'Draft',
+    'prds.status_approved': 'Approved',
+    'prds.status_rejected': 'Rejected',
+    'prds.status_implemented': 'Implemented',
+    'prds.filter_all_priorities': 'Todas las prioridades',
+    'prds.loading': 'Cargando PRDs...',
+    'prds.detail_title': '📄 Detalle de PRD',
+
+    'usage.title': 'Usage',
+    'usage.tokens_chart': '📈 Tokens por día (últimos 7 días)',
+    'usage.no_data_week': 'Sin datos de esta semana',
+
+    'corrections.title': '✏️ Correcciones Conversacionales',
+    'corrections.filter_all': 'Todos',
+    'corrections.status_pending': 'Pending',
+    'corrections.status_approved': 'Approved',
+    'corrections.status_rejected': 'Rejected',
+    'corrections.status_promoted': 'Promoted',
+    'corrections.loading': 'Cargando correcciones...',
+
+    'retention.title': 'Retention',
+    'retention.active_users': 'Active Users (last 15d)',
+    'retention.retention_rate': 'Retention Rate',
+    'retention.bot_calls': 'Total Bot Calls (30d)',
+    'retention.period': 'Period',
+    'retention.group_title': '👥 Comparativa por Grupo',
+    'retention.chart_title': '📈 Active Users & Bot Calls (30 días)',
+    'retention.loading': 'Cargando...',
+    'retention.no_data': 'No hay datos de grupos',
+    'retention.no_trend': 'No hay datos de tendencia todavía',
+    'retention.refresh': '🔄',
+
+    'rag.empty': 'No hay mensajes en el RAG.',
+    'groups.empty': 'No hay grupos creados.',
+    'users.empty': 'No hay usuarios en la base de datos.',
+    'feedback.empty': 'No hay feedback de usuarios todavía.',
+    'prds.empty': 'No hay PRDs generados todavía.',
+    'corrections.empty': 'No hay correcciones todavía.',
+
+    'diag.issue_humor': '😐 Humor',
+    'diag.issue_language': '🌐 Idioma',
+    'diag.issue_personality': '🎭 Personalidad',
+    'diag.issue_factuality': '📊 Veracidad',
+    'diag.issue_none': '✅ Sin issue',
+    'diag.issue_uncategorized': '❓ Sin categoría',
+    'diag.type_force_approved': '⚠️ Force Approved',
+    'diag.type_judge_calibration': '⚖️ Calibración del Juez',
+    'diag.impact': 'impacto',
+    'diag.personalities': 'personalidades',
+    'diag.llm_analysis_error': 'en análisis LLM',
+
+    'modal.detail_title': 'Detalle de Interacción',
+
+    'diag.title': '🔬 Diagnostics',
+    'diag.analyze': '🔍 Analizar',
+    'diag.llm_recommend': '🔮 Recomendaciones con IA',
+    'diag.period': 'Período',
+    'diag.1day': '1 día',
+    'diag.7days': '7 días',
+    'diag.14days': '14 días',
+    'diag.30days': '30 días',
+    'diag.all_personalities': 'Todas las personalidades',
+    'diag.analyzing': '⏳ Analizando...',
+    'diag.generating': '⏳ Generando...',
+    'diag.health_pass': 'pass',
+    'diag.health_no_data': 'Sin datos',
+    'diag.health_evaluations': 'evaluaciones',
+    'diag.health_days': 'días',
+    'diag.avg_quality': 'Calidad media',
+    'diag.avg_attempts': 'Intentos promedio',
+    'diag.hitl': 'HITL',
+    'diag.breakdown_title': '📊 Fallos por Categoría',
+    'diag.personality_title': '🎭 Diagnóstico por Personalidad',
+    'diag.global_recs_title': '💡 Recomendaciones Globales',
+    'diag.llm_results_title': '🔮 Análisis con IA',
+    'diag.no_issue_data': 'Sin datos de issue — las evaluaciones existentes no tienen evalMainIssue (visible desde ahora en adelante).',
+    'diag.no_personality_data': 'Sin datos de personalidad.',
+    'diag.no_recs': 'Sin recomendaciones — métricas dentro de lo esperado.',
+    'diag.no_global_recs': 'Sin recomendaciones globales.',
+    'diag.no_llm_results': 'El análisis no devolvió recomendaciones estructuradas. Revisa que los datos de diagnóstico tengan suficiente volumen.',
+    'diag.error': 'Error',
+
+    'help.title': '⚖️ Evals System — Complete Guide',
+    'help.subtitle': 'How the AI evaluates itself, when humans step in, and how to run & interpret benchmarks.',
+    'help.section1_title': '1. Quality Gate Pipeline',
+    'help.section1_text': 'Every response the AI generates passes through the <strong>Quality Gate</strong> — a loop that generates, judges, and retries if the quality is below threshold. This prevents bad responses from reaching users.',
+    'help.section2_title': '2. LLM-as-a-Judge',
+    'help.section2_text': 'The judge is a separate LLM call (default: <code>llama-3.1-8b-instant</code> at temperature 0.1) that evaluates responses on two axes. It receives the system prompt, humor anchors, and expected language, then returns a JSON verdict.',
+    'help.section3_title': '3. Rule-based Fast-path',
+    'help.section3_text': 'Before calling the LLM judge, a <strong>regex-based script detector</strong> scans the response. If it finds characters from a non-expected script (e.g. Korean hangul in a Spanish response), the response is automatically failed with <code>language_purity = 0</code> — no LLM call needed.',
+    'help.section4_title': '4. Transcreation (Cultural Adaptation)',
+    'help.section4_text': 'For non-Latin scripts, the generator first produces a response in the source language (Spanish or English), then <strong>transcreationService.js</strong> adapts it culturally to the target language.',
+    'help.section5_title': '5. Benchmarks',
+    'help.section5_text': 'A benchmark runs the entire <strong>golden dataset</strong> through the Quality Gate and records pass rates, scores, and regressions.',
+    'help.section6_title': '6. Human-in-the-Loop (HITL)',
+    'help.section6_text': 'The HITL system captures responses that need human review. A human can verify the judge\'s decision, correct it, and optionally promote good examples to the golden dataset.',
+    'help.section7_title': '7. Golden Dataset (13 test queries)',
+    'help.section7_text': 'The golden dataset is the canonical set of test cases used by benchmarks. Each entry specifies the input, expected personality, language, and whether transcreation is needed.',
+    'help.legend_title': '📖 How to read the Evals table',
+    'help.legend_status': 'Status badges',
+    'help.legend_pass': '✅ PASS — both thresholds met',
+    'help.legend_fail': '❌ FAIL — one or both below threshold',
+    'help.legend_skip': 'SKIP — skipped by sample rate',
+    'help.legend_scores': 'Score colors',
+    'help.legend_green': '🟢 ≥ threshold (good)',
+    'help.legend_amber': '🟡 4-7 (needs improvement)',
+    'help.legend_red': '🔴 < 4 (critical)',
+    'help.legend_badges': 'Transcreation badges',
+    'help.legend_tc_check': '✅ ko — transcreated to Korean',
+    'help.legend_tc_fallback': '⚠️ FB — transcreation failed, using fallback',
+    'help.legend_tc_none': '— no transcreation needed',
+    'help.pass_thresholds': 'PASS THRESHOLDS',
+    'help.max_retries': 'MAX RETRIES',
+    'help.sample_rate': 'SAMPLE RATE',
+    'help.transcreation_fallback': 'If transcreation fails after 2 retries, the original Spanish/English response is used as fallback (marked with ⚠️ FB in the evals table).',
+    'help.dataset_files': '📁 Dataset files',
+    'help.regression': 'The <strong>regression detection</strong> automatically compares the latest run against the previous one. If pass rate drops by 5% or more, a <span style="color:var(--accent-red);">🔴 regression banner</span> appears.',
+    'help.hitl_source': 'Source',
+    'help.hitl_when': 'When it triggers',
+    'help.hitl_priority': 'Priority',
+    'help.hitl_force_desc': 'Quality Gate exhausted 3 retries',
+    'help.hitl_downvote_desc': 'User gave a rating of 1-2 ⭐ in the chat',
+    'help.hitl_disagree_desc': 'Human disagrees with the judge\'s verdict',
+    'help.hitl_highest': 'Highest',
+    'help.hitl_high': 'High',
+    'help.hitl_normal': 'Normal',
+    'help.hitl_footer': 'In the <strong>👁️ Human Review</strong> tab you can see pending reviews, submit verdicts (pass/fail with confidence level), and <strong>promote</strong> good responses to the golden dataset.',
+  },
+  en: {
+    'auth.title': '🛠️ DevOps Panel',
+    'auth.subtitle': 'Agente Mundial — Developer Dashboard',
+    'auth.key_placeholder': 'Developer Key...',
+    'auth.login': 'Login',
+    'auth.error': 'Wrong key',
+        'auth.unauthorized': 'Wrong key or server unavailable',
+
+    'header.status.ok': '🟢 OK',
+    'header.status.degraded': '🟡 Degraded',
+    'header.status.error': '🔴 Error',
+
+    'loading': 'Loading...',
+    'loading.data': 'Loading data...',
+
+    'health.title': 'Health',
+    'health.services': 'Services',
+    'health.db': 'Database',
+    'health.connected': 'Connected',
+    'health.disconnected': 'Disconnected',
+    'health.players': 'Players',
+    'health.groups': 'Groups',
+    'health.messages': 'Messages',
+    'health.predictions': 'Predictions',
+    'health.summaries': 'Summaries',
+    'health.error': 'Error loading health',
+
+    'logs.title': '📋 AI Interactions',
+    'logs.filter_type': 'All types',
+    'logs.type_response': 'Response',
+    'logs.type_summary': 'Summary',
+    'logs.type_personality': 'Personality',
+    'logs.filter_source': 'All sources',
+    'logs.source_chat': 'App Chat',
+    'logs.source_web': 'Web Panel',
+    'logs.source_cron': 'Automatic (Cron)',
+    'logs.source_manual': 'Manual',
+    'logs.source_eval_runner': 'Eval Runner',
+    'logs.filter_player': 'Player...',
+    'logs.loading': 'Loading logs...',
+    'logs.empty': 'No logs yet. Generate a bot interaction first.',
+    'logs.prev': '← Prev',
+    'logs.next': 'Next →',
+    'logs.total': 'total',
+
+    'evals.title': '⚖️ Recent Evaluations',
+    'evals.lang_title': '🌐 Performance by Language',
+    'evals.personality_title': '🎭 Performance by Personality',
+    'evals.filter_all': 'All (Pass + Fail)',
+    'evals.filter_passed': '✅ Passed',
+    'evals.filter_failed': '❌ Failed',
+    'evals.filter_all_langs': 'All languages',
+    'evals.lang_es': 'Spanish',
+    'evals.lang_en': 'English',
+    'evals.lang_ko': 'Korean (Transcreation)',
+    'evals.lang_ar': 'Arabic (Transcreation)',
+    'evals.lang_th': 'Thai (Transcreation)',
+    'evals.lang_ja': 'Japanese (Transcreation)',
+    'evals.no_data_lang': 'No language data yet',
+    'evals.no_data_personality': 'No personality data yet',
+    'evals.loading': 'Loading evals...',
+    'evals.empty': 'No evaluations yet. Generate bot interactions first.',
+    'evals.col_time': 'Time',
+    'evals.col_player': 'Player',
+    'evals.col_lang': 'Language',
+    'evals.col_personality': 'Personality',
+    'evals.col_lang_score': 'Lang 🌐',
+    'evals.col_quality': 'Quality 🎭',
+    'evals.col_status': 'Status',
+    'evals.col_attempts': 'Attempts',
+    'evals.col_transcreation': 'Transcreation',
+    'evals.col_feedback': 'Feedback',
+    'evals.pass': '✅ PASS',
+    'evals.fail': '❌ FAIL',
+    'evals.skip': 'SKIP',
+    'evals.detail_title': '⚖️ Eval Detail',
+    'evals.detail_score_lang': '🌐 Language Purity',
+    'evals.detail_score_quality': '🎭 Quality',
+    'evals.detail_attempts': 'attempt(s)',
+    'evals.detail_force_approved': '⚠️ force_approved',
+    'evals.detail_query': '💬 Query',
+    'evals.detail_response': '🤖 Response',
+    'evals.detail_feedback': '⚖️ Judge Feedback',
+    'evals.detail_technical': '🔧 Technical details',
+    'evals.detail_tokens': 'Tokens',
+    'evals.detail_latency': 'Latency',
+    'evals.detail_source': 'Source',
+    'evals.detail_type': 'Type',
+    'evals.detail_success': 'Success',
+    'evals.detail_transcreation_source': 'Transcreation Source',
+    'evals.detail_system_prompt': '🧠 System Prompt',
+    'evals.detail_rag': '🔍 RAG Context',
+
+    'benchmarks.title': 'Benchmarks',
+    'benchmarks.run': '▶ Run Benchmark',
+    'benchmarks.refresh': '🔄',
+    'benchmarks.all_datasets': 'All datasets',
+    'benchmarks.dataset_intent': 'Intent Classification',
+    'benchmarks.dataset_personality': 'Personality Responses',
+    'benchmarks.dataset_language': 'Language Purity',
+    'benchmarks.dataset_transcreation': 'Transcreation',
+    'benchmarks.dataset_edge': 'Edge Cases',
+    'benchmarks.dataset_summary': 'Daily Summaries',
+    'benchmarks.default_model': 'Default model',
+    'benchmarks.loading': 'Loading runs...',
+    'benchmarks.chart_passrate': 'Pass Rate Over Time',
+    'benchmarks.chart_scores': 'Avg Quality & Language Purity',
+    'benchmarks.hover': 'Hover for details · Click legend to toggle datasets',
+
+    'reviews.title': '👁️ Human Review',
+    'reviews.status_pending': 'Pending',
+    'reviews.status_reviewed': 'Reviewed',
+    'reviews.status_all': 'All',
+    'reviews.source_all': 'All sources',
+    'reviews.source_user_downvote': 'User Downvote',
+    'reviews.source_judge_disagree': 'Judge Disagree',
+    'reviews.source_force_approved': 'Force Approved',
+    'reviews.source_manual': 'Manual',
+    'reviews.loading': 'Loading review queue...',
+
+    'rag.title': '🧠 RAG Messages',
+    'rag.stats_title': 'Total RAG Messages',
+    'rag.search': 'Search by name or text...',
+    'rag.search_btn': 'Search',
+    'rag.loading': 'Loading messages...',
+
+    'rss.title': '📰 Recent Articles Detected',
+    'rss.refresh': '🔄 Refresh',
+    'rss.loading': 'Loading RSS activity...',
+    'rss.no_breaking': 'No breaking news detected yet.',
+
+    'websearch.title': '🔍 Recent Web Searches',
+    'websearch.refresh': '🔄 Refresh',
+    'websearch.loading': 'Loading queries...',
+    'websearch.no_queries': 'No queries registered yet.',
+
+    'groups.title': '👥 Group Management',
+    'groups.refresh': '🔄 Refresh',
+    'groups.loading': 'Loading groups...',
+    'groups.detail_title': 'Group Management',
+
+    'users.title': '👤 User Management',
+    'users.refresh': '🔄 Refresh',
+    'users.loading': 'Loading users...',
+
+    'feedback.title': '💬 User Feedback',
+    'feedback.p0': 'P0 - Critical',
+    'feedback.p1': 'P1 - High',
+    'feedback.p2': 'P2 - Medium',
+    'feedback.p3': 'P3 - Low',
+    'feedback.ppending': 'P-PENDING - Unanalyzed',
+    'feedback.filter_all_priorities': 'All priorities',
+    'feedback.filter_all_types': 'All types',
+    'feedback.type_bug': 'Bug',
+    'feedback.type_feature': 'Feature',
+    'feedback.type_improvement': 'Improvement',
+    'feedback.type_other': 'Other',
+    'feedback.all': 'All',
+    'feedback.unanalyzed': 'Unanalyzed',
+    'feedback.analyzed': 'Analyzed',
+    'feedback.analyze_all': '🤖 Analyze all (LangFlow)',
+    'feedback.loading': 'Loading feedback...',
+    'feedback.refresh': 'Refresh',
+    'feedback.detail_title': '💬 Feedback Detail',
+
+    'prds.title': '📄 Generated PRDs',
+    'prds.filter_all': 'All statuses',
+    'prds.status_draft': 'Draft',
+    'prds.status_approved': 'Approved',
+    'prds.status_rejected': 'Rejected',
+    'prds.status_implemented': 'Implemented',
+    'prds.filter_all_priorities': 'All priorities',
+    'prds.loading': 'Loading PRDs...',
+    'prds.detail_title': '📄 PRD Detail',
+
+    'usage.title': 'Usage',
+    'usage.tokens_chart': '📈 Tokens per day (last 7 days)',
+    'usage.no_data_week': 'No data for this week',
+
+    'corrections.title': '✏️ Conversational Corrections',
+    'corrections.filter_all': 'All',
+    'corrections.status_pending': 'Pending',
+    'corrections.status_approved': 'Approved',
+    'corrections.status_rejected': 'Rejected',
+    'corrections.status_promoted': 'Promoted',
+    'corrections.loading': 'Loading corrections...',
+
+    'retention.title': 'Retention',
+    'retention.active_users': 'Active Users (last 15d)',
+    'retention.retention_rate': 'Retention Rate',
+    'retention.bot_calls': 'Total Bot Calls (30d)',
+    'retention.period': 'Period',
+    'retention.group_title': '👥 Group Comparison',
+    'retention.chart_title': '📈 Active Users & Bot Calls (30 days)',
+    'retention.loading': 'Loading...',
+    'retention.no_data': 'No group data',
+    'retention.no_trend': 'No trend data yet',
+    'retention.refresh': '🔄',
+
+    'rag.empty': 'No messages in RAG.',
+    'groups.empty': 'No groups created.',
+    'users.empty': 'No users in the database.',
+    'feedback.empty': 'No user feedback yet.',
+    'prds.empty': 'No PRDs generated yet.',
+    'corrections.empty': 'No corrections yet.',
+
+    'diag.issue_humor': '😐 Humor',
+    'diag.issue_language': '🌐 Language',
+    'diag.issue_personality': '🎭 Personality',
+    'diag.issue_factuality': '📊 Factuality',
+    'diag.issue_none': '✅ No issue',
+    'diag.issue_uncategorized': '❓ Uncategorized',
+    'diag.type_force_approved': '⚠️ Force Approved',
+    'diag.type_judge_calibration': '⚖️ Judge Calibration',
+    'diag.impact': 'impact',
+    'diag.personalities': 'personalities',
+    'diag.llm_analysis_error': 'in LLM analysis',
+
+    'modal.detail_title': 'Interaction Detail',
+
+    'diag.title': '🔬 Diagnostics',
+    'diag.analyze': '🔍 Analyze',
+    'diag.llm_recommend': '🔮 AI Recommendations',
+    'diag.period': 'Period',
+    'diag.1day': '1 day',
+    'diag.7days': '7 days',
+    'diag.14days': '14 days',
+    'diag.30days': '30 days',
+    'diag.all_personalities': 'All personalities',
+    'diag.analyzing': '⏳ Analyzing...',
+    'diag.generating': '⏳ Generating...',
+    'diag.health_pass': 'pass',
+    'diag.health_no_data': 'No data',
+    'diag.health_evaluations': 'evaluations',
+    'diag.health_days': 'days',
+    'diag.avg_quality': 'Avg Quality',
+    'diag.avg_attempts': 'Avg Attempts',
+    'diag.hitl': 'HITL',
+    'diag.breakdown_title': '📊 Failures by Category',
+    'diag.personality_title': '🎭 Diagnosis by Personality',
+    'diag.global_recs_title': '💡 Global Recommendations',
+    'diag.llm_results_title': '🔮 AI Analysis',
+    'diag.no_issue_data': 'No issue data — existing evaluations lack evalMainIssue (visible from now on).',
+    'diag.no_personality_data': 'No personality data.',
+    'diag.no_recs': 'No recommendations — metrics within expected range.',
+    'diag.no_global_recs': 'No global recommendations.',
+    'diag.no_llm_results': 'The analysis returned no structured recommendations. Check that your diagnostic data has enough volume.',
+    'diag.error': 'Error',
+
+    'help.title': '⚖️ Evals System — Complete Guide',
+    'help.subtitle': 'How the AI evaluates itself, when humans step in, and how to run & interpret benchmarks.',
+    'help.section1_title': '1. Quality Gate Pipeline',
+    'help.section1_text': 'Every response the AI generates passes through the <strong>Quality Gate</strong> — a loop that generates, judges, and retries if the quality is below threshold. This prevents bad responses from reaching users.',
+    'help.section2_title': '2. LLM-as-a-Judge',
+    'help.section2_text': 'The judge is a separate LLM call (default: <code>llama-3.1-8b-instant</code> at temperature 0.1) that evaluates responses on two axes. It receives the system prompt, humor anchors, and expected language, then returns a JSON verdict.',
+    'help.section3_title': '3. Rule-based Fast-path',
+    'help.section3_text': 'Before calling the LLM judge, a <strong>regex-based script detector</strong> scans the response. If it finds characters from a non-expected script (e.g. Korean hangul in a Spanish response), the response is automatically failed with <code>language_purity = 0</code> — no LLM call needed.',
+    'help.section4_title': '4. Transcreation (Cultural Adaptation)',
+    'help.section4_text': 'For non-Latin scripts, the generator first produces a response in the source language (Spanish or English), then <strong>transcreationService.js</strong> adapts it culturally to the target language.',
+    'help.section5_title': '5. Benchmarks',
+    'help.section5_text': 'A benchmark runs the entire <strong>golden dataset</strong> through the Quality Gate and records pass rates, scores, and regressions.',
+    'help.section6_title': '6. Human-in-the-Loop (HITL)',
+    'help.section6_text': 'The HITL system captures responses that need human review. A human can verify the judge\'s decision, correct it, and optionally promote good examples to the golden dataset.',
+    'help.section7_title': '7. Golden Dataset (13 test queries)',
+    'help.section7_text': 'The golden dataset is the canonical set of test cases used by benchmarks. Each entry specifies the input, expected personality, language, and whether transcreation is needed.',
+    'help.legend_title': '📖 How to read the Evals table',
+    'help.legend_status': 'Status badges',
+    'help.legend_pass': '✅ PASS — both thresholds met',
+    'help.legend_fail': '❌ FAIL — one or both below threshold',
+    'help.legend_skip': 'SKIP — skipped by sample rate',
+    'help.legend_scores': 'Score colors',
+    'help.legend_green': '🟢 ≥ threshold (good)',
+    'help.legend_amber': '🟡 4-7 (needs improvement)',
+    'help.legend_red': '🔴 < 4 (critical)',
+    'help.legend_badges': 'Transcreation badges',
+    'help.legend_tc_check': '✅ ko — transcreated to Korean',
+    'help.legend_tc_fallback': '⚠️ FB — transcreation failed, using fallback',
+    'help.legend_tc_none': '— no transcreation needed',
+    'help.pass_thresholds': 'PASS THRESHOLDS',
+    'help.max_retries': 'MAX RETRIES',
+    'help.sample_rate': 'SAMPLE RATE',
+    'help.transcreation_fallback': 'If transcreation fails after 2 retries, the original Spanish/English response is used as fallback (marked with ⚠️ FB in the evals table).',
+    'help.dataset_files': '📁 Dataset files',
+    'help.regression': 'The <strong>regression detection</strong> automatically compares the latest run against the previous one. If pass rate drops by 5% or more, a <span style="color:var(--accent-red);">🔴 regression banner</span> appears.',
+    'help.hitl_source': 'Source',
+    'help.hitl_when': 'When it triggers',
+    'help.hitl_priority': 'Priority',
+    'help.hitl_force_desc': 'Quality Gate exhausted 3 retries',
+    'help.hitl_downvote_desc': 'User gave a rating of 1-2 ⭐ in the chat',
+    'help.hitl_disagree_desc': 'Human disagrees with the judge\'s verdict',
+    'help.hitl_highest': 'Highest',
+    'help.hitl_high': 'High',
+    'help.hitl_normal': 'Normal',
+    'help.hitl_footer': 'In the <strong>👁️ Human Review</strong> tab you can see pending reviews, submit verdicts (pass/fail with confidence level), and <strong>promote</strong> good responses to the golden dataset.',
+  }
+};
+
+function t(key) {
+  return LANG[currentLang] && LANG[currentLang][key] !== undefined ? LANG[currentLang][key] : (LANG['es'][key] || key);
+}
+
+function applyDataI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const text = t(key);
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      el.placeholder = text;
+    } else {
+      el.textContent = text;
+    }
+  });
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'es' ? 'en' : 'es';
+  document.getElementById('lang-toggle').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+  applyDataI18n();
+  const active = document.querySelector('.panel.active');
+  if (active) switchTab(active.id.replace('panel-', ''));
+}
+
+// ==========================================
 // AUTH
 // ==========================================
 
@@ -24,12 +648,13 @@ function authenticate() {
     .then(() => {
       document.getElementById('auth-screen').style.display = 'none';
       document.getElementById('dashboard').style.display = 'block';
+      applyDataI18n();
       loadAll();
     })
     .catch(() => {
       const err = document.getElementById('auth-error');
       err.style.display = 'block';
-      err.textContent = 'Clave incorrecta o servidor no disponible';
+      err.textContent = t('auth.unauthorized');
     });
 }
 
@@ -227,13 +852,13 @@ async function loadLogs() {
   if (player) query += `&playerName=${encodeURIComponent(player)}`;
 
   const container = document.getElementById('logs-table-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando logs...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('logs.loading') + '</div>';
 
   try {
     const data = await devFetch(`/logs${query}`);
 
     if (!data.logs.length) {
-      container.innerHTML = '<div class="loading">No hay logs todavía. Genera una interacción con el bot primero.</div>';
+      container.innerHTML = '<div class="loading">' + t('logs.empty') + '</div>';
       document.getElementById('logs-pagination').innerHTML = '';
       return;
     }
@@ -262,9 +887,9 @@ async function loadLogs() {
     // Pagination
     const p = data.pagination;
     document.getElementById('logs-pagination').innerHTML = `
-      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentLogsPage--; loadLogs()">← Prev</button>
-      <span class="page-info">${p.page} / ${p.pages} (${p.total} total)</span>
-      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentLogsPage++; loadLogs()">Next →</button>
+      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentLogsPage--; loadLogs()">${t('logs.prev')}</button>
+      <span class="page-info">${p.page} / ${p.pages} (${p.total} ${t('logs.total')})</span>
+      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentLogsPage++; loadLogs()">${t('logs.next')}</button>
     `;
   } catch (e) {
     container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
@@ -275,7 +900,7 @@ async function openLogDetail(id) {
   const modal = document.getElementById('log-modal');
   const body = document.getElementById('modal-body');
   modal.classList.add('show');
-  body.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando detalle...</div>';
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading') + '</div>';
 
   try {
     const log = await devFetch(`/logs/${id}`);
@@ -327,7 +952,7 @@ async function openLogDetail(id) {
 
     document.getElementById('modal-title').textContent = `${log.type.toUpperCase()} — ${log.playerName}`;
   } catch (e) {
-    body.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+    body.innerHTML = `<div class="loading" style="color:var(--accent-red)">${t('diag.error')}: ${e.message}</div>`;
   }
 }
 
@@ -362,7 +987,7 @@ async function loadEvalsStats() {
     document.getElementById('evals-cards').innerHTML = `
       <div class="card">
         <div class="card-label">Pass Rate (${ov.period})</div>
-        <div class="card-value" style="color:${passRateColor}">${ov.passRate !== null ? ov.passRate + '%' : 'Sin datos'}</div>
+        <div class="card-value" style="color:${passRateColor}">${ov.passRate !== null ? ov.passRate + '%' : t('diag.health_no_data')}</div>
         <div class="card-sub">${ov.passed} passed · ${ov.failed} failed · ${ov.totalEvals} total</div>
       </div>
       <div class="card">
@@ -400,7 +1025,7 @@ async function loadEvalsStats() {
       html += '</tbody></table>';
       langEl.innerHTML = html;
     } else {
-      langEl.innerHTML = '<div class="loading">Sin datos de idioma todavía</div>';
+      langEl.innerHTML = '<div class="loading">' + t('evals.no_data_lang') + '</div>';
     }
 
     // Breakdown por personalidad
@@ -421,7 +1046,7 @@ async function loadEvalsStats() {
       html += '</tbody></table>';
       persEl.innerHTML = html;
     } else {
-      persEl.innerHTML = '<div class="loading">Sin datos de personalidad todavía</div>';
+      persEl.innerHTML = '<div class="loading">' + t('evals.no_data_personality') + '</div>';
     }
   } catch (e) {
     document.getElementById('evals-cards').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
@@ -437,29 +1062,29 @@ async function loadEvals() {
   if (lang)         query += `&targetLanguage=${lang}`;
 
   const container = document.getElementById('evals-table-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando evals...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('evals.loading') + '</div>';
 
   try {
     const data = await devFetch(`/evals${query}`);
 
     if (!data.logs.length) {
-      container.innerHTML = '<div class="loading">Sin evaluaciones todavía. Genera interacciones con el bot primero.</div>';
+      container.innerHTML = '<div class="loading">' + t('evals.empty') + '</div>';
       document.getElementById('evals-pagination').innerHTML = '';
       return;
     }
 
     let html = `<table><thead><tr>
-      <th>Tiempo</th><th>Jugador</th><th>Idioma</th><th>Personalidad</th>
-      <th>Lang 🌐</th><th>Quality 🎭</th><th>Status</th><th>Intentos</th><th>Transcreation</th><th>Feedback</th>
+      <th>${t('evals.col_time')}</th><th>${t('evals.col_player')}</th><th>${t('evals.col_lang')}</th><th>${t('evals.col_personality')}</th>
+      <th>${t('evals.col_lang_score')}</th><th>${t('evals.col_quality')}</th><th>${t('evals.col_status')}</th><th>${t('evals.col_attempts')}</th><th>${t('evals.col_transcreation')}</th><th>${t('evals.col_feedback')}</th>
     </tr></thead><tbody>`;
 
     data.logs.forEach(log => {
       const time = new Date(log.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
       const statusBadge = log.evalSkipped
-        ? '<span class="badge" style="background:rgba(255,255,255,0.1)">SKIP</span>'
+        ? '<span class="badge" style="background:rgba(255,255,255,0.1)">' + t('evals.skip') + '</span>'
         : log.evalPassed
-          ? '<span class="badge badge-success">✅ PASS</span>'
-          : '<span class="badge badge-error">❌ FAIL</span>';
+          ? '<span class="badge badge-success">' + t('evals.pass') + '</span>'
+          : '<span class="badge badge-error">' + t('evals.fail') + '</span>';
 
       const langScore = log.evalScores?.language_purity;
       const qualScore = log.evalScores?.quality;
@@ -470,7 +1095,7 @@ async function loadEvals() {
         ? (log.transcreationFallback ? '<span class="badge badge-error" title="Fallback al original">⚠️ FB</span>' : `<span class="badge badge-success">${log.targetLanguage}✓</span>`)
         : '<span style="color:var(--text-muted)">—</span>';
 
-      html += `<tr>
+      html += `<tr onclick="openEvalDetail('${log._id}')" style="cursor:pointer;">
         <td style="white-space:nowrap">${time}</td>
         <td>${log.playerName}</td>
         <td><strong>${log.targetLanguage || '?'}</strong></td>
@@ -489,12 +1114,138 @@ async function loadEvals() {
 
     const p = data.pagination;
     document.getElementById('evals-pagination').innerHTML = `
-      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentEvalsPage--; loadEvals()">← Prev</button>
-      <span class="page-info">${p.page} / ${p.pages} (${p.total} total)</span>
-      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentEvalsPage++; loadEvals()">Next →</button>
+      <button ${p.page <= 1 ? 'disabled' : ''} onclick="currentEvalsPage--; loadEvals()">${t('logs.prev')}</button>
+      <span class="page-info">${p.page} / ${p.pages} (${p.total} ${t('logs.total')})</span>
+      <button ${p.page >= p.pages ? 'disabled' : ''} onclick="currentEvalsPage++; loadEvals()">${t('logs.next')}</button>
     `;
   } catch (e) {
     container.innerHTML = `<div class="loading" style="color:var(--accent-red)">Error: ${e.message}</div>`;
+  }
+}
+
+// ==========================================
+// EVALS — Detail Modal
+// ==========================================
+
+async function openEvalDetail(id) {
+  const modal = document.getElementById('log-modal');
+  const body = document.getElementById('modal-body');
+  modal.classList.add('show');
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading') + '</div>';
+
+  try {
+    const log = await devFetch(`/logs/${id}`);
+    const time = new Date(log.createdAt).toLocaleString('es-ES');
+
+    const langScore = log.evalScores?.language_purity;
+    const qualScore = log.evalScores?.quality;
+    const langColor = langScore === undefined ? 'var(--text-muted)' : langScore >= 8 ? 'var(--accent-green)' : langScore >= 5 ? 'var(--accent-amber)' : 'var(--accent-red)';
+    const qualColor = qualScore === undefined ? 'var(--text-muted)' : qualScore >= 6 ? 'var(--accent-cyan)' : qualScore >= 4 ? 'var(--accent-amber)' : 'var(--accent-red)';
+
+    const statusBadge = log.evalSkipped
+      ? '<span class="badge" style="background:rgba(255,255,255,0.1)">' + t('evals.skip') + '</span>'
+      : log.evalPassed
+        ? '<span class="badge badge-success">' + t('evals.pass') + '</span>'
+        : '<span class="badge badge-error">' + t('evals.fail') + '</span>';
+
+    const issueColors = { language: '#ef4444', humor: '#f59e0b', personality: '#a855f7', factuality: '#3b82f6', none: '#22c55e' };
+    const issueColor = issueColors[log.evalMainIssue] || '#888';
+    const transcreationDetail = log.wasTranscreated
+      ? `${log.targetLanguage}✓${log.transcreationFallback ? ' (fallback)' : ''}`
+      : '—';
+
+    body.innerHTML = `
+      <div style="margin-bottom:1.2rem;font-size:0.8rem;color:var(--text-muted)">
+        🕐 ${time}
+        · <strong>${log.playerName}</strong>
+        · ${log.anchorsUsed || '—'}
+        · <strong>${log.targetLanguage || '?'}</strong>
+        · ${log.model || '—'}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:0.8rem;">
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem;">${t('evals.detail_score_lang')}</div>
+          <div style="font-size:1.3rem;font-weight:700;color:${langColor};">${langScore !== undefined ? langScore + '/10' : '—'}</div>
+        </div>
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:0.8rem;">
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.3rem;">${t('evals.detail_score_quality')}</div>
+          <div style="font-size:1.3rem;font-weight:700;color:${qualColor};">${qualScore !== undefined ? qualScore + '/10' : '—'}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1.5rem;">
+        ${statusBadge}
+        ${log.evalMainIssue ? `<span class="badge" style="background:${issueColor}22;color:${issueColor};border:1px solid ${issueColor}44;">📊 ${log.evalMainIssue}</span>` : ''}
+        <span class="badge" style="background:rgba(255,255,255,0.05);">${log.evalAttempts || 1} ${t('evals.detail_attempts')}</span>
+        ${log.evalAttempts >= 3 && !log.evalPassed ? '<span class="badge" style="background:rgba(59,130,246,0.2);color:#3b82f6;">' + t('evals.detail_force_approved') + '</span>' : ''}
+        <span class="badge" style="background:rgba(255,255,255,0.05);">🔄 ${transcreationDetail}</span>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">${t('evals.detail_query')}</div>
+        <div class="prompt-content user">${escapeHtml(log.userPrompt || '—')}</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">${t('evals.detail_response')}</div>
+        <div class="prompt-content ai">${escapeHtml(log.groqResponse || '—')}</div>
+      </div>
+
+      ${log.evalFeedback ? `
+      <div class="prompt-block">
+        <div class="prompt-label">${t('evals.detail_feedback')}</div>
+        <div class="prompt-content" style="border-left:3px solid var(--accent-amber);background:rgba(245,158,11,0.05);">${escapeHtml(log.evalFeedback)}</div>
+      </div>` : ''}
+
+      <details style="margin-top:1rem;">
+        <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer;">${t('evals.detail_technical')}</summary>
+        <div style="margin-top:0.8rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.5rem;">
+          <div style="background:var(--bg-secondary);border-radius:6px;padding:0.4rem 0.6rem;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;">${t('evals.detail_tokens')}</div>
+            <div style="font-size:0.8rem;">${log.tokensUsed || 0} (p:${log.promptTokens || 0} / c:${log.completionTokens || 0})</div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:6px;padding:0.4rem 0.6rem;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;">${t('evals.detail_latency')}</div>
+            <div style="font-size:0.8rem;color:${log.latencyMs > 3000 ? 'var(--accent-red)' : 'var(--accent-green)'};">${log.latencyMs}ms</div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:6px;padding:0.4rem 0.6rem;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;">${t('evals.detail_source')}</div>
+            <div style="font-size:0.8rem;">${log.source || '—'}</div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:6px;padding:0.4rem 0.6rem;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;">${t('evals.detail_type')}</div>
+            <div style="font-size:0.8rem;">${log.type || '—'}</div>
+          </div>
+          <div style="background:var(--bg-secondary);border-radius:6px;padding:0.4rem 0.6rem;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;">${t('evals.detail_success')}</div>
+            <div style="font-size:0.8rem;color:${log.success ? 'var(--accent-green)' : 'var(--accent-red)'};">${log.success ? '✅' : '❌ ' + (log.errorMessage || '')}</div>
+          </div>
+          ${log.wasTranscreated && log.transcreationSource ? `
+          <div style="background:var(--bg-secondary);border-radius:6px;padding:0.4rem 0.6rem;grid-column:1/-1;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;">${t('evals.detail_transcreation_source')}</div>
+            <div style="font-size:0.75rem;font-family:var(--mono);">${escapeHtml(log.transcreationSource.substring(0, 200))}</div>
+          </div>` : ''}
+        </div>
+      </details>
+
+      ${log.systemPrompt ? `
+      <details style="margin-top:0.8rem;">
+        <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer;">${t('evals.detail_system_prompt')}</summary>
+        <div class="prompt-content system" style="margin-top:0.5rem;max-height:300px;overflow-y:auto;">${escapeHtml(log.systemPrompt)}</div>
+      </details>` : ''}
+
+      ${log.ragQuery ? `
+      <details style="margin-top:0.8rem;">
+        <summary style="font-size:0.75rem;color:var(--text-muted);cursor:pointer;">${t('evals.detail_rag')} (${log.ragResultCount || 0})</summary>
+        <div class="prompt-content rag" style="margin-top:0.5rem;max-height:300px;overflow-y:auto;">${escapeHtml(log.ragContext || '')}</div>
+      </details>` : ''}
+    `;
+
+    document.getElementById('modal-title').textContent = `⚖️ ${t('evals.detail_title').replace('⚖️ ','')} — ${log.playerName} · ${log.anchorsUsed || '—'}`;
+  } catch (e) {
+    body.innerHTML = `<div class="loading" style="color:var(--accent-red)">${t('diag.error')}: ${e.message}</div>`;
+    document.getElementById('modal-title').textContent = t('evals.detail_title');
   }
 }
 
@@ -530,13 +1281,13 @@ async function loadRagMessages() {
   if (search) query += `&search=${encodeURIComponent(search)}`;
 
   const container = document.getElementById('rag-messages-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando mensajes...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('rag.loading') + '</div>';
 
   try {
     const data = await devFetch(`/rag/messages${query}`);
 
     if (!data.messages.length) {
-      container.innerHTML = '<div class="loading">No hay mensajes en el RAG.</div>';
+      container.innerHTML = '<div class="loading">' + t('rag.empty') + '</div>';
       document.getElementById('rag-pagination').innerHTML = '';
       return;
     }
@@ -570,13 +1321,13 @@ async function loadRagMessages() {
 
 async function loadGroups() {
   const container = document.getElementById('groups-table-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando grupos...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('groups.loading') + '</div>';
 
   try {
     const groups = await devFetch('/groups');
     
     if (!groups.length) {
-      container.innerHTML = '<div class="loading">No hay grupos creados.</div>';
+      container.innerHTML = '<div class="loading">' + t('groups.empty') + '</div>';
       return;
     }
 
@@ -609,13 +1360,13 @@ async function loadGroups() {
 
 async function loadUsers() {
   const container = document.getElementById('users-table-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando usuarios...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('users.loading') + '</div>';
 
   try {
     const users = await devFetch('/users');
     
     if (!users.length) {
-      container.innerHTML = '<div class="loading">No hay usuarios en la base de datos.</div>';
+      container.innerHTML = '<div class="loading">' + t('users.empty') + '</div>';
       return;
     }
 
@@ -678,8 +1429,8 @@ async function openGroupDetails(name) {
   const title = document.getElementById('modal-title');
   
   modal.classList.add('show');
-  title.textContent = `Gestión de Grupo: ${name}`;
-  body.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando detalles...</div>';
+  title.textContent = `${t('groups.detail_title')}: ${name}`;
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading.data') + '</div>';
 
   try {
     const data = await devFetch(`/groups/${encodeURIComponent(name)}/details`);
@@ -907,7 +1658,7 @@ async function loadUsage() {
 function renderBarChart(byDay) {
   const chart = document.getElementById('tokens-chart');
   if (!byDay || !byDay.length) {
-    chart.innerHTML = '<div class="loading">Sin datos de esta semana</div>';
+    chart.innerHTML = '<div class="loading">' + t('usage.no_data_week') + '</div>';
     return;
   }
 
@@ -978,7 +1729,7 @@ async function loadRssStats() {
     // Recent breaking news
     const articlesBody = document.getElementById('rss-articles-body');
     if (!data.recentBreaking || data.recentBreaking.length === 0) {
-      articlesBody.innerHTML = '<div class="loading">No se han detectado noticias de última hora todavía.</div>';
+      articlesBody.innerHTML = '<div class="loading">' + t('rss.no_breaking') + '</div>';
       return;
     }
 
@@ -1033,7 +1784,7 @@ async function loadWebSearchStats() {
     // Recent queries
     const queriesBody = document.getElementById('websearch-queries-body');
     if (!data.recentQueries || data.recentQueries.length === 0) {
-      queriesBody.innerHTML = '<div class="loading">No hay consultas registradas todavía.</div>';
+      queriesBody.innerHTML = '<div class="loading">' + t('websearch.no_queries') + '</div>';
       return;
     }
 
@@ -1070,13 +1821,13 @@ async function loadFeedback() {
   if (analyzed) query += `&analyzed=${analyzed}`;
 
   const container = document.getElementById('feedback-table-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando feedback...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('feedback.loading') + '</div>';
 
   try {
     const data = await devFetch(`/feedback${query}`);
 
     if (!data.feedback.length) {
-      container.innerHTML = '<div class="loading">No hay feedback de usuarios todavía.</div>';
+      container.innerHTML = '<div class="loading">' + t('feedback.empty') + '</div>';
       document.getElementById('feedback-pagination').innerHTML = '';
       return;
     }
@@ -1122,8 +1873,8 @@ async function openFeedbackDetail(id) {
   const body = document.getElementById('modal-body');
   const title = document.getElementById('modal-title');
   modal.classList.add('show');
-  body.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando detalle...</div>';
-  title.textContent = '💬 Detalle de Feedback';
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading.data') + '</div>';
+  title.textContent = t('feedback.detail_title');
 
   try {
     const fb = await devFetch(`/feedback/${id}`);
@@ -1226,13 +1977,13 @@ async function loadPRDs() {
   if (priority) query += `&priority=${priority}`;
 
   const container = document.getElementById('prds-table-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando PRDs...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('prds.loading') + '</div>';
 
   try {
     const data = await devFetch(`/prds${query}`);
 
     if (!data.prds.length) {
-      container.innerHTML = '<div class="loading">No hay PRDs generados todavía. Analiza feedback y genera PRDs desde la pestaña 💬 Feedback.</div>';
+      container.innerHTML = '<div class="loading">' + t('prds.empty') + '</div>';
       document.getElementById('prds-pagination').innerHTML = '';
       return;
     }
@@ -1276,8 +2027,8 @@ async function openPRDDetail(id) {
   const body = document.getElementById('modal-body');
   const title = document.getElementById('modal-title');
   modal.classList.add('show');
-  body.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando detalle...</div>';
-  title.textContent = '📄 Detalle de PRD';
+  body.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('loading.data') + '</div>';
+  title.textContent = t('prds.detail_title');
 
   try {
     const prd = await devFetch(`/prds/${id}`);
@@ -2101,7 +2852,7 @@ async function loadFeedbackStats() {
       html += '</tbody></table>';
       persEl.innerHTML = html;
     } else {
-      persEl.innerHTML = '<div class="loading">Sin datos</div>';
+      persEl.innerHTML = '<div class="loading">' + t('diag.health_no_data') + '</div>';
     }
 
     // Breakdown por idioma
@@ -2120,7 +2871,7 @@ async function loadFeedbackStats() {
       html += '</tbody></table>';
       langEl.innerHTML = html;
     } else {
-      langEl.innerHTML = '<div class="loading">Sin datos</div>';
+      langEl.innerHTML = '<div class="loading">' + t('diag.health_no_data') + '</div>';
     }
 
     // Tabla de ratings recientes (from /evals)
@@ -2147,7 +2898,7 @@ async function loadFeedbackStats() {
       html += '</tbody></table>';
       tableEl.innerHTML = html;
     } else {
-      tableEl.innerHTML = '<div class="loading">Sin evaluaciones</div>';
+      tableEl.innerHTML = '<div class="loading">' + t('evals.empty') + '</div>';
     }
 
     const p = evalsData.pagination;
@@ -2203,12 +2954,12 @@ async function loadCorrections() {
   if (status) query += `&status=${status}`;
 
   const container = document.getElementById('corrections-table-body');
-  container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando correcciones...</div>';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('corrections.loading') + '</div>';
 
   try {
     const data = await devFetch(`/corrections${query}`);
     if (!data.corrections?.length) {
-      container.innerHTML = '<div class="loading">No hay correcciones todavía. Cuando un usuario corrija al bot, aparecerán aquí.</div>';
+      container.innerHTML = '<div class="loading">' + t('corrections.empty') + '</div>';
       document.getElementById('corrections-pagination').innerHTML = '';
       return;
     }
@@ -2301,24 +3052,24 @@ async function loadRetention() {
 
     document.getElementById('retention-cards').innerHTML = `
       <div class="card">
-        <div class="card-label">Active Users (last 15d)</div>
+        <div class="card-label">${t('retention.active_users')}</div>
         <div class="card-value cyan">${data.activeUsers}</div>
-        <div class="card-sub">Of ${data.totalUsers} total users</div>
+        <div class="card-sub">${t('retention.of_total')} ${data.totalUsers} ${t('retention.users')}</div>
       </div>
       <div class="card">
-        <div class="card-label">Retention Rate</div>
+        <div class="card-label">${t('retention.retention_rate')}</div>
         <div class="card-value ${retentionColor}">${data.retentionRate}%</div>
-        <div class="card-sub">${data.retainedUsers} retained · ${data.churnedUsers} churned</div>
+        <div class="card-sub">${data.retainedUsers} ${t('retention.retained')} · ${data.churnedUsers} ${t('retention.churned')}</div>
       </div>
       <div class="card">
-        <div class="card-label">Total Bot Calls (30d)</div>
+        <div class="card-label">${t('retention.bot_calls')}</div>
         <div class="card-value purple">${data.totalBotCalls}</div>
-        <div class="card-sub">Avg ${data.avgBotCallsPerUser} calls/user</div>
+        <div class="card-sub">${t('retention.avg_per_user')} ${data.avgBotCallsPerUser}</div>
       </div>
       <div class="card">
-        <div class="card-label">Period</div>
+        <div class="card-label">${t('retention.period')}</div>
         <div class="card-value amber" style="font-size:0.9rem">${data.period}</div>
-        <div class="card-sub">Rolling window</div>
+        <div class="card-sub">${t('retention.rolling')}</div>
       </div>
     `;
 
@@ -2342,7 +3093,7 @@ async function loadRetention() {
       html += '</div>';
       chartEl.innerHTML = html;
     } else {
-      chartEl.innerHTML = '<div class="loading">No hay datos de tendencia todavía</div>';
+      chartEl.innerHTML = '<div class="loading">' + t('retention.no_trend') + '</div>';
     }
 
     // Group comparison table
@@ -2361,7 +3112,7 @@ async function loadRetention() {
       html += '</tbody></table>';
       groupEl.innerHTML = html;
     } else {
-      groupEl.innerHTML = '<div class="loading">No hay datos de grupos</div>';
+      groupEl.innerHTML = '<div class="loading">' + t('retention.no_data') + '</div>';
     }
   } catch (e) {
     document.getElementById('retention-cards').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
@@ -2373,8 +3124,20 @@ async function loadRetention() {
 // ==========================================
 
 let diagDataCache = null;
+let diagLoading = false;
 
 async function loadDiagnostics() {
+  if (diagLoading) return;
+  diagLoading = true;
+
+  const btn = document.getElementById('btn-diag-analyze');
+  const btnLlm = document.getElementById('btn-diag-llm');
+  btn.disabled = true;
+  btn.textContent = t('diag.analyzing');
+  if (btnLlm) btnLlm.disabled = true;
+
+  document.getElementById('diagnostics-health').innerHTML = '<div class="loading" style="grid-column:1/-1"><span class="spinner"></span> ' + t('diag.analyzing') + '</div>';
+
   const days = document.getElementById('diag-days').value;
   const personality = document.getElementById('diag-personality').value;
   const params = new URLSearchParams({ days });
@@ -2391,6 +3154,11 @@ async function loadDiagnostics() {
     document.getElementById('diag-llm-results').style.display = 'none';
   } catch (e) {
     document.getElementById('diagnostics-health').innerHTML = `<div class="card"><div class="card-value red">Error</div><div class="card-sub">${e.message}</div></div>`;
+  } finally {
+    diagLoading = false;
+    btn.disabled = false;
+    btn.textContent = t('diag.analyze');
+    if (btnLlm) btnLlm.disabled = false;
   }
 }
 
@@ -2399,22 +3167,22 @@ function renderDiagHealth(data) {
   const healthColor = ov.health === 'critical' ? 'red' : ov.health === 'attention' ? 'amber' : 'green';
   document.getElementById('diagnostics-health').innerHTML = `
     <div class="card-sm">
-      <div class="label">${ov.healthLabel || 'Sin datos'}</div>
-      <div class="value" style="font-size:1.1rem;color:var(--accent-${healthColor})">${ov.passRate != null ? ov.passRate + '% pass' : '—'}</div>
-      <div class="card-sub">${ov.totalEvaluations || 0} evaluaciones · ${ov.period?.days || '?'} días</div>
+      <div class="label">${ov.healthLabel || t('diag.health_no_data')}</div>
+      <div class="value" style="font-size:1.1rem;color:var(--accent-${healthColor})">${ov.passRate != null ? ov.passRate + '% ' + t('diag.health_pass') : '—'}</div>
+      <div class="card-sub">${ov.totalEvaluations || 0} ${t('diag.health_evaluations')} · ${ov.period?.days || '?'} ${t('diag.health_days')}</div>
     </div>
     <div class="card-sm">
-      <div class="label">Calidad media</div>
+      <div class="label">${t('diag.avg_quality')}</div>
       <div class="value cyan">${ov.avgQuality != null ? ov.avgQuality + '/10' : '—'}</div>
       <div class="card-sub">Language: ${ov.avgLanguagePurity != null ? ov.avgLanguagePurity + '/10' : '—'}</div>
     </div>
     <div class="card-sm">
-      <div class="label">Intentos promedio</div>
+      <div class="label">${t('diag.avg_attempts')}</div>
       <div class="value ${ov.avgAttempts > 2 ? 'red' : ov.avgAttempts > 1.5 ? 'amber' : 'green'}">${ov.avgAttempts || '1.0'}</div>
       <div class="card-sub">${ov.forceApproved || 0} force_approved</div>
     </div>
     <div class="card-sm">
-      <div class="label">HITL</div>
+      <div class="label">${t('diag.hitl')}</div>
       <div class="value purple">${ov.humanDisagreements || 0}</div>
       <div class="card-sub">${ov.humanDownvotes || 0} downvotes</div>
     </div>
@@ -2425,16 +3193,16 @@ function renderDiagIssueBreakdown(data) {
   const issues = data.breakdownByIssue || {};
   const total = Object.values(issues).reduce((s, i) => s + i.count, 0) || 1;
   const ISSUE_LABELS = {
-    humor: { label: '😐 Humor', color: '#f59e0b' },
-    language: { label: '🌐 Idioma', color: '#ef4444' },
-    personality: { label: '🎭 Personalidad', color: '#a855f7' },
-    factuality: { label: '📊 Veracidad', color: '#3b82f6' },
-    none: { label: '✅ Sin issue', color: '#22c55e' }
+    humor: { label: t('diag.issue_humor'), color: '#f59e0b' },
+    language: { label: t('diag.issue_language'), color: '#ef4444' },
+    personality: { label: t('diag.issue_personality'), color: '#a855f7' },
+    factuality: { label: t('diag.issue_factuality'), color: '#3b82f6' },
+    none: { label: t('diag.issue_none'), color: '#22c55e' }
   };
-
   const sorted = Object.entries(issues).sort((a, b) => b[1].count - a[1].count);
   const html = sorted.map(([key, val]) => {
-    const meta = ISSUE_LABELS[key] || { label: key, color: '#888' };
+    const safeKey = key === null || key === undefined ? 'null' : key;
+    const meta = ISSUE_LABELS[safeKey] || { label: safeKey === 'null' ? t('diag.issue_uncategorized') : safeKey, color: '#888' };
     const pct = Math.round((val.count / total) * 100);
     const trendIcon = val.trend === 'up' ? '📈' : val.trend === 'down' ? '📉' : '➡️';
     return `<div class="issue-card" style="border-left:3px solid ${meta.color};padding:0.6rem 0.8rem;background:var(--bg-card);border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
@@ -2453,13 +3221,13 @@ function renderDiagIssueBreakdown(data) {
 
   document.getElementById('diag-breakdown-issue').innerHTML = html
     ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0.5rem;">${html}</div>`
-    : '<div class="text-muted" style="padding:0.5rem;">Sin datos de issue — las evaluaciones existentes no tienen evalMainIssue (visible desde ahora en adelante).</div>';
+    : '<div class="text-muted" style="padding:0.5rem;">' + t('diag.no_issue_data') + '</div>';
 }
 
 function renderDiagPersonalityTable(data) {
   const personalities = data.byPersonality || [];
   if (!personalities.length) {
-    document.getElementById('diag-personality-table').innerHTML = '<div class="text-muted" style="padding:0.5rem;">Sin datos de personalidad.</div>';
+    document.getElementById('diag-personality-table').innerHTML = '<div class="text-muted" style="padding:0.5rem;">' + t('diag.no_personality_data') + '</div>';
     return;
   }
 
@@ -2498,7 +3266,7 @@ function renderDiagPersonalityTable(data) {
       <td>${issueBadge}</td>
     </tr>
     <tr class="rec-row" style="display:none;">
-      <td colspan="6" style="padding:0 0.5rem 0.5rem 0.5rem;">${recHtml || '<div class="text-muted" style="padding:0.5rem;">Sin recomendaciones — métricas dentro de lo esperado.</div>'}</td>
+      <td colspan="6" style="padding:0 0.5rem 0.5rem 0.5rem;">${recHtml || '<div class="text-muted" style="padding:0.5rem;">' + t('diag.no_recs') + '</div>'}</td>
     </tr>`;
   }).join('');
 
@@ -2515,7 +3283,7 @@ function renderDiagPersonalityTable(data) {
 function renderDiagGlobalRecs(data) {
   const recs = data.globalRecommendations || [];
   if (!recs.length) {
-    document.getElementById('diag-global-recs').innerHTML = '<div class="text-muted" style="padding:0.5rem;">Sin recomendaciones globales.</div>';
+    document.getElementById('diag-global-recs').innerHTML = '<div class="text-muted" style="padding:0.5rem;">' + t('diag.no_global_recs') + '</div>';
     return;
   }
 
@@ -2523,7 +3291,7 @@ function renderDiagGlobalRecs(data) {
     <div class="rec-global" style="padding:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;border-left:3px solid ${r.severity === 'high' ? 'var(--accent-red)' : 'var(--accent-amber)'};">
       <div style="display:flex;justify-content:space-between;align-items:start;">
         <div>
-          <div style="font-size:0.8rem;font-weight:600;">${r.type === 'force_approved' ? '⚠️ Force Approved' : r.type === 'judge_calibration' ? '⚖️ Calibración del Juez' : '💡 ' + r.type}</div>
+          <div style="font-size:0.8rem;font-weight:600;">${r.type === 'force_approved' ? t('diag.type_force_approved') : r.type === 'judge_calibration' ? t('diag.type_judge_calibration') : '💡 ' + r.type}</div>
           <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.25rem;">${r.message}</div>
         </div>
         <span class="badge badge-${r.severity === 'high' ? 'error' : 'warning'}" style="font-size:0.65rem;">${r.severity}</span>
@@ -2532,7 +3300,7 @@ function renderDiagGlobalRecs(data) {
         <div style="margin-top:0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
           ${r.suggestedActions.map(a => `
             <span style="font-size:0.65rem;padding:0.2rem 0.4rem;border-radius:4px;background:rgba(59,130,246,0.1);color:var(--accent-cyan);border:1px solid rgba(59,130,246,0.15);">
-              ${a.label} · impacto ${a.impact}
+              ${a.label} · ${t('diag.impact')} ${a.impact}
             </span>
           `).join('')}
         </div>
@@ -2544,14 +3312,23 @@ function renderDiagGlobalRecs(data) {
 }
 
 async function runDiagnosticLLM() {
+  if (diagLoading) return;
+  diagLoading = true;
+
   if (!diagDataCache) {
     await loadDiagnostics();
-    if (!diagDataCache) return;
+    if (!diagDataCache) { diagLoading = false; return; }
   }
 
   const btn = document.getElementById('btn-diag-llm');
+  const btnAnalyze = document.getElementById('btn-diag-analyze');
   btn.disabled = true;
-  btn.textContent = '⏳ Generando...';
+  btn.textContent = t('diag.generating');
+  if (btnAnalyze) btnAnalyze.disabled = true;
+
+  const container = document.getElementById('diag-llm-results');
+  container.style.display = 'block';
+  container.innerHTML = '<div class="loading"><span class="spinner"></span> ' + t('diag.generating') + '</div>';
 
   try {
     const data = await devFetchPost('/diagnostics/analyze', {
@@ -2559,19 +3336,17 @@ async function runDiagnosticLLM() {
     });
 
     const analysis = data.analysis || {};
-    const container = document.getElementById('diag-llm-results');
-    container.style.display = 'block';
 
     if (analysis.error) {
-      container.innerHTML = `<div class="alert-banner alert-red">Error en análisis LLM: ${analysis.error}</div>`;
+      container.innerHTML = `<div class="alert-banner alert-red">${t('diag.error')} ${t('diag.llm_analysis_error')}: ${analysis.error}</div>`;
       return;
     }
 
     let html = `
       <div style="background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(59,130,246,0.05));border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:1.25rem;margin-top:1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-          <h3 style="margin:0;font-size:0.95rem;">🔮 Análisis con IA</h3>
-          <span style="font-size:0.65rem;color:var(--text-muted);">${data._meta?.model || ''} · ${data._meta?.personalitiesAnalyzed?.length || 0} personalidades</span>
+          <h3 style="margin:0;font-size:0.95rem;">${t('diag.llm_results_title')}</h3>
+          <span style="font-size:0.65rem;color:var(--text-muted);">${data._meta?.model || ''} · ${data._meta?.personalitiesAnalyzed?.length || 0} ${t('diag.personalities')}</span>
         </div>
         ${analysis.globalNotes ? `<div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;padding:0.5rem;background:rgba(0,0,0,0.15);border-radius:6px;">${analysis.globalNotes}</div>` : ''}
     `;
@@ -2584,7 +3359,7 @@ async function runDiagnosticLLM() {
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:0.75rem;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
               <strong style="font-size:0.85rem;">${p.personalityId}</strong>
-              <span class="badge badge-${impColor}" style="font-size:0.6rem;">impacto ${p.impact}</span>
+              <span class="badge badge-${impColor}" style="font-size:0.6rem;">${t('diag.impact')} ${p.impact}</span>
             </div>
             <div style="font-size:0.75rem;color:var(--text-secondary);">${p.diagnosis || ''}</div>
             ${p.diffSuggestion ? `
@@ -2607,16 +3382,18 @@ async function runDiagnosticLLM() {
     html += '</div>';
 
     if (!analysis.personalities && !analysis.globalNotes) {
-      html += '<div class="text-muted" style="padding:0.5rem;">El análisis no devolvió recomendaciones estructuradas. Revisa que los datos de diagnóstico tengan suficiente volumen.</div>';
+      html += '<div class="text-muted" style="padding:0.5rem;">' + t('diag.no_llm_results') + '</div>';
     }
 
     container.innerHTML = html;
   } catch (e) {
-    document.getElementById('diag-llm-results').innerHTML = `<div class="alert-banner alert-red">Error: ${e.message}</div>`;
-    document.getElementById('diag-llm-results').style.display = 'block';
+    container.innerHTML = `<div class="alert-banner alert-red">Error: ${e.message}</div>`;
+    container.style.display = 'block';
   } finally {
+    diagLoading = false;
     btn.disabled = false;
-    btn.textContent = '🔮 Recomendaciones con IA';
+    btn.textContent = t('diag.llm_recommend');
+    if (btnAnalyze) btnAnalyze.disabled = false;
   }
 }
 

@@ -13,11 +13,11 @@
 <!-- Auth Screen -->
 <div id="auth-screen">
   <div class="auth-box">
-    <h1>🛠️ DevOps Panel</h1>
-    <p class="subtitle">Agente Mundial — Developer Dashboard</p>
-    <input type="password" id="dev-key-input" placeholder="Developer Key..." autofocus>
-    <button onclick="authenticate()">Acceder</button>
-    <p class="auth-error" id="auth-error">Clave incorrecta</p>
+    <h1 data-i18n="auth.title">🛠️ DevOps Panel</h1>
+    <p class="subtitle" data-i18n="auth.subtitle">Agente Mundial — Developer Dashboard</p>
+    <input type="password" id="dev-key-input" data-i18n="auth.key_placeholder" placeholder="Developer Key..." autofocus>
+    <button onclick="authenticate()" data-i18n="auth.login">Acceder</button>
+    <p class="auth-error" id="auth-error" data-i18n="auth.error">Clave incorrecta</p>
   </div>
 </div>
 
@@ -27,6 +27,7 @@
     <h1>🛠️ Agente Mundial <span>// DevOps</span></h1>
     <div style="display:flex;align-items:center;gap:0.75rem;">
       <div class="header-status" id="header-status"></div>
+      <button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);padding:4px 8px;font-size:0.75rem;cursor:pointer;">🌐 EN</button>
       <button id="hamburger-btn" onclick="toggleMenu()" aria-label="Menu">☰</button>
     </div>
   </header>
@@ -84,26 +85,26 @@
     <div class="panel" id="panel-logs">
       <div class="table-wrap">
         <div class="table-header">
-          <h3>📋 Interacciones con IA</h3>
+          <h3 data-i18n="logs.title">📋 Interacciones con IA</h3>
           <div class="table-filters">
             <select id="filter-type" onchange="loadLogs()">
-              <option value="">Todos los tipos</option>
-              <option value="response">Response</option>
-              <option value="summary">Summary</option>
-              <option value="personality">Personality</option>
+              <option value="" data-i18n="logs.filter_type">Todos los tipos</option>
+              <option value="response" data-i18n="logs.type_response">Response</option>
+              <option value="summary" data-i18n="logs.type_summary">Summary</option>
+              <option value="personality" data-i18n="logs.type_personality">Personality</option>
             </select>
             <select id="filter-source" onchange="loadLogs()">
-              <option value="">Todas las fuentes</option>
-              <option value="chat">App Chat</option>
-              <option value="web">Web Panel</option>
-              <option value="cron">Automático (Cron)</option>
-              <option value="manual">Manual</option>
-              <option value="eval_runner">Eval Runner</option>
+              <option value="" data-i18n="logs.filter_source">Todas las fuentes</option>
+              <option value="chat" data-i18n="logs.source_chat">App Chat</option>
+              <option value="web" data-i18n="logs.source_web">Web Panel</option>
+              <option value="cron" data-i18n="logs.source_cron">Automático (Cron)</option>
+              <option value="manual" data-i18n="logs.source_manual">Manual</option>
+              <option value="eval_runner" data-i18n="logs.source_eval_runner">Eval Runner</option>
             </select>
-            <input type="text" id="filter-player" placeholder="Jugador..." onkeyup="debounceLoadLogs()">
+            <input type="text" id="filter-player" data-i18n="logs.filter_player" placeholder="Jugador..." onkeyup="debounceLoadLogs()">
           </div>
         </div>
-        <div id="logs-table-body"><div class="loading"><span class="spinner"></span> Cargando logs...</div></div>
+        <div id="logs-table-body"><div class="loading"><span class="spinner"></span> <span data-i18n="logs.loading">Cargando logs...</span></div></div>
         <div class="pagination" id="logs-pagination"></div>
       </div>
     </div>
@@ -116,7 +117,7 @@
       <div style="display:flex; gap:1.5rem; margin-top:1.5rem;">
         <div style="flex:1" class="table-wrap">
           <div class="table-header">
-            <h3>🌐 Rendimiento por Idioma</h3>
+            <h3 data-i18n="evals.lang_title">🌐 Rendimiento por Idioma</h3>
           </div>
           <div id="evals-lang-breakdown"></div>
         </div>
@@ -124,7 +125,7 @@
         <!-- Breakdown Personality -->
         <div style="flex:1" class="table-wrap">
           <div class="table-header">
-            <h3>🎭 Rendimiento por Personalidad</h3>
+            <h3 data-i18n="evals.personality_title">🎭 Rendimiento por Personalidad</h3>
           </div>
           <div id="evals-personality-breakdown"></div>
         </div>
@@ -132,26 +133,26 @@
 
       <div class="table-wrap" style="margin-top:1.5rem;">
         <div class="table-header">
-          <h3>⚖️ Log de Evaluaciones Recientes</h3>
+          <h3 data-i18n="evals.title">⚖️ Log de Evaluaciones Recientes</h3>
           <div class="table-filters">
             <select id="filter-evals-passed" onchange="loadEvals()">
-              <option value="">Todas (Pass + Fail)</option>
-              <option value="true">✅ Passed</option>
-              <option value="false">❌ Failed</option>
+              <option value="" data-i18n="evals.filter_all">Todas (Pass + Fail)</option>
+              <option value="true" data-i18n="evals.filter_passed">✅ Passed</option>
+              <option value="false" data-i18n="evals.filter_failed">❌ Failed</option>
             </select>
             <select id="filter-evals-lang" onchange="loadEvals()">
-              <option value="">Todos los idiomas</option>
-              <option value="es">Español</option>
-              <option value="en">Inglés</option>
-              <option value="ko">Coreano (Transcreation)</option>
-              <option value="ar">Árabe (Transcreation)</option>
-              <option value="th">Tailandés (Transcreation)</option>
-              <option value="ja">Japonés (Transcreation)</option>
+              <option value="" data-i18n="evals.filter_all_langs">Todos los idiomas</option>
+              <option value="es" data-i18n="evals.lang_es">Español</option>
+              <option value="en" data-i18n="evals.lang_en">Inglés</option>
+              <option value="ko" data-i18n="evals.lang_ko">Coreano (Transcreation)</option>
+              <option value="ar" data-i18n="evals.lang_ar">Árabe (Transcreation)</option>
+              <option value="th" data-i18n="evals.lang_th">Tailandés (Transcreation)</option>
+              <option value="ja" data-i18n="evals.lang_ja">Japonés (Transcreation)</option>
             </select>
             <button onclick="loadEvalsStats(); loadEvals();" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄</button>
           </div>
         </div>
-        <div id="evals-table-body"><div class="loading"><span class="spinner"></span> Cargando evals...</div></div>
+        <div id="evals-table-body"><div class="loading"><span class="spinner"></span> <span data-i18n="evals.loading">Cargando evals...</span></div></div>
         <div class="pagination" id="evals-pagination"></div>
       </div>
     </div>
@@ -181,22 +182,22 @@
 
       <div class="charts-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
         <div class="chart-container" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
-          <h4 style="font-size:0.85rem;margin-bottom:0.25rem;">Pass Rate Over Time</h4>
-          <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.5rem;">Hover for details · Click legend to toggle datasets</div>
+          <h4 style="font-size:0.85rem;margin-bottom:0.25rem;" data-i18n="benchmarks.chart_passrate">Pass Rate Over Time</h4>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.5rem;" data-i18n="benchmarks.hover">Hover for details · Click legend to toggle datasets</div>
           <canvas id="chart-passrate"></canvas>
         </div>
         <div class="chart-container" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
-          <h4 style="font-size:0.85rem;margin-bottom:0.25rem;">Avg Quality & Language Purity</h4>
-          <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.5rem;">Hover for details · Click legend to toggle datasets</div>
+          <h4 style="font-size:0.85rem;margin-bottom:0.25rem;" data-i18n="benchmarks.chart_scores">Avg Quality & Language Purity</h4>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.5rem;" data-i18n="benchmarks.hover">Hover for details · Click legend to toggle datasets</div>
           <canvas id="chart-scores"></canvas>
         </div>
       </div>
 
       <div class="table-wrap" style="margin-bottom:1.5rem;">
         <div class="table-header">
-          <h3>📋 Run History</h3>
+          <h3 data-i18n="benchmarks.title">📋 Run History</h3>
         </div>
-        <div id="run-history-body"><div class="loading"><span class="spinner"></span> Loading runs...</div></div>
+        <div id="run-history-body"><div class="loading"><span class="spinner"></span> <span data-i18n="benchmarks.loading">Loading runs...</span></div></div>
         <div class="pagination" id="run-history-pagination"></div>
       </div>
 
@@ -209,21 +210,21 @@
 
       <div class="table-filters" style="margin-bottom:1rem;">
         <select id="filter-review-status" onchange="loadReviewQueue()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
-          <option value="pending">Pending</option>
-          <option value="reviewed">Reviewed</option>
-          <option value="all">All</option>
+          <option value="pending" data-i18n="reviews.status_pending">Pending</option>
+          <option value="reviewed" data-i18n="reviews.status_reviewed">Reviewed</option>
+          <option value="all" data-i18n="reviews.status_all">All</option>
         </select>
         <select id="filter-review-source" onchange="loadReviewQueue()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;font-family:var(--mono);">
-          <option value="">All sources</option>
-          <option value="user_downvote">User Downvote</option>
-          <option value="judge_disagree">Judge Disagree</option>
-          <option value="force_approved">Force Approved</option>
-          <option value="manual">Manual</option>
+          <option value="" data-i18n="reviews.source_all">All sources</option>
+          <option value="user_downvote" data-i18n="reviews.source_user_downvote">User Downvote</option>
+          <option value="judge_disagree" data-i18n="reviews.source_judge_disagree">Judge Disagree</option>
+          <option value="force_approved" data-i18n="reviews.source_force_approved">Force Approved</option>
+          <option value="manual" data-i18n="reviews.source_manual">Manual</option>
         </select>
         <button onclick="loadReviewQueue(); loadReviewStats();" style="background:var(--accent-blue);padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">🔄</button>
       </div>
 
-      <div id="review-queue-body"><div class="loading"><span class="spinner"></span> Loading review queue...</div></div>
+        <div id="review-queue-body"><div class="loading"><span class="spinner"></span> <span data-i18n="reviews.loading">Loading review queue...</span></div></div>
       <div class="pagination" id="review-queue-pagination"></div>
     </div>
 
@@ -232,15 +233,15 @@
       <div class="cards" id="rag-stats-cards"></div>
       <div class="table-wrap">
         <div class="table-header">
-          <h3>🧠 Mensajes almacenados en RAG</h3>
+          <h3 data-i18n="rag.title">🧠 Mensajes almacenados en RAG</h3>
         </div>
         <div style="padding: 1rem;">
           <div class="search-bar">
-            <input type="text" id="rag-search" placeholder="Buscar por nombre o texto..." onkeyup="debounceLoadRag()">
-            <button onclick="loadRagMessages()">Buscar</button>
+            <input type="text" id="rag-search" data-i18n="rag.search" placeholder="Buscar por nombre o texto..." onkeyup="debounceLoadRag()">
+            <button onclick="loadRagMessages()" data-i18n="rag.search_btn">Buscar</button>
           </div>
         </div>
-        <div id="rag-messages-body"><div class="loading"><span class="spinner"></span> Cargando mensajes...</div></div>
+        <div id="rag-messages-body"><div class="loading"><span class="spinner"></span> <span data-i18n="rag.loading">Cargando mensajes...</span></div></div>
         <div class="pagination" id="rag-pagination"></div>
       </div>
     </div>
@@ -250,10 +251,10 @@
       <div class="cards" id="rss-cards"></div>
       <div class="table-wrap" style="margin-top:1.5rem;">
         <div class="table-header">
-          <h3>📰 Artículos Recientes Detectados</h3>
-          <button onclick="loadRssStats()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
+          <h3 data-i18n="rss.title">📰 Artículos Recientes Detectados</h3>
+          <button onclick="loadRssStats()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;" data-i18n="rss.refresh">🔄 Refrescar</button>
         </div>
-        <div id="rss-articles-body"><div class="loading"><span class="spinner"></span> Cargando actividad RSS...</div></div>
+        <div id="rss-articles-body"><div class="loading"><span class="spinner"></span> <span data-i18n="rss.loading">Cargando actividad RSS...</span></div></div>
       </div>
     </div>
 
@@ -262,10 +263,10 @@
       <div class="cards" id="websearch-cards"></div>
       <div class="table-wrap" style="margin-top:1.5rem;">
         <div class="table-header">
-          <h3>🔍 Últimas Consultas Web</h3>
-          <button onclick="loadWebSearchStats()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
+          <h3 data-i18n="websearch.title">🔍 Últimas Consultas Web</h3>
+          <button onclick="loadWebSearchStats()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;" data-i18n="websearch.refresh">🔄 Refrescar</button>
         </div>
-        <div id="websearch-queries-body"><div class="loading"><span class="spinner"></span> Cargando consultas...</div></div>
+        <div id="websearch-queries-body"><div class="loading"><span class="spinner"></span> <span data-i18n="websearch.loading">Cargando consultas...</span></div></div>
       </div>
     </div>
 
@@ -273,10 +274,10 @@
     <div class="panel" id="panel-groups">
       <div class="table-wrap">
         <div class="table-header">
-          <h3>👥 Gestión de Grupos</h3>
-          <button onclick="loadGroups()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
+          <h3 data-i18n="groups.title">👥 Gestión de Grupos</h3>
+          <button onclick="loadGroups()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;" data-i18n="groups.refresh">🔄 Refrescar</button>
         </div>
-        <div id="groups-table-body"><div class="loading"><span class="spinner"></span> Cargando grupos...</div></div>
+        <div id="groups-table-body"><div class="loading"><span class="spinner"></span> <span data-i18n="groups.loading">Cargando grupos...</span></div></div>
       </div>
     </div>
 
@@ -284,10 +285,10 @@
     <div class="panel" id="panel-users">
       <div class="table-wrap">
         <div class="table-header">
-          <h3>👤 Gestión de Usuarios</h3>
-          <button onclick="loadUsers()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄 Refrescar</button>
+          <h3 data-i18n="users.title">👤 Gestión de Usuarios</h3>
+          <button onclick="loadUsers()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;" data-i18n="users.refresh">🔄 Refrescar</button>
         </div>
-        <div id="users-table-body"><div class="loading"><span class="spinner"></span> Cargando usuarios...</div></div>
+        <div id="users-table-body"><div class="loading"><span class="spinner"></span> <span data-i18n="users.loading">Cargando usuarios...</span></div></div>
       </div>
     </div>
 
@@ -295,36 +296,36 @@
     <div class="panel" id="panel-feedback">
       <div class="table-wrap">
         <div class="table-header">
-          <h3>💬 Feedback de Usuarios</h3>
+          <h3 data-i18n="feedback.title">💬 Feedback de Usuarios</h3>
           <div class="table-filters">
             <select id="filter-fb-priority" onchange="loadFeedback()">
-              <option value="">Todas las prioridades</option>
-              <option value="P0">P0 - Crítico</option>
-              <option value="P1">P1 - Alta</option>
-              <option value="P2">P2 - Media</option>
-              <option value="P3">P3 - Baja</option>
-              <option value="P-PENDING">P-PENDING - Sin analizar</option>
+              <option value="" data-i18n="feedback.filter_all_priorities">Todas las prioridades</option>
+              <option value="P0" data-i18n="feedback.p0">P0 - Crítico</option>
+              <option value="P1" data-i18n="feedback.p1">P1 - Alta</option>
+              <option value="P2" data-i18n="feedback.p2">P2 - Media</option>
+              <option value="P3" data-i18n="feedback.p3">P3 - Baja</option>
+              <option value="P-PENDING" data-i18n="feedback.ppending">P-PENDING - Sin analizar</option>
             </select>
             <select id="filter-fb-type" onchange="loadFeedback()">
-              <option value="">Todos los tipos</option>
-              <option value="bug">Bug</option>
-              <option value="feature">Feature</option>
-              <option value="improvement">Improvement</option>
-              <option value="other">Other</option>
+              <option value="" data-i18n="feedback.filter_all_types">Todos los tipos</option>
+              <option value="bug" data-i18n="feedback.type_bug">Bug</option>
+              <option value="feature" data-i18n="feedback.type_feature">Feature</option>
+              <option value="improvement" data-i18n="feedback.type_improvement">Improvement</option>
+              <option value="other" data-i18n="feedback.type_other">Other</option>
             </select>
             <select id="filter-fb-analyzed" onchange="loadFeedback()">
-              <option value="">Todos</option>
-              <option value="false">Sin analizar</option>
-              <option value="true">Analizados</option>
+              <option value="" data-i18n="feedback.all">Todos</option>
+              <option value="false" data-i18n="feedback.unanalyzed">Sin analizar</option>
+              <option value="true" data-i18n="feedback.analyzed">Analizados</option>
             </select>
             <button onclick="loadFeedback()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄</button>
           </div>
         </div>
         <div style="padding:0.5rem 1rem; display:flex; gap:0.5rem; border-bottom:1px solid var(--border); flex-wrap:wrap;">
-          <button class="btn-sm" onclick="analyzeAllFeedback()" style="background:var(--accent-cyan)">🤖 Analizar todo (LangFlow)</button>
-          <button class="btn-sm" onclick="loadFeedback()" style="background:var(--accent-blue)">📋 Refrescar</button>
+          <button class="btn-sm" onclick="analyzeAllFeedback()" style="background:var(--accent-cyan)" data-i18n="feedback.analyze_all">🤖 Analizar todo (LangFlow)</button>
+          <button class="btn-sm" onclick="loadFeedback()" style="background:var(--accent-blue)">📋 <span data-i18n="feedback.refresh">Refrescar</span></button>
         </div>
-        <div id="feedback-table-body"><div class="loading"><span class="spinner"></span> Cargando feedback...</div></div>
+        <div id="feedback-table-body"><div class="loading"><span class="spinner"></span> <span data-i18n="feedback.loading">Cargando feedback...</span></div></div>
         <div class="pagination" id="feedback-pagination"></div>
       </div>
     </div>
@@ -333,26 +334,26 @@
     <div class="panel" id="panel-prds">
       <div class="table-wrap">
         <div class="table-header">
-          <h3>📄 PRDs Generados</h3>
+          <h3 data-i18n="prds.title">📄 PRDs Generados</h3>
           <div class="table-filters">
             <select id="filter-prd-status" onchange="loadPRDs()">
-              <option value="">Todos los estados</option>
-              <option value="draft">Draft</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="implemented">Implemented</option>
+              <option value="" data-i18n="prds.filter_all">Todos los estados</option>
+              <option value="draft" data-i18n="prds.status_draft">Draft</option>
+              <option value="approved" data-i18n="prds.status_approved">Approved</option>
+              <option value="rejected" data-i18n="prds.status_rejected">Rejected</option>
+              <option value="implemented" data-i18n="prds.status_implemented">Implemented</option>
             </select>
             <select id="filter-prd-priority" onchange="loadPRDs()">
-              <option value="">Todas las prioridades</option>
-              <option value="P0">P0 - Crítico</option>
-              <option value="P1">P1 - Alta</option>
-              <option value="P2">P2 - Media</option>
-              <option value="P3">P3 - Baja</option>
+              <option value="" data-i18n="prds.filter_all_priorities">Todas las prioridades</option>
+              <option value="P0" data-i18n="feedback.p0">P0 - Crítico</option>
+              <option value="P1" data-i18n="feedback.p1">P1 - Alta</option>
+              <option value="P2" data-i18n="feedback.p2">P2 - Media</option>
+              <option value="P3" data-i18n="feedback.p3">P3 - Baja</option>
             </select>
             <button onclick="loadPRDs()" style="background:var(--accent-blue); padding:4px 8px; border-radius:4px; font-size:0.7rem; color:white; border:none; cursor:pointer;">🔄</button>
           </div>
         </div>
-        <div id="prds-table-body"><div class="loading"><span class="spinner"></span> Cargando PRDs...</div></div>
+        <div id="prds-table-body"><div class="loading"><span class="spinner"></span> <span data-i18n="prds.loading">Cargando PRDs...</span></div></div>
         <div class="pagination" id="prds-pagination"></div>
       </div>
     </div>
@@ -361,7 +362,7 @@
     <div class="panel" id="panel-usage">
       <div class="cards" id="usage-cards"></div>
       <div class="chart-placeholder" id="usage-chart">
-        <h3>📈 Tokens por día (últimos 7 días)</h3>
+        <h3 data-i18n="usage.tokens_chart">📈 Tokens por día (últimos 7 días)</h3>
         <div class="bar-chart" id="tokens-chart"></div>
       </div>
       <div class="cards" id="usage-breakdown"></div>
@@ -372,17 +373,17 @@
       <div class="cards" id="feedback-stats-cards"></div>
       <div style="display:flex;gap:1.5rem;margin-top:1.5rem;">
         <div style="flex:1" class="table-wrap">
-          <div class="table-header"><h3>⭐ Promedio por Personalidad</h3></div>
+          <div class="table-header"><h3 data-i18n="evals.personality_title">⭐ Promedio por Personalidad</h3></div>
           <div id="feedback-stats-personality"></div>
         </div>
         <div style="flex:1" class="table-wrap">
-          <div class="table-header"><h3>⭐ Promedio por Idioma</h3></div>
+          <div class="table-header"><h3 data-i18n="evals.lang_title">⭐ Promedio por Idioma</h3></div>
           <div id="feedback-stats-language"></div>
         </div>
       </div>
       <div class="table-wrap" style="margin-top:1.5rem;">
-        <div class="table-header"><h3>📋 Ratings Recientes</h3></div>
-        <div id="feedback-stats-table"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
+        <div class="table-header"><h3 data-i18n="evals.title">📋 Ratings Recientes</h3></div>
+        <div id="feedback-stats-table"><div class="loading"><span class="spinner"></span> <span data-i18n="loading">Cargando...</span></div></div>
         <div class="pagination" id="feedback-stats-pagination"></div>
       </div>
     </div>
@@ -392,19 +393,19 @@
       <div class="cards" id="corrections-cards"></div>
       <div class="table-wrap" style="margin-top:1.5rem;">
         <div class="table-header">
-          <h3>✏️ Correcciones Conversacionales</h3>
+          <h3 data-i18n="corrections.title">✏️ Correcciones Conversacionales</h3>
           <div class="table-filters">
             <select id="filter-correction-status" onchange="loadCorrections()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.4rem 0.6rem;font-size:0.8rem;">
-              <option value="">Todos</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="promoted">Promoted</option>
+              <option value="" data-i18n="corrections.filter_all">Todos</option>
+              <option value="pending" data-i18n="corrections.status_pending">Pending</option>
+              <option value="approved" data-i18n="corrections.status_approved">Approved</option>
+              <option value="rejected" data-i18n="corrections.status_rejected">Rejected</option>
+              <option value="promoted" data-i18n="corrections.status_promoted">Promoted</option>
             </select>
             <button onclick="loadCorrections(); loadCorrectionsStats();" style="background:var(--accent-blue);padding:4px 8px;border-radius:4px;font-size:0.7rem;color:white;border:none;cursor:pointer;">🔄</button>
           </div>
         </div>
-        <div id="corrections-table-body"><div class="loading"><span class="spinner"></span> Cargando correcciones...</div></div>
+        <div id="corrections-table-body"><div class="loading"><span class="spinner"></span> <span data-i18n="corrections.loading">Cargando correcciones...</span></div></div>
         <div class="pagination" id="corrections-pagination"></div>
       </div>
     </div>
@@ -413,15 +414,15 @@
     <div class="panel" id="panel-retention">
       <div class="cards" id="retention-cards"></div>
       <div class="chart-placeholder" style="margin-top:1.5rem;">
-        <h3>📈 Active Users & Bot Calls (30 días)</h3>
+        <h3 data-i18n="retention.chart_title">📈 Active Users & Bot Calls (30 días)</h3>
         <div class="bar-chart" id="retention-trend-chart"></div>
       </div>
       <div class="table-wrap" style="margin-top:1.5rem;">
         <div class="table-header">
-          <h3>👥 Comparativa por Grupo</h3>
-          <button onclick="loadRetention()" style="background:var(--accent-blue);padding:4px 8px;border-radius:4px;font-size:0.7rem;color:white;border:none;cursor:pointer;">🔄</button>
+          <h3 data-i18n="retention.group_title">👥 Comparativa por Grupo</h3>
+          <button onclick="loadRetention()" style="background:var(--accent-blue);padding:4px 8px;border-radius:4px;font-size:0.7rem;color:white;border:none;cursor:pointer;" data-i18n="retention.refresh">🔄</button>
         </div>
-        <div id="retention-group-table"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
+        <div id="retention-group-table"><div class="loading"><span class="spinner"></span> <span data-i18n="loading">Cargando...</span></div></div>
       </div>
     </div>
 
@@ -431,18 +432,18 @@
 
         <!-- TITLE -->
         <div style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(139,92,246,0.1));border:1px solid rgba(59,130,246,0.25);border-radius:16px;padding:2rem;margin-bottom:2rem;text-align:center;">
-          <h2 style="font-size:1.6rem;margin:0 0 0.5rem">⚖️ Evals System — Complete Guide</h2>
-          <p style="color:var(--text-muted);margin:0;font-size:0.95rem;max-width:700px;margin-left:auto;margin-right:auto">
+          <h2 style="font-size:1.6rem;margin:0 0 0.5rem" data-i18n="help.title">⚖️ Evals System — Complete Guide</h2>
+          <p style="color:var(--text-muted);margin:0;font-size:0.95rem;max-width:700px;margin-left:auto;margin-right:auto" data-i18n="help.subtitle">
             How the AI evaluates itself, when humans step in, and how to run & interpret benchmarks.
           </p>
         </div>
 
         <!-- 1. QUALITY GATE FLOW -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--accent-blue);display:flex;align-items:center;gap:0.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-blue);display:flex;align-items:center;gap:0.5rem;" data-i18n="help.section1_title">
             <span>1.</span> Quality Gate Pipeline
           </h3>
-          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;" data-i18n="help.section1_text">
             Every response the AI generates passes through the <strong>Quality Gate</strong> — a loop that generates, judges, and retries if the quality is below threshold. This prevents bad responses from reaching users.
           </p>
           <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:1.5rem;font-family:var(--mono);font-size:0.75rem;line-height:1.7;color:var(--text-primary);overflow-x:auto;white-space:nowrap;">
@@ -476,15 +477,15 @@
           </div>
           <div style="margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap;">
             <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:0.6rem 1rem;flex:1;min-width:150px;">
-              <div style="font-size:0.7rem;color:var(--accent-green);font-weight:700;">PASS THRESHOLDS</div>
+              <div style="font-size:0.7rem;color:var(--accent-green);font-weight:700;" data-i18n="help.pass_thresholds">PASS THRESHOLDS</div>
               <div style="font-size:0.8rem;color:var(--text-primary);margin-top:0.25rem;">language_purity ≥ 8<br>quality ≥ 6</div>
             </div>
             <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.6rem 1rem;flex:1;min-width:150px;">
-              <div style="font-size:0.7rem;color:var(--accent-red);font-weight:700;">MAX RETRIES</div>
+              <div style="font-size:0.7rem;color:var(--accent-red);font-weight:700;" data-i18n="help.max_retries">MAX RETRIES</div>
               <div style="font-size:0.8rem;color:var(--text-primary);margin-top:0.25rem;">3 attempts before<br>force approval</div>
             </div>
             <div style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2);border-radius:8px;padding:0.6rem 1rem;flex:1;min-width:150px;">
-              <div style="font-size:0.7rem;color:var(--accent-amber);font-weight:700;">SAMPLE RATE</div>
+              <div style="font-size:0.7rem;color:var(--accent-amber);font-weight:700;" data-i18n="help.sample_rate">SAMPLE RATE</div>
               <div style="font-size:0.8rem;color:var(--text-primary);margin-top:0.25rem;">configurable (1.0 = all)<br>production may use 0.5</div>
             </div>
           </div>
@@ -492,10 +493,10 @@
 
         <!-- 2. LLM-AS-A-JUDGE -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--accent-cyan);display:flex;align-items:center;gap:0.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-cyan);display:flex;align-items:center;gap:0.5rem;" data-i18n="help.section2_title">
             <span>2.</span> LLM-as-a-Judge
           </h3>
-          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;" data-i18n="help.section2_text">
             The judge is a separate LLM call (default: <code style="background:rgba(0,0,0,0.3);padding:0.1rem 0.4rem;border-radius:4px;">llama-3.1-8b-instant</code> at temperature 0.1) that evaluates responses on two axes. It receives the system prompt, humor anchors, and expected language, then returns a JSON verdict.
           </p>
           <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
@@ -530,10 +531,10 @@
 
         <!-- 3. RULE-BASED FAST-PATH -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--accent-purple);display:flex;align-items:center;gap:0.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-purple);display:flex;align-items:center;gap:0.5rem;" data-i18n="help.section3_title">
             <span>3.</span> Rule-based Fast-path
           </h3>
-          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;" data-i18n="help.section3_text">
             Before calling the LLM judge, a <strong>regex-based script detector</strong> scans the response. If it finds characters from a non-expected script (e.g. Korean hangul in a Spanish response), the response is automatically failed with <code>language_purity = 0</code> — no LLM call needed. This saves tokens and catches obvious language mixing instantly.
           </p>
           <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
@@ -557,10 +558,10 @@
 
         <!-- 4. TRANSCREATION -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--accent-gold);display:flex;align-items:center;gap:0.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-gold);display:flex;align-items:center;gap:0.5rem;" data-i18n="help.section4_title">
             <span>4.</span> Transcreation (Cultural Adaptation)
           </h3>
-          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;" data-i18n="help.section4_text">
             For non-Latin scripts, the generator first produces a response in the source language (Spanish or English), then <strong>transcreationService.js</strong> adapts it culturally to the target language. This preserves humor mechanisms while localizing references.
           </p>
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;">
@@ -573,19 +574,19 @@
             <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">vi (Vietnamese)</span>
             <span style="background:rgba(59,130,246,0.15);padding:0.3rem 0.6rem;border-radius:6px;font-size:0.75rem;color:var(--accent-cyan);">hi (Hindi)</span>
           </div>
-          <p style="color:var(--text-muted);font-size:0.8rem;">If transcreation fails after 2 retries, the original Spanish/English response is used as fallback (marked with ⚠️ FB in the evals table).</p>
+          <p style="color:var(--text-muted);font-size:0.8rem;" data-i18n="help.transcreation_fallback">If transcreation fails after 2 retries, the original Spanish/English response is used as fallback (marked with ⚠️ FB in the evals table).</p>
         </div>
 
         <!-- 5. BENCHMARKS -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--accent-green);display:flex;align-items:center;gap:0.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-green);display:flex;align-items:center;gap:0.5rem;" data-i18n="help.section5_title">
             <span>5.</span> Benchmarks
           </h3>
-          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;" data-i18n="help.section5_text">
             A benchmark runs the entire <strong>golden dataset</strong> through the Quality Gate and records pass rates, scores, and regressions. Results are stored in the <code>EvalRun</code> collection and displayed in the <strong>📊 Benchmarks</strong> tab.
           </p>
           <div style="background:rgba(0,0,0,0.2);border-radius:8px;padding:1rem;margin-bottom:1rem;">
-            <div style="font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:0.5rem;">📁 Dataset files</div>
+            <div style="font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:0.5rem;" data-i18n="help.dataset_files">📁 Dataset files</div>
             <div style="font-size:0.75rem;font-family:var(--mono);line-height:1.8;">
               <span style="color:var(--accent-cyan);">tests/evals/test_queries.json</span> — main personality + edge case tests<br>
               <span style="color:var(--accent-cyan);">tests/evals/golden_datasets/</span> — intent, personality, language, transcreation, edge datasets<br>
@@ -593,7 +594,7 @@
             </div>
           </div>
           <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;">
-            The <strong>regression detection</strong> automatically compares the latest run against the previous one. If pass rate drops by 5% or more, a <span style="color:var(--accent-red);">🔴 regression banner</span> appears. You can also compare two specific runs side-by-side.
+            <span data-i18n="help.regression">The <strong>regression detection</strong> automatically compares the latest run against the previous one. If pass rate drops by 5% or more, a <span style="color:var(--accent-red);">🔴 regression banner</span> appears. You can also compare two specific runs side-by-side.</span>
           </p>
           <div style="margin-top:0.75rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
             <div style="background:rgba(0,0,0,0.2);border-radius:6px;padding:0.5rem 0.8rem;font-size:0.75rem;">
@@ -607,10 +608,10 @@
 
         <!-- 6. HUMAN-IN-THE-LOOP -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--accent-amber);display:flex;align-items:center;gap:0.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-amber);display:flex;align-items:center;gap:0.5rem;" data-i18n="help.section6_title">
             <span>6.</span> Human-in-the-Loop (HITL)
           </h3>
-          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;" data-i18n="help.section6_text">
             The HITL system captures responses that need human review. A human can verify the judge's decision, correct it, and optionally promote good examples to the golden dataset.
           </p>
           <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:1rem;">
@@ -640,17 +641,17 @@
             </tbody>
           </table>
           <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;">
-            In the <strong>👁️ Human Review</strong> tab you can see pending reviews, submit verdicts (pass/fail with confidence level), and <strong>promote</strong> good responses to the golden dataset. The stats card shows agreement rate, false positives (judge said pass, human said fail) and false negatives (judge said fail, human said pass).
+            <span data-i18n="help.hitl_footer">In the <strong>👁️ Human Review</strong> tab you can see pending reviews, submit verdicts (pass/fail with confidence level), and <strong>promote</strong> good responses to the golden dataset. The stats card shows agreement rate, false positives (judge said pass, human said fail) and false negatives (judge said fail, human said pass).</span>
           </p>
         </div>
 
         <!-- 7. GOLDEN DATASET TABLE -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--accent-blue);display:flex;align-items:center;gap:0.5rem;">
+          <h3 style="margin:0 0 1rem;color:var(--accent-blue);display:flex;align-items:center;gap:0.5rem;" data-i18n="help.section7_title">
             <span>7.</span> Golden Dataset (13 test queries)
           </h3>
-          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;">
-            The golden dataset is the canonical set of test cases used by benchmarks. Each entry specifies the input, expected personality, language, and whether transcreation is needed. Edge cases test specific failure modes.
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;margin-bottom:1rem;" data-i18n="help.section7_text">
+            The golden dataset is the canonical set of test cases used by benchmarks. Each entry specifies the input, expected personality, language, and whether transcreation is needed.
           </p>
           <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
@@ -687,27 +688,27 @@
 
         <!-- QUICK LEGEND -->
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;">
-          <h3 style="margin:0 0 1rem;color:var(--text-muted);display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;">
+          <h3 style="margin:0 0 1rem;color:var(--text-muted);display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;" data-i18n="help.legend_title">
             📖 How to read the Evals table
           </h3>
           <div style="display:flex;flex-wrap:wrap;gap:1.5rem;font-size:0.8rem;">
             <div>
-              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;">Status badges</div>
-              <div><span class="badge badge-success">✅ PASS</span> — both thresholds met</div>
-              <div><span class="badge badge-error">❌ FAIL</span> — below threshold</div>
-              <div><span class="badge" style="background:rgba(255,255,255,0.1)">SKIP</span> — skipped by sample rate</div>
+              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;" data-i18n="help.legend_status">Status badges</div>
+              <div><span class="badge badge-success">✅ PASS</span> <span data-i18n="help.legend_pass">— both thresholds met</span></div>
+              <div><span class="badge badge-error">❌ FAIL</span> <span data-i18n="help.legend_fail">— below threshold</span></div>
+              <div><span class="badge" style="background:rgba(255,255,255,0.1)">SKIP</span> <span data-i18n="help.legend_skip">— skipped by sample rate</span></div>
             </div>
             <div>
-              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;">Score colors</div>
-              <div><span style="color:var(--accent-green);">green</span> = lang ≥ 8 / quality ≥ 6</div>
-              <div><span style="color:var(--accent-amber);">amber</span> = lang 5-7 / quality 4-5</div>
-              <div><span style="color:var(--accent-red);">red</span> = lang &lt; 5 / quality &lt; 4</div>
+              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;" data-i18n="help.legend_scores">Score colors</div>
+              <div><span style="color:var(--accent-green);">green</span> <span data-i18n="help.legend_green">= lang ≥ 8 / quality ≥ 6</span></div>
+              <div><span style="color:var(--accent-amber);">amber</span> <span data-i18n="help.legend_amber">= lang 5-7 / quality 4-5</span></div>
+              <div><span style="color:var(--accent-red);">red</span> <span data-i18n="help.legend_red">= lang &lt; 5 / quality &lt; 4</span></div>
             </div>
             <div>
-              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;">Transcreation</div>
-              <div><span class="badge badge-success">🇰🇷✓</span> — transcreated successfully</div>
-              <div><span class="badge badge-error">⚠️ FB</span> — fallback to original used</div>
-              <div style="color:var(--text-muted);">—</div>
+              <div style="color:var(--text-secondary);font-weight:600;margin-bottom:0.3rem;" data-i18n="help.legend_badges">Transcreation</div>
+              <div><span class="badge badge-success">🇰🇷✓</span> <span data-i18n="help.legend_tc_check">— transcreated successfully</span></div>
+              <div><span class="badge badge-error">⚠️ FB</span> <span data-i18n="help.legend_tc_fallback">— fallback to original used</span></div>
+              <div style="color:var(--text-muted);" data-i18n="help.legend_tc_none">—</div>
             </div>
           </div>
         </div>
@@ -724,15 +725,15 @@
 
         <!-- Controls -->
         <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center;">
-          <label style="font-size:0.8rem;color:var(--text-muted);">Período:</label>
+          <label style="font-size:0.8rem;color:var(--text-muted);" data-i18n="diag.period">Período:</label>
           <select id="diag-days" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.35rem 0.6rem;font-size:0.8rem;">
-            <option value="1">1 día</option>
-            <option value="7" selected>7 días</option>
-            <option value="14">14 días</option>
-            <option value="30">30 días</option>
+            <option value="1" data-i18n="diag.1day">1 día</option>
+            <option value="7" selected data-i18n="diag.7days">7 días</option>
+            <option value="14" data-i18n="diag.14days">14 días</option>
+            <option value="30" data-i18n="diag.30days">30 días</option>
           </select>
           <select id="diag-personality" style="background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.35rem 0.6rem;font-size:0.8rem;">
-            <option value="">Todas las personalidades</option>
+            <option value="" data-i18n="diag.all_personalities">Todas las personalidades</option>
             <option value="andres_montes">Andrés Montes</option>
             <option value="pedrerol">Pedrerol</option>
             <option value="roncero">Roncero</option>
@@ -741,14 +742,14 @@
             <option value="fabrizio_romano">Fabrizio Romano</option>
             <option value="juez_dredd">Juez Dredd</option>
           </select>
-          <button onclick="loadDiagnostics()" style="background:var(--accent-blue);padding:0.35rem 0.7rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">🔍 Analizar</button>
-          <button id="btn-diag-llm" onclick="runDiagnosticLLM()" style="background:var(--accent-purple);padding:0.35rem 0.7rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;">🔮 Recomendaciones con IA</button>
+          <button id="btn-diag-analyze" onclick="loadDiagnostics()" style="background:var(--accent-blue);padding:0.35rem 0.7rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;" data-i18n="diag.analyze">🔍 Analizar</button>
+          <button id="btn-diag-llm" onclick="runDiagnosticLLM()" style="background:var(--accent-purple);padding:0.35rem 0.7rem;border-radius:6px;font-size:0.8rem;color:white;border:none;cursor:pointer;" data-i18n="diag.llm_recommend">🔮 Recomendaciones con IA</button>
         </div>
 
         <!-- Breakdown by Issue -->
         <div class="table-wrap" style="margin-bottom:1.25rem;">
           <div class="table-header">
-            <h3>📊 Fallos por Categoría</h3>
+            <h3 data-i18n="diag.breakdown_title">📊 Fallos por Categoría</h3>
           </div>
           <div id="diag-breakdown-issue" class="diag-grid"></div>
         </div>
@@ -756,15 +757,15 @@
         <!-- Per-Personality Table -->
         <div class="table-wrap" style="margin-bottom:1.25rem;">
           <div class="table-header">
-            <h3>🎭 Diagnóstico por Personalidad</h3>
+            <h3 data-i18n="diag.personality_title">🎭 Diagnóstico por Personalidad</h3>
           </div>
-          <div id="diag-personality-table"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
+          <div id="diag-personality-table"><div class="loading"><span class="spinner"></span> <span data-i18n="loading">Cargando...</span></div></div>
         </div>
 
         <!-- Global Recommendations -->
         <div class="table-wrap" style="margin-bottom:1.25rem;">
           <div class="table-header">
-            <h3>💡 Recomendaciones Globales</h3>
+            <h3 data-i18n="diag.global_recs_title">💡 Recomendaciones Globales</h3>
           </div>
           <div id="diag-global-recs"></div>
         </div>
@@ -782,7 +783,7 @@
 <div class="modal-overlay" id="log-modal">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="modal-title">Detalle de Interacción</h3>
+      <h3 id="modal-title" data-i18n="modal.detail_title">Detalle de Interacción</h3>
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-body" id="modal-body"></div>

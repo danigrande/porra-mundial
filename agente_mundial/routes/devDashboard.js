@@ -1607,7 +1607,7 @@ router.get('/diagnostics', async (req, res) => {
 
     // 2. Breakdown by main issue
     const byIssue = await AILog.aggregate([
-      { $match: { ...matchFilter, evalMainIssue: { $ne: '' } } },
+      { $match: { ...matchFilter, evalMainIssue: { $nin: ['', null] } } },
       { $group: {
         _id: '$evalMainIssue',
         count: { $sum: 1 },
@@ -1632,7 +1632,7 @@ router.get('/diagnostics', async (req, res) => {
 
     // 4. Top issue per personality (separate aggregation)
     const topIssueByPersonality = await AILog.aggregate([
-      { $match: { ...matchFilter, anchorsUsed: { $ne: '' }, evalMainIssue: { $ne: '', $ne: 'none' } } },
+      { $match: { ...matchFilter, anchorsUsed: { $ne: '' }, evalMainIssue: { $nin: ['', null, 'none'] } } },
       { $group: {
         _id: { personality: '$anchorsUsed', issue: '$evalMainIssue' },
         count: { $sum: 1 }
@@ -1739,7 +1739,7 @@ router.get('/diagnostics', async (req, res) => {
         createdAt: { $gte: prevSince, $lt: since },
         evalPassed: { $exists: true },
         evalSkipped: { $ne: true },
-        evalMainIssue: { $ne: '' }
+        evalMainIssue: { $nin: ['', null] }
       }},
       { $group: { _id: '$evalMainIssue', count: { $sum: 1 } } }
     ]);

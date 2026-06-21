@@ -411,6 +411,9 @@ tr.row-selected td:first-child { border-left: 3px solid var(--accent-blue); }
 
 .modal-body { padding: 1.5rem; }
 
+/* Evals row hover */
+#evals-table-body tr:hover { background: rgba(59,130,246,0.06); }
+
 .prompt-block {
   margin-bottom: 1.2rem;
 }
