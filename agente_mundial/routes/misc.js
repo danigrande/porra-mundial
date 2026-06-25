@@ -145,7 +145,7 @@ router.get('/summary/:player', async (req, res) => {
         try {
             const rag = await import('../ragService.js');
             const chatId = groupName;
-            chatContext = await rag.retrieveContextForPlayer(chatId, player);
+            chatContext = await rag.semanticSearchContextForPlayer(chatId, player, text || '');
         } catch (e) {
             console.warn('⚠️ No se pudo recuperar contexto RAG:', e.message);
         }

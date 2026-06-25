@@ -134,7 +134,7 @@ export async function transcreateWithQualityGate(sourceText, sourceLanguage, tar
       );
 
       // Evaluar la transcreación con el Judge en idioma destino
-      const judgment = await judgeResponse(transcreated, systemPrompt, anchors, targetLanguage);
+      const judgment = await judgeResponse(transcreated, systemPrompt, anchors, targetLanguage, personalityId);
       lastJudgment = judgment;
       lastText = transcreated;
 

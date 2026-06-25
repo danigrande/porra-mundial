@@ -19,6 +19,7 @@ import { Feedback } from '../models/Feedback.js';
 import { PRD } from '../models/PRD.js';
 import { EvalRun } from '../models/EvalRun.js';
 import { HumanReview } from '../models/HumanReview.js';
+import { GoldenEntry } from '../models/GoldenEntry.js';
 import { runLangFlow, extractPRDFromAnalysis } from '../langflowService.js';
 import config from '../config.js';
 import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
@@ -836,12 +837,68 @@ router.post('/evals/hitl/:id/promote', async (req, res) => {
     overrides.push(overrideEntry);
     fs.default.writeFileSync(overridesPath, JSON.stringify(overrides, null, 2));
 
+    // También persistir en MongoDB para que sobreviva al redeploy
+    await GoldenEntry.create({
+      source: 'promoted_from_hitl',
+      category: 'personality',
+      query: review.query,
+      personalityId: review.personalityId,
+      targetLanguage: review.targetLanguage,
+      mockContext: { leaderboard: [], playerStats: null },
+      expectations: { minLanguagePurity: 8, minQuality: 6, maxLength: 500, mustNotContain: ['```', '##', '**'] },
+      goldenResponse: review.response,
+      goldenJudgeScores: review.humanScores || review.judgeScores,
+      tags: ['promoted'],
+      originalReviewId: review._id,
+    });
+
     review.status = 'promoted';
     review.promotedToGolden = true;
     review.goldenDatasetCategory = 'personality';
     await review.save();
 
     res.json({ success: true, entry: overrideEntry });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /evals/golden — Listar entradas del golden dataset
+router.get('/evals/golden', async (req, res) => {
+  try {
+    const { category, page = 1, limit = 50 } = req.query;
+    const filter = {};
+    if (category) filter.category = category;
+
+    const [entries, total] = await Promise.all([
+      GoldenEntry.find(filter)
+        .sort({ promotedAt: -1 })
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit))
+        .lean(),
+      GoldenEntry.countDocuments(filter),
+    ]);
+
+    res.json({
+      entries,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /evals/golden/:id — Remover una entrada del golden dataset
+router.delete('/evals/golden/:id', async (req, res) => {
+  try {
+    const entry = await GoldenEntry.findByIdAndDelete(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Entry not found' });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

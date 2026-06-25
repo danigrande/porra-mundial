@@ -6,6 +6,7 @@ const chatbotFeedbackSchema = new mongoose.Schema({
   userName:  { type: String, required: true },
   rating:    { type: Number, required: true, min: 1, max: 5 },
   reason:    { type: String, default: null },
+  aiLogId:   { type: mongoose.Schema.Types.ObjectId, ref: 'AILog', default: null },
   createdAt: { type: Date, default: Date.now }
 });
 

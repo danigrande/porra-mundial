@@ -1,5 +1,6 @@
 import express from 'express';
 import { Correction } from '../models/Correction.js';
+import { GoldenEntry } from '../models/GoldenEntry.js';
 import { createResponse } from './helpers.js';
 
 const router = express.Router();
@@ -147,6 +148,21 @@ router.post('/corrections/:id/promote', requireDevKey, async (req, res) => {
 
     overrides.push(overrideEntry);
     fs.default.writeFileSync(overridesPath, JSON.stringify(overrides, null, 2));
+
+    // También persistir en MongoDB para que sobreviva al redeploy
+    await GoldenEntry.create({
+      source: 'correction',
+      category: 'personality',
+      query: correction.context || '(corrección conversacional)',
+      personalityId: correction.personalityId || 'andres_montes',
+      targetLanguage: correction.targetLanguage || 'es',
+      mockContext: { leaderboard: [], playerStats: null },
+      expectations: { minLanguagePurity: 8, minQuality: 6, maxLength: 500, mustNotContain: ['```', '##', '**'] },
+      goldenResponse: correction.correctedText,
+      goldenJudgeScores: { language_purity: 10, quality: 10 },
+      tags: ['promoted_from_correction'],
+      originalReviewId: correction._id,
+    });
 
     correction.status = 'promoted';
     correction.promotedToGolden = true;

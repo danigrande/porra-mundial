@@ -49,6 +49,18 @@ const config = {
     maxRetries: 3,          // max intentos de regeneración
     // sampleRate: 1.0 = evalúa todas las respuestas | 0.5 = evalúa 50% (para producción)
     sampleRate: parseFloat(process.env.EVAL_SAMPLE_RATE || '1.0'),
+    thresholds: {
+      // Valores por defecto (coinciden con minLanguagePurity / minQuality arriba)
+      minLanguagePurity: 8,
+      minQuality: 6,
+      // Overrides por (personalityId) y opcionalmente (personalityId::targetLanguage)
+      // La clave `__transcreation__` aplica a todos los idiomas de transcreación.
+      overrides: {
+        'roncero::es': { minQuality: 5 },
+        'fabrizio_romano::es': { minQuality: 7 },
+        '__transcreation__': { minLanguagePurity: 7 },
+      },
+    },
   },
 
   // --- Transcreation (ES/EN → idiomas culturalmente distantes) ---

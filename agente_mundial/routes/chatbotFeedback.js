@@ -88,9 +88,13 @@ router.post('/chatbot-feedback', async (req, res) => {
       return res.status(404).json(createResponse('error', null, 'Mensaje no encontrado'));
     }
 
+    // Buscar el aiLogId del mensaje para linkear feedback ↔ AILog
+    const msg = await Message.findById(messageId).select('aiLogId').lean();
+    const aiLogId = msg?.aiLogId || null;
+
     const feedback = await ChatbotFeedback.findOneAndUpdate(
       { messageId, userId },
-      { messageId, userId, userName, rating: ratingNum, reason: reason || null },
+      { messageId, userId, userName, rating: ratingNum, reason: reason || null, aiLogId },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 

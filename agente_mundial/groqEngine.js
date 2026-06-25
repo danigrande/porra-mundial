@@ -478,7 +478,7 @@ export async function generateWithQualityGate(playerName, question, context, met
 
     // Evaluar con el Judge
     const systemPrompt = buildEnhancedSystemPrompt(personalityId, targetLanguage);
-    const judgment = await judgeResponse(response, systemPrompt, anchors, targetLanguage);
+    const judgment = await judgeResponse(response, systemPrompt, anchors, targetLanguage, personalityId);
     lastJudgment = judgment;
 
     // Persistir resultados del judge en el AILog

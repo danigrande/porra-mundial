@@ -353,170 +353,85 @@ export async function processMessage(text, senderUserId, groupName) {
 \nPuedes preguntarme por la clasificación, tu posición, noticias del mundial o un resumen de la jornada.`;
   }
 
-  // 2a. Web Search — solo si NO tenemos datos locales para responder
-  if (intent === 'factual' && config.webSearch.enabled) {
-    const hasLocalData = cache.leaderboard?.length > 0;
-    if (!hasLocalData) {
-      console.log(`🔍 Búsqueda web para: "${text.substring(0, 80)}"`);
+  // --- Unificar: perfil, personalidad, idioma ---
+  const profile = playerName
+    ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName] || null)
+    : null;
+  const personalityId = profile?.ai_personality || 'andres_montes';
+  const playerStats = playerName
+    ? cache.leaderboard?.find(p => p.name.trim().toLowerCase() === playerName.trim().toLowerCase())
+    : null;
+  const fragName = playerName || 'Desconocido';
+  const anchors = getAnchors(personalityId);
+  const targetLang = detectTargetLanguage(text, personalityId);
+  const needsTranscreation = isTranscreationNeeded(targetLang);
+  const generationLang = needsTranscreation ? getSourceLanguage(personalityId) : targetLang;
+
+  // --- 2. RAG context (siempre, excepto help ya retornó) ---
+  let chatContext = "";
+  try {
+    const rag = await import('./ragService.js');
+    const cleanGroupName = groupName ? groupName.trim() : "";
+    const effectiveSearchName = playerName || 'Agente Mundial';
+    chatContext = await rag.semanticSearchContextForPlayer(cleanGroupName, effectiveSearchName, text);
+  } catch (e) {
+    console.error("Error recuperando RAG context:", e);
+  }
+
+  // --- 3. Web Search (si factual O no hay datos locales) ---
+  let webContext = "";
+  if (config.webSearch?.enabled && (intent === 'factual' || !cache.leaderboard?.length)) {
+    try {
       const webResults = await searchWeb(text, config.webSearch.maxResults);
       if (webResults.length > 0) {
-        const webContext = webResults.map((r, i) =>
+        webContext = webResults.map((r, i) =>
           `Fuente ${i + 1}: ${r.title}\n${r.content.substring(0, 300)}`
         ).join('\n\n');
         console.log(`🔍 Web search OK: ${webResults.length} resultados`);
-
-        const rulesContext = buildRulesContext(groupName, cache.rules);
-        const matchDrama = buildMatchDrama(cache.reality);
-        const profile = playerName ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName]) : null;
-        const personalityId = profile?.ai_personality || 'andres_montes';
-
-        const context = {
-          groupName,
-          ranking: cache.leaderboard,
-          playerStats: null,
-          profile,
-          leaderboard: cache.leaderboard,
-          chatContext: '',
-          webContext,
-          rulesContext,
-          matchDrama
-        };
-
-        const targetLang = detectTargetLanguage(text, personalityId);
-        const anchors = getAnchors(personalityId);
-        const result = await generateWithQualityGate(playerName || 'Desconocido', text, context, {
-          personalityId,
-          anchors,
-          targetLanguage: isTranscreationNeeded(targetLang) ? getSourceLanguage(personalityId) : targetLang,
-          source: 'chat',
-          maxAttempts: config.evals?.maxRetries || 3
-        });
-
-        if (isTranscreationNeeded(targetLang) && result.judgment?.passed) {
-          const transcreated = await transcreateWithQualityGate(
-            result.response, getSourceLanguage(personalityId), targetLang,
-            personalityId, anchors, context, getSystemPrompt(personalityId)
-          );
-          return transcreated.text;
-        }
-        return result.response;
       }
-    }
-    // Si tenemos datos locales o no hay resultados web, cae al flujo general
-  }
-
-  // 3. Si el usuario pide su estado, ranking o resumen
-  if (intent === 'ranking' || intent === 'my_status' || intent === 'explain_score' || intent === 'summary' || intent === 'general') {
-    if (!playerName) {
-      // Permitir que 'general' y 'ranking' pasen aunque no estén identificados
-      if (intent !== 'general' && intent !== 'ranking') {
-        return "No tengo tu usuario registrado, ¡jugón! Dile al administrador que te añada a la porra.";
-      }
-    }
-
-    const playerStats = cache.leaderboard?.find(p => 
-        p.name.trim().toLowerCase() === playerName?.trim().toLowerCase()
-    );
-    const profile = cache.profiles ? (cache.profiles[playerName] || Object.values(cache.profiles).find(pr => pr.nickname === playerName)) : null;
-    const personalityId = profile?.ai_personality || 'andres_montes';
-    
-    // --- RAG: Buscar contexto de este jugador ---
-    let chatContext = "";
-    try {
-        const rag = await import('./ragService.js');
-        const cleanGroupName = groupName ? groupName.trim() : "";
-        const effectiveSearchName = playerName || 'Agente Mundial';
-        chatContext = await rag.retrieveContextForPlayer(cleanGroupName, effectiveSearchName);
     } catch (e) {
-        console.error("Error recuperando RAG context:", e);
+      console.error("Error en web search:", e);
     }
-
-    const context = {
-      groupName,
-      ranking: cache.leaderboard,
-      playerStats,
-      profile,
-      leaderboard: cache.leaderboard,
-      chatContext,
-      rulesContext: buildRulesContext(groupName, cache.rules),
-      matchDrama: buildMatchDrama(cache.reality)
-    };
-
-    // --- Language routing ---
-    const targetLang = detectTargetLanguage(text, personalityId);
-    const anchors = getAnchors(personalityId);
-    const needsTranscreation = isTranscreationNeeded(targetLang);
-    const generationLang = needsTranscreation ? getSourceLanguage(personalityId) : targetLang;
-
-    console.log(`🤖 Generando respuesta IA para ${playerName || 'Desconocido'} | lang=${targetLang} | transcreation=${needsTranscreation} | RAG=${chatContext.length > 50 ? 'OK' : 'sin datos'}...`);
-
-    const result = await generateWithQualityGate(playerName || 'Desconocido', text, context, {
-      personalityId,
-      anchors,
-      targetLanguage: generationLang,
-      source: 'chat',
-      maxAttempts: config.evals?.maxRetries || 3
-    });
-
-    // --- Transcreación si es necesaria y la respuesta pasó el Judge ---
-    if (needsTranscreation && (result.judgment?.passed || result.forceApproved)) {
-      const systemPrompt = getSystemPrompt(personalityId);
-      const transcreated = await transcreateWithQualityGate(
-        result.response,
-        getSourceLanguage(personalityId),
-        targetLang,
-        personalityId,
-        anchors,
-        context,
-        systemPrompt
-      );
-      console.log(`🌐 [Transcreation] ${transcreated.usedFallback ? 'FALLBACK al original' : `OK en ${targetLang}`} (${transcreated.attempts} intentos)`);
-      return transcreated.text;
-    }
-
-    return result.response;
   }
 
-  // 4. Construir contexto (fallback para otros intents)
-  const profile = playerName ? (cache.profiles?.[playerName] || config.playerProfiles?.[playerName]) : null;
-  const playerStats = playerName ? (cache.leaderboard?.find(p => p.name === playerName)) : null;
-  const personalityId = profile?.ai_personality || 'andres_montes';
-
+  // --- 4. Construir contexto unificado ---
   const context = {
     groupName,
     ranking: cache.leaderboard,
-    leaderboard: cache.leaderboard,
     playerStats,
     profile,
-    rules: cache.rules,
+    leaderboard: cache.leaderboard,
+    chatContext,
+    webContext,
     rulesContext: buildRulesContext(groupName, cache.rules),
-    matchDrama: buildMatchDrama(cache.reality)
+    matchDrama: buildMatchDrama(cache.reality),
   };
 
-  const effectiveName = playerName || 'Desconocido';
+  // Usuario no identificado en intents que requieren identificación
   let effectiveQuestion = text;
-
-  if (!playerName) {
+  if (!playerName && intent !== 'general' && intent !== 'ranking') {
     effectiveQuestion = `[Usuario no identificado pregunta]: ${text}. Dile que no sé quién es y que debe registrarse en la web para el grupo ${groupName}.`;
   }
 
-  const targetLang = detectTargetLanguage(text, personalityId);
-  const anchors = getAnchors(personalityId);
-  const needsTranscreation = isTranscreationNeeded(targetLang);
+  console.log(`🤖 Generando respuesta para ${fragName} | lang=${targetLang} | transcreation=${needsTranscreation} | RAG=${chatContext.length > 50 ? 'OK' : 'sin datos'} | web=${webContext ? 'OK' : 'sin datos'}...`);
 
-  const result = await generateWithQualityGate(effectiveName, effectiveQuestion, context, {
+  // --- 5. Generar con Quality Gate ---
+  const result = await generateWithQualityGate(fragName, effectiveQuestion, context, {
     personalityId,
     anchors,
-    targetLanguage: needsTranscreation ? getSourceLanguage(personalityId) : targetLang,
+    targetLanguage: generationLang,
     source: 'chat',
-    maxAttempts: config.evals?.maxRetries || 3
+    maxAttempts: config.evals?.maxRetries || 3,
   });
 
+  // --- 6. Transcreación si es necesaria ---
   if (needsTranscreation && (result.judgment?.passed || result.forceApproved)) {
+    const systemPrompt = getSystemPrompt(personalityId);
     const transcreated = await transcreateWithQualityGate(
       result.response, getSourceLanguage(personalityId), targetLang,
-      personalityId, anchors, context, getSystemPrompt(personalityId)
+      personalityId, anchors, context, systemPrompt
     );
+    console.log(`🌐 [Transcreation] ${transcreated.usedFallback ? 'FALLBACK al original' : `OK en ${targetLang}`} (${transcreated.attempts} intentos)`);
     return transcreated.text;
   }
 

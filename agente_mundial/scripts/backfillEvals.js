@@ -64,7 +64,8 @@ async function processBatch(logs) {
         response,
         systemPrompt,
         anchors,
-        targetLanguage
+        targetLanguage,
+        personalityId
       );
 
       await AILog.findByIdAndUpdate(log._id, {

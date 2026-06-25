@@ -30,6 +30,28 @@ export async function vectorizeMessage(messageId, text) {
   }
 }
 
+function cosineSimilarity(a, b) {
+  if (!a || !b || a.length !== b.length || a.length === 0) return 0;
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+function formatMessages(messages) {
+  if (messages.length === 0) return "";
+  messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return messages.map(m => {
+    const timeStr = new Date(m.timestamp).toLocaleTimeString();
+    const content = m.text ? m.text : `[Mensaje tipo: ${m.type || 'media'}]`;
+    return `[${timeStr}] ${m.senderName}: ${content}`;
+  }).join('\n');
+}
+
 /**
  * Busca mensajes relevantes sobre un jugador en el historial
  */
@@ -84,21 +106,78 @@ export async function retrieveContextForPlayer(chatId, playerName, limit = 30) {
         });
     }
 
-    if (finalMessages.length === 0) return "";
-
-    // Ordenar cronológicamente para el prompt
-    finalMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-    const context = finalMessages.map(m => {
-      const timeStr = new Date(m.timestamp).toLocaleTimeString();
-      const content = m.text ? m.text : `[Mensaje tipo: ${m.type || 'media'}]`;
-      return `[${timeStr}] ${m.senderName}: ${content}`;
-    }).join('\n');
-    
-    return context;
+    return formatMessages(finalMessages);
 
   } catch (error) {
     console.error('[RAG] Error recuperando contexto:', error.message);
     return "";
+  }
+}
+
+/**
+ * Búsqueda semántica por similitud de coseno in-app.
+ * Si no hay embeddings disponibles, cae en retrieveContextForPlayer (regex).
+ * @param {string} chatId - ID del grupo
+ * @param {string} playerName - Nombre del jugador
+ * @param {string} query - Texto de la consulta del usuario (para embedding)
+ * @param {number} limit - Máximo de resultados
+ * @returns {Promise<string>} Contexto formateado
+ */
+export async function semanticSearchContextForPlayer(chatId, playerName, query, limit = 10) {
+  try {
+    const cleanChatId = chatId ? chatId.trim() : "";
+    if (!cleanChatId) return "";
+
+    // Fallback si no hay embeddings configurados
+    if (!embeddings) {
+      return retrieveContextForPlayer(chatId, playerName, limit);
+    }
+
+    const chatIdRegex = new RegExp(`^${cleanChatId}$`, 'i');
+
+    // Buscar mensajes recientes del grupo (más amplio que el regex por nombre)
+    const messages = await Message.find({ chatId: { $regex: chatIdRegex } })
+      .sort({ timestamp: -1 })
+      .limit(100);
+
+    if (messages.length === 0) return "";
+
+    const withEmbeddings = messages.filter(m =>
+      m.embedding && Array.isArray(m.embedding) && m.embedding.length > 0
+    );
+
+    // Si ningún mensaje tiene embedding, caer a keyword search
+    if (withEmbeddings.length === 0) {
+      return retrieveContextForPlayer(chatId, playerName, limit);
+    }
+
+    const queryVector = await embeddings.embedQuery(query);
+
+    // Calcular similitud coseno, con boost si menciona al jugador
+    const cleanPlayerNameLower = playerName?.trim().toLowerCase() || '';
+    const scored = withEmbeddings.map(m => {
+      let sim = cosineSimilarity(queryVector, m.embedding);
+      // Pequeño boost semántico si el mensaje menciona al jugador
+      if (cleanPlayerNameLower && m.text && m.text.toLowerCase().includes(cleanPlayerNameLower)) {
+        sim = Math.min(1, sim + 0.1);
+      }
+      return { message: m, similarity: sim };
+    });
+
+    // Ordenar por similitud (desc), tomar top-k
+    scored.sort((a, b) => b.similarity - a.similarity);
+    const topK = scored.slice(0, limit);
+
+    let finalMessages = topK
+      .filter(s => s.message.senderName !== 'Agente Mundial 🏆')
+      .map(s => s.message);
+
+    if (finalMessages.length === 0) return "";
+
+    return formatMessages(finalMessages);
+
+  } catch (error) {
+    console.error('[RAG] Error en semantic search, cayendo a keyword:', error.message);
+    return retrieveContextForPlayer(chatId, playerName, limit);
   }
 }

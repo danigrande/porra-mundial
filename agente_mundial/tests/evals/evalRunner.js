@@ -68,13 +68,14 @@ Adding new tests:
 
 // ── Dynamic imports (lazy — only if running pipeline tests) ──
 
-let config, connectDB, EvalRun, detectIntent, generateWithQualityGate, judgeService, getAnchors, buildEnhancedSystemPrompt, transcreateWithQualityGate, generateDailySummary, generatePersonalitySummary;
+let config, connectDB, EvalRun, GoldenEntry, detectIntent, generateWithQualityGate, judgeService, getAnchors, buildEnhancedSystemPrompt, transcreateWithQualityGate, generateDailySummary, generatePersonalitySummary;
 
 async function ensureImports() {
   if (!config) {
     config = (await import('../../config.js')).default;
     connectDB = (await import('../../db.js')).connectDB;
     EvalRun = (await import('../../models/EvalRun.js')).EvalRun;
+    GoldenEntry = (await import('../../models/GoldenEntry.js')).GoldenEntry;
     detectIntent = (await import('../../messageHandler.js')).detectIntent;
   }
 }
@@ -113,7 +114,7 @@ const DATASET_FILES = {
   summary: 'daily_summaries.json',
 };
 
-function loadDatasets(datasetFilter) {
+async function loadDatasets(datasetFilter) {
   const datasets = {};
   const names = datasetFilter === 'all' ? Object.keys(DATASET_FILES) : [datasetFilter];
 
@@ -134,16 +135,47 @@ function loadDatasets(datasetFilter) {
     console.log(`  Loaded ${raw.length} test(s) from ${DATASET_FILES[name]}`);
   }
 
-  // Merge local overrides
+  // Merge local overrides (file-based, legacy support)
   const overridesPath = path.join(DATASETS_DIR, 'local_overrides.json');
   if (fs.existsSync(overridesPath)) {
     const overrides = JSON.parse(fs.readFileSync(overridesPath, 'utf-8'));
     for (const entry of overrides) {
-      // Append to the appropriate dataset if it was loaded
       if (entry.type === 'intent' && datasets.intent) datasets.intent.push(entry);
       else if (entry.type === 'personality' && datasets.personality) datasets.personality.push(entry);
     }
     console.log(`  Merged ${overrides.length} override(s) from local_overrides.json`);
+  }
+
+  // Merge golden entries from MongoDB (persistent, survives redeploy)
+  if (GoldenEntry) {
+    try {
+      const mongoEntries = await GoldenEntry.find().lean();
+      const mongoCount = mongoEntries.length;
+      if (mongoCount > 0) {
+        for (const entry of mongoEntries) {
+          const targetDataset = entry.category;
+          if (targetDataset && datasets[targetDataset]) {
+            datasets[targetDataset].push({
+              id: `mongo_${entry._id}`,
+              query: entry.query,
+              personalityId: entry.personalityId,
+              targetLanguage: entry.targetLanguage,
+              type: entry.category,
+              mockContext: entry.mockContext || { leaderboard: [], playerStats: null },
+              expectations: entry.expectations || { minLanguagePurity: 8, minQuality: 6, maxLength: 500 },
+              goldenResponse: entry.goldenResponse,
+              goldenJudgeScores: entry.goldenJudgeScores,
+              tags: entry.tags || ['promoted'],
+              source: entry.source,
+              promotedAt: entry.promotedAt,
+            });
+          }
+        }
+        console.log(`  Merged ${mongoCount} override(s) from MongoDB GoldenEntry`);
+      }
+    } catch (e) {
+      console.warn(`  (MongoDB GoldenEntry merge skipped: ${e.message})`);
+    }
   }
 
   return datasets;
@@ -213,7 +245,8 @@ async function runJudgeTest(test) {
       test.simulatedResponse,
       systemPrompt,
       anchors,
-      test.targetLanguage
+      test.targetLanguage,
+      test.personalityId
     );
 
     const passed = judgment.passed === test.expectedJudgePassed;
@@ -367,7 +400,8 @@ async function runEdgeTest(test) {
         test.simulatedResponse,
         systemPrompt,
         anchors,
-        test.targetLanguage
+        test.targetLanguage,
+        test.personalityId
       );
       const passed = judgment.passed === test.expectedJudgePassed;
       return {
@@ -630,7 +664,7 @@ async function main() {
   }
 
   // Load datasets
-  const datasets = loadDatasets(flags.dataset);
+  const datasets = await loadDatasets(flags.dataset);
 
   // Run tests
   const testOrder = ['intent', 'language', 'transcreation', 'edge', 'personality', 'summary'];

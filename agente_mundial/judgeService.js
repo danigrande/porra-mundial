@@ -120,17 +120,37 @@ RESPONDE SOLO CON JSON VÁLIDO, SIN TEXTO ADICIONAL:
  * Evalúa una respuesta con el LLM-as-a-Judge.
  * Primero hace un fast-path de detección de script contaminado.
  * Si no hay contaminación obvia, llama al LLM juez.
+ * Los thresholds se resuelven con overriding por (personalityId, targetLanguage).
  *
  * @param {string} response - La respuesta a evaluar
  * @param {string} systemPrompt - El system prompt usado para generarla
  * @param {Object} anchors - Los HUMOR_ANCHORS de la personalidad
  * @param {string} targetLanguage - Código ISO del idioma esperado
+ * @param {string} [personalityId] - ID de la personalidad (para threshold overrides)
  * @returns {Promise<{scores: Object, feedback: string, passed: boolean, fastPath: boolean}>}
  */
-export async function judgeResponse(response, systemPrompt, anchors, targetLanguage) {
-  const evalConfig = config.evals;
-  const minLang = evalConfig?.minLanguagePurity ?? 8;
-  const minQuality = evalConfig?.minQuality ?? 6;
+export async function judgeResponse(response, systemPrompt, anchors, targetLanguage, personalityId) {
+  const tc = config.evals?.thresholds;
+  let minLang = tc?.minLanguagePurity ?? config.evals?.minLanguagePurity ?? 8;
+  let minQuality = tc?.minQuality ?? config.evals?.minQuality ?? 6;
+
+  // Resolver override por (personalityId, targetLanguage)
+  if (tc?.overrides && personalityId) {
+    const exactKey = `${personalityId}::${targetLanguage}`;
+    const override = tc.overrides[exactKey] ?? tc.overrides[personalityId];
+
+    if (override) {
+      minLang = override.minLanguagePurity ?? minLang;
+      minQuality = override.minQuality ?? minQuality;
+    }
+
+    // Si es un idioma de transcreación, aplicar override de transcreación
+    if (TRANSCREATION_LANGUAGES.includes(targetLanguage) && tc.overrides.__transcreation__) {
+      const tx = tc.overrides.__transcreation__;
+      minLang = tx.minLanguagePurity ?? minLang;
+      minQuality = tx.minQuality ?? minQuality;
+    }
+  }
 
   // Fast-path: detección de contaminación de script
   const contamination = detectScriptContamination(response, targetLanguage);
@@ -144,6 +164,8 @@ export async function judgeResponse(response, systemPrompt, anchors, targetLangu
       fastPath: true
     };
   }
+
+  const evalConfig = config.evals;
 
   // Sample rate: si no evaluamos esta respuesta, aprobar por defecto
   const sampleRate = evalConfig?.sampleRate ?? 1.0;
