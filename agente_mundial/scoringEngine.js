@@ -61,54 +61,22 @@ export function fullResolve(code, dataSource) {
     return getStandings(letter, dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
   }
 
-  // Mejores terceros
+  // Tercero: "3D" → 3º del grupo D
   if (code.startsWith('3')) {
-    // Verificar si todos los grupos han terminado
-    let allFinished = true;
-    for (const g of FIXTURE_GROUPS) {
+    const thirdMatch = code.match(/^3([A-L])$/);
+    if (thirdMatch) {
+      const letter = thirdMatch[1];
+      let groupFinished = true;
       for (let i = 0; i < 6; i++) {
-        if (isNaN(parseInt(dataSource[`g${g.letter}_m${i}_h`]))) {
-          allFinished = false;
+        if (isNaN(parseInt(dataSource[`g${letter}_m${i}_h`]))) {
+          groupFinished = false;
           break;
         }
       }
+      if (!groupFinished) return code;
+      return getStandings(letter, dataSource)[2]?.name || code;
     }
-    if (!allFinished) return code;
-
-    // Obtener los 12 terceros
-    const thirds = [];
-    FIXTURE_GROUPS.forEach(g => {
-      const st = getStandings(g.letter, dataSource);
-      if (st[2]) thirds.push({ letter: g.letter, team: st[2] });
-    });
-    
-    // Ordenar para sacar los 8 mejores (pts, dif goles, goles a favor)
-    thirds.sort((a, b) => (b.team.pts - a.team.pts) || (b.team.dg - a.team.dg) || (b.team.gf - a.team.gf));
-    const best8 = thirds.slice(0, 8);
-
-    // Asignación determinista simplificada (buscamos la primera letra del slot que esté en el top 8 y no haya sido usada)
-    // Nota: Guardamos el mapeo en el objeto dataSource para que la resolución sea constante por request
-    if (!dataSource._thirdsMapping) {
-      dataSource._thirdsMapping = {};
-      const slots = ['3ABCDF', '3CDFGH', '3CEFHI', '3EHIJK', '3AEHIJ', '3BEFIJ', '3EFGIJ', '3DEIJL'];
-      slots.forEach(slot => {
-        const letters = slot.substring(1).split('');
-        const match = best8.find(t => !t.used && letters.includes(t.letter));
-        if (match) {
-          match.used = true;
-          dataSource._thirdsMapping[slot] = match.team.name;
-        } else {
-          // Fallback por si la tabla teórica no encaja
-          const fallback = best8.find(t => !t.used);
-          if (fallback) {
-            fallback.used = true;
-            dataSource._thirdsMapping[slot] = fallback.team.name;
-          }
-        }
-      });
-    }
-
-    return dataSource._thirdsMapping[code] || code;
+    return code;
   }
 
   // Referencia a partido: "W95" → ganador del partido 95

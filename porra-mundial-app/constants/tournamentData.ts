@@ -31,14 +31,92 @@ export const FIXTURE_GROUPS = [
 ];
 
 export const BRACKET_MATCHES: Record<string, string[]> = {
-  73: ['2A', '2B'], 76: ['1C', '2F'], 74: ['1E', '3ABCDF'], 75: ['1F', '2C'],
-  78: ['2E', '2I'], 77: ['1I', '3CDFGH'], 79: ['1A', '3CEFHI'], 80: ['1L', '3EHIJK'],
-  82: ['1G', '3AEHIJ'], 81: ['1D', '3BEFIJ'], 84: ['1H', '2J'], 83: ['2K', '2L'],
-  85: ['1B', '3EFGIJ'], 88: ['2D', '2G'], 86: ['1J', '2H'], 87: ['1K', '3DEIJL'],
-  90: ['W73', 'W75'], 89: ['W74', 'W77'], 91: ['W76', 'W78'], 92: ['W79', 'W80'],
+  73: ['2A', '2B'], 74: ['1E', '3D'], 75: ['1F', '2C'], 76: ['1C', '2F'],
+  77: ['1I', '3F'], 78: ['2E', '2I'], 79: ['1A', '3E'], 80: ['1L', '3K'],
+  81: ['1D', '3B'], 82: ['1G', '3I'], 83: ['2K', '2L'], 84: ['1H', '2J'],
+  85: ['1B', '3J'], 86: ['1J', '2H'], 87: ['1K', '3L'], 88: ['2D', '2G'],
+  89: ['W74', 'W77'], 90: ['W73', 'W75'], 91: ['W76', 'W78'], 92: ['W79', 'W80'],
   93: ['W83', 'W84'], 94: ['W81', 'W82'], 95: ['W86', 'W88'], 96: ['W85', 'W87'],
   97: ['W89', 'W90'], 98: ['W93', 'W94'], 99: ['W91', 'W92'], 100: ['W95', 'W96'],
   101: ['W97', 'W98'], 102: ['W99', 'W100'], 103: ['L101', 'L102'], 104: ['W101', 'W102'],
+};
+
+export const MATCH_KICKOFFS: Record<string, string> = {
+  // ========== GRUPOS ==========
+  'gA_m0': '2026-06-11T19:00:00Z', 'gA_m1': '2026-06-12T02:00:00Z',
+  'gA_m2': '2026-06-18T16:00:00Z', 'gA_m3': '2026-06-19T01:00:00Z',
+  'gA_m4': '2026-06-25T01:00:00Z', 'gA_m5': '2026-06-25T01:00:00Z',
+  'gB_m0': '2026-06-12T19:00:00Z', 'gB_m1': '2026-06-13T19:00:00Z',
+  'gB_m2': '2026-06-18T19:00:00Z', 'gB_m3': '2026-06-18T22:00:00Z',
+  'gB_m4': '2026-06-24T19:00:00Z', 'gB_m5': '2026-06-24T19:00:00Z',
+  'gC_m0': '2026-06-13T22:00:00Z', 'gC_m1': '2026-06-14T01:00:00Z',
+  'gC_m2': '2026-06-19T22:00:00Z', 'gC_m3': '2026-06-20T00:30:00Z',
+  'gC_m4': '2026-06-24T22:00:00Z', 'gC_m5': '2026-06-24T22:00:00Z',
+  'gD_m0': '2026-06-13T01:00:00Z', 'gD_m1': '2026-06-14T04:00:00Z',
+  'gD_m2': '2026-06-20T03:00:00Z', 'gD_m3': '2026-06-19T19:00:00Z',
+  'gD_m4': '2026-06-26T02:00:00Z', 'gD_m5': '2026-06-26T02:00:00Z',
+  'gE_m0': '2026-06-14T17:00:00Z', 'gE_m1': '2026-06-14T23:00:00Z',
+  'gE_m2': '2026-06-21T00:00:00Z', 'gE_m3': '2026-06-20T20:00:00Z',
+  'gE_m4': '2026-06-25T20:00:00Z', 'gE_m5': '2026-06-25T20:00:00Z',
+  'gF_m0': '2026-06-14T20:00:00Z', 'gF_m1': '2026-06-15T02:00:00Z',
+  'gF_m2': '2026-06-21T04:00:00Z', 'gF_m3': '2026-06-20T17:00:00Z',
+  'gF_m4': '2026-06-25T23:00:00Z', 'gF_m5': '2026-06-25T23:00:00Z',
+  'gG_m0': '2026-06-15T19:00:00Z', 'gG_m1': '2026-06-16T01:00:00Z',
+  'gG_m2': '2026-06-22T01:00:00Z', 'gG_m3': '2026-06-21T19:00:00Z',
+  'gG_m4': '2026-06-27T03:00:00Z', 'gG_m5': '2026-06-27T03:00:00Z',
+  'gH_m0': '2026-06-15T16:00:00Z', 'gH_m1': '2026-06-15T22:00:00Z',
+  'gH_m2': '2026-06-21T22:00:00Z', 'gH_m3': '2026-06-21T16:00:00Z',
+  'gH_m4': '2026-06-27T00:00:00Z', 'gH_m5': '2026-06-27T00:00:00Z',
+  'gI_m0': '2026-06-16T19:00:00Z', 'gI_m1': '2026-06-16T22:00:00Z',
+  'gI_m2': '2026-06-23T00:00:00Z', 'gI_m3': '2026-06-22T21:00:00Z',
+  'gI_m4': '2026-06-26T19:00:00Z', 'gI_m5': '2026-06-26T19:00:00Z',
+  'gJ_m0': '2026-06-17T01:00:00Z', 'gJ_m1': '2026-06-17T04:00:00Z',
+  'gJ_m2': '2026-06-23T03:00:00Z', 'gJ_m3': '2026-06-22T17:00:00Z',
+  'gJ_m4': '2026-06-28T02:00:00Z', 'gJ_m5': '2026-06-28T02:00:00Z',
+  'gK_m0': '2026-06-17T17:00:00Z', 'gK_m1': '2026-06-18T02:00:00Z',
+  'gK_m2': '2026-06-24T02:00:00Z', 'gK_m3': '2026-06-23T17:00:00Z',
+  'gK_m4': '2026-06-27T23:30:00Z', 'gK_m5': '2026-06-27T23:30:00Z',
+  'gL_m0': '2026-06-17T20:00:00Z', 'gL_m1': '2026-06-17T23:00:00Z',
+  'gL_m2': '2026-06-23T23:00:00Z', 'gL_m3': '2026-06-23T20:00:00Z',
+  'gL_m4': '2026-06-27T21:00:00Z', 'gL_m5': '2026-06-27T21:00:00Z',
+  // ========== 1/16 FINAL (R32) ==========
+  'ko_73': '2026-06-28T19:00:00Z',
+  'ko_74': '2026-06-29T20:00:00Z',
+  'ko_75': '2026-06-30T01:00:00Z',
+  'ko_76': '2026-06-29T17:00:00Z',
+  'ko_77': '2026-06-30T21:00:00Z',
+  'ko_78': '2026-06-30T17:00:00Z',
+  'ko_79': '2026-07-01T01:00:00Z',
+  'ko_80': '2026-07-01T16:00:00Z',
+  'ko_81': '2026-07-02T00:00:00Z',
+  'ko_82': '2026-07-01T20:00:00Z',
+  'ko_83': '2026-07-02T23:00:00Z',
+  'ko_84': '2026-07-02T19:00:00Z',
+  'ko_85': '2026-07-03T01:00:00Z',
+  'ko_86': '2026-07-03T22:00:00Z',
+  'ko_87': '2026-07-04T01:30:00Z',
+  'ko_88': '2026-07-03T18:00:00Z',
+  // ========== 1/8 FINAL (R16) ==========
+  'ko_89': '2026-07-04T21:00:00Z',
+  'ko_90': '2026-07-04T17:00:00Z',
+  'ko_91': '2026-07-05T20:00:00Z',
+  'ko_92': '2026-07-06T00:00:00Z',
+  'ko_93': '2026-07-06T19:00:00Z',
+  'ko_94': '2026-07-07T00:00:00Z',
+  'ko_95': '2026-07-06T16:00:00Z',
+  'ko_96': '2026-07-07T20:00:00Z',
+  // ========== CUARTOS ==========
+  'ko_97': '2026-07-09T20:00:00Z',
+  'ko_98': '2026-07-10T19:00:00Z',
+  'ko_99': '2026-07-11T21:00:00Z',
+  'ko_100': '2026-07-12T01:00:00Z',
+  // ========== SEMIFINALES ==========
+  'ko_101': '2026-07-14T19:00:00Z',
+  'ko_102': '2026-07-15T19:00:00Z',
+  // ========== 3º PUESTO ==========
+  'ko_103': '2026-07-18T21:00:00Z',
+  // ========== FINAL ==========
+  'ko_104': '2026-07-19T19:00:00Z',
 };
 
 export const KNOCKOUT_BRACKET = [
@@ -108,48 +186,22 @@ export function fullResolve(code: string, dataSource: DataSource): string {
     return getGroupStandings(letter, dataSource)[parseInt(groupMatch[1]) - 1]?.name || code;
   }
 
-  // Mejores terceros
+  // Tercero: "3D" → 3º del grupo D
   if (code.startsWith('3')) {
-    let allFinished = true;
-    for (const g of FIXTURE_GROUPS) {
+    const thirdMatch = code.match(/^3([A-L])$/);
+    if (thirdMatch) {
+      const letter = thirdMatch[1];
+      let groupFinished = true;
       for (let i = 0; i < 6; i++) {
-        if (isNaN(parseInt(dataSource[`g${g.letter}_m${i}_h`]))) {
-          allFinished = false;
+        if (isNaN(parseInt(dataSource[`g${letter}_m${i}_h`]))) {
+          groupFinished = false;
           break;
         }
       }
+      if (!groupFinished) return code;
+      return getGroupStandings(letter, dataSource)[2]?.name || code;
     }
-    if (!allFinished) return code;
-
-    const thirds: { letter: string; team: any }[] = [];
-    FIXTURE_GROUPS.forEach(g => {
-      const st = getGroupStandings(g.letter, dataSource);
-      if (st[2]) thirds.push({ letter: g.letter, team: st[2] });
-    });
-
-    thirds.sort((a, b) => (b.team.pts - a.team.pts) || (b.team.gd - a.team.gd) || (b.team.gf - a.team.gf));
-    const best8: ({ letter: string; team: any; used?: boolean })[] = thirds.slice(0, 8);
-
-    if (!dataSource._thirdsMapping) {
-      dataSource._thirdsMapping = {};
-      const slots = ['3ABCDF', '3CDFGH', '3CEFHI', '3EHIJK', '3AEHIJ', '3BEFIJ', '3EFGIJ', '3DEIJL'];
-      slots.forEach(slot => {
-        const letters = slot.substring(1).split('');
-        const match = best8.find(t => !t.used && letters.includes(t.letter));
-        if (match) {
-          match.used = true;
-          dataSource._thirdsMapping[slot] = match.team.name;
-        } else {
-          const fallback = best8.find(t => !t.used);
-          if (fallback) {
-            fallback.used = true;
-            dataSource._thirdsMapping[slot] = fallback.team.name;
-          }
-        }
-      });
-    }
-
-    return dataSource._thirdsMapping[code] || code;
+    return code;
   }
 
   // Referencia a partido: "W95" → ganador del partido 95
@@ -183,4 +235,54 @@ export function fullResolve(code: string, dataSource: DataSource): string {
   }
 
   return code;
+}
+
+export interface CalendarMatch {
+  id: string;
+  kickoff: string;
+  team1: string;
+  team2: string;
+  isKnockout: boolean;
+  phase: string;
+}
+
+export function getCalendarMatches(reality?: Record<string, any>): CalendarMatch[] {
+  const matches: CalendarMatch[] = [];
+
+  FIXTURE_GROUPS.forEach(g => {
+    getGroupMatches(g).forEach(m => {
+      matches.push({
+        id: m.id,
+        kickoff: MATCH_KICKOFFS[m.id] || '',
+        team1: m.team1,
+        team2: m.team2,
+        isKnockout: false,
+        phase: `Grupo ${g.letter}`,
+      });
+    });
+  });
+
+  KNOCKOUT_BRACKET.forEach(stage => {
+    stage.matches.forEach(mId => {
+      const matchId = `ko_${mId}`;
+      const pairing = BRACKET_MATCHES[mId];
+      if (reality) {
+        const hName = reality[`${matchId}_h_team`] || (pairing ? fullResolve(pairing[0], reality) : "TBD");
+        const aName = reality[`${matchId}_a_team`] || (pairing ? fullResolve(pairing[1], reality) : "TBD");
+        matches.push({ id: matchId, kickoff: MATCH_KICKOFFS[matchId] || '', team1: hName, team2: aName, isKnockout: true, phase: stage.name });
+      } else {
+        const hName = pairing ? pairing[0] : "TBD";
+        const aName = pairing ? pairing[1] : "TBD";
+        matches.push({ id: matchId, kickoff: MATCH_KICKOFFS[matchId] || '', team1: hName, team2: aName, isKnockout: true, phase: stage.name });
+      }
+    });
+  });
+
+  matches.sort((a, b) => {
+    if (!a.kickoff) return 1;
+    if (!b.kickoff) return -1;
+    return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime();
+  });
+
+  return matches;
 }
