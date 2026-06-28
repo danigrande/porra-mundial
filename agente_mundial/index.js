@@ -76,6 +76,7 @@ const upload = multer({
 // SERVIDOR EXPRESS + HTTP
 // ==========================================
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 const isProduction = process.env.NODE_ENV === 'production' || process.env.TEST_MODE === 'false';
