@@ -11,8 +11,8 @@ import { KNOCKOUT_BRACKET, BRACKET_MATCHES, MATCH_KICKOFFS } from './shared_data
 const REAL_PHASES = [
   { id: 'PRE_TOURNAMENT', name: 'Pre-Mundial', start: '2026-01-01T00:00:00Z', end: '2026-06-11T19:00:00Z', unlocks: ['groups', 'honor'] },
   { id: 'GROUP_STAGE', name: 'Fase de Grupos', start: '2026-06-11T19:00:00Z', end: '2026-06-28T04:00:00Z', unlocks: [] },
-  { id: 'WAITING_R32', name: 'Ventana de 1/16 Final', start: '2026-06-28T04:00:00Z', end: '2026-06-28T19:00:00Z', unlocks: ['r32'] },
-  { id: 'R32_ACTIVE', name: '1/16 Final', start: '2026-06-28T19:00:00Z', end: '2026-07-04T04:00:00Z', unlocks: [] },
+  { id: 'WAITING_R32', name: 'Ventana de 1/16 Final', start: '2026-06-28T04:00:00Z', end: '2026-06-29T17:00:00Z', unlocks: ['r32'] },
+  { id: 'R32_ACTIVE', name: '1/16 Final', start: '2026-06-29T17:00:00Z', end: '2026-07-04T04:00:00Z', unlocks: [] },
   { id: 'WAITING_R16', name: 'Ventana de Octavos', start: '2026-07-04T04:00:00Z', end: '2026-07-04T17:00:00Z', unlocks: ['r16'] },
   { id: 'R16_ACTIVE', name: 'Octavos de Final', start: '2026-07-04T17:00:00Z', end: '2026-07-08T00:00:00Z', unlocks: [] },
   { id: 'WAITING_QF', name: 'Ventana de Cuartos', start: '2026-07-08T00:00:00Z', end: '2026-07-09T20:00:00Z', unlocks: ['qf'] },
@@ -98,6 +98,16 @@ export const getTournamentState = async (groupName = 'Mundial 2026') => {
       if (hasResult || (kickoffMs !== null && now >= kickoffMs)) {
         lockedMatchIds.push(matchId);
       }
+    }
+  }
+
+  // Bloquear partidos de KO cuya hora de kick-off ya pasó
+  for (let matchNum = 73; matchNum <= 104; matchNum++) {
+    const matchId = `ko_${matchNum}`;
+    const kickoffMs = MATCH_KICKOFFS[matchId] ? new Date(MATCH_KICKOFFS[matchId]).getTime() : null;
+    const hasResult = `${matchId}_h` in realityResults && `${matchId}_a` in realityResults;
+    if (hasResult || (kickoffMs !== null && now >= kickoffMs)) {
+      lockedMatchIds.push(matchId);
     }
   }
 
