@@ -117,7 +117,7 @@
         ]);
         
         tournamentState = stateRes?.data || null;
-        groupRules = rulesRes || {};
+        groupRules = rulesRes?.data || rulesRes || {};
         realityResults = realityRes?.data || {};
 
         if (tournamentState) {
