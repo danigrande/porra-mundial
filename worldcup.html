@@ -489,9 +489,7 @@
            
            const isEditable = unlocks.includes(round.id.toLowerCase());
            section.querySelectorAll('input').forEach(input => {
-             const matchId = input.id.replace(/_[ha]$/, '').replace(/^pen_/, '');
-             const isLocked = tournamentState?.lockedMatchIds?.includes(matchId);
-             input.disabled = !isEditable || !tournamentState || isLocked;
+             input.disabled = !isEditable || !tournamentState;
            });
            section.style.opacity = (!isEditable && tournamentState) ? '0.9' : '1';
         }
