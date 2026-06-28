@@ -6,6 +6,7 @@ import { Reality } from '../models/Reality.js';
 import * as scoringEngine from '../scoringEngine.js';
 import { getTournamentState } from '../tournamentState.js';
 import { triggerAutoSimulationIfNeeded } from '../autoSimulator.js';
+import { MATCH_KICKOFFS } from '../shared_data.js';
 import { createResponse } from './helpers.js';
 
 const router = express.Router();
@@ -65,6 +66,18 @@ router.post('/predictions', async (req, res) => {
           if (match) {
             const mid = match[1];
             if (`${mid}_h` in reality && `${mid}_a` in reality) {
+              delete predictions[key];
+            }
+          }
+        }
+
+        // Eliminar keys de partidos KO que ya han empezado (kickoff pasado)
+        for (const key of Object.keys(predictions)) {
+          const koMatch = key.match(/^(ko_|pen_)(\d+)_[ha]$/);
+          if (koMatch) {
+            const matchId = `ko_${koMatch[2]}`;
+            const kickoffMs = MATCH_KICKOFFS[matchId] ? new Date(MATCH_KICKOFFS[matchId]).getTime() : null;
+            if (kickoffMs !== null && Date.now() >= kickoffMs) {
               delete predictions[key];
             }
           }

@@ -102,22 +102,25 @@ export default function PredictionsScreen() {
     const koPhase = state?.knockoutBracket?.find((kb: any) => kb.id === selectedGroup);
     if (koPhase) {
       return koPhase.matches.map((mId: number) => {
+        const matchId = `ko_${mId}`;
+        const isLocked = state?.lockedMatchIds?.includes(matchId) ?? false;
+        const isPhaseEditable = state?.unlocks?.includes(koPhase.id) ?? false;
         const fromBracket = state?.bracketMatches?.[mId];
         if (fromBracket) {
           return {
-            id: `ko_${mId}`,
+            id: matchId,
             team1: tTeam(fromBracket[0]),
             team2: tTeam(fromBracket[1]),
-            isEditable: state?.unlocks?.includes(koPhase.id) ?? false
+            isEditable: isPhaseEditable && !isLocked
           };
         }
         const pairing = BRACKET_MATCHES[mId];
         if (pairing) {
           return {
-            id: `ko_${mId}`,
+            id: matchId,
             team1: resolveTeamName(pairing[0], dataForResolve),
             team2: resolveTeamName(pairing[1], dataForResolve),
-            isEditable: state?.unlocks?.includes(koPhase.id) ?? false
+            isEditable: isPhaseEditable && !isLocked
           };
         }
         return {
@@ -426,6 +429,7 @@ export default function PredictionsScreen() {
                           onChangeText={(text) => handlePenaltyChange(matchNum, 1, text)}
                           placeholder="-"
                           placeholderTextColor="#666"
+                          editable={match.isEditable}
                         />
                         <Text style={styles.vsText}>-</Text>
                         <TextInput
@@ -435,6 +439,7 @@ export default function PredictionsScreen() {
                           onChangeText={(text) => handlePenaltyChange(matchNum, 2, text)}
                           placeholder="-"
                           placeholderTextColor="#666"
+                          editable={match.isEditable}
                         />
                       </View>
 
