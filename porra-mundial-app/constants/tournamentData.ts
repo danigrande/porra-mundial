@@ -120,8 +120,8 @@ export const MATCH_KICKOFFS: Record<string, string> = {
 };
 
 export const KNOCKOUT_BRACKET = [
-  { id: 'r32', name: '1/16 Final', matches: [73, 76, 74, 75, 78, 77, 79, 80, 82, 81, 84, 83, 85, 88, 86, 87] },
-  { id: 'r16', name: '1/8 Final', matches: [90, 89, 91, 92, 93, 94, 95, 96] },
+  { id: 'r32', name: '1/16 Final', matches: [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88] },
+  { id: 'r16', name: '1/8 Final', matches: [89, 90, 91, 92, 93, 94, 95, 96] },
   { id: 'qf', name: '1/4 Final', matches: [97, 98, 99, 100] },
   { id: 'sf', name: 'Semifinales', matches: [101, 102] },
   { id: '3rd', name: '3er Puesto', matches: [103] },
