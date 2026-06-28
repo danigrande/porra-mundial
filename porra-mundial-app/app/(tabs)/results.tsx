@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import { getAuth } from '../../stores/authStore';
 import * as api from '../../services/api';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET, getGroupMatches, getGroupStandings, fullResolve, BRACKET_MATCHES } from '../../constants/tournamentData';
+import { FIXTURE_GROUPS, TEAM_CODES, KNOCKOUT_BRACKET, getGroupMatches, getGroupStandings, fullResolve, BRACKET_MATCHES, getCalendarMatches, MATCH_KICKOFFS } from '../../constants/tournamentData';
+import type { CalendarMatch } from '../../constants/tournamentData';
 import TournamentBanner from '../../components/TournamentBanner';
 import { useTranslation, tTeam } from '../../i18n/i18n';
 
@@ -16,7 +17,9 @@ export default function ResultsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [reality, setReality] = useState<any>({ events: {} });
   const [state, setState] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'groups' | 'knockout'>('groups');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'groups' | 'knockout'>('calendar');
+  const [calendarOffset, setCalendarOffset] = useState(0);
+  const [allCalendarMatches, setAllCalendarMatches] = useState<CalendarMatch[]>([]);
 
   const simSteps = [
     { phase: 'groups', label: '20 May: Grupos' },
@@ -50,6 +53,12 @@ export default function ResultsScreen() {
       console.log('[Results] State received:', stateRes);
       setReality(realityRes || { events: {} });
       setState(stateRes);
+
+      const matches = getCalendarMatches(realityRes || { events: {} });
+      setAllCalendarMatches(matches);
+      const now = stateRes?.currentTime ? new Date(stateRes.currentTime) : new Date();
+      const todayIdx = matches.findIndex(m => m.kickoff && new Date(m.kickoff) >= now);
+      setCalendarOffset(Math.max(0, todayIdx));
     } catch (e) {
       console.error('[Results] Error fetching data:', e);
     } finally {
@@ -124,6 +133,12 @@ export default function ResultsScreen() {
 
       <View style={styles.tabBar}>
         <TouchableOpacity 
+          style={[styles.tab, activeTab === 'calendar' && styles.tabActive]} 
+          onPress={() => setActiveTab('calendar')}
+        >
+          <Text style={[styles.tabText, activeTab === 'calendar' && styles.tabTextActive]}>{t('results.calendar_tab')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
           style={[styles.tab, activeTab === 'groups' && styles.tabActive]} 
           onPress={() => setActiveTab('groups')}
         >
@@ -194,8 +209,19 @@ export default function ResultsScreen() {
           </View>
         )}
 
-        {/* LISTADO DE PARTIDOS */}
-        {activeTab === 'groups' ? (
+        {/* CALENDARIO */}
+        {activeTab === 'calendar' ? (
+          <CalendarPanel
+            matches={allCalendarMatches}
+            offset={calendarOffset}
+            onPrev={() => setCalendarOffset(Math.max(0, calendarOffset - 4))}
+            onNext={() => setCalendarOffset(Math.min(allCalendarMatches.length - 1, calendarOffset + 4))}
+            reality={reality}
+            isAdmin={isAdmin}
+            onSimulate={handleSimulate}
+            t={t}
+          />
+        ) : activeTab === 'groups' ? (
           FIXTURE_GROUPS.map(g => (
             <View key={g.letter} style={styles.groupCard}>
               <View style={styles.groupHead}>
@@ -446,6 +472,111 @@ function StandingsTable({ letter, reality }: { letter: string; reality: any }) {
   );
 }
 
+function CalendarPanel({ matches, offset, onPrev, onNext, reality, isAdmin, onSimulate, t }: any) {
+  const todayStr = new Date().toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
+
+  const slice = matches.slice(offset, offset + 4);
+  if (slice.length === 0) {
+    return (
+      <View style={styles.centered}>
+        <Text style={{ color: '#8b949e' }}>{t('results.no_more_matches')}</Text>
+      </View>
+    );
+  }
+
+  const grouped: Record<string, CalendarMatch[]> = {};
+  slice.forEach((m: CalendarMatch) => {
+    if (!m.kickoff) return;
+    const d = new Date(m.kickoff);
+    const dateKey = d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
+    if (!grouped[dateKey]) grouped[dateKey] = [];
+    grouped[dateKey].push(m);
+  });
+
+  return (
+    <View style={styles.calendarContainer}>
+      <View style={styles.calendarNav}>
+        <TouchableOpacity
+          style={[styles.calendarNavBtn, offset <= 0 && styles.calendarNavBtnDisabled]}
+          onPress={onPrev}
+          disabled={offset <= 0}
+        >
+          <Text style={[styles.calendarNavText, offset <= 0 && styles.calendarNavTextDisabled]}>
+            {t('results.see_previous')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.calendarNavBtn, offset + 4 >= matches.length && styles.calendarNavBtnDisabled]}
+          onPress={onNext}
+          disabled={offset + 4 >= matches.length}
+        >
+          <Text style={[styles.calendarNavText, offset + 4 >= matches.length && styles.calendarNavTextDisabled]}>
+            {t('results.see_next')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {Object.entries(grouped).map(([dateKey, dayMatches]) => {
+        const isToday = dateKey === todayStr;
+        return (
+          <View key={dateKey} style={styles.calendarDayGroup}>
+            <View style={styles.dateHeader}>
+              <Text style={[styles.dateHeaderText, isToday && styles.dateHeaderTextToday]}>
+                {isToday ? `● ${t('results.today')}` : dateKey}
+              </Text>
+            </View>
+            {dayMatches.map(m => {
+              const hScore = reality[`${m.id}_h`] ?? '';
+              const aScore = reality[`${m.id}_a`] ?? '';
+              const isPlayed = hScore !== '' && aScore !== '';
+              if (isPlayed) {
+                return (
+                  <MatchRow
+                    key={m.id}
+                    matchId={m.id} hName={m.team1} aName={m.team2}
+                    reality={reality} onSimulate={onSimulate} isAdmin={isAdmin}
+                  />
+                );
+              }
+              return <CalendarMatchRow key={m.id} match={m} />;
+            })}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function CalendarMatchRow({ match }: { match: CalendarMatch }) {
+  const { team1, team2, kickoff } = match;
+  const hCode = TEAM_CODES[team1];
+  const aCode = TEAM_CODES[team2];
+  const d = kickoff ? new Date(kickoff) : null;
+  const localTime = d ? d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '';
+
+  return (
+    <View style={styles.matchItem}>
+      <View style={styles.scoreRow}>
+        <View style={styles.teamCol}>
+          <View style={styles.team}>
+            {hCode && <Image source={{ uri: `https://flagcdn.com/w40/${hCode}.png` }} style={styles.miniFlag} />}
+            <Text style={styles.teamText} numberOfLines={1}>{tTeam(team1)}</Text>
+          </View>
+        </View>
+        <View style={styles.scoreBox}>
+          <Text style={styles.kickoffTime}>{localTime}</Text>
+        </View>
+        <View style={[styles.teamCol, { alignItems: 'flex-end' }]}>
+          <View style={[styles.team, { justifyContent: 'flex-end' }]}>
+            <Text style={[styles.teamText, { textAlign: 'right' }]} numberOfLines={1}>{tTeam(team2)}</Text>
+            {aCode && <Image source={{ uri: `https://flagcdn.com/w40/${aCode}.png` }} style={styles.miniFlag} />}
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0e27' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0e27' },
@@ -518,6 +649,17 @@ const styles = StyleSheet.create({
   standingsPts: { color: '#fff', fontWeight: '800', fontSize: 13 },
   standingsQualifierText: { color: '#f5a623' },
   gdPositive: { color: '#10b981' },
-  gdNegative: { color: '#ef4444' }
+  gdNegative: { color: '#ef4444' },
+  calendarContainer: { },
+  calendarNav: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 10 },
+  calendarNavBtn: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  calendarNavBtnDisabled: { opacity: 0.3 },
+  calendarNavText: { color: '#f5a623', fontWeight: '700', fontSize: 13 },
+  calendarNavTextDisabled: { color: '#484f58' },
+  calendarDayGroup: { marginBottom: 8 },
+  dateHeader: { paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', marginTop: 4 },
+  dateHeaderText: { color: '#8b949e', fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  dateHeaderTextToday: { color: '#f5a623' },
+  kickoffTime: { color: '#8b949e', fontSize: 14, fontWeight: '700' },
 });
 
