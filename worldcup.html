@@ -447,7 +447,7 @@
 
     function updateAll() {
       const currentData = collectData();
-      const isModeB = groupRules.prediction_mode === 'B';
+      const isModeB = (groupRules.predictionMode || groupRules.prediction_mode) === 'B';
       const visiblePhases = tournamentState?.visiblePhases || [];
       const unlocks = tournamentState?.unlocks || [];
 
