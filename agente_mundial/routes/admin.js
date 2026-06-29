@@ -17,6 +17,27 @@ router.get('/reality', async (req, res) => {
     }
 });
 
+router.get('/sync-health', async (req, res) => {
+    try {
+        const { syncStatus: syncStatusImport } = await import('../realitySyncService.js');
+        const status = syncStatusImport;
+
+        const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
+
+        res.json({
+            status: 'success',
+            data: {
+                ...status,
+                realityUpdatedAt: realityDoc?.updatedAt || null,
+                serverTime: new Date().toISOString(),
+                hasApiKey: !!process.env.ZAFRONIX_API_KEY,
+            },
+        });
+    } catch (error) {
+        res.status(500).json(createResponse('error', null, error.message));
+    }
+});
+
 router.post('/reality', adminAuth, async (req, res) => {
     try {
         const { results } = req.body;

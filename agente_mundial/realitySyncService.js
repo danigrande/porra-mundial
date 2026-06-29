@@ -20,6 +20,9 @@ export const syncStatus = {
   realityMatchCount: 0,
   pollIntervalMs: POLL_INTERVAL_MS,
   isPollingActive: false,
+  apiKeyConfigured: false,
+  lastPollStartedAt: null,
+  consecutiveErrors: 0,
 };
 
 export async function startRealitySync(socketIO) {
@@ -73,10 +76,17 @@ function stopWatchdog() {
 }
 
 async function syncResults() {
+  const pollStart = Date.now();
+  syncStatus.lastPollStartedAt = new Date(pollStart).toISOString();
+  console.log(`[RealitySync] 🔄 Poll cycle started at ${syncStatus.lastPollStartedAt}`);
+
   try {
     const apiKey = process.env.ZAFRONIX_API_KEY;
+    const keyPresent = !!apiKey;
+    syncStatus.apiKeyConfigured = keyPresent;
+
     if (!apiKey) {
-      console.warn('[RealitySync] ZAFRONIX_API_KEY no configurada');
+      console.warn('[RealitySync] ❌ ZAFRONIX_API_KEY no configurada — sync detenido');
       syncStatus.lastSyncResult = 'error';
       syncStatus.lastSyncError = 'ZAFRONIX_API_KEY no configurada';
       return;
@@ -84,24 +94,32 @@ async function syncResults() {
 
     const zafronixData = await fetchZafronixMatches(apiKey);
     const matches = zafronixData.data || [];
+    console.log(`[RealitySync] Zafronix respondió con ${matches.length} partidos totales`);
 
     const completedMatches = matches.filter(m => m.homeScore !== null);
     syncStatus.zafronixMatchCount = completedMatches.length;
+    console.log(`[RealitySync] ${completedMatches.length} partidos con marcador`);
 
     if (completedMatches.length === 0) {
-      console.log('[RealitySync] No hay partidos finalizados aún');
+      console.log('[RealitySync] ⏳ No hay partidos finalizados aún');
       lastSyncTime = Date.now();
       syncStatus.lastSyncTime = new Date(lastSyncTime).toISOString();
       syncStatus.lastSyncResult = 'no_matches';
       syncStatus.lastSyncError = null;
+      syncStatus.consecutiveErrors = 0;
       return;
     }
 
     const matchIds = completedMatches.map(m => m.matchNo).join(',');
-    console.log(`[RealitySync] ${completedMatches.length} partidos finalizados en Zafronix: [${matchIds}]`);
+    console.log(`[RealitySync] Partidos con marcador IDs: [${matchIds}]`);
+    completedMatches.forEach(m => {
+      console.log(`  matchNo=${m.matchNo} ${m.homeTeam ?? '?'} ${m.homeScore}–${m.awayScore} ${m.awayTeam ?? '?'}`);
+    });
 
     const realityDoc = await Reality.findOne({ tournament: 'worldcup2026' });
     const currentReality = realityDoc ? realityDoc.results : { events: {} };
+    const realityUpdatedAt = realityDoc?.updatedAt;
+    console.log(`[RealitySync] Reality DB updatedAt: ${realityUpdatedAt ?? 'never'}`);
 
     const updatedResults = syncRealityFromZafronix(zafronixData, currentReality);
 
@@ -112,6 +130,7 @@ async function syncResults() {
       syncStatus.lastSyncTime = new Date(lastSyncTime).toISOString();
       syncStatus.lastSyncResult = 'no_changes';
       syncStatus.lastSyncError = null;
+      syncStatus.consecutiveErrors = 0;
       return;
     }
 
@@ -150,18 +169,25 @@ async function syncResults() {
     syncStatus.lastSyncTime = new Date(lastSyncTime).toISOString();
     syncStatus.lastSyncResult = 'success';
     syncStatus.lastSyncError = null;
+    syncStatus.consecutiveErrors = 0;
   } catch (error) {
     lastSyncTime = Date.now();
     syncStatus.lastSyncTime = new Date(lastSyncTime).toISOString();
     syncStatus.lastSyncResult = 'error';
     syncStatus.lastSyncError = error.message;
+    syncStatus.consecutiveErrors = (syncStatus.consecutiveErrors || 0) + 1;
 
     if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ERR_BAD_REQUEST') {
-      console.warn('[RealitySync] Zafronix no disponible, reintentando en el próximo ciclo');
+      console.warn(`[RealitySync] ⚠️ Zafronix no disponible (${error.message}), reintentando en ${POLL_INTERVAL_MS / 60000} min`);
+    } else if (error.response && error.response.status === 401) {
+      console.error(`[RealitySync] ❌ Zafronix API rechazó la key (401 Unauthorized) — verificar ZAFRONIX_API_KEY`);
     } else {
-      console.error('[RealitySync] Error:', error.message);
+      console.error(`[RealitySync] ❌ Error: ${error.message}${error.stack ? '\n' + error.stack : ''}`);
     }
   }
+
+  const elapsed = Date.now() - pollStart;
+  console.log(`[RealitySync] ⏱ Poll cycle finished in ${elapsed}ms`);
 }
 
 async function notifyGroups() {
