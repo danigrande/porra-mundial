@@ -135,7 +135,7 @@ export function isRealTeam(name) {
 /**
  * Resuelve el nombre legible de un partido.
  */
-export function resolveMatchName(prefix) {
+export function resolveMatchName(prefix, data) {
   if (prefix.startsWith('g')) {
     const groupMatch = prefix.match(/^g([A-L])_m(\d+)$/);
     if (groupMatch) {
@@ -153,6 +153,13 @@ export function resolveMatchName(prefix) {
     const num = parseInt(prefix.substring(3));
     let roundName = '';
     KNOCKOUT_BRACKET.forEach(r => { if (r.matches.includes(num)) roundName = r.name; });
+    if (data && BRACKET_MATCHES[num]) {
+      const hTeam = fullResolve(BRACKET_MATCHES[num][0], data);
+      const aTeam = fullResolve(BRACKET_MATCHES[num][1], data);
+      if (isRealTeam(hTeam) && isRealTeam(aTeam)) {
+        return `${roundName}: ${hTeam} vs ${aTeam}`;
+      }
+    }
     return `${roundName} (#${num})`;
   }
   return prefix;
@@ -235,7 +242,7 @@ export function calculateScore(prediction, reality, rules = {}) {
       const isGroup = prefix.startsWith('g');
       const result = evaluateMatch(prefix + '_h', prefix + '_a', isGroup);
       if (result.mPts > 0) {
-        history.push({ match: resolveMatchName(prefix), pts: result.mPts, reason: result.reasons.join(', ') });
+        history.push({ match: resolveMatchName(prefix, reality), pts: result.mPts, reason: result.reasons.join(', ') });
         totalPts += result.mPts;
         if (isGroup) groupPts += result.mPts; else koPts += result.mPts;
       }
@@ -287,7 +294,7 @@ export function calculateScore(prediction, reality, rules = {}) {
         if (isRealTeam(realTeam) && predTeams.includes(realTeam)) {
           totalPts += qualifyPts;
           koPts += qualifyPts;
-          history.push({ match: `Clasificado ${resolveMatchName('ko_' + matchNum)}`, pts: qualifyPts, reason: `Acierto (${realTeam})` });
+          history.push({ match: `Clasificado ${resolveMatchName('ko_' + matchNum, reality)}`, pts: qualifyPts, reason: `Acierto (${realTeam})` });
         }
       });
     }
