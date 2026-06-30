@@ -4,3 +4,4 @@ graphify-out/
 .graphifyignore
 opencode-session.md
 .env
+.DS_Store
