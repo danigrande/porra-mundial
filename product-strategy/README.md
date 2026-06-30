@@ -14,6 +14,7 @@
 | **The Contract** | M4 | [x] | `04-the-contract/` |
 | **The Guardrails** | M5 | [x] | `05-the-guardrails/` |
 | **The Pitch** | M6 | [x] | `06-the-pitch/` |
+| **The F1 Fork** | M7 | [x] | `07-the-fork-f1/` |
 
 ---
 
@@ -114,3 +115,18 @@ Attacker: Telegram (via Mini-App / Bot Developers) Vector: Frictionless distribu
 - **Key Strategic Change:** Dropped fine-tuning from all horizons. Reclassified Data Flywheel score from 5/5 to 2/5. Fine-tuning is Year 2 — it improves the next event, not this one.…
 
 → Details: [`06-the-pitch/`](06-the-pitch/)
+
+---
+
+## The F1 Fork (M7)
+
+**A Formula 1 fantasy prediction pool forked from the World Cup product.**
+
+- **Two modes:** Private groups (snake draft, user chat, 8–12 players) and public leagues (budget system, bot-only, no cap)
+- **Pricing:** Free + ads —or— $4.99/season for no ads + 1:1 private bot chat
+- **Game mechanics:** $100M budget for drivers + constructors + staff (team principal, engineers, mechanics). Staff and car upgrades are modifiers on real driver points.
+- **Scoring:** Real F1 points × car boost + pit stop bonus + constructor points. All modifiers tied to real-world constructor performance.
+- **No moderation cost:** Zero HITL overhead — bot-only chat in public leagues eliminates the $5k–15k/mo cost center.
+- **Engagement cadence:** 46 touchpoints (qualifying + race) across 23 race weekends, with bot posts during off-weeks.
+
+→ Details: [`07-the-fork-f1/`](07-the-fork-f1/)
