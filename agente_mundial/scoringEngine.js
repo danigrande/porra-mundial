@@ -211,6 +211,9 @@ export function resolveMatchName(prefix, data) {
       if (isRealTeam(hTeam) && isRealTeam(aTeam)) {
         return `${roundName}: ${hTeam} vs ${aTeam}`;
       }
+      if (isRealTeam(hTeam) || isRealTeam(aTeam)) {
+        return `${roundName}: ${isRealTeam(hTeam) ? hTeam : '?'} vs ${isRealTeam(aTeam) ? aTeam : '?'}`;
+      }
     }
     return `${roundName} (#${num})`;
   }
@@ -350,7 +353,7 @@ export function calculateScore(prediction, reality, rules = {}) {
         if (isRealTeam(realTeam) && predTeams.includes(realTeam)) {
           totalPts += qualifyPts;
           koPts += qualifyPts;
-          history.push({ match: `Clasificado ${resolveMatchName('ko_' + matchNum, reality)}`, pts: qualifyPts, reason: `Acierto (${realTeam})` });
+          history.push({ match: resolveMatchName('ko_' + matchNum, reality), pts: qualifyPts, reason: `Clasificado (${realTeam})` });
         }
       });
     }
