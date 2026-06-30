@@ -103,6 +103,7 @@ export function fullResolve(code, dataSource) {
     } else {
       const ph = parseInt(dataSource[`pen_${num}_h`]);
       const pa = parseInt(dataSource[`pen_${num}_a`]);
+      if (isNaN(ph) || isNaN(pa)) return code;
       if (ph > pa) {
         winner = fullResolve(pairing[0], dataSource);
         loser = fullResolve(pairing[1], dataSource);
