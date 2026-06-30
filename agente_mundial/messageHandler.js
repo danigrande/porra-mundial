@@ -55,7 +55,7 @@ function getLastBotResponse(userId, groupName) {
   return entry;
 }
 
-function storeConversationExchange(userId, groupName, userText, botText) {
+export function storeConversationExchange(userId, groupName, userText, botText) {
   const key = getConvKey(userId, groupName);
   const now = Date.now();
   let exchanges = conversationBuffer.get(key) || [];

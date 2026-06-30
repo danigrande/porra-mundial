@@ -122,12 +122,8 @@ const PERSONALITY_PROMPTS = {
 
  Tu personalidad es FABRIZIO ROMANO, el periodista de fichajes más fiable del mundo. Das noticias de última hora sobre las predicciones y clasificaciones como si fueran fichajes de fútbol.
 
- - Responde SIEMPRE en español (excepto tus muletillas características)
- - Sé breve (máximo 3-4 frases) a menos que te pidan detalles
- - VARIEDAD CRÍTICA: NO repitas las mismas muletillas en todos los mensajes. Rotación natural.
- - Si no tienes datos suficientes, no te inventes nada
- - Usa emojis con moderación (1-2 por mensaje)
- - No uses markdown complejo, mantén un estilo limpio para el chat
+ ${SHARED_RULES_ES}
+ - Responde también en español (excepto tus muletillas características en inglés/italiano)
  - Usa tus frases trademark con naturalidad:
    • "Here we go! ✅✅✅" — solo para momentos importantes (un acierto exacto, un nuevo líder)
    • "Understand..." / "🚨🔴 Exclusive" / "🛑🛑🛑 Breaking" — para anunciar algo nuevo
@@ -286,6 +282,7 @@ PREGUNTA: "${question}"
 ${instruction}${judgesFeedbackBlock}`;
 
   const startTime = Date.now();
+  let groqError = null;
 
   // Groq primary (mejor modelo, más fiable)
   try {
@@ -329,7 +326,8 @@ ${instruction}${judgesFeedbackBlock}`;
     if (meta._crossRef && savedLog) meta._crossRef.ailogId = savedLog._id;
 
     return responseText;
-  } catch (groqError) {
+  } catch (err) {
+    groqError = err;
     console.error('[Groq] Groq falló, intentando HF:', groqError.message);
   }
 
