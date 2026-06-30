@@ -119,6 +119,57 @@ export function fullResolve(code, dataSource) {
 }
 
 /**
+ * Resuelve un código de bracket para clasificación usando predicción
+ * para determinar ganadores/perdedores pero REALIDAD para nombres de equipos.
+ * Esto evita que un error en predicción de posiciones de grupo arrastre
+ * incorrectamente los puntos de clasificación en rondas KO.
+ */
+export function resolveQualification(code, prediction, reality) {
+  if (!code || !prediction || !reality) return code;
+
+  const groupMatch = code.match(/^([1-3])([A-L])$/);
+  if (groupMatch) return fullResolve(code, reality);
+
+  const matchRef = code.match(/^([WL])(\d+)$/);
+  if (matchRef) {
+    const type = matchRef[1];
+    const num = matchRef[2];
+    const ph = parseInt(prediction[`ko_${num}_h`]);
+    const pa = parseInt(prediction[`ko_${num}_a`]);
+
+    if (isNaN(ph) || isNaN(pa)) return code;
+
+    const pairing = BRACKET_MATCHES[num];
+    if (!pairing) return code;
+
+    let winnerSlot, loserSlot;
+    if (ph > pa) {
+      winnerSlot = pairing[0];
+      loserSlot = pairing[1];
+    } else if (pa > ph) {
+      winnerSlot = pairing[1];
+      loserSlot = pairing[0];
+    } else {
+      const pph = parseInt(prediction[`pen_${num}_h`]);
+      const ppa = parseInt(prediction[`pen_${num}_a`]);
+      if (isNaN(pph) || isNaN(ppa)) return code;
+      if (pph > ppa) {
+        winnerSlot = pairing[0];
+        loserSlot = pairing[1];
+      } else {
+        winnerSlot = pairing[1];
+        loserSlot = pairing[0];
+      }
+    }
+
+    const targetSlot = type === 'W' ? winnerSlot : loserSlot;
+    return resolveQualification(targetSlot, prediction, reality);
+  }
+
+  return code;
+}
+
+/**
  * Verifica si un nombre de equipo es un equipo real (no TBD o código).
  */
 export function isRealTeam(name) {
@@ -288,7 +339,11 @@ export function calculateScore(prediction, reality, rules = {}) {
       const realA = fullResolve(BRACKET_MATCHES[matchNum][1], reality);
       
       const realTeams = [realH, realA];
-      const predTeams = [fullResolve(BRACKET_MATCHES[matchNum][0], prediction), fullResolve(BRACKET_MATCHES[matchNum][1], prediction)];
+      const predTeams = BRACKET_MATCHES[matchNum].map(code =>
+        /^([WL])/.test(code)
+          ? resolveQualification(code, prediction, reality)
+          : fullResolve(code, prediction)
+      );
       
       realTeams.forEach(realTeam => {
         // SOLO si el equipo real ya está definido (es un país, no un código)
@@ -309,9 +364,9 @@ export function calculateScore(prediction, reality, rules = {}) {
     }
   };
 
-  checkHonor(fullResolve('W104', reality), fullResolve('W104', prediction), ptsRules.honor.champ, 'Campeón');
-  checkHonor(fullResolve('L104', reality), fullResolve('L104', prediction), ptsRules.honor.runner, 'Subcampeón');
-  checkHonor(fullResolve('W103', reality), fullResolve('W103', prediction), ptsRules.honor.third, '3er Puesto');
+  checkHonor(fullResolve('W104', reality), resolveQualification('W104', prediction, reality), ptsRules.honor.champ, 'Campeón');
+  checkHonor(fullResolve('L104', reality), resolveQualification('L104', prediction, reality), ptsRules.honor.runner, 'Subcampeón');
+  checkHonor(fullResolve('W103', reality), resolveQualification('W103', prediction, reality), ptsRules.honor.third, '3er Puesto');
 
   ['boot', 'ball'].forEach(cat => ['gold', 'silver', 'bronze'].forEach(rank => {
     const key = `${cat}_${rank}`;
