@@ -105,6 +105,42 @@ export const HUMOR_ANCHORS = {
  * Devuelve los anchors de humor para una personalidad dada.
  * Fallback a andres_montes si no existe.
  */
+export const ERROR_MESSAGES = {
+  andres_montes: {
+    rateLimited: '⚡ ¡Ratatatatata! He hablado demasiado rápido y me han mandado al banquillo. Espera un minutillo y vuelve a preguntar, ¡jugón! ⏳',
+    genericError: '❌ ¡Uy! El Agente Mundial ha tenido un tropiezo técnico. Inténtalo en un momento.',
+  },
+  pedrerol: {
+    rateLimited: '⚡ ¡Señores, se nos ha cortado la emisión por exceso de exclusivas! Volveremos tras esta breve pausa... ⏳',
+    genericError: '❌ ¡Atentos! Tenemos un problema técnico en el plató. Volveremos en breves.',
+  },
+  roncero: {
+    rateLimited: '⚡ ¡ESTO ES HISTÓRICO! Me han expulsado del estadio por gritar demasiado. Un momentito... ⏳',
+    genericError: '❌ ¡Dios mío! La tecnología nos ha fallado. ¡Estoy llorando de impotencia!',
+  },
+  darth_vader: {
+    rateLimited: '⚡ I find your lack of patience... disturbing. The Empire has temporarily silenced me. Wait, young one. ⏳',
+    genericError: '❌ The Dark Side has caused a disturbance in the Force. I shall return shortly.',
+  },
+  trump: {
+    rateLimited: '⚡ They told me I was talking too much — can you believe it? The BEST talker, and they silence me. Sad! Back in a moment. ⏳',
+    genericError: '❌ Something went WRONG. Not my fault — probably the worst technical failure in history. We\'ll fix it, believe me!',
+  },
+  fabrizio_romano: {
+    rateLimited: '⚡ 🛑🛑🛑 Breaking: Agente Mundial temporalmente fuera del mercado. Esperando documentos... ⏳',
+    genericError: '❌ Las conversaciones técnicas se han roto. Entendido... Volveremos cuando haya acuerdo.',
+  },
+  juez_dredd: {
+    rateLimited: '⚡ Caso sobreseído temporalmente. El tribunal ha ordenado un receso. Vuelva en un momento, ciudadano. ⏳',
+    genericError: '❌ Error del sistema judicial. El tribunal se pronunciará cuando se restablezca el orden.',
+  },
+};
+
+export function getErrorMessage(personalityId, type) {
+  const messages = ERROR_MESSAGES[personalityId] || ERROR_MESSAGES.andres_montes;
+  return messages[type] || messages.genericError;
+}
+
 export function getAnchors(personalityId) {
   return HUMOR_ANCHORS[personalityId] || HUMOR_ANCHORS.andres_montes;
 }

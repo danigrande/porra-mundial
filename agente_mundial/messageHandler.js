@@ -15,6 +15,7 @@ import { transcreateWithQualityGate } from './transcreationService.js';
 
 import { Group } from './models/Group.js';
 import { Correction } from './models/Correction.js';
+import { AILog } from './models/AILog.js';
 import Groq from 'groq-sdk';
 
 // Cache organizada por GroupName
@@ -24,6 +25,15 @@ const CACHE_TTL = 30 * 1000; // 30 segundos — datos casi en tiempo real
 // Memoria de últimas respuestas del bot por {userId, groupName} para detección de correcciones
 const lastBotResponse = new Map();
 const LAST_BOT_TTL = 5 * 60 * 1000; // 5 minutos
+
+// Conversación reciente en memoria: {userId}::{groupName} → Exchange[]
+const conversationBuffer = new Map();
+const CONVERSATION_TTL = 15 * 60 * 1000; // 15 minutos
+const MAX_EXCHANGES = 6;
+
+function getConvKey(userId, groupName) {
+  return `${userId}::${groupName}`;
+}
 
 function getLastBotKey(userId, groupName) {
   return `${userId}::${groupName}`;
@@ -43,6 +53,24 @@ function getLastBotResponse(userId, groupName) {
     return null;
   }
   return entry;
+}
+
+function storeConversationExchange(userId, groupName, userText, botText) {
+  const key = getConvKey(userId, groupName);
+  const now = Date.now();
+  let exchanges = conversationBuffer.get(key) || [];
+  exchanges = exchanges.filter(e => now - e.timestamp < CONVERSATION_TTL);
+  exchanges.push({ userText, botText, timestamp: now });
+  if (exchanges.length > MAX_EXCHANGES) exchanges.shift();
+  conversationBuffer.set(key, exchanges);
+}
+
+function getConversationContext(userId, groupName) {
+  const key = getConvKey(userId, groupName);
+  const now = Date.now();
+  const exchanges = (conversationBuffer.get(key) || []).filter(e => now - e.timestamp < CONVERSATION_TTL);
+  if (exchanges.length === 0) return '';
+  return exchanges.map(e => `Usuario: ${e.userText}\nAgente: ${e.botText}`).join('\n\n');
 }
 
 // Pre-filter rápido: ¿el mensaje del usuario referencia la respuesta del bot?
@@ -93,6 +121,8 @@ Si NO, responde solo NO.
 Formato: YES|NO||texto_corregido`;
 
   let result;
+  let startTime = Date.now();
+  let usage = {};
   try {
     const completion = await groq.chat.completions.create({
       model: config.evals.judgeModel || 'llama-3.1-8b-instant',
@@ -101,9 +131,50 @@ Formato: YES|NO||texto_corregido`;
       max_tokens: 200
     });
     result = completion.choices?.[0]?.message?.content?.trim() || 'NO';
+    usage = completion.usage || {};
   } catch (e) {
-    return; // Si falla el LLM, simplemente skip
+    AILog.create({
+      type: 'correction_detection',
+      playerName: playerName || senderUserId,
+      groupName,
+      systemPrompt: '',
+      userPrompt: detectionPrompt,
+      groqResponse: '',
+      model: config.evals.judgeModel || 'llama-3.1-8b-instant',
+      temperature: 0.1,
+      maxTokens: 200,
+      latencyMs: Date.now() - startTime,
+      source: 'chat',
+      callSource: 'correctionDetection',
+      success: false,
+      errorMessage: e.message,
+      anchorsUsed: lastBotEntry.meta?.personalityId || '',
+      targetLanguage: lastBotEntry.meta?.targetLanguage || 'es',
+    }).catch(() => {});
+    return;
   }
+
+  AILog.create({
+    type: 'correction_detection',
+    playerName: playerName || senderUserId,
+    groupName,
+    systemPrompt: '',
+    userPrompt: detectionPrompt,
+    groqResponse: result,
+    model: config.evals.judgeModel || 'llama-3.1-8b-instant',
+    temperature: 0.1,
+    maxTokens: 200,
+    tokensUsed: usage.total_tokens || 0,
+    promptTokens: usage.prompt_tokens || 0,
+    completionTokens: usage.completion_tokens || 0,
+    latencyMs: Date.now() - startTime,
+    source: 'chat',
+    callSource: 'correctionDetection',
+    success: true,
+    evalPassed: result.startsWith('YES'),
+    anchorsUsed: lastBotEntry.meta?.personalityId || '',
+    targetLanguage: lastBotEntry.meta?.targetLanguage || 'es',
+  }).catch(() => {});
 
   if (!result.startsWith('YES')) return;
 
@@ -349,8 +420,15 @@ export async function processMessage(text, senderUserId, groupName) {
   }
 
   if (intent === 'help') {
-    return `🏆 *Agente Mundial* — Asistente del grupo *${groupName || 'Privado'}*
-\nPuedes preguntarme por la clasificación, tu posición, noticias del mundial o un resumen de la jornada.`;
+    return {
+      response: `🏆 *Agente Mundial* — Asistente del grupo *${groupName || 'Privado'}*
+\nPuedes preguntarme por la clasificación, tu posición, noticias del mundial o un resumen de la jornada.`,
+      personalityId: null,
+      targetLanguage: null,
+      ailogId: null,
+      judgeScores: null,
+      forceApproved: false
+    };
   }
 
   // --- Unificar: perfil, personalidad, idioma ---
@@ -382,10 +460,10 @@ export async function processMessage(text, senderUserId, groupName) {
   let webContext = "";
   if (config.webSearch?.enabled && (intent === 'factual' || !cache.leaderboard?.length)) {
     try {
-      const webResults = await searchWeb(text, config.webSearch.maxResults);
+      const webResults = await searchWeb(text, 3);
       if (webResults.length > 0) {
         webContext = webResults.map((r, i) =>
-          `Fuente ${i + 1}: ${r.title}\n${r.content.substring(0, 300)}`
+          `Fuente ${i + 1}: ${r.title}\n${r.content.substring(0, 200)}`
         ).join('\n\n');
         console.log(`🔍 Web search OK: ${webResults.length} resultados`);
       }
@@ -395,6 +473,7 @@ export async function processMessage(text, senderUserId, groupName) {
   }
 
   // --- 4. Construir contexto unificado ---
+  const convContext = getConversationContext(senderUserId, groupName);
   const context = {
     groupName,
     ranking: cache.leaderboard,
@@ -403,6 +482,7 @@ export async function processMessage(text, senderUserId, groupName) {
     leaderboard: cache.leaderboard,
     chatContext,
     webContext,
+    convContext,
     rulesContext: buildRulesContext(groupName, cache.rules),
     matchDrama: buildMatchDrama(cache.reality),
   };
@@ -432,10 +512,24 @@ export async function processMessage(text, senderUserId, groupName) {
       personalityId, anchors, context, systemPrompt
     );
     console.log(`🌐 [Transcreation] ${transcreated.usedFallback ? 'FALLBACK al original' : `OK en ${targetLang}`} (${transcreated.attempts} intentos)`);
-    return transcreated.text;
+    return {
+      response: transcreated.text,
+      personalityId,
+      targetLanguage: targetLang,
+      ailogId: result.ailogId,
+      judgeScores: result.judgment?.scores,
+      forceApproved: result.forceApproved
+    };
   }
 
-  return result.response;
+  return {
+    response: result.response,
+    personalityId,
+    targetLanguage: generationLang,
+    ailogId: result.ailogId,
+    judgeScores: result.judgment?.scores,
+    forceApproved: result.forceApproved
+  };
 }
 
 /**

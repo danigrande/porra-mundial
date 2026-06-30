@@ -11,6 +11,7 @@
 import Groq from 'groq-sdk';
 import config from './config.js';
 import { getLanguageName, TRANSCREATION_LANGUAGES } from './languageRouter.js';
+import { AILog } from './models/AILog.js';
 
 const groq = new Groq({ apiKey: config.groq.apiKey });
 
@@ -156,13 +157,15 @@ export async function judgeResponse(response, systemPrompt, anchors, targetLangu
   const contamination = detectScriptContamination(response, targetLanguage);
   if (contamination === 0) {
     console.log(`⚖️ [Judge] Fast-path: script contaminado detectado en respuesta para lang=${targetLanguage}`);
-    return {
+    const result = {
       scores: { language_purity: 0, quality: 5 },
       feedback: 'Script contaminado: caracteres de idioma incorrecto detectados automáticamente',
       main_issue: 'language',
       passed: false,
       fastPath: true
     };
+    saveAILog({ type: 'judge', response, targetLanguage, personalityId, scores: result.scores, passed: false, fastPath: true, callSource: 'fastPath_scriptContamination' });
+    return result;
   }
 
   const evalConfig = config.evals;
@@ -170,18 +173,20 @@ export async function judgeResponse(response, systemPrompt, anchors, targetLangu
   // Sample rate: si no evaluamos esta respuesta, aprobar por defecto
   const sampleRate = evalConfig?.sampleRate ?? 1.0;
   if (Math.random() > sampleRate) {
-    return {
+    const result = {
       scores: { language_purity: 10, quality: 8 },
       feedback: 'Evaluación saltada por sample rate',
       main_issue: 'none',
       passed: true,
       skipped: true
     };
+    return result;
   }
 
   const prompt = buildJudgePrompt(response, systemPrompt, anchors, targetLanguage);
 
   try {
+    const startTime = Date.now();
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
       model: evalConfig?.judgeModel ?? 'llama-3.1-8b-instant',
@@ -189,15 +194,35 @@ export async function judgeResponse(response, systemPrompt, anchors, targetLangu
       max_tokens: 300,
       response_format: { type: 'json_object' }
     });
+    const latencyMs = Date.now() - startTime;
 
     const raw = completion.choices[0]?.message?.content || '{}';
     const result = JSON.parse(raw);
+    const usage = completion.usage || {};
 
     const langScore = result.scores?.language_purity ?? 5;
     const qualScore = result.scores?.quality ?? 5;
     const passed = langScore >= minLang && qualScore >= minQuality;
 
     console.log(`⚖️ [Judge] lang=${langScore} quality=${qualScore} → ${passed ? '✅ PASS' : '❌ FAIL'} (${result.feedback?.substring(0, 60)})`);
+
+    saveAILog({
+      type: 'judge',
+      targetLanguage,
+      personalityId,
+      scores: { language_purity: langScore, quality: qualScore },
+      passed,
+      feedback: result.feedback,
+      mainIssue: result.main_issue,
+      model: evalConfig?.judgeModel ?? 'llama-3.1-8b-instant',
+      temperature: evalConfig?.judgeTemperature ?? 0.1,
+      tokensUsed: usage.total_tokens || 0,
+      promptTokens: usage.prompt_tokens || 0,
+      completionTokens: usage.completion_tokens || 0,
+      latencyMs,
+      callSource: 'judgeService',
+      success: true
+    });
 
     return {
       scores: { language_purity: langScore, quality: qualScore },
@@ -209,6 +234,16 @@ export async function judgeResponse(response, systemPrompt, anchors, targetLangu
 
   } catch (error) {
     console.error('[Judge] Error llamando al LLM juez:', error.message);
+
+    saveAILog({
+      type: 'judge',
+      targetLanguage,
+      personalityId,
+      errorMessage: error.message,
+      callSource: 'judgeService',
+      success: false
+    });
+
     // En caso de error del Judge, aprobar por defecto para no bloquear al usuario
     return {
       scores: { language_purity: 7, quality: 7 },
@@ -218,4 +253,32 @@ export async function judgeResponse(response, systemPrompt, anchors, targetLangu
       judgeError: true
     };
   }
+}
+
+function saveAILog(data) {
+  AILog.create({
+    type: 'judge',
+    playerName: '',
+    groupName: '',
+    systemPrompt: '',
+    userPrompt: '',
+    groqResponse: data.response || '',
+    model: data.model || config.evals?.judgeModel || 'llama-3.1-8b-instant',
+    temperature: data.temperature ?? 0.1,
+    maxTokens: 300,
+    tokensUsed: data.tokensUsed || 0,
+    promptTokens: data.promptTokens || 0,
+    completionTokens: data.completionTokens || 0,
+    latencyMs: data.latencyMs || 0,
+    source: 'chat',
+    callSource: data.callSource || 'judgeService',
+    success: data.success !== false,
+    errorMessage: data.errorMessage || '',
+    evalScores: data.scores || {},
+    evalPassed: data.passed,
+    evalFeedback: data.feedback || '',
+    evalMainIssue: data.mainIssue || '',
+    targetLanguage: data.targetLanguage || 'es',
+    anchorsUsed: data.personalityId || '',
+  }).catch(err => console.error('[Judge] Error saving AILog:', err.message));
 }

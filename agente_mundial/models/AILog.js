@@ -4,7 +4,7 @@ const aiLogSchema = new mongoose.Schema({
   // Tipo de llamada a Groq
   type: { 
     type: String, 
-    enum: ['response', 'summary', 'personality'], 
+    enum: ['response', 'summary', 'personality', 'judge', 'transcreation', 'correction_detection'], 
     required: true 
   },
   playerName: { type: String, default: 'Unknown' },
@@ -37,6 +37,7 @@ const aiLogSchema = new mongoose.Schema({
     enum: ['chat', 'web', 'cron', 'manual', 'eval_runner'], 
     default: 'chat' 
   },
+  callSource: { type: String, default: '' }, // free-form: e.g. 'generateWithQualityGate', 'transcreateWithQualityGate', 'correctionDetection'
   
   // Status
   success: { type: Boolean, default: true },

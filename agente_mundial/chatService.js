@@ -10,7 +10,7 @@ import { User } from './models/User.js';
 import { Group } from './models/Group.js';
 import { Message } from './models/Message.js';
 import { BlockedUser } from './models/BlockedUser.js';
-import { processMessage, refreshCache, identifyPlayer } from './messageHandler.js';
+import { processMessage, refreshCache, identifyPlayer, storeLastBotResponse, storeConversationExchange } from './messageHandler.js';
 import { vectorizeMessage } from './ragService.js';
 import * as pushService from './pushService.js';
 
@@ -240,19 +240,29 @@ export function initChatServer(httpServer) {
             .replace(/@bot/gi, '')
             .trim();
           
-          const botResponse = await processMessage(
+          const botResult = await processMessage(
             cleanText, 
             userId,
             groupName
           );
 
-          if (botResponse) {
+          if (botResult) {
             // Pequeño delay para simular "pensando"
             await new Promise(r => setTimeout(r, 500));
 
-            // processMessage returns a string (help/summary paths) or an object (generateWithQualityGate)
-            const botText = typeof botResponse === 'object' ? botResponse.response : botResponse;
-            const ailogId = typeof botResponse === 'object' ? (botResponse.ailogId || null) : null;
+            const botText = botResult.response;
+            const ailogId = botResult.ailogId || null;
+
+            // 4.1 Guardar en memoria para detección de correcciones
+            storeLastBotResponse(userId, groupName, botText, {
+              personalityId: botResult.personalityId,
+              targetLanguage: botResult.targetLanguage,
+              judgeScores: botResult.judgeScores,
+              ailogId
+            });
+
+            // 4.2 Guardar intercambio en el buffer de conversación
+            storeConversationExchange(userId, groupName, cleanText, botText);
 
             // 5. Guardar respuesta del bot
             const botMessage = await Message.create({
@@ -265,8 +275,10 @@ export function initChatServer(httpServer) {
               aiLogId: ailogId
             });
 
-            // 5.1 Vectorizar respuesta del bot para el RAG
-            vectorizeMessage(botMessage._id, botText);
+            // 5.1 Vectorizar respuesta del bot para el RAG — solo si pasó quality gate
+            if (!botResult.forceApproved) {
+              vectorizeMessage(botMessage._id, botText);
+            }
 
             const botPayload = {
               _id: botMessage._id.toString(),

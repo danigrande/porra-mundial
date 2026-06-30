@@ -18,6 +18,7 @@ import Groq from 'groq-sdk';
 import config from './config.js';
 import { judgeResponse } from './judgeService.js';
 import { getLanguageName } from './languageRouter.js';
+import { AILog } from './models/AILog.js';
 
 const groq = new Groq({ apiKey: config.groq.apiKey });
 
@@ -89,6 +90,7 @@ export async function transcreateMessage(sourceText, sourceLanguage, targetLangu
     personalityId, anchors, context
   );
 
+  const startTime = Date.now();
   const completion = await groq.chat.completions.create({
     messages: [{ role: 'user', content: prompt }],
     model,
@@ -96,7 +98,28 @@ export async function transcreateMessage(sourceText, sourceLanguage, targetLangu
     max_tokens: config.groq.maxTokens,
   });
 
-  return completion.choices[0]?.message?.content?.trim() || sourceText;
+  const latencyMs = Date.now() - startTime;
+  const usage = completion.usage || {};
+  const resultText = completion.choices[0]?.message?.content?.trim() || sourceText;
+
+  saveAILog({
+    type: 'transcreation',
+    targetLanguage,
+    personalityId,
+    sourceLanguage,
+    sourceText,
+    resultText,
+    model,
+    temperature,
+    tokensUsed: usage.total_tokens || 0,
+    promptTokens: usage.prompt_tokens || 0,
+    completionTokens: usage.completion_tokens || 0,
+    latencyMs,
+    callSource: 'transcreationService',
+    success: true
+  });
+
+  return resultText;
 }
 
 // ──────────────────────────────────────────────
@@ -160,10 +183,34 @@ export async function transcreateWithQualityGate(sourceText, sourceLanguage, tar
   // Fallback: devolver el texto original (en idioma fuente) si todos los intentos fallaron
   console.warn(`⚠️ [Transcreation] Agotados ${maxRetries} intentos. Usando fallback al original (${sourceLanguage})`);
   return {
-    text: sourceText,  // Fallback al original aprobado
+    text: sourceText,
     passed: false,
     attempts,
     usedFallback: true,
     judgment: lastJudgment
   };
+}
+
+function saveAILog(data) {
+  AILog.create({
+    type: 'transcreation',
+    playerName: '',
+    groupName: '',
+    systemPrompt: '',
+    userPrompt: `Transcreation: ${data.sourceLanguage || ''} → ${data.targetLanguage || ''}`,
+    groqResponse: data.resultText || '',
+    model: data.model || config.groq.model,
+    temperature: data.temperature ?? 0.7,
+    maxTokens: config.groq.maxTokens,
+    tokensUsed: data.tokensUsed || 0,
+    promptTokens: data.promptTokens || 0,
+    completionTokens: data.completionTokens || 0,
+    latencyMs: data.latencyMs || 0,
+    source: 'chat',
+    callSource: data.callSource || 'transcreationService',
+    success: data.success !== false,
+    targetLanguage: data.targetLanguage || '',
+    anchorsUsed: data.personalityId || '',
+    wasTranscreated: true,
+  }).catch(err => console.error('[Transcreation] Error saving AILog:', err.message));
 }

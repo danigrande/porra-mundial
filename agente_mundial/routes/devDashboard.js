@@ -1009,7 +1009,7 @@ router.get('/usage', async (req, res) => {
     const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    const [today, week, month, byType, byDay, avgLatency, byModel] = await Promise.all([
+    const [today, week, month, byType, byDay, avgLatency, byModel, auxiliaryCosts] = await Promise.all([
       // Tokens hoy
       AILog.aggregate([
         { $match: { createdAt: { $gte: todayStart } } },
@@ -1066,6 +1066,17 @@ router.get('/usage', async (req, res) => {
           avgLatency: { $avg: '$latencyMs' }
         }},
         { $sort: { tokens: -1 } }
+      ]),
+
+      // Costes auxiliares: judge, transcreation, correction_detection
+      AILog.aggregate([
+        { $match: { createdAt: { $gte: weekStart }, type: { $in: ['judge', 'transcreation', 'correction_detection'] } } },
+        { $group: {
+          _id: '$type',
+          calls: { $sum: 1 },
+          tokens: { $sum: '$tokensUsed' },
+          avgLatency: { $avg: '$latencyMs' }
+        }}
       ])
     ]);
     
@@ -1076,6 +1087,7 @@ router.get('/usage', async (req, res) => {
       byType,
       byDay,
       byModel,
+      auxiliaryCosts,
       latency: avgLatency[0] || { avg: 0, max: 0, min: 0 },
       limits: {
         dailyRequests: 14400,
