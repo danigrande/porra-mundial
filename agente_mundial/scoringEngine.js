@@ -342,7 +342,10 @@ export function calculateScore(prediction, reality, rules = {}) {
   Object.keys(BRACKET_MATCHES).forEach(matchNum => {
     const n = parseInt(matchNum);
     if (n < 89) return; // 1/16 ya pagado con puntos de grupo
-    if (reality[`ko_${n}_h`] === undefined) return; // no jugado aún
+    
+    // Eliminado: if (reality[`ko_${n}_h`] === undefined) return; 
+    // Los puntos de clasificación deben otorgarse en cuanto se conocen los equipos,
+    // no cuando se juega el partido de la ronda a la que clasificaron.
 
     const qualifyPts = ptsRules.ko.qualify;
     
