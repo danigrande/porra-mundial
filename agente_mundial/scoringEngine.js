@@ -4,7 +4,7 @@
 // Calcula la puntuación de cada jugador comparando
 // sus predicciones con los resultados reales.
 
-import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET } from './shared_data.js';
+import { FIXTURE_GROUPS, BRACKET_MATCHES, KNOCKOUT_BRACKET, MATCH_KICKOFFS } from './shared_data.js';
 
 /**
  * Calcula las clasificaciones de un grupo.
@@ -297,7 +297,7 @@ export function calculateScore(prediction, reality, rules = {}) {
       const isGroup = prefix.startsWith('g');
       const result = evaluateMatch(prefix + '_h', prefix + '_a', isGroup);
       if (result.mPts > 0) {
-        history.push({ match: resolveMatchName(prefix, reality), pts: result.mPts, reason: result.reasons.join(', ') });
+        history.push({ match: resolveMatchName(prefix, reality), pts: result.mPts, reason: result.reasons.join(', '), date: MATCH_KICKOFFS[prefix] });
         totalPts += result.mPts;
         if (isGroup) groupPts += result.mPts; else koPts += result.mPts;
       }
@@ -325,7 +325,7 @@ export function calculateScore(prediction, reality, rules = {}) {
           if (pts > 0) {
             totalPts += pts;
             groupPts += pts;
-            history.push({ match: `Posición ${index + 1}º Grupo ${group.letter}`, pts, reason: `Acierto (${team.name})` });
+            history.push({ match: `Posición ${index + 1}º Grupo ${group.letter}`, pts, reason: `Acierto (${team.name})`, date: MATCH_KICKOFFS[`g${group.letter}_m5`] });
           }
         }
       });
@@ -356,23 +356,23 @@ export function calculateScore(prediction, reality, rules = {}) {
           const sourceNum = slotMatch ? parseInt(slotMatch[2], 10) : parseInt(matchNum, 10);
           totalPts += qualifyPts;
           koPts += qualifyPts;
-          history.push({ match: realTeam, pts: qualifyPts, reason: `Clasificado (${resolveMatchName('ko_' + sourceNum, reality)})` });
+          history.push({ match: realTeam, pts: qualifyPts, reason: `Clasificado (${resolveMatchName('ko_' + sourceNum, reality)})`, date: MATCH_KICKOFFS['ko_' + sourceNum] });
         }
       });
     }
   });
 
   // --- 4. CUADRO DE HONOR ---
-  const checkHonor = (actual, predicted, pts, label) => {
+  const checkHonor = (actual, predicted, pts, label, date) => {
     if (actual && predicted && actual === predicted && isRealTeam(actual)) {
       honorPts += pts; totalPts += pts;
-      history.push({ match: `Honor: ${label}`, pts, reason: 'Acierto' });
+      history.push({ match: `Honor: ${label}`, pts, reason: 'Acierto', date });
     }
   };
 
-  checkHonor(fullResolve('W104', reality), resolveQualification('W104', prediction, reality), ptsRules.honor.champ, 'Campeón');
-  checkHonor(fullResolve('L104', reality), resolveQualification('L104', prediction, reality), ptsRules.honor.runner, 'Subcampeón');
-  checkHonor(fullResolve('W103', reality), resolveQualification('W103', prediction, reality), ptsRules.honor.third, '3er Puesto');
+  checkHonor(fullResolve('W104', reality), resolveQualification('W104', prediction, reality), ptsRules.honor.champ, 'Campeón', MATCH_KICKOFFS['ko_104']);
+  checkHonor(fullResolve('L104', reality), resolveQualification('L104', prediction, reality), ptsRules.honor.runner, 'Subcampeón', MATCH_KICKOFFS['ko_104']);
+  checkHonor(fullResolve('W103', reality), resolveQualification('W103', prediction, reality), ptsRules.honor.third, '3er Puesto', MATCH_KICKOFFS['ko_103']);
 
   ['boot', 'ball'].forEach(cat => ['gold', 'silver', 'bronze'].forEach(rank => {
     const key = `${cat}_${rank}`;
@@ -380,6 +380,13 @@ export function calculateScore(prediction, reality, rules = {}) {
       checkHonor(reality[key], prediction[key], ptsRules.honor[rank], (cat === 'boot' ? 'Bota' : 'Balón') + ' ' + rank);
     }
   }));
+
+  history.sort((a, b) => {
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(a.date) - new Date(b.date);
+  });
 
   return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), honorPts: Math.round(honorPts), history };
 }
