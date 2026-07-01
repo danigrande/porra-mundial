@@ -84,8 +84,8 @@ export function syncRealityFromZafronix(zafronixData, currentReality) {
 
     const shootout = m.penaltyShootout || m.penalties;
     if (shootout && m.matchNo >= 73) {
-      const ph = shootout.homeScore;
-      const pa = shootout.awayScore;
+      const ph = shootout.home;
+      const pa = shootout.away;
       if (ph != null && pa != null) {
         results[`pen_${m.matchNo}_h`] = String(ph);
         results[`pen_${m.matchNo}_a`] = String(pa);

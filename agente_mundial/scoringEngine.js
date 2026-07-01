@@ -327,15 +327,24 @@ export function calculateScore(prediction, reality, rules = {}) {
             groupPts += pts;
             history.push({ match: `Posición ${index + 1}º Grupo ${group.letter}`, pts, reason: `Acierto (${team.name})`, date: MATCH_KICKOFFS[`g${group.letter}_m5`] });
           }
+          const qualifyPts = ptsRules.group.qualify;
+          if (qualifyPts > 0) {
+            totalPts += qualifyPts;
+            groupPts += qualifyPts;
+            history.push({ match: team.name, pts: qualifyPts, reason: `Clasificado a KO (${index + 1}º Grupo ${group.letter})`, date: MATCH_KICKOFFS[`g${group.letter}_m5`] });
+          }
         }
       });
     }
   });
 
-  // --- 3. EQUIPOS CLASIFICADOS (KO) ---
+  // --- 3. EQUIPOS CLASIFICADOS (KO) — solo rondas KO reales ---
   Object.keys(BRACKET_MATCHES).forEach(matchNum => {
-    const isRoundOf32 = KNOCKOUT_BRACKET[0].matches.includes(parseInt(matchNum));
-    const qualifyPts = isRoundOf32 ? ptsRules.group.qualify : ptsRules.ko.qualify;
+    const n = parseInt(matchNum);
+    if (n < 89) return; // 1/16 ya pagado con puntos de grupo
+    if (reality[`ko_${n}_h`] === undefined) return; // no jugado aún
+
+    const qualifyPts = ptsRules.ko.qualify;
     
     if (qualifyPts > 0) {
       const realH = fullResolve(BRACKET_MATCHES[matchNum][0], reality);
