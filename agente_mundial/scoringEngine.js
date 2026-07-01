@@ -348,12 +348,15 @@ export function calculateScore(prediction, reality, rules = {}) {
           : fullResolve(code, prediction)
       );
       
-      realTeams.forEach(realTeam => {
+      realTeams.forEach((realTeam, index) => {
         // SOLO si el equipo real ya está definido (es un país, no un código)
         if (isRealTeam(realTeam) && predTeams.includes(realTeam)) {
+          const slot = BRACKET_MATCHES[matchNum][index];
+          const slotMatch = slot.match(/^([WL])(\d+)$/);
+          const sourceNum = slotMatch ? parseInt(slotMatch[2], 10) : parseInt(matchNum, 10);
           totalPts += qualifyPts;
           koPts += qualifyPts;
-          history.push({ match: resolveMatchName('ko_' + matchNum, reality), pts: qualifyPts, reason: `Clasificado (${realTeam})` });
+          history.push({ match: realTeam, pts: qualifyPts, reason: `Clasificado (${resolveMatchName('ko_' + sourceNum, reality)})` });
         }
       });
     }
