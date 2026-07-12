@@ -83,18 +83,31 @@ export function syncRealityFromZafronix(zafronixData, currentReality) {
     }
 
     if (m.matchNo >= 73) {
-      const hasExtraTime = m.extraTime === true;
-      results[`ko_${m.matchNo}_et`] = hasExtraTime ? "true" : "false";
-
-      if (hasExtraTime && m.goals && Array.isArray(m.goals) && m.goals.length > 0) {
+      if (m.goals && Array.isArray(m.goals) && m.goals.length > 0) {
+        let regH = 0, regA = 0;
         let etH = 0, etA = 0;
         for (const g of m.goals) {
-          if (!g || g.scorer == null) continue;
-          if (g.team === 'home') etH++;
-          else if (g.team === 'away') etA++;
+          if (!g || !g.scorer) continue;
+          if ((g.minute || 0) > 90) {
+            if (g.team === 'home') etH++;
+            else if (g.team === 'away') etA++;
+          } else {
+            if (g.team === 'home') regH++;
+            else if (g.team === 'away') regA++;
+          }
         }
-        results[`et_${m.matchNo}_h`] = String(etH);
-        results[`et_${m.matchNo}_a`] = String(etA);
+        // Override API scores with regulation goal counts
+        results[`ko_${m.matchNo}_h`] = String(regH);
+        results[`ko_${m.matchNo}_a`] = String(regA);
+        // Detect ET from goal minutes (API's extraTime field can be wrong)
+        const hasET = etH > 0 || etA > 0;
+        results[`ko_${m.matchNo}_et`] = hasET ? "true" : "false";
+        if (hasET) {
+          results[`et_${m.matchNo}_h`] = String(regH + etH);
+          results[`et_${m.matchNo}_a`] = String(regA + etA);
+        }
+      } else {
+        results[`ko_${m.matchNo}_et`] = m.extraTime === true ? "true" : "false";
       }
     }
 
