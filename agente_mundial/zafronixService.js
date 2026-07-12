@@ -83,27 +83,6 @@ export function syncRealityFromZafronix(zafronixData, currentReality) {
     }
 
     if (m.matchNo >= 73) {
-      // Overwrite ko_* with regulation goals (extraTime:false) when available
-      // so scoring reflects the 90-minute result regardless of API's raw scores
-      if (m.goals && Array.isArray(m.goals) && m.goals.length > 0) {
-        let regH = 0, regA = 0;
-        let hasETGoal = false;
-        for (const g of m.goals) {
-          if (!g || g.scorer == null) continue;
-          if (g.extraTime) {
-            hasETGoal = true;
-            continue;
-          }
-          if (g.team === 'home') regH++;
-          else if (g.team === 'away') regA++;
-        }
-        if (hasETGoal) {
-          results[`ko_${m.matchNo}_h`] = String(regH);
-          results[`ko_${m.matchNo}_a`] = String(regA);
-        }
-      }
-
-      // Store extraTime flag and ET result for bracket resolution
       const hasExtraTime = m.extraTime === true;
       results[`ko_${m.matchNo}_et`] = hasExtraTime ? "true" : "false";
 
