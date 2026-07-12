@@ -117,7 +117,7 @@ router.get('/leaderboard', async (req, res) => {
             if (p.user) playersData[p.user.name] = { predictions: p.predictions };
         });
 
-        const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules);
+        const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules, group.predictionMode);
         res.json(createResponse('success', leaderboard));
     } catch (error) {
         console.error('❌ Error obteniendo leaderboard:', error);

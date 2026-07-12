@@ -138,7 +138,7 @@ router.get('/summary/:player', async (req, res) => {
         const playersData = {};
         predictions.forEach(p => { if (p.user) playersData[p.user.name] = { predictions: p.predictions }; });
 
-        const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules);
+        const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules, group.predictionMode);
         const playerStats = leaderboard.find(p => p.name === player);
 
         let chatContext = "";

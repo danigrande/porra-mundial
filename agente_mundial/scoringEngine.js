@@ -194,6 +194,69 @@ export function resolveQualification(code, prediction, reality) {
 }
 
 /**
+ * Resuelve un código de bracket para clasificación usando predicción
+ * para determinar ganadores/perdedores, pero nombres de equipos desde REALIDAD.
+ * Usado en Mode B donde el formulario muestra equipos reales.
+ */
+export function resolveQualificationModeB(code, prediction, reality) {
+  if (!code || !prediction || !reality) return code;
+
+  const groupMatch = code.match(/^([1-3])([A-L])$/);
+  if (groupMatch) return fullResolve(code, reality);
+
+  const matchRef = code.match(/^([WL])(\d+)$/);
+  if (matchRef) {
+    const type = matchRef[1];
+    const num = matchRef[2];
+    const ph = parseInt(prediction[`ko_${num}_h`]);
+    const pa = parseInt(prediction[`ko_${num}_a`]);
+
+    if (isNaN(ph) || isNaN(pa)) return code;
+
+    const pairing = BRACKET_MATCHES[num];
+    if (!pairing) return code;
+
+    let winnerSlot, loserSlot;
+    if (ph > pa) {
+      winnerSlot = pairing[0];
+      loserSlot = pairing[1];
+    } else if (pa > ph) {
+      winnerSlot = pairing[1];
+      loserSlot = pairing[0];
+    } else {
+      const petH = parseInt(prediction[`et_${num}_h`]);
+      const petA = parseInt(prediction[`et_${num}_a`]);
+      if (!isNaN(petH) && !isNaN(petA) && petH !== petA) {
+        if (petH > petA) {
+          winnerSlot = pairing[0];
+          loserSlot = pairing[1];
+        } else {
+          winnerSlot = pairing[1];
+          loserSlot = pairing[0];
+        }
+      } else {
+        const pph = parseInt(prediction[`pen_${num}_h`]);
+        const ppa = parseInt(prediction[`pen_${num}_a`]);
+        if (isNaN(pph) || isNaN(ppa)) return code;
+        if (pph > ppa) {
+          winnerSlot = pairing[0];
+          loserSlot = pairing[1];
+        } else {
+          winnerSlot = pairing[1];
+          loserSlot = pairing[0];
+        }
+      }
+    }
+
+    const targetSlot = type === 'W' ? winnerSlot : loserSlot;
+    // KEY DIFFERENCE: resolve from REALITY, not from prediction chain
+    return fullResolve(targetSlot, reality);
+  }
+
+  return code;
+}
+
+/**
  * Verifica si un nombre de equipo es un equipo real (no TBD o código).
  */
 export function isRealTeam(name) {
@@ -247,7 +310,7 @@ export function resolveMatchName(prefix, data) {
 /**
  * Calcula la puntuación de un jugador.
  */
-export function calculateScore(prediction, reality, rules = {}) {
+export function calculateScore(prediction, reality, rules = {}, predictionMode = 'A') {
   let totalPts = 0;
   let exactHits = 0;
   let groupPts = 0;
@@ -378,9 +441,10 @@ export function calculateScore(prediction, reality, rules = {}) {
       const realA = fullResolve(BRACKET_MATCHES[matchNum][1], reality);
       
       const realTeams = [realH, realA];
+      const qualFn = predictionMode === 'B' ? resolveQualificationModeB : resolveQualification;
       const predTeams = BRACKET_MATCHES[matchNum].map(code =>
         /^([WL])/.test(code)
-          ? resolveQualification(code, prediction, reality)
+          ? qualFn(code, prediction, reality)
           : fullResolve(code, prediction)
       );
       
@@ -406,9 +470,10 @@ export function calculateScore(prediction, reality, rules = {}) {
     }
   };
 
-  checkHonor(fullResolve('W104', reality), resolveQualification('W104', prediction, reality), ptsRules.honor.champ, 'Campeón', MATCH_KICKOFFS['ko_104']);
-  checkHonor(fullResolve('L104', reality), resolveQualification('L104', prediction, reality), ptsRules.honor.runner, 'Subcampeón', MATCH_KICKOFFS['ko_104']);
-  checkHonor(fullResolve('W103', reality), resolveQualification('W103', prediction, reality), ptsRules.honor.third, '3er Puesto', MATCH_KICKOFFS['ko_103']);
+  const honorQualFn = predictionMode === 'B' ? resolveQualificationModeB : resolveQualification;
+  checkHonor(fullResolve('W104', reality), honorQualFn('W104', prediction, reality), ptsRules.honor.champ, 'Campeón', MATCH_KICKOFFS['ko_104']);
+  checkHonor(fullResolve('L104', reality), honorQualFn('L104', prediction, reality), ptsRules.honor.runner, 'Subcampeón', MATCH_KICKOFFS['ko_104']);
+  checkHonor(fullResolve('W103', reality), honorQualFn('W103', prediction, reality), ptsRules.honor.third, '3er Puesto', MATCH_KICKOFFS['ko_103']);
 
   ['boot', 'ball'].forEach(cat => ['gold', 'silver', 'bronze'].forEach(rank => {
     const key = `${cat}_${rank}`;
@@ -427,10 +492,10 @@ export function calculateScore(prediction, reality, rules = {}) {
   return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), honorPts: Math.round(honorPts), history };
 }
 
-export function calculateLeaderboard(allPredictions, reality, rules = {}) {
+export function calculateLeaderboard(allPredictions, reality, rules = {}, predictionMode = 'A') {
   const results = Object.entries(allPredictions).map(([name, data]) => {
     const preds = typeof data.predictions === 'string' ? JSON.parse(data.predictions) : data.predictions;
-    return { name, ...calculateScore(preds, reality, rules) };
+    return { name, ...calculateScore(preds, reality, rules, predictionMode) };
   });
   return results.sort((a, b) => b.totalPts - a.totalPts).map((r, i) => ({ ...r, position: i + 1 }));
 }

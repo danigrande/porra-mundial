@@ -339,7 +339,7 @@ export async function refreshCache(groupName) {
     ]);
 
     // Calcular el Ranking real con puntos
-    const leaderboard = calculateLeaderboard(predictions, reality, rules);
+    const leaderboard = calculateLeaderboard(predictions, reality, rules, rules.predictionMode);
 
     caches[groupName] = {
       predictions,
