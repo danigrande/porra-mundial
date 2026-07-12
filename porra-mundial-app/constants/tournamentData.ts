@@ -223,6 +223,11 @@ export function fullResolve(code: string, dataSource: DataSource): string {
     } else if (ga > gh) {
       return type === 'W' ? awayResolved : homeResolved;
     } else {
+      const etH = parseInt(dataSource[`et_${num}_h`]);
+      const etA = parseInt(dataSource[`et_${num}_a`]);
+      if (!isNaN(etH) && !isNaN(etA) && etH !== etA) {
+        return type === 'W' ? (etH > etA ? homeResolved : awayResolved) : (etH > etA ? awayResolved : homeResolved);
+      }
       const penH = parseInt(dataSource[`pen_${num}_h`]);
       const penA = parseInt(dataSource[`pen_${num}_a`]);
       if (isNaN(penH) || isNaN(penA)) return code;

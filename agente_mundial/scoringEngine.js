@@ -101,15 +101,27 @@ export function fullResolve(code, dataSource) {
       winner = fullResolve(pairing[1], dataSource);
       loser = fullResolve(pairing[0], dataSource);
     } else {
-      const ph = parseInt(dataSource[`pen_${num}_h`]);
-      const pa = parseInt(dataSource[`pen_${num}_a`]);
-      if (isNaN(ph) || isNaN(pa)) return code;
-      if (ph > pa) {
-        winner = fullResolve(pairing[0], dataSource);
-        loser = fullResolve(pairing[1], dataSource);
+      const eth = parseInt(dataSource[`et_${num}_h`]);
+      const eta = parseInt(dataSource[`et_${num}_a`]);
+      if (!isNaN(eth) && !isNaN(eta) && eth !== eta) {
+        if (eth > eta) {
+          winner = fullResolve(pairing[0], dataSource);
+          loser = fullResolve(pairing[1], dataSource);
+        } else {
+          winner = fullResolve(pairing[1], dataSource);
+          loser = fullResolve(pairing[0], dataSource);
+        }
       } else {
-        winner = fullResolve(pairing[1], dataSource);
-        loser = fullResolve(pairing[0], dataSource);
+        const ph = parseInt(dataSource[`pen_${num}_h`]);
+        const pa = parseInt(dataSource[`pen_${num}_a`]);
+        if (isNaN(ph) || isNaN(pa)) return code;
+        if (ph > pa) {
+          winner = fullResolve(pairing[0], dataSource);
+          loser = fullResolve(pairing[1], dataSource);
+        } else {
+          winner = fullResolve(pairing[1], dataSource);
+          loser = fullResolve(pairing[0], dataSource);
+        }
       }
     }
     return type === 'W' ? winner : loser;
@@ -150,15 +162,27 @@ export function resolveQualification(code, prediction, reality) {
       winnerSlot = pairing[1];
       loserSlot = pairing[0];
     } else {
-      const pph = parseInt(prediction[`pen_${num}_h`]);
-      const ppa = parseInt(prediction[`pen_${num}_a`]);
-      if (isNaN(pph) || isNaN(ppa)) return code;
-      if (pph > ppa) {
-        winnerSlot = pairing[0];
-        loserSlot = pairing[1];
+      const petH = parseInt(prediction[`et_${num}_h`]);
+      const petA = parseInt(prediction[`et_${num}_a`]);
+      if (!isNaN(petH) && !isNaN(petA) && petH !== petA) {
+        if (petH > petA) {
+          winnerSlot = pairing[0];
+          loserSlot = pairing[1];
+        } else {
+          winnerSlot = pairing[1];
+          loserSlot = pairing[0];
+        }
       } else {
-        winnerSlot = pairing[1];
-        loserSlot = pairing[0];
+        const pph = parseInt(prediction[`pen_${num}_h`]);
+        const ppa = parseInt(prediction[`pen_${num}_a`]);
+        if (isNaN(pph) || isNaN(ppa)) return code;
+        if (pph > ppa) {
+          winnerSlot = pairing[0];
+          loserSlot = pairing[1];
+        } else {
+          winnerSlot = pairing[1];
+          loserSlot = pairing[0];
+        }
       }
     }
 

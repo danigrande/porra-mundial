@@ -362,8 +362,11 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
   const isKnockout = matchId.startsWith('ko_');
   const matchNum = isKnockout ? matchId.replace('ko_', '') : '';
   const isTie = hScore !== '' && aScore !== '' && hScore === aScore;
+  const hasET = reality[`ko_${matchNum}_et`] === 'true';
   const penH = reality[`pen_${matchNum}_h`] ?? '';
   const penA = reality[`pen_${matchNum}_a`] ?? '';
+  const etH = reality[`et_${matchNum}_h`] ?? '';
+  const etA = reality[`et_${matchNum}_a`] ?? '';
 
   return (
     <View style={styles.matchItem}>
@@ -387,10 +390,12 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
             </Text>
           ))}
         </View>
-        <View style={styles.scoreBox}>
-          <Text style={styles.scoreText}>{hScore !== '' ? hScore : '-'}</Text>
-          <Text style={styles.vs}>-</Text>
-          <Text style={styles.scoreText}>{aScore !== '' ? aScore : '-'}</Text>
+        <View style={styles.scoreCol}>
+          <View style={styles.scoreBox}>
+            <Text style={styles.scoreText}>{hScore !== '' ? hScore : '-'}</Text>
+            <Text style={styles.vs}>-</Text>
+            <Text style={styles.scoreText}>{aScore !== '' ? aScore : '-'}</Text>
+          </View>
         </View>
         <View style={[styles.teamCol, { alignItems: 'flex-end' }]}>
           <View style={[styles.team, { justifyContent: 'flex-end' }]}>
@@ -404,6 +409,18 @@ function MatchRow({ matchId, hName, aName, reality, onSimulate, isAdmin }: any) 
           ))}
         </View>
       </View>
+      {isKnockout && hasET && etH !== '' && etA !== '' && etH !== etA && (
+        <View style={styles.penaltiesRow}>
+          <View style={styles.teamCol} />
+          <View style={styles.penaltiesBox}>
+            <Text style={styles.penaltiesLabel}>T.E.</Text>
+            <Text style={styles.penaltyScore}>{etH}</Text>
+            <Text style={styles.vs}>-</Text>
+            <Text style={styles.penaltyScore}>{etA}</Text>
+          </View>
+          <View style={styles.teamCol} />
+        </View>
+      )}
       {isKnockout && isTie && penH !== '' && penA !== '' && (
         <View style={styles.penaltiesRow}>
           <View style={styles.teamCol} />
@@ -625,7 +642,8 @@ const styles = StyleSheet.create({
   miniFlag: { width: 24, height: 16, borderRadius: 3 },
   eventItemHome: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 3 },
   eventItemAway: { color: 'rgba(255,255,255,0.65)', fontSize: 11, paddingVertical: 3, textAlign: 'right' },
-  scoreBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 90 },
+  scoreCol: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 90 },
+  scoreBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   scoreText: { color: '#f5a623', fontSize: 24, fontWeight: '900', width: 34, textAlign: 'center' },
   vs: { color: '#484f58', marginHorizontal: 6, fontSize: 18 },
   penaltiesRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
