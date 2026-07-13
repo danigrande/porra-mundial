@@ -344,10 +344,16 @@ export function calculateScore(prediction, reality, rules = {}, predictionMode =
   };
 
   // --- 1. EVALUACIÓN DE PARTIDOS (Puntos por resultado) ---
-  function evaluateMatch(hKey, aKey, isGroup) {
+  const scoringReality = { ...reality };
+  Object.keys(reality).forEach(key => {
+    const etMatch = key.match(/^et_(\d+)_([ha])$/);
+    if (etMatch) scoringReality[`ko_${etMatch[1]}_${etMatch[2]}`] = parseInt(reality[key]) || 0;
+  });
+
+  function evaluateMatch(hKey, aKey, isGroup, source = scoringReality) {
     const pRules = isGroup ? ptsRules.group : ptsRules.ko;
-    const rH = parseInt(reality[hKey]);
-    const rA = parseInt(reality[aKey]);
+    const rH = parseInt(source[hKey]);
+    const rA = parseInt(source[aKey]);
     const pH = parseInt(prediction[hKey]);
     const pA = parseInt(prediction[aKey]);
 
