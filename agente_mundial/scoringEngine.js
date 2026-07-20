@@ -310,7 +310,7 @@ export function resolveMatchName(prefix, data) {
 /**
  * Calcula la puntuación de un jugador.
  */
-export function calculateScore(prediction, reality, rules = {}, predictionMode = 'A') {
+export function calculateScore(prediction, reality, rules = {}, predictionMode = 'A', playerName = '') {
   let totalPts = 0;
   let exactHits = 0;
   let groupPts = 0;
@@ -513,14 +513,6 @@ export function calculateScore(prediction, reality, rules = {}, predictionMode =
     }
   }));
 
-  // Brasits award — solo el ganador recibe la penalización
-  const brasitsKey = 'brasits_winner';
-  if (isRealTeam(reality[brasitsKey]) && prediction[brasitsKey] && fuzzyMatch(prediction[brasitsKey], reality[brasitsKey])) {
-    const pts = -446;
-    honorPts += pts; totalPts += pts;
-    history.push({ match: 'Venganza del agente: Por brasits', pts, reason: 'Acierto', date: '' });
-  }
-
   history.sort((a, b) => {
     if (!a.date && !b.date) return 0;
     if (!a.date) return 1;
@@ -528,13 +520,21 @@ export function calculateScore(prediction, reality, rules = {}, predictionMode =
     return new Date(a.date) - new Date(b.date);
   });
 
+  // Brasits award — solo el ganador recibe la penalización
+  const brasitsKey = 'brasits_winner';
+  if (isRealTeam(reality[brasitsKey]) && playerName && normalizeName(playerName) === normalizeName(reality[brasitsKey])) {
+    const pts = -446;
+    honorPts += pts; totalPts += pts;
+    history.push({ match: 'Venganza del agente: Por brasits', pts, reason: 'Acierto', date: '' });
+  }
+
   return { totalPts: Math.round(totalPts), exactHits, groupPts: Math.round(groupPts), koPts: Math.round(koPts), honorPts: Math.round(honorPts), history };
 }
 
 export function calculateLeaderboard(allPredictions, reality, rules = {}, predictionMode = 'A') {
   const results = Object.entries(allPredictions).map(([name, data]) => {
     const preds = typeof data.predictions === 'string' ? JSON.parse(data.predictions) : data.predictions;
-    return { name, updatedAt: data.updatedAt, ...calculateScore(preds, reality, rules, predictionMode) };
+    return { name, updatedAt: data.updatedAt, ...calculateScore(preds, reality, rules, predictionMode, name) };
   });
   return results.sort((a, b) => {
     if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
