@@ -513,6 +513,14 @@ export function calculateScore(prediction, reality, rules = {}, predictionMode =
     }
   }));
 
+  // Brasits award — solo el ganador recibe la penalización
+  const brasitsKey = 'brasits_winner';
+  if (isRealTeam(reality[brasitsKey]) && prediction[brasitsKey] && fuzzyMatch(prediction[brasitsKey], reality[brasitsKey])) {
+    const pts = -446;
+    honorPts += pts; totalPts += pts;
+    history.push({ match: 'Venganza del agente: Por brasits', pts, reason: 'Acierto', date: '' });
+  }
+
   history.sort((a, b) => {
     if (!a.date && !b.date) return 0;
     if (!a.date) return 1;
