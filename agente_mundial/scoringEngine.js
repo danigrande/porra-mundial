@@ -526,7 +526,17 @@ export function calculateScore(prediction, reality, rules = {}, predictionMode =
 export function calculateLeaderboard(allPredictions, reality, rules = {}, predictionMode = 'A') {
   const results = Object.entries(allPredictions).map(([name, data]) => {
     const preds = typeof data.predictions === 'string' ? JSON.parse(data.predictions) : data.predictions;
-    return { name, ...calculateScore(preds, reality, rules, predictionMode) };
+    return { name, updatedAt: data.updatedAt, ...calculateScore(preds, reality, rules, predictionMode) };
   });
-  return results.sort((a, b) => b.totalPts - a.totalPts).map((r, i) => ({ ...r, position: i + 1 }));
+  return results.sort((a, b) => {
+    if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
+    if ((b.honorPts || 0) !== (a.honorPts || 0)) return (b.honorPts || 0) - (a.honorPts || 0);
+    if ((b.exactHits || 0) !== (a.exactHits || 0)) return (b.exactHits || 0) - (a.exactHits || 0);
+    if ((b.koPts || 0) !== (a.koPts || 0)) return (b.koPts || 0) - (a.koPts || 0);
+    if ((b.groupPts || 0) !== (a.groupPts || 0)) return (b.groupPts || 0) - (a.groupPts || 0);
+    if (a.updatedAt && b.updatedAt) return new Date(a.updatedAt) - new Date(b.updatedAt);
+    if (a.updatedAt) return -1;
+    if (b.updatedAt) return 1;
+    return 0;
+  }).map((r, i) => ({ ...r, position: i + 1 }));
 }

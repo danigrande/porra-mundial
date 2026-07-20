@@ -136,7 +136,7 @@ router.get('/summary/:player', async (req, res) => {
         const reality = realityDoc ? realityDoc.results : {};
 
         const playersData = {};
-        predictions.forEach(p => { if (p.user) playersData[p.user.name] = { predictions: p.predictions }; });
+        predictions.forEach(p => { if (p.user) playersData[p.user.name] = { predictions: p.predictions, updatedAt: p.updatedAt?.toISOString() }; });
 
         const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules, group.predictionMode);
         const playerStats = leaderboard.find(p => p.name === player);

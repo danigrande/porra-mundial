@@ -35,7 +35,7 @@ router.get('/predictions', async (req, res) => {
             const preds = await Prediction.find({ group: group._id }).populate('user', 'name');
             const result = {};
             preds.forEach(p => {
-                if (p.user) result[p.user.name] = { predictions: p.predictions };
+                if (p.user) result[p.user.name] = { predictions: p.predictions, updatedAt: p.updatedAt?.toISOString() };
             });
             return res.json(createResponse('success', result));
         }
@@ -114,7 +114,7 @@ router.get('/leaderboard', async (req, res) => {
 
         const playersData = {};
         predictions.forEach(p => {
-            if (p.user) playersData[p.user.name] = { predictions: p.predictions };
+            if (p.user) playersData[p.user.name] = { predictions: p.predictions, updatedAt: p.updatedAt?.toISOString() };
         });
 
         const leaderboard = scoringEngine.calculateLeaderboard(playersData, reality, group.rules, group.predictionMode);
