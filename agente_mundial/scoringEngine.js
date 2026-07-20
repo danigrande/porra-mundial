@@ -530,7 +530,6 @@ export function calculateLeaderboard(allPredictions, reality, rules = {}, predic
   });
   return results.sort((a, b) => {
     if (b.totalPts !== a.totalPts) return b.totalPts - a.totalPts;
-    if ((b.honorPts || 0) !== (a.honorPts || 0)) return (b.honorPts || 0) - (a.honorPts || 0);
     if ((b.exactHits || 0) !== (a.exactHits || 0)) return (b.exactHits || 0) - (a.exactHits || 0);
     if ((b.koPts || 0) !== (a.koPts || 0)) return (b.koPts || 0) - (a.koPts || 0);
     if ((b.groupPts || 0) !== (a.groupPts || 0)) return (b.groupPts || 0) - (a.groupPts || 0);
