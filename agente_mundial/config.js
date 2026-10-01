@@ -9,7 +9,7 @@ const config = {
   // --- Groq LLM ---
   groq: {
     apiKey: process.env.GROQ_API_KEY || '',
-    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+    model: process.env.GROQ_MODEL || 'qwen/qwen3.8-27b',
     temperature: 0.85,
     maxTokens: 500,
   },
@@ -42,7 +42,7 @@ const config = {
   // --- Eval System (LLM-as-a-Judge) ---
   evals: {
     enabled: process.env.EVALS_ENABLED !== 'false',
-    judgeModel: process.env.JUDGE_MODEL || 'llama-3.1-8b-instant',
+    judgeModel: process.env.JUDGE_MODEL || 'qwen/qwen3.8-27b',
     judgeTemperature: 0.1,
     minLanguagePurity: 8,  // threshold no negociable — detecta mezcla de idiomas
     minQuality: 6,          // threshold de humor + personalidad
@@ -66,7 +66,7 @@ const config = {
   // --- Transcreation (ES/EN → idiomas culturalmente distantes) ---
   transcreation: {
     enabled: process.env.TRANSCREATION_ENABLED !== 'false',
-    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+    model: process.env.GROQ_MODEL || 'qwen/qwen3.8-27b',
     temperature: 0.7,
     maxRetries: 2,  // max reintentos de transcreación antes de fallback al original
     distantLanguages: ['ko', 'th', 'ar', 'ja', 'ru', 'zh', 'vi', 'hi'],
