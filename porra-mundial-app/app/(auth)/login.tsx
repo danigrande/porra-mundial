@@ -238,6 +238,8 @@ export default function LoginScreen() {
           {mode === 'login' && !emailVerified && (
             <>
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Continue"
                 style={[styles.button, loading && styles.buttonDisabled]}
                 onPress={handleVerifyEmail}
                 disabled={loading}
@@ -294,6 +296,8 @@ export default function LoginScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Log in"
                   style={[styles.button, styles.flex1, loading && styles.buttonDisabled]}
                   onPress={handleLogin}
                   disabled={loading}

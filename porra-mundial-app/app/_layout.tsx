@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,7 +18,7 @@ export default function RootLayout() {
   const router = useRouter();
 
   // Escuchar cuando el usuario pulsa una notificación
-  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+  const lastNotificationResponse = Platform.OS === 'web' ? null : Notifications.useLastNotificationResponse();
 
   useEffect(() => {
     if (

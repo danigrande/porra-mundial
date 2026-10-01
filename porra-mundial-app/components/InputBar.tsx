@@ -531,7 +531,7 @@ export default function InputBar({
               </TouchableOpacity>
             )}
             {text.trim() ? (
-              <TouchableOpacity style={[styles.sendButton, { backgroundColor: '#3b82f6' }]} onPress={handleSend}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send" style={[styles.sendButton, { backgroundColor: '#3b82f6' }]} onPress={handleSend}>
                 <MaterialIcons name="send" size={22} color="#fff" />
               </TouchableOpacity>
             ) : (

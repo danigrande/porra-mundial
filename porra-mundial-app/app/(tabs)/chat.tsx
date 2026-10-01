@@ -146,14 +146,17 @@ export default function ChatScreen() {
     // Asegurar que estamos unidos al grupo
     socketService.joinGroup(groupName);
 
-    // REST fallback si tarda demasiado
+    // Carga inmediata vía REST (no dependemos de la latencia del socket)
+    loadHistory();
+
+    // REST fallback si el socket no entregó historial
     const timer = setTimeout(() => {
       const state = chatStore.getChatState(groupName);
       if (state.loading && state.messages.length === 0) {
         console.warn('[Chat] Timeout de carga inicial, forzando REST fallback');
         loadHistory();
       }
-    }, 8000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [auth, groupName]);
