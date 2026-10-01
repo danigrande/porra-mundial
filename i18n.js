@@ -166,7 +166,11 @@ const translations = {
       "pool_error": "Error al cargar datos de la nube.",
       "match": "Partido",
       "jornada": "Jornada",
-      "group": "Grupo"
+      "group": "Grupo",
+      "round_POST_TOURNAMENT": "Torneo Finalizado",
+      "mode_prefix": "MODO",
+      "status_label": "ESTADO:",
+      "finished": "FINALIZADO"
     },
     "scoring": {
       "title": "Sistema de Puntuación",
@@ -480,7 +484,11 @@ const translations = {
       "pool_error": "Error loading cloud data.",
       "match": "Match",
       "jornada": "Matchday",
-      "group": "Group"
+      "group": "Group",
+      "round_POST_TOURNAMENT": "Tournament Finished",
+      "mode_prefix": "MODE",
+      "status_label": "STATUS:",
+      "finished": "FINISHED"
     },
     "scoring": {
       "title": "Scoring System",

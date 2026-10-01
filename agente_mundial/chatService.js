@@ -241,7 +241,10 @@ export function initChatServer(httpServer) {
             .replace(/@agente/gi, '')
             .replace(/@bot/gi, '')
             .trim();
-          
+
+          // Refrescar caché de perfil/personalidad antes de generar (evita usar datos obsoletos)
+          await refreshCache(cleanGroupName).catch(e => console.error('[Chat] Error refreshCache:', e.message));
+
           const botResult = await processMessage(
             cleanText, 
             userId,

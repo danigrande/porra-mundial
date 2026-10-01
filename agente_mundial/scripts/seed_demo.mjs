@@ -14,7 +14,7 @@ import { Prediction } from '../models/Prediction.js';
 import { Reality } from '../models/Reality.js';
 import { Message } from '../models/Message.js';
 
-const GROUP_NAME = 'La Peña';
+const GROUP_NAME = 'Demo group';
 const ADMIN_EMAIL = 'danigrande@live.com'; // usuario "Arafat" (login real)
 
 // Jugadores ficticios (nombre, nickname, likes, dislikes, humor, skill 0..1)
@@ -109,19 +109,25 @@ async function main() {
   if (!reality || !reality.results) { console.error('No hay realidad'); process.exit(1); }
   console.log(`Realidad: ${Object.keys(reality.results).length} claves`);
 
-  // --- Reset del grupo demo anterior ---
-  const oldGroup = await Group.findOne({ name: GROUP_NAME });
-  if (oldGroup) {
-    await Prediction.deleteMany({ group: oldGroup._id });
-    await Message.deleteMany({ chatId: GROUP_NAME });
-    await User.updateMany({ groups: GROUP_NAME }, { $pull: { groups: GROUP_NAME }, $pull: { isAdminOf: GROUP_NAME } });
-    const oldMembers = oldGroup.members || [];
-    await Group.deleteOne({ _id: oldGroup._id });
-    // Borrar usuarios ficticios del seed
-    for (const p of PLAYERS) {
-      await User.deleteMany({ email: `${p.name.toLowerCase().replace(/[^a-z]/g, '')}@demo.porra` });
+  // --- Reset del grupo demo anterior (incluye nombres legacy) ---
+  const LEGACY_GROUPS = [GROUP_NAME, 'La Peña'];
+  for (const gname of LEGACY_GROUPS) {
+    const g = await Group.findOne({ name: gname });
+    if (g) {
+      await Prediction.deleteMany({ group: g._id });
+      await Group.deleteOne({ _id: g._id });
+      console.log(`Reset: grupo "${gname}" borrado`);
     }
-    console.log(`Reset: grupo "${GROUP_NAME}" anterior borrado (${oldMembers.length} miembros)`);
+    await Message.deleteMany({ chatId: gname });
+    await User.updateMany({}, { $pull: { groups: gname, isAdminOf: gname } });
+  }
+  const demoEmails = PLAYERS.map(p => `${p.name.toLowerCase().replace(/[^a-z]/g, '')}@demo.porra`);
+  const demoUsers = await User.find({ email: { $in: demoEmails } });
+  if (demoUsers.length) {
+    const demoIds = demoUsers.map(u => u._id);
+    await Prediction.deleteMany({ user: { $in: demoIds } });
+    await User.deleteMany({ _id: { $in: demoIds } });
+    console.log(`Reset: ${demoIds.length} jugadores demo anteriores borrados`);
   }
 
   // --- Crear usuarios ficticios ---
