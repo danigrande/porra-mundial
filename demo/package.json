@@ -1,0 +1,16 @@
+{
+  "name": "porra-mundial-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "playwright test --project=web --project=mobile",
+    "demo:web": "playwright test --project=web",
+    "demo:mobile": "playwright test --project=mobile",
+    "demo:convert": "node convert.mjs",
+    "demo:all": "npm run demo && npm run demo:convert"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}
