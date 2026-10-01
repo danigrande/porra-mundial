@@ -5,3 +5,4 @@ graphify-out/
 opencode-session.md
 .env
 .DS_Store
+.idea/

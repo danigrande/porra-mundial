@@ -177,19 +177,6 @@
       }
     };
 
-    window.simulateMatch = async (matchId, homeTeam, awayTeam) => {
-      // Capturamos el estado actual del UI por si hay cambios manuales sin guardar
-      const currentUI = collectData();
-      
-      const res = await apiCall({ action: 'simulateMatch', matchId, homeTeam, awayTeam });
-      if (res.status === 'success') {
-        // La DB ya tiene el nuevo partido simulado. 
-        // Actualizamos nuestro objeto local 'reality' con la respuesta completa
-        reality = res.data.results;
-        render(reality);
-        showToast(window.i18n ? window.i18n.t('testing.sim_match_success') : '✅ Partido simulado individualmente');
-      }
-    };
 
     window.saveReality = async () => {
       const results = collectData();
@@ -307,7 +294,6 @@
                                 ${homeEvts.length > 0 ? `<div style="margin-top:4px;">${homeEvts.map(e => `<div style="color:rgba(255,255,255,0.65); font-size:11px; padding:1px 0;">${e.time.elapsed}' ${getIcon(e)} ${e.player.name}</div>`).join('')}</div>` : ''}
                             </div>
                             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-                                <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="${window.i18n ? window.i18n.t('testing.match_sim_title') : 'Simular partido'}" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem;">🎲</button>
                                 <div style="display:flex; gap:5px;">
                                     <input type="number" class="score-input" id="${hId}" value="${currentData[hId] || ''}" oninput="render()">
                                     <input type="number" class="score-input" id="${aId}" value="${currentData[aId] || ''}" oninput="render()">
@@ -362,7 +348,6 @@
                 <div class="knockout-match">
                   <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                       <span class="match-number">#${num}</span>
-                      <button onclick="simulateMatch('${matchId}', '${hName}', '${aName}')" title="${window.i18n ? window.i18n.t('testing.match_sim_title') : 'Simular partido'}" style="background:transparent; border:none; cursor:pointer; font-size:1rem;">🎲</button>
                   </div>
                   <div style="display:flex; align-items:flex-start;">
                       <div style="flex:1; text-align:right; padding-right:10px;">
@@ -412,7 +397,6 @@
       // Restricciones para no-admins
       if (!currentUser.isAdmin) {
         document.querySelectorAll('.score-input').forEach(input => input.disabled = true);
-        document.querySelectorAll('button[title="Simular partido"]').forEach(btn => btn.style.display = 'none');
       }
     }
 
