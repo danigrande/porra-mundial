@@ -180,12 +180,12 @@ export async function clickItem(
   await target.scrollIntoViewIfNeeded();
   const box = await target.boundingBox();
   if (box) {
-    const steps = 80;
+    const steps = 20;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps });
-    await page.waitForTimeout(180);
+    await page.waitForTimeout(80);
   }
   await target.click();
-  await page.waitForTimeout(opts.after ?? 300);
+  await page.waitForTimeout(opts.after ?? 180);
 }
 
 /** Draw an animated attention callout around an element, optionally labelled. */

@@ -17,7 +17,7 @@ const outDir = path.join(here, "demo-videos");
 
 const NAMES = [
   { match: "web", out: "worldcup-web", posterAt: "24", layout: "desktop" },
-  { match: "mobile", out: "worldcup-mobile", posterAt: "10", layout: "mobile" },
+  { match: "mobile", out: "worldcup-mobile", posterAt: "20", layout: "mobile" },
 ];
 
 const FRAME_PATH = path.join(here, "assets", "phone-frame.png");

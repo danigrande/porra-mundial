@@ -79,52 +79,62 @@ test("web", async ({ page }, testInfo) => {
     await beat(page, 700);
     await clickItem(page, page.locator("#lang-toggle"));
 
-    await clickItem(page, page.locator("#hamburger-btn"), { after: 400 });
+    await clickItem(page, page.locator("#hamburger-btn"), { after: 300 });
     caption("Health, logs, evals, benchmarks, RAG, users and more — all in one panel.");
-    await beat(page, 2000);
+    await beat(page, 1200);
     await page.keyboard.press("Escape");
 
     await navTab("users", "users");
+    await expect(page.locator("#users-table-body tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await page.evaluate(() => {
+      document.querySelectorAll("#users-table-body tbody tr").forEach((tr) => {
+        const cell = tr.querySelector("td:nth-child(2)");
+        if (!cell) return;
+        const text = cell.textContent || "";
+        const m = text.match(/@(.+)$/);
+        cell.textContent = "d•••••@" + (m ? m[1].trim() : "•••••");
+      });
+    });
     caption("Group and user management, fully scripted.");
-    await beat(page, 1600);
+    await beat(page, 900);
 
     await navTab("rag", "rag");
     caption("RAG explorer — the agent's live knowledge base.");
-    await beat(page, 1600);
+    await beat(page, 900);
 
     // ── AI logs — open a row ──────────────────────────────────────────
     await navTab("logs", "logs");
     await expect(page.locator("#logs-table-body tbody tr").first()).toBeVisible({ timeout: 30_000 });
-    await beat(page, 800);
+    await beat(page, 500);
     caption("Every AI call is logged with full prompt, tokens and latency.");
     await clickItem(page, page.locator("#logs-table-body tbody tr").first());
     await expect(page.locator("#log-modal.show")).toBeVisible();
-    await beat(page, 1800);
+    await beat(page, 1100);
     await page.keyboard.press("Escape");
     await expect(page.locator("#log-modal")).not.toHaveClass(/show/);
 
     // ── Evals — open a row, expand collapsibles ───────────────────────
     await navTab("evals", "evals");
     await expect(page.locator("#evals-table-body tbody tr").first()).toBeVisible({ timeout: 30_000 });
-    await beat(page, 800);
+    await beat(page, 500);
     caption("The judge scores every response on language purity and quality.");
     await clickItem(page, page.locator("#evals-table-body tbody tr").first());
     await expect(page.locator("#log-modal.show")).toBeVisible();
-    await beat(page, 1400);
+    await beat(page, 600);
 
     const details = page.locator("#modal-body details");
     const n = Math.min(await details.count(), 3);
     for (let i = 0; i < n; i += 1) {
-      await clickItem(page, details.nth(i), { after: 200 });
-      await beat(page, 700);
+      await clickItem(page, details.nth(i), { after: 120 });
+      await beat(page, 350);
     }
     caption("System prompt, RAG context and technical details — all inspectable.");
-    await beat(page, 1600);
+    await beat(page, 900);
     await page.keyboard.press("Escape");
   }
 
   caption("Agente Mundial — the World Cup, reinvented.");
-  await beat(page, 1800);
+  await beat(page, 900);
 
   demoEnd(testInfo.outputPath("captions.json"));
 });
