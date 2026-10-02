@@ -271,7 +271,40 @@
     "group_position": "{{pos}}º Grupo {{letter}}",
     "best_third": "Mejor 3º",
     "winner_of": "Ganador #{{num}}",
-    "loser_of": "Perdedor #{{num}}"
+    "loser_of": "Perdedor #{{num}}",
+    "projected_standings": "CLASIFICACIÓN PROYECTADA",
+    "team": "Equipo",
+    "penalties": "Penaltis",
+    "col_w": "G",
+    "col_d": "E",
+    "col_l": "P",
+    "col_gd": "DG"
+  },
+  "tournament": {
+    "window_open": "Ventana Abierta",
+    "in_play": "Fase en Juego",
+    "all_ready": "Todo listo",
+    "pending": "Pendiente",
+    "closed": "CERRADO",
+    "status": "ESTADO:",
+    "finished": "FINALIZADO",
+    "next_window": "PRÓXIMA VENTANA:",
+    "closing_in": "CIERRE EN:",
+    "phases": {
+      "PRE_TOURNAMENT": "Pre-Mundial",
+      "GROUP_STAGE": "Fase de Grupos",
+      "WAITING_R32": "Ventana de 1/16 Final",
+      "R32_ACTIVE": "1/16 Final",
+      "WAITING_R16": "Ventana de Octavos",
+      "R16_ACTIVE": "Octavos de Final",
+      "WAITING_QF": "Ventana de Cuartos",
+      "QF_ACTIVE": "Cuartos de Final",
+      "WAITING_SF": "Ventana de Semifinales",
+      "SF_ACTIVE": "Semifinales",
+      "WAITING_FINALS": "Ventana de Finales",
+      "FINALS_ACTIVE": "Finales",
+      "POST_TOURNAMENT": "Torneo Finalizado"
+    }
   },
   "results": {
     "title_test": "Control de Resultados",

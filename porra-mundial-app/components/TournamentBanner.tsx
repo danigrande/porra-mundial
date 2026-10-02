@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from '../i18n/i18n';
 
 interface TournamentBannerProps {
   state: {
@@ -13,6 +14,7 @@ interface TournamentBannerProps {
 }
 
 export default function TournamentBanner({ state, isComplete }: TournamentBannerProps) {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -24,7 +26,7 @@ export default function TournamentBanner({ state, isComplete }: TournamentBanner
       const diff = end - now;
 
       if (diff <= 0) {
-        setTimeLeft('CERRADO');
+        setTimeLeft(t('tournament.closed'));
         return;
       }
 
@@ -55,6 +57,9 @@ export default function TournamentBanner({ state, isComplete }: TournamentBanner
 
   const isClosed = !state.isPredictionWindow;
   const isFinished = state.id === 'POST_TOURNAMENT';
+  const phaseKey = `tournament.phases.${state.id}`;
+  const phaseLocalized = t(phaseKey);
+  const phaseLabel = phaseLocalized === phaseKey ? state.name : phaseLocalized;
 
   return (
     <View style={styles.banner}>
@@ -63,13 +68,13 @@ export default function TournamentBanner({ state, isComplete }: TournamentBanner
         <View style={styles.phaseInfo}>
           <Text style={styles.phaseIcon}>{getPhaseIcon(state.id)}</Text>
           <View>
-            <Text style={styles.phaseName}>{state.name}</Text>
+            <Text style={styles.phaseName}>{phaseLabel}</Text>
             <Text style={styles.phaseStatus}>
-              {state.isPredictionWindow ? '🟠 Ventana Abierta' : '🔵 Fase en Juego'}
+              {state.isPredictionWindow ? `🟠 ${t('tournament.window_open')}` : `🔵 ${t('tournament.in_play')}`}
             </Text>
             {state.isPredictionWindow && isComplete !== null && isComplete !== undefined && (
               <Text style={[styles.phaseStatus, { marginTop: 4, fontWeight: '700' }, isComplete ? { color: '#10b981' } : { color: '#ef4444' }]}>
-                {isComplete ? '✅ Todo listo' : '🚨 Pendiente'}
+                {isComplete ? `✅ ${t('tournament.all_ready')}` : `🚨 ${t('tournament.pending')}`}
               </Text>
             )}
           </View>
@@ -77,10 +82,10 @@ export default function TournamentBanner({ state, isComplete }: TournamentBanner
 
         <View style={styles.countdownBox}>
           <Text style={styles.countdownLabel}>
-            {isFinished ? 'ESTADO:' : isClosed ? 'PRÓXIMA VENTANA:' : 'CIERRE EN:'}
+            {isFinished ? t('tournament.status') : isClosed ? t('tournament.next_window') : t('tournament.closing_in')}
           </Text>
           <Text style={[styles.timerText, isFinished && { color: '#8b949e' }]}>
-            {isFinished ? 'FINALIZADO' : timeLeft}
+            {isFinished ? t('tournament.finished') : timeLeft}
           </Text>
           {!isFinished && state.deadline && (
             <Text style={styles.deadlineDate}>

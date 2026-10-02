@@ -271,7 +271,40 @@
     "group_position": "{{pos}}º Group {{letter}}",
     "best_third": "Best 3rd",
     "winner_of": "Winner #{{num}}",
-    "loser_of": "Loser #{{num}}"
+    "loser_of": "Loser #{{num}}",
+    "projected_standings": "PROJECTED STANDINGS",
+    "team": "Team",
+    "penalties": "Penalties",
+    "col_w": "W",
+    "col_d": "D",
+    "col_l": "L",
+    "col_gd": "GD"
+  },
+  "tournament": {
+    "window_open": "Window Open",
+    "in_play": "Stage in Play",
+    "all_ready": "All set",
+    "pending": "Pending",
+    "closed": "CLOSED",
+    "status": "STATUS:",
+    "finished": "FINISHED",
+    "next_window": "NEXT WINDOW:",
+    "closing_in": "CLOSING IN:",
+    "phases": {
+      "PRE_TOURNAMENT": "Pre-Tournament",
+      "GROUP_STAGE": "Group Stage",
+      "WAITING_R32": "Round of 32 window",
+      "R32_ACTIVE": "Round of 32",
+      "WAITING_R16": "Round of 16 window",
+      "R16_ACTIVE": "Round of 16",
+      "WAITING_QF": "Quarter-finals window",
+      "QF_ACTIVE": "Quarter-finals",
+      "WAITING_SF": "Semi-finals window",
+      "SF_ACTIVE": "Semi-finals",
+      "WAITING_FINALS": "Finals window",
+      "FINALS_ACTIVE": "Finals",
+      "POST_TOURNAMENT": "Tournament Finished"
+    }
   },
   "results": {
     "title_test": "Results Control",

@@ -418,7 +418,7 @@ export default function PredictionsScreen() {
                   {isKnockout && isTie && (
                     <View style={styles.penaltiesCard}>
                       <View style={styles.teamContainer}>
-                        <Text style={[styles.teamText, styles.penaltiesText]}>Penaltis</Text>
+                                      <Text style={[styles.teamText, styles.penaltiesText]}>{t('predictions.penalties')}</Text>
                       </View>
                       
                       <View style={styles.scoreContainer}>
@@ -470,22 +470,23 @@ export default function PredictionsScreen() {
 }
 
 function StandingsTable({ letter, reality }: { letter: string; reality: any }) {
+  const { t } = useTranslation();
   const rows = getGroupStandings(letter, reality);
   const hasAnyData = rows.some(r => r.pts > 0 || r.w > 0 || r.d > 0 || r.l > 0);
   if (!hasAnyData) return null;
 
   return (
     <View style={styles.standingsContainer}>
-      <Text style={styles.standingsTitle}>CLASIFICACIÓN PROYECTADA</Text>
+      <Text style={styles.standingsTitle}>{t('predictions.projected_standings')}</Text>
       {/* Header */}
       <View style={styles.standingsHeader}>
         <Text style={[styles.standingsCell, styles.standingsCellPos]}>#</Text>
-        <Text style={[styles.standingsCell, { flex: 1 }]}>Equipo</Text>
+        <Text style={[styles.standingsCell, { flex: 1 }]}>{t('predictions.team')}</Text>
         <Text style={styles.standingsCell}>Pts</Text>
-        <Text style={styles.standingsCell}>G</Text>
-        <Text style={styles.standingsCell}>E</Text>
-        <Text style={styles.standingsCell}>P</Text>
-        <Text style={styles.standingsCell}>DG</Text>
+        <Text style={styles.standingsCell}>{t('predictions.col_w')}</Text>
+        <Text style={styles.standingsCell}>{t('predictions.col_d')}</Text>
+        <Text style={styles.standingsCell}>{t('predictions.col_l')}</Text>
+        <Text style={styles.standingsCell}>{t('predictions.col_gd')}</Text>
       </View>
       {rows.map((row, i) => {
         const code = TEAM_CODES[row.name];
