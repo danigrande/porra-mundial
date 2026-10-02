@@ -12,6 +12,11 @@ import {
   setupDemoPage,
 } from "./helpers";
 
+test.beforeAll(async ({ request }) => {
+  // Warm up the free-tier backend so the first login lookup is fast.
+  await request.get("https://porra-mundial.onrender.com/health", { timeout: 90_000 }).catch(() => {});
+});
+
 test("web", async ({ page }, testInfo) => {
   await setupDemoPage(page);
   demoStart();
@@ -22,7 +27,7 @@ test("web", async ({ page }, testInfo) => {
   await page.locator("#loginEmail").click();
   await page.locator("#loginEmail").pressSequentially(DEMO_EMAIL, { delay: 40 });
   await expect(page.locator('#loginGroupSelect option[value="Demo group"]')).toHaveCount(1, {
-    timeout: 20_000,
+    timeout: 60_000,
   });
   await page.locator("#loginGroupSelect").selectOption("Demo group");
   await page.locator("#loginPassword").click();
