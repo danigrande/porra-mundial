@@ -3497,5 +3497,9 @@ async function runDiagnosticLLM() {
   }
 }
 
+applyDataI18n();
+const __langToggle = document.getElementById('lang-toggle');
+if (__langToggle) __langToggle.textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
+
 loadHealth();
 loadLogs();
