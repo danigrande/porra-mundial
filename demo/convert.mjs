@@ -16,7 +16,7 @@ const resultsDir = path.join(here, "test-results", "demo");
 const outDir = path.join(here, "demo-videos");
 
 const NAMES = [
-  { match: "web", out: "worldcup-web", posterAt: "18", layout: "desktop" },
+  { match: "web", out: "worldcup-web", posterAt: "24", layout: "desktop" },
   { match: "mobile", out: "worldcup-mobile", posterAt: "10", layout: "mobile" },
 ];
 

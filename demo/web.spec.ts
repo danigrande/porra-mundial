@@ -63,25 +63,64 @@ test("web", async ({ page }, testInfo) => {
   // ── 4. DevOps panel (optional — needs DEV_DASHBOARD_KEY) ────────────
   const devKey = process.env.DEV_DASHBOARD_KEY;
   if (devKey) {
+    // Open the hamburger and click a real menu entry (visible navigation).
+    const navTab = async (tab: string, panelId: string) => {
+      await clickItem(page, page.locator("#hamburger-btn"), { after: 500 });
+      await clickItem(page, page.locator(`.menu-item[data-tab="${tab}"]`), { after: 400 });
+      await expect(page.locator(`#panel-${panelId}`)).toBeVisible();
+    };
+
     await gotoWeb(page, "/dev_dashboard.html");
     caption("Behind the scenes: the DevOps panel runs the AI agent.");
     await expect(page.locator("#dev-key-input")).toBeVisible();
     await page.locator("#dev-key-input").fill(devKey);
     await page.locator("#dev-key-input").press("Enter");
     await expect(page.locator("#dashboard")).toBeVisible();
-    await beat(page, 800);
+    await beat(page, 700);
     await clickItem(page, page.locator("#lang-toggle"));
-    await beat(page, 800);
 
-    await page.evaluate(() => (window as unknown as { switchTab?: (t: string) => void }).switchTab?.("users"));
-    await expect(page.locator("#panel-users")).toBeVisible();
+    await clickItem(page, page.locator("#hamburger-btn"), { after: 400 });
+    caption("Health, logs, evals, benchmarks, RAG, users and more — all in one panel.");
+    await beat(page, 2000);
+    await page.keyboard.press("Escape");
+
+    await navTab("users", "users");
     caption("Group and user management, fully scripted.");
-    await beat(page, 2400);
+    await beat(page, 1600);
 
-    await page.evaluate(() => (window as unknown as { switchTab?: (t: string) => void }).switchTab?.("rag"));
-    await expect(page.locator("#panel-rag")).toBeVisible();
+    await navTab("rag", "rag");
     caption("RAG explorer — the agent's live knowledge base.");
-    await beat(page, 2400);
+    await beat(page, 1600);
+
+    // ── AI logs — open a row ──────────────────────────────────────────
+    await navTab("logs", "logs");
+    await expect(page.locator("#logs-table-body tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await beat(page, 800);
+    caption("Every AI call is logged with full prompt, tokens and latency.");
+    await clickItem(page, page.locator("#logs-table-body tbody tr").first());
+    await expect(page.locator("#log-modal.show")).toBeVisible();
+    await beat(page, 1800);
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#log-modal")).not.toHaveClass(/show/);
+
+    // ── Evals — open a row, expand collapsibles ───────────────────────
+    await navTab("evals", "evals");
+    await expect(page.locator("#evals-table-body tbody tr").first()).toBeVisible({ timeout: 30_000 });
+    await beat(page, 800);
+    caption("The judge scores every response on language purity and quality.");
+    await clickItem(page, page.locator("#evals-table-body tbody tr").first());
+    await expect(page.locator("#log-modal.show")).toBeVisible();
+    await beat(page, 1400);
+
+    const details = page.locator("#modal-body details");
+    const n = Math.min(await details.count(), 3);
+    for (let i = 0; i < n; i += 1) {
+      await clickItem(page, details.nth(i), { after: 200 });
+      await beat(page, 700);
+    }
+    caption("System prompt, RAG context and technical details — all inspectable.");
+    await beat(page, 1600);
+    await page.keyboard.press("Escape");
   }
 
   caption("Agente Mundial — the World Cup, reinvented.");
