@@ -9,7 +9,9 @@ import {
   DEMO_PASSWORD,
   demoEnd,
   demoStart,
+  hideKeyboard,
   setupDemoPage,
+  showKeyboard,
 } from "./helpers";
 
 const API = "https://porra-mundial.onrender.com/api";
@@ -48,9 +50,11 @@ async function waitForChat(page: Page): Promise<void> {
 async function sendMessage(page: Page, text: string): Promise<void> {
   const input = page.getByPlaceholder(INPUT);
   await clickItem(page, input);
-  await input.pressSequentially(text, { delay: 45 });
-  await beat(page, 400);
+  await showKeyboard(page);
+  await input.pressSequentially(text, { delay: 60 });
+  await beat(page, 500);
   await clickItem(page, page.getByLabel("Send"));
+  await hideKeyboard(page);
 }
 
 async function waitForAgentReply(page: Page): Promise<void> {
@@ -85,12 +89,14 @@ test("mobile", async ({ page }, testInfo) => {
 
   // ── 1. Leaderboard ──────────────────────────────────────────────────
   caption("Live standings for your group — tap any player.");
+  await expect(page.getByText("Tournament Finished").first()).toBeVisible({ timeout: 30_000 });
   await beat(page, 2400);
 
   // ── 2. Predictions ──────────────────────────────────────────────────
   await tapTab(page, 3);
   caption("Fill the bracket from anywhere.");
   await expect(page.getByRole("heading", { name: "My Prediction" })).toBeVisible();
+  await expect(page.getByText("PROJECTED STANDINGS").first()).toBeVisible({ timeout: 30_000 });
   await beat(page, 2400);
 
   // ── 3. Chat: Andrés Montes ──────────────────────────────────────────

@@ -282,3 +282,65 @@ export async function gotoMobile(page: Page, path = "/"): Promise<void> {
   await page.addInitScript(seedMobileAuth, AUTH_VARS);
   await page.goto(path);
 }
+
+/**
+ * Inject an iOS-style on-screen keyboard (Expo web has no native keyboard) and
+ * lift the message input bar above it so typing is visible in the recording.
+ */
+export async function showKeyboard(page: Page, height = 300): Promise<void> {
+  await page.evaluate((h) => {
+    const w = window as unknown as { __demo_lifted?: HTMLElement | null };
+    if (document.getElementById("__demo_keyboard")) return;
+
+    const kb = document.createElement("div");
+    kb.id = "__demo_keyboard";
+    kb.style.cssText =
+      `position:fixed;left:0;right:0;bottom:0;height:${h}px;z-index:2147483644;` +
+      "background:#cbd5e1;border-top:1px solid #94a3b8;display:flex;flex-direction:column;" +
+      "justify-content:flex-start;gap:6px;padding:10px 6px;box-sizing:border-box;" +
+      "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;";
+
+    const key = (label: string, extra = "") =>
+      `<div style="flex:1;display:flex;align-items:center;justify-content:center;background:#fff;` +
+      `border-radius:5px;font-size:15px;color:#111;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.2);${extra}">${label}</div>`;
+
+    const row = (letters: string) =>
+      `<div style="display:flex;justify-content:center;gap:5px;height:40px;">${[...letters].map((k) => key(k)).join("")}</div>`;
+
+    kb.innerHTML =
+      row("QWERTYUIOP") +
+      row("ASDFGHJKL") +
+      `<div style="display:flex;justify-content:center;gap:5px;height:40px;">` +
+      key("⇧", "flex:0 0 46px;background:#e5e7eb;") +
+      [..."ZXCVBNM"].map((k) => key(k)).join("") +
+      key("⌫", "flex:0 0 46px;background:#e5e7eb;") +
+      `</div>` +
+      `<div style="display:flex;justify-content:center;gap:5px;height:40px;">` +
+      key("123", "flex:0 0 56px;background:#e5e7eb;font-size:12px;") +
+      key("space", "max-width:200px;color:#64748b;font-size:12px;") +
+      key("return", "flex:0 0 76px;background:#3b82f6;color:#fff;font-size:12px;") +
+      `</div>`;
+    document.body.appendChild(kb);
+
+    const ta = document.querySelector("textarea[placeholder], input[placeholder]") as HTMLElement | null;
+    let bar: HTMLElement | null = ta;
+    for (let i = 0; i < 3 && bar; i += 1) bar = bar.parentElement;
+    if (bar) {
+      w.__demo_lifted = bar;
+      bar.style.transition = "transform .25s ease";
+      bar.style.transform = `translateY(-${h}px)`;
+    }
+  }, height);
+}
+
+/** Remove the synthetic keyboard and restore the input bar position. */
+export async function hideKeyboard(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as unknown as { __demo_lifted?: HTMLElement | null };
+    document.getElementById("__demo_keyboard")?.remove();
+    if (w.__demo_lifted) {
+      w.__demo_lifted.style.transform = "";
+      w.__demo_lifted = null;
+    }
+  });
+}
