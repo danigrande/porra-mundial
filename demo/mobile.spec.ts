@@ -104,7 +104,7 @@ test("mobile", async ({ page }, testInfo) => {
   caption("Mention @agente — it answers in the group chat.");
   await waitForChat(page);
   await beat(page, 1500);
-  await sendMessage(page, "@agente who is going to win the World Cup?");
+  await sendMessage(page, "@agente what did you think of the World Cup?");
   caption("Andrés Montes, the legendary commentator, takes the mic.");
   await waitForAgentReply(page);
 
@@ -123,7 +123,7 @@ test("mobile", async ({ page }, testInfo) => {
   caption("Same group, new voice — Donald Trump takes over.");
   await waitForChat(page);
   await beat(page, 1500);
-  await sendMessage(page, "@agente give me your prediction, big league!");
+  await sendMessage(page, "@agente do you think I can win the next one?");
   await waitForAgentReply(page);
 
   // ── 6. Notifications ────────────────────────────────────────────────
