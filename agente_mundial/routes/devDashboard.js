@@ -1583,10 +1583,13 @@ router.post('/prds/generate/:feedbackId', async (req, res) => {
     const analysisResult = await runAgentPipeline(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
     const extracted = analysisResult.prd || extractPRDFromAnalysis(analysisResult.raw);
 
-    const prdData = extracted || {
+    // If the model failed to return a usable PRD, build one from the feedback so
+    // the record is never empty.
+    const usable = Boolean(extracted && extracted.title && extracted.title !== 'PRD sin título');
+    const prdData = usable ? extracted : {
       title: fb.subject,
       problemStatement: fb.detail,
-      proposedSolution: '',
+      proposedSolution: analysisResult.analysis?.analysis || '',
       userImpact: '',
       technicalNotes: '',
       acceptanceCriteria: [],
