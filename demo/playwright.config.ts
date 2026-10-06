@@ -39,6 +39,18 @@ export default defineConfig({
       },
     },
     {
+      name: "evals",
+      testMatch: "evals.spec.ts",
+      timeout: 240_000,
+      use: {
+        baseURL: process.env.WEB_BASE_URL || "https://porra-mundial-six.vercel.app",
+        locale: "en-US",
+        viewport: { width: 1920, height: 1080 },
+        video: { mode: "on", size: { width: 1920, height: 1080 } },
+        launchOptions: { slowMo: 320 },
+      },
+    },
+    {
       name: "langflow",
       testMatch: "langflow.spec.ts",
       timeout: 120_000,

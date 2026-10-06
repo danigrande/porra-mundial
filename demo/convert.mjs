@@ -33,6 +33,7 @@ const NAMES = [
   { match: "web", out: "worldcup-web", posterAt: "24", layout: "desktop" },
   { match: "mobile", out: "worldcup-mobile", posterAt: "20", layout: "mobile" },
   { match: "agent", out: "worldcup-agent-prd", posterAt: "34", layout: "desktop", speed: 1.3 },
+  { match: "evals", out: "worldcup-evals", posterAt: "18", layout: "desktop" },
   { match: "langflow", out: "langflow-flow", posterAt: "3", layout: "desktop" },
 ];
 
