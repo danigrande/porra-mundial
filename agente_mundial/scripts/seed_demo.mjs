@@ -13,6 +13,9 @@ import { Group } from '../models/Group.js';
 import { Prediction } from '../models/Prediction.js';
 import { Reality } from '../models/Reality.js';
 import { Message } from '../models/Message.js';
+import { Feedback } from '../models/Feedback.js';
+import { PRD } from '../models/PRD.js';
+import { AILog } from '../models/AILog.js';
 
 const GROUP_NAME = 'Demo group';
 const ADMIN_EMAIL = 'danigrande@live.com'; // usuario "Arafat" (login real)
@@ -197,6 +200,146 @@ async function main() {
   ];
   await Message.insertMany(chat);
   console.log(`  ${chat.length} mensajes de chat sembrados`);
+
+  // --- Feedback (English, mostly pre-analysed) ---
+  await Feedback.deleteMany({});
+  await PRD.deleteMany({});
+  const FB = [
+    { type: 'bug', user: 'Liam', priority: 'P0', prd: true,
+      subject: 'Scores are wrong after the last match',
+      detail: 'After the last match my total does not add up: I got the result and the goal difference right but the points are too low. Looks like the difference is miscounted in the knockout rounds.',
+      reason: 'Scoring is the core promise of the product; wrong points break trust.',
+      analysis: 'User reports incorrect point totals after a knockout match, pointing at the goal-difference calculation.' },
+    { type: 'bug', user: 'Noah', priority: 'P0', prd: false,
+      subject: 'App crashes when opening the leaderboard on mobile',
+      detail: 'Since the last update, opening the standings tab on my phone closes the app. It happens every time, so I cannot see the table at all.',
+      reason: 'A crash on a primary screen blocks core usage on mobile.',
+      analysis: 'Reproducible mobile crash when opening the leaderboard tab.' },
+    { type: 'feature', user: 'Chloe', priority: 'P1', prd: true,
+      subject: 'Invite friends with a link',
+      detail: 'It would be great to invite my friends to the group with a direct link instead of adding them one by one. We could set up the pool in seconds.',
+      reason: 'Directly drives user and group growth (strategy #2).',
+      analysis: 'Request for a shareable invite link to add friends to a group.' },
+    { type: 'bug', user: 'Max', priority: 'P1', prd: false,
+      subject: 'Cannot edit my prediction in the knockout rounds',
+      detail: 'When I try to edit a round-of-16 result it says it is already closed, but the match has not started yet. The editing window seems to close too early.',
+      reason: 'Blocks a core action (editing predictions) for active users.',
+      analysis: 'Editing window for knockout predictions appears to close before kick-off.' },
+    { type: 'feature', user: 'Olivia', priority: 'P2', prd: true,
+      subject: 'Notify me when a friend overtakes me',
+      detail: 'I would like a heads-up when a friend passes me in the standings. It would make the pool feel alive and bring me back more often.',
+      reason: 'Improves engagement and retention of existing users.',
+      analysis: 'Request for a notification when a friend overtakes the user in the ranking.' },
+    { type: 'feature', user: 'Emma', priority: 'P2', prd: false,
+      subject: 'See how my position changed each matchday',
+      detail: 'A small chart showing how my ranking moved matchday by matchday would be nice, so I can see if I am climbing or sliding.',
+      reason: 'Nice UX improvement to an existing feature.',
+      analysis: 'Request for a position-over-time chart on the leaderboard.' },
+    { type: 'feature', user: 'Mia', priority: 'P2', prd: false,
+      subject: 'Daily summary is too long',
+      detail: 'The bot daily summary is very long. I would prefer something shorter and funnier, like three lines with the highlights of the day.',
+      reason: 'Improves the chat experience (strategy #3).',
+      analysis: 'Request for a shorter, funnier daily summary.' },
+  ];
+  const feedbackDocs = [];
+  for (let i = 0; i < FB.length; i += 1) {
+    const f = FB[i];
+    const doc = await Feedback.create({
+      userId: `demo-${f.user.toLowerCase()}`,
+      userName: f.user,
+      type: f.type,
+      subject: f.subject,
+      detail: f.detail,
+      votes: f.user === 'Chloe' ? ['demo-emma', 'demo-liam'] : [],
+      voteCount: f.user === 'Chloe' ? 2 : 0,
+      priority: f.priority,
+      priorityReason: f.reason,
+      analysis: f.analysis,
+      analyzedAt: new Date(now - (i + 1) * 3600000),
+      langflowRunId: 'native',
+    });
+    feedbackDocs.push({ doc, prd: f.prd });
+  }
+  console.log(`  ${feedbackDocs.length} feedback (English) sembrados`);
+
+  // --- PRDs (English, approved) ---
+  let prdCount = 0;
+  for (const { doc, prd } of feedbackDocs) {
+    if (!prd) continue;
+    await PRD.create({
+      feedbackId: doc._id,
+      title: doc.subject,
+      status: 'approved',
+      priority: doc.priority,
+      problemStatement: doc.detail,
+      proposedSolution: `Ship "${doc.subject}" following the flow the user described, reusing the existing screens where possible.`,
+      userImpact: 'Improves the experience for active players and keeps them coming back.',
+      technicalNotes: 'Frontend and API change; covered by automated tests.',
+      acceptanceCriteria: ['The feature works end to end', 'Edge cases are handled', 'A test covers the new behaviour'],
+      suggestedFiles: [],
+      rawAnalysis: '',
+      langflowRunId: 'native',
+    });
+    prdCount += 1;
+  }
+  console.log(`  ${prdCount} PRDs (English) sembrados`);
+
+  // --- AILogs (English) so the AI Logs / Evals panels read in English ---
+  await AILog.deleteMany({ groupName: GROUP_NAME });
+  const PERSONAS = [
+    { id: 'andres_montes', sys: 'You are "Agente Mundial", a football commentator with Andrés Montes\' streetwise, high-energy style.' },
+    { id: 'trump', sys: 'You are "Agente Mundial", in a bombastic, self-congratulatory Donald Trump parody voice.' },
+    { id: 'darth_vader', sys: 'You are "Agente Mundial", speaking with Darth Vader\'s solemn, menacing tone.' },
+    { id: 'pedrerol', sys: 'You are "Agente Mundial", hosting like a dramatic late-night football TV show.' },
+  ];
+  const PROMPTS = [
+    "Who's winning the pool right now?",
+    'Did I move up after yesterday?',
+    'Give me a quick summary of the group.',
+    'Who is last this week?',
+  ];
+  const RESPONSES = [
+    'The Captain is still on top, but Mia is closing in fast. 🎯',
+    'You climbed one spot — the race is wide open. 🔥',
+    'Three players separated by a single point. Nail-biting stuff. ⚽',
+    'Faroliyo alert: Leo is holding the wooden spoon this week. 😅',
+  ];
+  const TYPES = ['response', 'response', 'judge', 'summary', 'transcreation'];
+  const aiLogs = [];
+  for (let i = 0; i < 30; i += 1) {
+    const persona = PERSONAS[i % PERSONAS.length];
+    const type = TYPES[i % TYPES.length];
+    const purity = 8 + (i % 3);
+    const quality = 6 + (i % 4);
+    aiLogs.push({
+      type,
+      playerName: PLAYERS[i % PLAYERS.length].name,
+      groupName: GROUP_NAME,
+      systemPrompt: persona.sys,
+      userPrompt: PROMPTS[i % PROMPTS.length],
+      groqResponse: RESPONSES[i % RESPONSES.length],
+      model: 'qwen/qwen3.8-27b',
+      temperature: 0.85,
+      maxTokens: 500,
+      tokensUsed: 380 + i * 7,
+      promptTokens: 300 + i * 5,
+      completionTokens: 80 + i * 2,
+      latencyMs: 700 + (i % 6) * 120,
+      source: 'chat',
+      callSource: type === 'judge' ? 'generateWithQualityGate' : 'generateResponse',
+      success: true,
+      evalScores: { language_purity: purity, quality },
+      evalFeedback: quality >= 7 ? 'Good personality and language.' : 'Slightly generic — could be funnier.',
+      evalMainIssue: quality >= 7 ? 'none' : 'humor',
+      evalPassed: purity >= 8 && quality >= 6,
+      evalAttempts: 1,
+      anchorsUsed: persona.id,
+      targetLanguage: persona.id === 'trump' || persona.id === 'darth_vader' ? 'en' : 'es',
+      createdAt: new Date(now - i * 90000),
+    });
+  }
+  await AILog.insertMany(aiLogs);
+  console.log(`  ${aiLogs.length} AILogs (English) sembrados`);
 
   await mongoose.disconnect();
   console.log('\nSeed completado.');
