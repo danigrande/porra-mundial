@@ -17,16 +17,32 @@ export interface DemoOptions {
 let captions: { t: number; text: string }[] = [];
 let startTime = 0;
 let readyOffset = 0;
+let cuts: { start: number; end: number }[] = [];
+let cutStart = 0;
 
 export function demoStart(): void {
   captions = [];
   startTime = Date.now();
   readyOffset = 0;
+  cuts = [];
+  cutStart = 0;
 }
 
 /** Mark the point from which the clip should begin (leading frames are trimmed). */
 export function demoMarkReady(): void {
   readyOffset = Date.now() - startTime;
+}
+
+/** Begin a "dead time" range (e.g. waiting for a slow request) — cut in post. */
+export function beginCut(): void {
+  cutStart = Date.now();
+}
+
+/** End the current dead-time range. */
+export function endCut(): void {
+  if (!cutStart) return;
+  cuts.push({ start: cutStart - startTime, end: Date.now() - startTime });
+  cutStart = 0;
 }
 
 export function caption(text: string): void {
@@ -36,7 +52,7 @@ export function caption(text: string): void {
 export function demoEnd(file: string): void {
   fs.writeFileSync(
     file,
-    JSON.stringify({ t0: startTime, tEnd: Date.now(), readyOffset, captions }, null, 2),
+    JSON.stringify({ t0: startTime, tEnd: Date.now(), readyOffset, cuts, captions }, null, 2),
   );
 }
 
