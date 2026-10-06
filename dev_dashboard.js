@@ -3501,5 +3501,5 @@ applyDataI18n();
 const __langToggle = document.getElementById('lang-toggle');
 if (__langToggle) __langToggle.textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
 
-loadHealth();
-loadLogs();
+// Data loads happen after authentication (see loadAll) — no unauthenticated
+// requests before the dev key is entered.
