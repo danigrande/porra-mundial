@@ -16,10 +16,17 @@ export interface DemoOptions {
 // Caption timing recorder — captions are burned in post-processing, not rendered in-app.
 let captions: { t: number; text: string }[] = [];
 let startTime = 0;
+let readyOffset = 0;
 
 export function demoStart(): void {
   captions = [];
   startTime = Date.now();
+  readyOffset = 0;
+}
+
+/** Mark the point from which the clip should begin (leading frames are trimmed). */
+export function demoMarkReady(): void {
+  readyOffset = Date.now() - startTime;
 }
 
 export function caption(text: string): void {
@@ -27,7 +34,10 @@ export function caption(text: string): void {
 }
 
 export function demoEnd(file: string): void {
-  fs.writeFileSync(file, JSON.stringify({ t0: startTime, tEnd: Date.now(), captions }, null, 2));
+  fs.writeFileSync(
+    file,
+    JSON.stringify({ t0: startTime, tEnd: Date.now(), readyOffset, captions }, null, 2),
+  );
 }
 
 /**

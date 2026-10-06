@@ -18,7 +18,7 @@ const outDir = path.join(here, "demo-videos");
 const NAMES = [
   { match: "web", out: "worldcup-web", posterAt: "24", layout: "desktop" },
   { match: "mobile", out: "worldcup-mobile", posterAt: "20", layout: "mobile" },
-  { match: "agent", out: "worldcup-agent-prd", posterAt: "16", layout: "desktop", speed: 2.4 },
+  { match: "agent", out: "worldcup-agent-prd", posterAt: "32", layout: "desktop", speed: 2.4 },
 ];
 
 const FRAME_PATH = path.join(here, "assets", "phone-frame.png");
@@ -89,23 +89,33 @@ for (const video of videos) {
 
   console.log(`Converting ${path.basename(videoDir)} -> ${key.out}.mp4`);
 
-  // 1. Encode the raw recording to a finite mp4.
-  const encode = spawnSync(
-    ffmpeg,
-    ["-y", "-i", video, "-an", "-c:v", "libx264", "-preset", "slow", "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", mp4],
-    { stdio: "inherit" },
+  // Read captions first: `readyOffset` marks how many leading ms to trim so the
+  // clip opens on real content (skips page load / white flash).
+  const captionsFile = path.join(videoDir, "captions.json");
+  const captionsData = fs.existsSync(captionsFile)
+    ? JSON.parse(fs.readFileSync(captionsFile, "utf8"))
+    : null;
+  const readyOffset = Math.max(0, captionsData?.readyOffset ?? 0);
+  const trimStart = readyOffset / 1000;
+
+  // 1. Encode the raw recording to a finite mp4 (trimming the leading frames).
+  const encodeArgs = ["-y"];
+  if (trimStart > 0.05) encodeArgs.push("-ss", trimStart.toFixed(3));
+  encodeArgs.push(
+    "-i", video, "-an", "-c:v", "libx264", "-preset", "slow", "-crf", "23",
+    "-pix_fmt", "yuv420p", "-movflags", "+faststart", mp4,
   );
+  const encode = spawnSync(ffmpeg, encodeArgs, { stdio: "inherit" });
   if (encode.status !== 0) throw new Error(`ffmpeg encode failed for ${video}`);
 
   // 2. Burn captions into a reserved band if a captions track exists.
-  const captionsFile = path.join(videoDir, "captions.json");
-  if (fs.existsSync(captionsFile)) {
-    const { t0, tEnd, captions } = JSON.parse(fs.readFileSync(captionsFile, "utf8"));
+  if (captionsData) {
+    const { t0, tEnd, captions } = captionsData;
     // `speed` compresses the clip in post; captions scale with the new duration.
     const speed = key.speed && key.speed > 1 ? key.speed : 1;
     const duration = probeDuration(ffprobe, mp4) / speed;
     const layout = LAYOUTS[key.layout] ?? LAYOUTS.desktop;
-    const ass = buildAss({ captions, t0, tEnd, duration, ...layout });
+    const ass = buildAss({ captions, t0: t0 + readyOffset, tEnd, duration, ...layout });
     const assPath = path.join(videoDir, "captions.ass");
     fs.writeFileSync(assPath, ass);
 

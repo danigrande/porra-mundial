@@ -5,12 +5,18 @@ import {
   caption,
   clickItem,
   demoEnd,
+  demoMarkReady,
   demoStart,
   gotoWeb,
   setupDemoPage,
 } from "./helpers";
 
 const DEV_KEY = process.env.DEV_DASHBOARD_KEY || "agente-dev-2026";
+
+test.beforeAll(async ({ request }) => {
+  // Warm the free-tier backend so login and the agent pipeline stay snappy.
+  await request.get("https://porra-mundial.onrender.com/health", { timeout: 90_000 }).catch(() => {});
+});
 
 test("agent", async ({ page }, testInfo) => {
   await setupDemoPage(page);
@@ -20,26 +26,31 @@ test("agent", async ({ page }, testInfo) => {
   page.on("dialog", (dialog) => dialog.accept());
 
   // ── 0. Dev dashboard login ──────────────────────────────────────────
+  // Mark "ready" once the auth screen is up: everything before it (page load,
+  // white flash) is trimmed in post so the clip opens on real content.
   await gotoWeb(page, "/dev_dashboard.html");
-  caption("Behind the scenes: the developer dashboard.");
   const keyInput = page.locator("#dev-key-input");
   await expect(keyInput).toBeVisible({ timeout: 60_000 });
+  await beat(page, 350);
+  demoMarkReady();
+
+  caption("Behind the scenes: the developer dashboard.");
   await clickItem(page, keyInput);
-  await keyInput.pressSequentially(DEV_KEY, { delay: 40 });
+  await keyInput.pressSequentially(DEV_KEY, { delay: 12 });
   await keyInput.press("Enter");
   await expect(page.locator("#dashboard")).toBeVisible({ timeout: 30_000 });
-  await beat(page, 1200);
+  await beat(page, 600);
 
   await clickItem(page, page.locator("#lang-toggle"));
-  await beat(page, 700);
+  await beat(page, 350);
 
   // ── 1. Feedback inbox ───────────────────────────────────────────────
-  await clickItem(page, page.locator("#hamburger-btn"), { after: 400 });
-  await clickItem(page, page.locator('.menu-item[data-tab="feedback"]'), { after: 500 });
+  await clickItem(page, page.locator("#hamburger-btn"), { after: 300 });
+  await clickItem(page, page.locator('.menu-item[data-tab="feedback"]'), { after: 400 });
   await expect(page.locator("#panel-feedback")).toBeVisible();
   await expect(page.locator("#feedback-table-body table")).toBeVisible({ timeout: 30_000 });
   caption("Raw user feedback, waiting to be triaged.");
-  await beat(page, 2600);
+  await beat(page, 2400);
 
   // ── 2. Analyse with the three-agent pipeline ────────────────────────
   caption("Three agents read it and prioritise it against the product strategy.");
