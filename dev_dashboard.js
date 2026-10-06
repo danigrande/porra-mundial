@@ -12,7 +12,7 @@ let debounceTimer = null;
 // I18N
 // ==========================================
 
-let currentLang = 'es';
+let currentLang = (typeof localStorage !== 'undefined' && localStorage.getItem('devLang')) || 'es';
 let activeTab = 'health';
 
 const LANG = {
@@ -193,6 +193,16 @@ const LANG = {
     'prds.filter_all_priorities': 'Todas las prioridades',
     'prds.loading': 'Cargando PRDs...',
     'prds.detail_title': '📄 Detalle de PRD',
+    'prds.detail_problem': 'Problema',
+    'prds.detail_solution': 'Solución Propuesta',
+    'prds.detail_impact': 'Impacto en Usuarios',
+    'prds.detail_technical': 'Notas Técnicas',
+    'prds.detail_acceptance': 'Criterios de Aceptación',
+    'prds.detail_suggested': 'Archivos Sugeridos',
+    'prds.approve': 'Aprobar',
+    'prds.reject': 'Rechazar',
+    'prds.edit': 'Editar',
+    'prds.mark_implemented': 'Marcar implementado',
 
     'usage.title': 'Usage',
     'usage.tokens_chart': '📈 Tokens por día (últimos 7 días)',
@@ -571,6 +581,16 @@ const LANG = {
     'prds.filter_all_priorities': 'All priorities',
     'prds.loading': 'Loading PRDs...',
     'prds.detail_title': '📄 PRD Detail',
+    'prds.detail_problem': 'Problem',
+    'prds.detail_solution': 'Proposed Solution',
+    'prds.detail_impact': 'Impact on Users',
+    'prds.detail_technical': 'Technical Notes',
+    'prds.detail_acceptance': 'Acceptance Criteria',
+    'prds.detail_suggested': 'Suggested Files',
+    'prds.approve': 'Approve',
+    'prds.reject': 'Reject',
+    'prds.edit': 'Edit',
+    'prds.mark_implemented': 'Mark implemented',
 
     'usage.title': 'Usage',
     'usage.tokens_chart': '📈 Tokens per day (last 7 days)',
@@ -792,6 +812,7 @@ function applyDataI18n() {
 
 function toggleLang() {
   currentLang = currentLang === 'es' ? 'en' : 'es';
+  try { localStorage.setItem('devLang', currentLang); } catch { /* ignore */ }
   document.getElementById('lang-toggle').textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
   applyDataI18n();
   const active = document.querySelector('.panel.active');
@@ -2171,8 +2192,8 @@ async function loadPRDs() {
         <td>${statusBadge}</td>
         <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;font-size:0.75rem">${escapeHtml(fbSubject)}</td>
         <td>
-          <button class="btn-sm" onclick="event.stopPropagation(); approvePRD('${prd._id}')" style="background:var(--accent-green)" title="Aprobar">✅</button>
-          <button class="btn-sm" onclick="event.stopPropagation(); rejectPRD('${prd._id}')" style="background:var(--accent-red)" title="Rechazar">❌</button>
+          <button class="btn-sm" onclick="event.stopPropagation(); approvePRD('${prd._id}')" style="background:var(--accent-green)" title="${t('prds.approve')}">✅</button>
+          <button class="btn-sm" onclick="event.stopPropagation(); rejectPRD('${prd._id}')" style="background:var(--accent-red)" title="${t('prds.reject')}">❌</button>
         </td>
       </tr>`;
     });
@@ -2215,31 +2236,31 @@ async function openPRDDetail(id) {
       <h2 style="margin-bottom:1.5rem;font-size:1.3rem">${escapeHtml(prd.title)}</h2>
 
       <div class="prompt-block">
-        <div class="prompt-label">Problema</div>
+        <div class="prompt-label">${t('prds.detail_problem')}</div>
         <div class="prompt-content" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.problemStatement || '—')}</div>
       </div>
       <div class="prompt-block">
-        <div class="prompt-label">Solución Propuesta</div>
+        <div class="prompt-label">${t('prds.detail_solution')}</div>
         <div class="prompt-content system" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.proposedSolution || '—')}</div>
       </div>
       <div class="prompt-block">
-        <div class="prompt-label">Impacto en Usuarios</div>
+        <div class="prompt-label">${t('prds.detail_impact')}</div>
         <div class="prompt-content" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.userImpact || '—')}</div>
       </div>
       <div class="prompt-block">
-        <div class="prompt-label">Notas Técnicas</div>
+        <div class="prompt-label">${t('prds.detail_technical')}</div>
         <div class="prompt-content" style="max-height:none;white-space:pre-wrap">${escapeHtml(prd.technicalNotes || '—')}</div>
       </div>
 
       <div class="prompt-block">
-        <div class="prompt-label">Criterios de Aceptación</div>
+        <div class="prompt-label">${t('prds.detail_acceptance')}</div>
         <div class="prompt-content" style="max-height:none">
           ${prd.acceptanceCriteria?.length ? prd.acceptanceCriteria.map((c, i) => `${i + 1}. ${escapeHtml(c)}`).join('\n') : '—'}
         </div>
       </div>
 
       <div class="prompt-block">
-        <div class="prompt-label">Archivos Sugeridos</div>
+        <div class="prompt-label">${t('prds.detail_suggested')}</div>
         <div class="prompt-content" style="max-height:none">
           ${prd.suggestedFiles?.length ? prd.suggestedFiles.map(f => `📄 ${escapeHtml(f)}`).join('\n') : '—'}
         </div>
@@ -2247,14 +2268,14 @@ async function openPRDDetail(id) {
 
       <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap">
         ${prd.status === 'draft' ? `
-          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','approved')" style="background:var(--accent-green)">✅ Aprobar</button>
-          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','rejected')" style="background:var(--accent-red)">❌ Rechazar</button>
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','approved')" style="background:var(--accent-green)">✅ ${t('prds.approve')}</button>
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','rejected')" style="background:var(--accent-red)">❌ ${t('prds.reject')}</button>
         ` : ''}
         ${prd.status === 'approved' ? `
-          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','implemented')" style="background:var(--accent-blue)">✅ Marcar implementado</button>
-          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','rejected')" style="background:var(--accent-red)">❌ Rechazar</button>
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','implemented')" style="background:var(--accent-blue)">✅ ${t('prds.mark_implemented')}</button>
+          <button class="btn-sm" onclick="updatePRDStatus('${prd._id}','rejected')" style="background:var(--accent-red)">❌ ${t('prds.reject')}</button>
         ` : ''}
-        <button class="btn-sm" onclick="editPRDFields('${prd._id}')" style="background:var(--accent-amber)">✏️ Editar</button>
+        <button class="btn-sm" onclick="editPRDFields('${prd._id}')" style="background:var(--accent-amber)">✏️ ${t('prds.edit')}</button>
       </div>
     `;
   } catch (e) {

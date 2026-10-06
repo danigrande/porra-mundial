@@ -19,6 +19,9 @@ test.beforeAll(async ({ request }) => {
 
 test("web", async ({ page }, testInfo) => {
   await setupDemoPage(page);
+  await page.addInitScript(() => {
+    try { localStorage.setItem("devLang", "en"); } catch { /* ignore */ }
+  });
   demoStart();
 
   // ── 0. Login ────────────────────────────────────────────────────────
@@ -77,7 +80,6 @@ test("web", async ({ page }, testInfo) => {
     await page.locator("#dev-key-input").press("Enter");
     await expect(page.locator("#dashboard")).toBeVisible();
     await beat(page, 700);
-    await clickItem(page, page.locator("#lang-toggle"));
 
     await clickItem(page, page.locator("#hamburger-btn"), { after: 300 });
     caption("Health, logs, evals, benchmarks, RAG, users and more — all in one panel.");

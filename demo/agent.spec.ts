@@ -22,6 +22,9 @@ test.beforeAll(async ({ request }) => {
 
 test("agent", async ({ page }, testInfo) => {
   await setupDemoPage(page);
+  await page.addInitScript(() => {
+    try { localStorage.setItem("devLang", "en"); } catch { /* ignore */ }
+  });
   demoStart();
 
   // The dashboard uses native confirm()/alert() for actions — auto-accept them.
@@ -78,9 +81,6 @@ test("agent", async ({ page }, testInfo) => {
   await keyInput.press("Enter");
   await expect(page.locator("#dashboard")).toBeVisible({ timeout: 30_000 });
   await beat(page, 600);
-
-  await clickItem(page, page.locator("#lang-toggle"));
-  await beat(page, 350);
 
   // ── 2. Feedback inbox ───────────────────────────────────────────────
   await clickItem(page, page.locator("#hamburger-btn"), { after: 300 });
