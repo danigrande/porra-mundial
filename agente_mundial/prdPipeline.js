@@ -90,11 +90,80 @@ Tu trabajo:
 Responde ÚNICAMENTE con un JSON final con esta estructura:
 {"status": "prd_generated|needs_clarification|low_priority", "feedbackSummary": "Resumen del feedback original", "priority": "P0|P1|P2|P3|P-PENDING", "title": "Título del PRD", "problemStatement": "Descripción del problema", "proposedSolution": "Solución propuesta", "userImpact": "Impacto en usuarios", "technicalNotes": "Notas técnicas", "acceptanceCriteria": ["Criterios"], "suggestedFiles": ["Archivos"], "message": "Mensaje adicional para el developer"}${LANGUAGE_RULE}`;
 
+// --- English versions (used when the feedback is in English) ---
+
+const STRATEGY_OWNER_PROMPT_EN = `You are the Strategy Owner for 'World Cup Pool 2026', a social sports-prediction platform.
+
+PRODUCT STRATEGY:
+1. Reliability of the scoring system
+2. Grow users and groups
+3. Increase chat usage and interaction
+4. Mobile user experience
+5. Social features (chat, groups, rankings)
+6. Performance and load times
+
+INSTRUCTIONS:
+You receive user feedback. You must:
+1. Classify the type (bug, feature, improvement, other)
+2. Assign a priority:
+   - P0: Critical bugs, scoring errors, system outages
+   - P1: Core features (login, groups, scores), important bugs
+   - P2: Improvements to existing features, UI/UX
+   - P3: Minor suggestions, nice-to-have
+   - P-PENDING: Ambiguous or incomplete feedback, or not enough detail to prioritise. Do NOT invent data.
+3. Write a short analysis of the feedback
+4. Justify the assigned priority
+
+Respond ONLY with valid JSON in this format:
+{"type": "bug|feature|improvement|other", "priority": "P0|P1|P2|P3|P-PENDING", "reason": "Short justification", "analysis": "Analysis of the feedback", "fuzzy": false}
+
+If the feedback is FUZZY (ambiguous, very short, no context), set priority="P-PENDING" and fuzzy=true.`;
+
+const PRD_WRITER_PROMPT_EN = `You are the PRD Writer for 'World Cup Pool 2026'. Your job is to produce formal Product Requirement Documents (PRD) from the Strategy Owner's analysis.
+
+You ONLY write PRDs for items with priority P0, P1 or P2. If the priority is P3 or P-PENDING, respond with JSON indicating it does not apply.
+
+PRD structure:
+{"title": "Descriptive title", "priority": "P0|P1|P2", "problemStatement": "Detailed description of the problem", "proposedSolution": "Proposed solution", "userImpact": "How it affects users", "technicalNotes": "Technical considerations", "acceptanceCriteria": ["Criterion 1", "Criterion 2"], "suggestedFiles": ["file1.js", "file2.js"]}
+
+IMPORTANT: Be specific. Acceptance criteria must be verifiable. Do not use vague language.`;
+
+const JUNO_PROMPT_EN = `You are Juno Orchestrator, the coordinating agent of the feedback-to-PRD pipeline.
+
+You receive:
+1. The original feedback
+2. The Strategy Owner's analysis/priority
+3. The generated PRD (if applicable)
+
+Your job:
+1. Validate that the PRD is coherent with the original feedback
+2. If the Strategy Owner marked fuzzy=true or priority=P-PENDING, do NOT generate a PRD. Return a clear message saying the feedback needs more information.
+3. If the PRD is good, consolidate everything into a final formatted response
+4. If you find inconsistencies between the analysis and the PRD, fix them
+
+Respond ONLY with a final JSON with this structure:
+{"status": "prd_generated|needs_clarification|low_priority", "feedbackSummary": "Summary of the original feedback", "priority": "P0|P1|P2|P3|P-PENDING", "title": "PRD title", "problemStatement": "Description of the problem", "proposedSolution": "Proposed solution", "userImpact": "Impact on users", "technicalNotes": "Technical notes", "acceptanceCriteria": ["Criteria"], "suggestedFiles": ["Files"], "message": "Extra message for the developer"}`;
+
 export const AGENT_PROMPTS = {
   strategyOwner: STRATEGY_OWNER_PROMPT,
   prdWriter: PRD_WRITER_PROMPT,
   juno: JUNO_PROMPT,
 };
+
+export const AGENT_PROMPTS_EN = {
+  strategyOwner: STRATEGY_OWNER_PROMPT_EN,
+  prdWriter: PRD_WRITER_PROMPT_EN,
+  juno: JUNO_PROMPT_EN,
+};
+
+/** Detección ligera de idioma: español si hay acentos/¿¡ o muchas palabras ES; si no, inglés. */
+export function detectLang(text) {
+  const t = ` ${String(text || '').toLowerCase()} `;
+  if (/[áéíóúñ¿¡]/.test(t)) return 'es';
+  const esWords = [' el ', ' la ', ' los ', ' las ', ' de ', ' que ', ' y ', ' para ', ' con ', ' una ', ' un ', ' del ', ' por ', ' mi ', ' me '];
+  const hits = esWords.filter((w) => t.includes(w)).length;
+  return hits >= 2 ? 'es' : 'en';
+}
 
 /** Extrae el primer objeto JSON de un texto (tolera fences de markdown). */
 export function parseJson(text) {
@@ -148,9 +217,19 @@ export async function runAgentPipeline(feedbackText, feedbackId = null) {
     return simulateAnalysis(feedbackText);
   }
 
+  // El idioma del feedback decide el juego de prompts (inglés o español).
+  const lang = detectLang(feedbackText);
+  const P = lang === 'en' ? AGENT_PROMPTS_EN : AGENT_PROMPTS;
+  const L = {
+    feedback: lang === 'en' ? 'ORIGINAL FEEDBACK' : 'FEEDBACK ORIGINAL',
+    analysis: lang === 'en' ? 'STRATEGY OWNER ANALYSIS' : 'ANÁLISIS DEL STRATEGY OWNER',
+    prd: lang === 'en' ? 'GENERATED PRD' : 'PRD GENERADO',
+    na: lang === 'en' ? '(not applicable)' : '(no aplica)',
+  };
+
   try {
     // 1. Strategy Owner — clasifica y prioriza
-    const ownerRaw = await callGroq(STRATEGY_OWNER_PROMPT, feedbackText, {
+    const ownerRaw = await callGroq(P.strategyOwner, feedbackText, {
       temperature: 0.2,
       maxTokens: 500,
     });
@@ -163,8 +242,8 @@ export async function runAgentPipeline(feedbackText, feedbackId = null) {
     // 2. PRD Writer — solo para P0–P2 y feedback no ambiguo
     let prd = null;
     if (!fuzzy && ['P0', 'P1', 'P2'].includes(priority)) {
-      const prdUser = `FEEDBACK ORIGINAL:\n${feedbackText}\n\nANÁLISIS DEL STRATEGY OWNER:\n${JSON.stringify(owner)}`;
-      const prdRaw = await callGroq(PRD_WRITER_PROMPT, prdUser, {
+      const prdUser = `${L.feedback}:\n${feedbackText}\n\n${L.analysis}:\n${JSON.stringify(owner)}`;
+      const prdRaw = await callGroq(P.prdWriter, prdUser, {
         temperature: 0.3,
         maxTokens: 1200,
       });
@@ -173,11 +252,11 @@ export async function runAgentPipeline(feedbackText, feedbackId = null) {
 
     // 3. Juno Orchestrator — valida y consolida
     const junoUser = [
-      `FEEDBACK ORIGINAL:\n${feedbackText}`,
-      `ANÁLISIS DEL STRATEGY OWNER:\n${JSON.stringify(owner)}`,
-      prd ? `PRD GENERADO:\n${JSON.stringify(prd)}` : 'PRD GENERADO: (no aplica)',
+      `${L.feedback}:\n${feedbackText}`,
+      `${L.analysis}:\n${JSON.stringify(owner)}`,
+      prd ? `${L.prd}:\n${JSON.stringify(prd)}` : `${L.prd}: ${L.na}`,
     ].join('\n\n');
-    const junoRaw = await callGroq(JUNO_PROMPT, junoUser, {
+    const junoRaw = await callGroq(P.juno, junoUser, {
       temperature: 0.2,
       maxTokens: 1200,
     });
