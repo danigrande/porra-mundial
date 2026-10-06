@@ -3602,5 +3602,10 @@ applyDataI18n();
 const __langToggle = document.getElementById('lang-toggle');
 if (__langToggle) __langToggle.textContent = currentLang === 'es' ? '🌐 EN' : '🌐 ES';
 
+// i18n.js (the web app's) rewrites [data-i18n] on DOMContentLoaded using its own
+// translations, which would leave this dashboard's keys unresolved. Re-apply
+// ours afterwards (our handler is registered later, so it runs last).
+document.addEventListener('DOMContentLoaded', applyDataI18n);
+
 // Data loads happen after authentication (see loadAll) — no unauthenticated
 // requests before the dev key is entered.
