@@ -27,6 +27,18 @@ export default defineConfig({
       },
     },
     {
+      name: "agent",
+      testMatch: "agent.spec.ts",
+      timeout: 300_000,
+      use: {
+        baseURL: process.env.WEB_BASE_URL || "https://porra-mundial-six.vercel.app",
+        locale: "en-US",
+        viewport: { width: 1920, height: 1080 },
+        video: { mode: "on", size: { width: 1920, height: 1080 } },
+        launchOptions: { slowMo: 320 },
+      },
+    },
+    {
       name: "mobile",
       testMatch: "mobile.spec.ts",
       timeout: 300_000,

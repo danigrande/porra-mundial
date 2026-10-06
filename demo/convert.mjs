@@ -18,6 +18,7 @@ const outDir = path.join(here, "demo-videos");
 const NAMES = [
   { match: "web", out: "worldcup-web", posterAt: "24", layout: "desktop" },
   { match: "mobile", out: "worldcup-mobile", posterAt: "20", layout: "mobile" },
+  { match: "agent", out: "worldcup-agent-prd", posterAt: "16", layout: "desktop", speed: 2.4 },
 ];
 
 const FRAME_PATH = path.join(here, "assets", "phone-frame.png");
@@ -100,7 +101,9 @@ for (const video of videos) {
   const captionsFile = path.join(videoDir, "captions.json");
   if (fs.existsSync(captionsFile)) {
     const { t0, tEnd, captions } = JSON.parse(fs.readFileSync(captionsFile, "utf8"));
-    const duration = probeDuration(ffprobe, mp4);
+    // `speed` compresses the clip in post; captions scale with the new duration.
+    const speed = key.speed && key.speed > 1 ? key.speed : 1;
+    const duration = probeDuration(ffprobe, mp4) / speed;
     const layout = LAYOUTS[key.layout] ?? LAYOUTS.desktop;
     const ass = buildAss({ captions, t0, tEnd, duration, ...layout });
     const assPath = path.join(videoDir, "captions.ass");
@@ -108,7 +111,8 @@ for (const video of videos) {
 
     const framed = `${mp4}.tmp.mp4`;
     const isMobile = key.layout === "mobile" && fs.existsSync(FRAME_PATH);
-    console.log(`  burning ${captions.length} captions (${key.layout})`);
+    const speedFilter = speed > 1 ? `setpts=PTS/${speed},` : "";
+    console.log(`  burning ${captions.length} captions (${key.layout}${speed > 1 ? `, ${speed}x` : ""})`);
 
     const args = isMobile
       ? [
@@ -116,7 +120,7 @@ for (const video of videos) {
           "-i", mp4,
           "-i", FRAME_PATH,
           "-filter_complex",
-          `[0:v]scale=390:844[vid];` +
+          `[0:v]${speedFilter}scale=390:844[vid];` +
             `color=c=0x0f172a:s=${layout.width}x${layout.height}[bg];` +
             `[bg][vid]overlay=124:84:shortest=1[t];` +
             `[t][1:v]overlay=110:70[t2];` +
@@ -129,7 +133,7 @@ for (const video of videos) {
           "-y",
           "-i", mp4,
           "-vf",
-          `pad=${layout.width}:${layout.height}:0:0:color=0x0b1220,` +
+          `${speedFilter}pad=${layout.width}:${layout.height}:0:0:color=0x0b1220,` +
             `drawbox=x=0:y=1078:w=${layout.width}:h=2:color=0xffffff@0.10:t=fill,` +
             `ass=captions.ass`,
           "-an",
