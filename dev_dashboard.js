@@ -179,7 +179,7 @@ const LANG = {
     'feedback.all': 'Todos',
     'feedback.unanalyzed': 'Sin analizar',
     'feedback.analyzed': 'Analizados',
-    'feedback.analyze_all': '🤖 Analizar todo (LangFlow)',
+    'feedback.analyze_all': '🤖 Analizar todo (IA)',
     'feedback.loading': 'Cargando feedback...',
     'feedback.refresh': 'Refrescar',
     'feedback.detail_title': '💬 Detalle de Feedback',
@@ -522,7 +522,7 @@ const LANG = {
     'feedback.all': 'All',
     'feedback.unanalyzed': 'Unanalyzed',
     'feedback.analyzed': 'Analyzed',
-    'feedback.analyze_all': '🤖 Analyze all (LangFlow)',
+    'feedback.analyze_all': '🤖 Analyze all (AI)',
     'feedback.loading': 'Loading feedback...',
     'feedback.refresh': 'Refresh',
     'feedback.detail_title': '💬 Feedback Detail',
@@ -1946,7 +1946,7 @@ async function loadFeedback() {
         <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${escapeHtml(fb.subject)}</td>
         <td>${fb.voteCount}</td>
         <td>
-          <button class="btn-sm" onclick="event.stopPropagation(); analyzeFeedback('${fb._id}')" style="background:var(--accent-cyan)" title="Analizar con LangFlow">🤖</button>
+          <button class="btn-sm" onclick="event.stopPropagation(); analyzeFeedback('${fb._id}')" style="background:var(--accent-cyan)" title="Analizar con IA">🤖</button>
           <button class="btn-sm" onclick="event.stopPropagation(); generatePRD('${fb._id}')" style="background:var(--accent-purple)" title="Generar PRD">📄</button>
         </td>
       </tr>`;
@@ -1998,14 +1998,14 @@ async function openFeedbackDetail(id) {
       </div>
       ${fb.analyzedAt ? `
         <div style="margin-bottom:1rem">
-          <div class="prompt-label">Análisis (LangFlow) <small style="color:var(--text-muted);font-weight:normal">· ${new Date(fb.analyzedAt).toLocaleString(locale)}</small></div>
+          <div class="prompt-label">Análisis (IA) <small style="color:var(--text-muted);font-weight:normal">· ${new Date(fb.analyzedAt).toLocaleString(locale)}</small></div>
           <div class="prompt-content system" style="max-height:none;white-space:pre-wrap">${escapeHtml(fb.analysis || 'Sin análisis')}</div>
         </div>
         <div style="margin-bottom:1rem">
           <div class="prompt-label">Razón de prioridad</div>
           <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.8rem;font-size:0.85rem">${escapeHtml(fb.priorityReason || '—')}</div>
         </div>
-      ` : '<div style="margin-bottom:1rem;color:var(--text-muted);font-style:italic">⏳ Pendiente de análisis por LangFlow</div>'}
+      ` : '<div style="margin-bottom:1rem;color:var(--text-muted);font-style:italic">⏳ Pendiente de análisis por IA</div>'}
 
       <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap">
         ${!fb.analyzedAt ? `<button class="btn-sm" onclick="analyzeFeedback('${fb._id}')" style="background:var(--accent-cyan)">🤖 Analizar ahora</button>` : ''}
@@ -2029,7 +2029,7 @@ async function analyzeFeedback(id) {
 }
 
 async function analyzeAllFeedback() {
-  if (!confirm('¿Analizar todo el feedback pendiente con LangFlow? Puede tomar varios segundos.')) return;
+  if (!confirm('¿Analizar todo el feedback pendiente con IA? Puede tomar varios segundos.')) return;
   try {
     const result = await devFetchPost('/feedback/analyze-all', {});
     alert(`✅ ${result.analyzed} feedbacks analizados`);

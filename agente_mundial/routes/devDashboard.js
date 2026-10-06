@@ -20,7 +20,7 @@ import { PRD } from '../models/PRD.js';
 import { EvalRun } from '../models/EvalRun.js';
 import { HumanReview } from '../models/HumanReview.js';
 import { GoldenEntry } from '../models/GoldenEntry.js';
-import { runLangFlow, extractPRDFromAnalysis } from '../langflowService.js';
+import { runAgentPipeline, extractPRDFromAnalysis } from '../prdPipeline.js';
 import config from '../config.js';
 import { setSimulatedTime, getTournamentState } from '../tournamentState.js';
 import { getRssStats } from '../rssFeedService.js';
@@ -1456,19 +1456,19 @@ router.get('/feedback', async (req, res) => {
 });
 
 // ==========================================
-// FEEDBACK — Análisis individual con LangFlow
+// FEEDBACK — Análisis individual con IA
 // ==========================================
 router.post('/feedback/:id/analyze', async (req, res) => {
   try {
     const fb = await Feedback.findById(req.params.id);
     if (!fb) return res.status(404).json({ error: 'Feedback no encontrado' });
 
-    const result = await runLangFlow(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
+    const result = await runAgentPipeline(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
 
-    fb.analysis = result.raw || result.parsed?.analysis || '';
-    fb.priority = result.parsed?.priority || 'P-PENDING';
-    fb.priorityReason = result.parsed?.reason || '';
-    fb.langflowRunId = result.raw?.substring(0, 50) || '';
+    fb.analysis = result.analysis?.analysis || result.raw || '';
+    fb.priority = result.analysis?.priority || 'P-PENDING';
+    fb.priorityReason = result.analysis?.reason || '';
+    fb.langflowRunId = result.simulated ? 'simulated' : 'native';
     fb.analyzedAt = new Date();
     await fb.save();
 
@@ -1487,10 +1487,11 @@ router.post('/feedback/analyze-all', async (req, res) => {
     const results = [];
 
     for (const fb of unanalyzed) {
-      const result = await runLangFlow(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
-      fb.analysis = result.raw || result.parsed?.analysis || '';
-      fb.priority = result.parsed?.priority || 'P-PENDING';
-      fb.priorityReason = result.parsed?.reason || '';
+      const result = await runAgentPipeline(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
+      fb.analysis = result.analysis?.analysis || result.raw || '';
+      fb.priority = result.analysis?.priority || 'P-PENDING';
+      fb.priorityReason = result.analysis?.reason || '';
+      fb.langflowRunId = result.simulated ? 'simulated' : 'native';
       fb.analyzedAt = new Date();
       await fb.save();
       results.push({ feedbackId: fb._id, priority: fb.priority });
@@ -1579,8 +1580,8 @@ router.post('/prds/generate/:feedbackId', async (req, res) => {
     if (!fb) return res.status(404).json({ error: 'Feedback no encontrado' });
     if (!fb.analyzedAt) return res.status(400).json({ error: 'El feedback debe analizarse antes de generar PRD' });
 
-    const analysisResult = await runLangFlow(`GENERATE PRD for: [${fb.priority}] ${fb.subject}: ${fb.detail}`, fb._id);
-    const extracted = await extractPRDFromAnalysis(analysisResult.raw);
+    const analysisResult = await runAgentPipeline(`[${fb.type}] ${fb.subject}: ${fb.detail}`, fb._id);
+    const extracted = analysisResult.prd || extractPRDFromAnalysis(analysisResult.raw);
 
     const prdData = extracted || {
       title: fb.subject,
@@ -1604,7 +1605,7 @@ router.post('/prds/generate/:feedbackId', async (req, res) => {
       acceptanceCriteria: prdData.acceptanceCriteria,
       suggestedFiles: prdData.suggestedFiles,
       rawAnalysis: analysisResult.raw,
-      langflowRunId: analysisResult.raw?.substring(0, 50) || '',
+      langflowRunId: analysisResult.simulated ? 'simulated' : 'native',
     });
 
     fb.prdGenerated = true;
