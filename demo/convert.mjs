@@ -32,7 +32,7 @@ if (outDir !== portfolioOutDir && !process.env.DEMO_OUT_DIR) {
 const NAMES = [
   { match: "web", out: "worldcup-web", posterAt: "24", layout: "desktop" },
   { match: "mobile", out: "worldcup-mobile", posterAt: "20", layout: "mobile" },
-  { match: "agent", out: "worldcup-agent-prd", posterAt: "18", layout: "desktop", speed: 1.3 },
+  { match: "agent", out: "worldcup-agent-prd", posterAt: "34", layout: "desktop", speed: 1.3 },
 ];
 
 const FRAME_PATH = path.join(here, "assets", "phone-frame.png");
