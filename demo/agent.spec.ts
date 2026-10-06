@@ -42,11 +42,11 @@ test("agent", async ({ page }, testInfo) => {
 
   await clickItem(page, page.locator(".fb-type-btn.feature"));
   await clickItem(page, subject);
-  await subject.pressSequentially("Aviso cuando un amigo me adelanta en el ranking", { delay: 10 });
+  await subject.pressSequentially("Notify me when a friend overtakes me", { delay: 10 });
   const detail = page.locator("#fbDetail");
   await clickItem(page, detail);
   await detail.pressSequentially(
-    "Me gustaria recibir un aviso cuando un amigo me supera en la clasificacion. Asi la porra se siente viva y entro a mirar mas a menudo.",
+    "I would like a heads-up when a friend passes me in the standings. It would make the pool feel alive and bring me back more often.",
     { delay: 3 },
   );
   await beat(page, 700);
