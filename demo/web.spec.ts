@@ -7,6 +7,7 @@ import {
   DEMO_EMAIL,
   DEMO_PASSWORD,
   demoEnd,
+  demoMarkReady,
   demoStart,
   gotoWeb,
   setupDemoPage,
@@ -25,7 +26,12 @@ test("web", async ({ page }, testInfo) => {
   demoStart();
 
   // ── 0. Login ────────────────────────────────────────────────────────
+  // Mark "ready" once the login page is up so the blank start-up is trimmed.
   await page.goto("/");
+  await expect(page.locator("#loginEmail")).toBeVisible({ timeout: 60_000 });
+  await beat(page, 300);
+  demoMarkReady();
+
   caption("Sign in with your email and your group.");
   await page.locator("#loginEmail").click();
   await page.locator("#loginEmail").pressSequentially(DEMO_EMAIL, { delay: 40 });
