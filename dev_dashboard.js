@@ -45,6 +45,11 @@ const LANG = {
     'health.predictions': 'Pronósticos',
     'health.summaries': 'Resúmenes',
     'health.error': 'Error cargando health',
+    'health.embeddings': 'Embeddings para RAG',
+    'health.clients': 'clientes conectados',
+    'health.see_details': 'Ver detalles',
+    'rag.card_total': 'Total Mensajes RAG',
+    'rag.card_users': 'Usuarios Únicos',
 
     'logs.title': '📋 Interacciones con IA',
     'logs.filter_type': 'Todos los tipos',
@@ -433,6 +438,11 @@ const LANG = {
     'health.predictions': 'Predictions',
     'health.summaries': 'Summaries',
     'health.error': 'Error loading health',
+    'health.embeddings': 'RAG embeddings',
+    'health.clients': 'clients connected',
+    'health.see_details': 'See details',
+    'rag.card_total': 'Total RAG Messages',
+    'rag.card_users': 'Unique Users',
 
     'logs.title': '📋 AI Interactions',
     'logs.filter_type': 'All types',
@@ -979,22 +989,22 @@ async function loadHealth() {
       <div class="card">
         <div class="card-label">HuggingFace</div>
         <div class="card-value ${s.huggingface.configured ? 'green' : 'amber'}">${s.huggingface.configured ? 'ACTIVE' : 'DISABLED'}</div>
-        <div class="card-sub">Embeddings para RAG</div>
+        <div class="card-sub">${t('health.embeddings')}</div>
       </div>
       <div class="card">
         <div class="card-label">Socket.IO Chat</div>
         <div class="card-value ${s.socketio?.active ? 'green' : 'red'}">${s.socketio?.active ? 'ACTIVE' : 'DOWN'}</div>
-        <div class="card-sub">${s.socketio?.clients || 0} clientes conectados</div>
+        <div class="card-sub">${s.socketio?.clients || 0} ${t('health.clients')}</div>
       </div>
       <div class="card">
         <div class="card-label">RSS Feeds</div>
         <div class="card-value ${s.rss?.enabled ? 'green' : 'red'}">${s.rss?.enabled ? `${s.rss.feeds} feeds / ${s.rss.pollIntervalMinutes}min` : 'DISABLED'}</div>
-        <div class="card-sub"><a href="#" onclick="switchTab('rss'); return false;" style="color:var(--accent-cyan)">Ver detalles →</a></div>
+        <div class="card-sub"><a href="#" onclick="switchTab('rss'); return false;" style="color:var(--accent-cyan)">${t('health.see_details')} →</a></div>
       </div>
       <div class="card">
         <div class="card-label">Tavily Web Search</div>
         <div class="card-value ${s.tavily?.configured ? 'green' : 'red'}">${s.tavily?.configured ? 'CONNECTED' : 'NO KEY'}</div>
-        <div class="card-sub"><a href="#" onclick="switchTab('websearch'); return false;" style="color:var(--accent-cyan)">Ver detalles →</a></div>
+        <div class="card-sub"><a href="#" onclick="switchTab('websearch'); return false;" style="color:var(--accent-cyan)">${t('health.see_details')} →</a></div>
       </div>
       <div class="card">
         <div class="card-label">Server Uptime</div>
@@ -1450,8 +1460,8 @@ async function loadRagStats() {
     let sendersHtml = data.bySender.slice(0, 5).map(s => `${s._id}: ${s.count}`).join(' · ');
 
     cards.innerHTML = `
-      <div class="card"><div class="card-label">Total Mensajes RAG</div><div class="card-value cyan">${data.totalMessages.toLocaleString()}</div></div>
-      <div class="card"><div class="card-label">Usuarios Únicos</div><div class="card-value purple">${data.bySender.length}</div></div>
+      <div class="card"><div class="card-label">${t('rag.card_total')}</div><div class="card-value cyan">${data.totalMessages.toLocaleString()}</div></div>
+      <div class="card"><div class="card-label">${t('rag.card_users')}</div><div class="card-value purple">${data.bySender.length}</div></div>
       <div class="card" style="grid-column: span 2"><div class="card-label">Top Senders</div><div class="card-sub" style="font-family:var(--mono);margin-top:0.5rem">${sendersHtml}</div></div>
     `;
   } catch (e) {
