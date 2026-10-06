@@ -359,6 +359,41 @@ const LANG = {
     'help.ds_edge': 'Edge?',
     'help.ds_transcreation': 'Transcreation?',
   },
+    'col.date': 'Fecha',
+    'col.user': 'Usuario',
+    'col.type': 'Tipo',
+    'col.priority': 'Prioridad',
+    'col.subject': 'Asunto',
+    'col.votes': 'Votos',
+    'col.actions': 'Acciones',
+    'col.name': 'Nombre',
+    'col.email': 'Email',
+    'col.groups': 'Grupos',
+    'col.predictions': 'Predicciones',
+    'col.player': 'Jugador',
+    'col.latency': 'Latencia',
+    'col.title': 'Título',
+    'col.time': 'Hora',
+    'col.source': 'Fuente',
+    'col.link': 'Enlace',
+    'col.results': 'Resultados',
+    'col.lang': 'Idioma',
+    'col.personality': 'Personalidad',
+    'col.members': 'Miembros',
+    'col.summaries': 'Resúmenes',
+    'col.admin': 'Admin',
+    'col.admin_of': 'Admin de',
+    'col.status': 'Estado',
+    'col.group': 'Grupo',
+    'col.quality': 'Calidad',
+    'col.correction': 'Corrección',
+    'col.confidence': 'Confianza',
+    'col.original': 'Original',
+    'col.fail': 'Fallo',
+    'col.attempts': 'Intentos',
+    'col.main_issue': 'Problema principal',
+    'evals.sub_purity': 'Threshold: 8/10 - sin mezcla de idiomas',
+    'evals.sub_quality': 'Threshold: 6/10 - humor y personalidad',
   en: {
     'page.title': '🛠️ World Agent — DevOps Panel',
     'header.title': '🛠️ World Agent',
@@ -701,6 +736,41 @@ const LANG = {
     'help.ds_mechanism': 'Expected Mechanism',
     'help.ds_edge': 'Edge?',
     'help.ds_transcreation': 'Transcreation?',
+    'col.date': 'Date',
+    'col.user': 'User',
+    'col.type': 'Type',
+    'col.priority': 'Priority',
+    'col.subject': 'Subject',
+    'col.votes': 'Votes',
+    'col.actions': 'Actions',
+    'col.name': 'Name',
+    'col.email': 'Email',
+    'col.groups': 'Groups',
+    'col.predictions': 'Predictions',
+    'col.player': 'Player',
+    'col.latency': 'Latency',
+    'col.title': 'Title',
+    'col.time': 'Time',
+    'col.source': 'Source',
+    'col.link': 'Link',
+    'col.results': 'Results',
+    'col.lang': 'Language',
+    'col.personality': 'Personality',
+    'col.members': 'Members',
+    'col.summaries': 'Summaries',
+    'col.admin': 'Admin',
+    'col.admin_of': 'Admin of',
+    'col.status': 'Status',
+    'col.group': 'Group',
+    'col.quality': 'Quality',
+    'col.correction': 'Correction',
+    'col.confidence': 'Confidence',
+    'col.original': 'Original',
+    'col.fail': 'Fail',
+    'col.attempts': 'Attempts',
+    'col.main_issue': 'Main issue',
+    'evals.sub_purity': 'Threshold: 8/10 - no language mixing',
+    'evals.sub_quality': 'Threshold: 6/10 - humour and personality',
   }
 };
 
@@ -959,7 +1029,7 @@ async function loadLogs() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Timestamp</th><th>Tipo</th><th>Jugador</th><th>Source</th><th>Tokens</th><th>Latencia</th><th>Status</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>Timestamp</th><th>' + t('col.type') + '</th><th>' + t('col.player') + '</th><th>Source</th><th>Tokens</th><th>' + t('col.latency') + '</th><th>Status</th></tr></thead><tbody>';
 
     data.logs.forEach(log => {
       const time = new Date(log.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -1090,12 +1160,12 @@ async function loadEvalsStats() {
       <div class="card">
         <div class="card-label">Avg Language Purity</div>
         <div class="card-value ${(ov.avgLangPurity || 0) >= 8 ? 'green' : 'red'}">${(ov.avgLangPurity || 0).toFixed(1)}/10</div>
-        <div class="card-sub">Threshold: 8/10 — sin mezcla de idiomas</div>
+        <div class="card-sub">${t('evals.sub_purity')}</div>
       </div>
       <div class="card">
         <div class="card-label">Avg Quality</div>
         <div class="card-value ${(ov.avgQuality || 0) >= 6 ? 'cyan' : 'amber'}">${(ov.avgQuality || 0).toFixed(1)}/10</div>
-        <div class="card-sub">Threshold: 6/10 — humor y personalidad</div>
+        <div class="card-sub">${t('evals.sub_quality')}</div>
       </div>
       <div class="card">
         <div class="card-label">Avg Intentos/Respuesta</div>
@@ -1107,7 +1177,7 @@ async function loadEvalsStats() {
     // Breakdown por idioma
     const langEl = document.getElementById('evals-lang-breakdown');
     if (data.byLanguage?.length) {
-      let html = '<table><thead><tr><th>Idioma</th><th>Total</th><th>Pass%</th><th>Lang</th><th>Quality</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>' + t('col.lang') + '</th><th>Total</th><th>Pass%</th><th>Lang</th><th>Quality</th></tr></thead><tbody>';
       data.byLanguage.forEach(row => {
         const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
         const color = pct >= 80 ? 'green' : pct >= 60 ? 'amber' : 'red';
@@ -1128,7 +1198,7 @@ async function loadEvalsStats() {
     // Breakdown por personalidad
     const persEl = document.getElementById('evals-personality-breakdown');
     if (data.byPersonality?.length) {
-      let html = '<table><thead><tr><th>Personalidad</th><th>Total</th><th>Pass%</th><th>Lang</th><th>Quality</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>' + t('col.personality') + '</th><th>Total</th><th>Pass%</th><th>Lang</th><th>Quality</th></tr></thead><tbody>';
       data.byPersonality.forEach(row => {
         const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
         const color = pct >= 80 ? 'green' : pct >= 60 ? 'amber' : 'red';
@@ -1429,7 +1499,7 @@ async function loadGroups() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Nombre</th><th>Admin</th><th>Miembros</th><th>Predicciones</th><th>Resúmenes</th><th>Acciones</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>' + t('col.name') + '</th><th>' + t('col.admin') + '</th><th>' + t('col.members') + '</th><th>' + t('col.predictions') + '</th><th>' + t('col.summaries') + '</th><th>' + t('col.actions') + '</th></tr></thead><tbody>';
     
     groups.forEach(g => {
       html += `<tr>
@@ -1468,7 +1538,7 @@ async function loadUsers() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Nombre</th><th>Email</th><th>Nickname</th><th>Grupos</th><th>Admin de</th><th>Predicciones</th><th>Mensajes</th><th>Acciones</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>' + t('col.name') + '</th><th>' + t('col.email') + '</th><th>Nickname</th><th>' + t('col.groups') + '</th><th>' + t('col.admin_of') + '</th><th>' + t('col.predictions') + '</th><th>Mensajes</th><th>' + t('col.actions') + '</th></tr></thead><tbody>';
     
     users.forEach(u => {
       const grupos = (u.groups || []).join(', ') || '<span style="color:var(--text-muted)">ninguno</span>';
@@ -1831,7 +1901,7 @@ async function loadRssStats() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Hora</th><th>Fuente</th><th>Título</th><th>Enlace</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>' + t('col.time') + '</th><th>' + t('col.source') + '</th><th>' + t('col.title') + '</th><th>' + t('col.link') + '</th></tr></thead><tbody>';
     data.recentBreaking.forEach(a => {
       const time = new Date(a.time).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
       html += `<tr>
@@ -1886,7 +1956,7 @@ async function loadWebSearchStats() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Hora</th><th>Query</th><th>Resultados</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>' + t('col.time') + '</th><th>Query</th><th>' + t('col.results') + '</th></tr></thead><tbody>';
     data.recentQueries.forEach(q => {
       const time = new Date(q.time).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
       html += `<tr>
@@ -1930,7 +2000,7 @@ async function loadFeedback() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Fecha</th><th>Usuario</th><th>Tipo</th><th>Prioridad</th><th>Asunto</th><th>Votos</th><th>Acciones</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>' + t('col.date') + '</th><th>' + t('col.user') + '</th><th>' + t('col.type') + '</th><th>' + t('col.priority') + '</th><th>' + t('col.subject') + '</th><th>' + t('col.votes') + '</th><th>' + t('col.actions') + '</th></tr></thead><tbody>';
 
     data.feedback.forEach(fb => {
       const time = new Date(fb.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -2087,7 +2157,7 @@ async function loadPRDs() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Fecha</th><th>Título</th><th>Prioridad</th><th>Estado</th><th>Feedback</th><th>Acciones</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>' + t('col.date') + '</th><th>' + t('col.title') + '</th><th>' + t('col.priority') + '</th><th>' + t('col.status') + '</th><th>Feedback</th><th>' + t('col.actions') + '</th></tr></thead><tbody>';
 
     data.prds.forEach(prd => {
       const time = new Date(prd.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -2939,7 +3009,7 @@ async function loadFeedbackStats() {
     // Breakdown por personalidad (from evals stats)
     const persEl = document.getElementById('feedback-stats-personality');
     if (data.byPersonality?.length) {
-      let html = '<table><thead><tr><th>Personalidad</th><th>Total</th><th>Pass%</th><th>Quality</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>' + t('col.personality') + '</th><th>Total</th><th>Pass%</th><th>Quality</th></tr></thead><tbody>';
       data.byPersonality.forEach(row => {
         const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
         html += `<tr>
@@ -2958,7 +3028,7 @@ async function loadFeedbackStats() {
     // Breakdown por idioma
     const langEl = document.getElementById('feedback-stats-language');
     if (data.byLanguage?.length) {
-      let html = '<table><thead><tr><th>Idioma</th><th>Total</th><th>Pass%</th><th>Quality</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>' + t('col.lang') + '</th><th>Total</th><th>Pass%</th><th>Quality</th></tr></thead><tbody>';
       data.byLanguage.forEach(row => {
         const pct = row.total > 0 ? Math.round((row.passed / row.total) * 100) : 0;
         html += `<tr>
@@ -2978,7 +3048,7 @@ async function loadFeedbackStats() {
     const evalsData = await devFetch(`/evals?page=${currentFeedbackStatsPage}&limit=20`);
     const tableEl = document.getElementById('feedback-stats-table');
     if (evalsData.logs?.length) {
-      let html = '<table><thead><tr><th>Fecha</th><th>Jugador</th><th>Personalidad</th><th>Lang</th><th>Quality</th><th>Status</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>' + t('col.date') + '</th><th>' + t('col.player') + '</th><th>' + t('col.personality') + '</th><th>Lang</th><th>Quality</th><th>Status</th></tr></thead><tbody>';
       evalsData.logs.forEach(log => {
         const time = new Date(log.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         const statusBadge = log.evalSkipped
@@ -3064,7 +3134,7 @@ async function loadCorrections() {
       return;
     }
 
-    let html = '<table><thead><tr><th>Fecha</th><th>Usuario</th><th>Grupo</th><th>Personalidad</th><th>Original</th><th>Corrección</th><th>Confianza</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>' + t('col.date') + '</th><th>' + t('col.user') + '</th><th>' + t('col.group') + '</th><th>' + t('col.personality') + '</th><th>' + t('col.original') + '</th><th>' + t('col.correction') + '</th><th>' + t('col.confidence') + '</th><th>' + t('col.status') + '</th><th>' + t('col.actions') + '</th></tr></thead><tbody>';
 
     data.corrections.forEach(c => {
       const time = new Date(c.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -3199,7 +3269,7 @@ async function loadRetention() {
     // Group comparison table
     const groupEl = document.getElementById('retention-group-table');
     if (data.groupComparison?.length) {
-      let html = '<table><thead><tr><th>Grupo</th><th>Calls</th><th>Active Users</th><th>Retention</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>' + t('col.group') + '</th><th>Calls</th><th>Active Users</th><th>Retention</th></tr></thead><tbody>';
       data.groupComparison.slice(0, 20).forEach(g => {
         const retColor = g.retentionRate >= 50 ? 'green' : g.retentionRate >= 30 ? 'amber' : 'red';
         html += `<tr>
@@ -3373,7 +3443,7 @@ function renderDiagPersonalityTable(data) {
   document.getElementById('diag-personality-table').innerHTML = `
     <table class="tbl" style="font-size:0.8rem;">
       <thead><tr>
-        <th>Personalidad</th><th>Pass Rate</th><th>Fallo</th><th>Intentos</th><th>Calidad</th><th>Problema principal</th>
+        <th>${t('col.personality')}</th><th>Pass Rate</th><th>${t('col.fail')}</th><th>${t('col.attempts')}</th><th>Calidad</th><th>${t('col.main_issue')}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
