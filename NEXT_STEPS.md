@@ -13,7 +13,7 @@
 ## Pendientes del agente (automático)
 
 - [ ] **Añadir `.env` a `.gitignore`** si no lo está ya (confirmado: `agente_mundial/.gitignore` ya lo excluye)
-- [ ] **Mejorar `langflowService.js`**: parsear la respuesta del flow para extraer correctamente el JSON del Juno Orchestrator
+- [ ] **Mejorar `langflowService.js`**: parsear la respuesta del flow para extraer correctamente el JSON del PM-Agent-Orchestrator
 - [ ] **Mejorar `extractPRDFromAnalysis()`**: adaptarlo al schema real de salida del flow
 - [ ] **Añadir autenticación al endpoint `/api/prds/approved`** para que solo el coding agent autorizado pueda leer PRDs
 - [ ] **Añadir paginación a `/api/prds/approved`** para cuando haya muchos PRDs aprobados

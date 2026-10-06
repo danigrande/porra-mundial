@@ -16,7 +16,7 @@ test("langflow", async ({ page }, testInfo) => {
   caption("The feedback-to-PRD flow, designed in LangFlow: three chained agents.");
   await beat(page, 3000);
 
-  caption("Strategy Owner → PRD Writer → Juno Orchestrator.");
+  caption("Strategy Owner → PRD Writer → PM-Agent-Orchestrator.");
   await beat(page, 3000);
 
   demoEnd(testInfo.outputPath("captions.json"));

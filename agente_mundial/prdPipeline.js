@@ -4,7 +4,7 @@
 // Implementa nativamente el pipeline de 3 agentes que originalmente se diseñó
 // como flow de LangFlow (prediccion mundial.json):
 //
-//   Feedback → Strategy Owner → PRD Writer → Juno Orchestrator → PRD
+//   Feedback → Strategy Owner → PRD Writer → PM-Agent-Orchestrator → PRD
 //
 // Se ejecuta con Groq (misma convención que groqEngine.js), sin servicio externo.
 // Si no hay GROQ_API_KEY o algo falla, degrada a un análisis simulado por keywords.
@@ -74,7 +74,7 @@ Estructura del PRD:
 
 IMPORTANTE: Sé específico. Los criterios de aceptación deben ser comprobables. No uses lenguaje vago.${LANGUAGE_RULE}`;
 
-const JUNO_PROMPT = `Eres Juno Orchestrator, el agente coordinador del pipeline de feedback a PRD.
+const ORCHESTRATOR_PROMPT = `Eres PM-Agent-Orchestrator, el agente coordinador del pipeline de feedback a PRD.
 
 Recibes:
 1. El feedback original
@@ -128,7 +128,7 @@ PRD structure:
 
 IMPORTANT: Be specific. Acceptance criteria must be verifiable. Do not use vague language.`;
 
-const JUNO_PROMPT_EN = `You are Juno Orchestrator, the coordinating agent of the feedback-to-PRD pipeline.
+const ORCHESTRATOR_PROMPT_EN = `You are PM-Agent-Orchestrator, the coordinating agent of the feedback-to-PRD pipeline.
 
 You receive:
 1. The original feedback
@@ -147,13 +147,13 @@ Respond ONLY with a final JSON with this structure:
 export const AGENT_PROMPTS = {
   strategyOwner: STRATEGY_OWNER_PROMPT,
   prdWriter: PRD_WRITER_PROMPT,
-  juno: JUNO_PROMPT,
+  orchestrator: ORCHESTRATOR_PROMPT,
 };
 
 export const AGENT_PROMPTS_EN = {
   strategyOwner: STRATEGY_OWNER_PROMPT_EN,
   prdWriter: PRD_WRITER_PROMPT_EN,
-  juno: JUNO_PROMPT_EN,
+  orchestrator: ORCHESTRATOR_PROMPT_EN,
 };
 
 /** Detección ligera de idioma: español si hay acentos/¿¡ o muchas palabras ES; si no, inglés. */
@@ -250,21 +250,21 @@ export async function runAgentPipeline(feedbackText, feedbackId = null) {
       prd = parseJson(prdRaw);
     }
 
-    // 3. Juno Orchestrator — valida y consolida
-    const junoUser = [
+    // 3. PM-Agent-Orchestrator — valida y consolida
+    const orchUser = [
       `${L.feedback}:\n${feedbackText}`,
       `${L.analysis}:\n${JSON.stringify(owner)}`,
       prd ? `${L.prd}:\n${JSON.stringify(prd)}` : `${L.prd}: ${L.na}`,
     ].join('\n\n');
-    const junoRaw = await callGroq(P.juno, junoUser, {
+    const orchRaw = await callGroq(P.orchestrator, orchUser, {
       temperature: 0.2,
       maxTokens: 1200,
     });
-    const juno = parseJson(junoRaw);
+    const orchestrator = parseJson(orchRaw);
 
     return {
-      raw: junoRaw || ownerRaw,
-      parsed: juno || { ...owner, ...(prd || {}) },
+      raw: orchRaw || ownerRaw,
+      parsed: orchestrator || { ...owner, ...(prd || {}) },
       analysis: owner,
       prd,
       success: true,

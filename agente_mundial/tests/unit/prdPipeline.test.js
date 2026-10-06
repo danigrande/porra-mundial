@@ -58,7 +58,7 @@ describe('PRD Pipeline (Feedback → PRD nativo)', () => {
   });
 
   describe('extractPRDFromAnalysis', () => {
-    it('convierte la salida de Juno en el modelo de PRD', () => {
+    it('convierte la salida del orquestador en el modelo de PRD', () => {
       const raw = JSON.stringify({
         status: 'prd_generated',
         priority: 'P1',
@@ -89,7 +89,7 @@ describe('PRD Pipeline (Feedback → PRD nativo)', () => {
     it('incluye los tres agentes del flow', () => {
       expect(AGENT_PROMPTS.strategyOwner).toContain('Strategy Owner');
       expect(AGENT_PROMPTS.prdWriter).toContain('PRD Writer');
-      expect(AGENT_PROMPTS.juno).toContain('Juno Orchestrator');
+      expect(AGENT_PROMPTS.orchestrator).toContain('PM-Agent-Orchestrator');
     });
 
     it('el Strategy Owner define la rúbrica P0–P3 y P-PENDING', () => {
