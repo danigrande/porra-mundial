@@ -371,3 +371,30 @@ export async function hideKeyboard(page: Page): Promise<void> {
     }
   });
 }
+
+/**
+ * Show a full-screen image overlay on top of the page (used to insert static
+ * artefacts — e.g. a design screenshot — into a recording).
+ */
+export async function showImageOverlay(page: Page, imagePath: string): Promise<void> {
+  const data = fs.readFileSync(imagePath).toString("base64");
+  await page.evaluate((b64) => {
+    const id = "__demo_img_overlay";
+    document.getElementById(id)?.remove();
+    const el = document.createElement("div");
+    el.id = id;
+    el.style.cssText =
+      "position:fixed;inset:0;z-index:2147483646;background:#0b1220;" +
+      "display:flex;align-items:center;justify-content:center;";
+    const img = document.createElement("img");
+    img.src = "data:image/png;base64," + b64;
+    img.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;";
+    el.appendChild(img);
+    document.body.appendChild(el);
+  }, data);
+}
+
+/** Remove the image overlay. */
+export async function hideImageOverlay(page: Page): Promise<void> {
+  await page.evaluate(() => document.getElementById("__demo_img_overlay")?.remove());
+}

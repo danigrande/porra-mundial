@@ -8,6 +8,7 @@ import {
   DEMO_GROUP,
   DEMO_PASSWORD,
   demoEnd,
+  demoMarkReady,
   demoStart,
   hideKeyboard,
   setupDemoPage,
@@ -70,10 +71,14 @@ test("mobile", async ({ page }, testInfo) => {
   demoStart();
 
   // ── 0. Login ────────────────────────────────────────────────────────
+  // Mark "ready" once the app has loaded so the blank start-up is trimmed.
   await page.goto("/");
-  caption("Agente Mundial — your World Cup pool, in your pocket.");
   const email = page.getByPlaceholder("Email");
   await expect(email).toBeVisible({ timeout: 90_000 });
+  await beat(page, 300);
+  demoMarkReady();
+
+  caption("Agente Mundial — your World Cup pool, in your pocket.");
   await clickItem(page, email);
   await email.pressSequentially(DEMO_EMAIL, { delay: 45 });
   await clickItem(page, page.getByLabel("Continue"));

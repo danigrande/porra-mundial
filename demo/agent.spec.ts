@@ -1,3 +1,6 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { expect, test } from "@playwright/test";
 
 import {
@@ -10,10 +13,14 @@ import {
   demoStart,
   endCut,
   gotoWeb,
+  hideImageOverlay,
   setupDemoPage,
+  showImageOverlay,
 } from "./helpers";
 
 const DEV_KEY = process.env.DEV_DASHBOARD_KEY || "agente-dev-2026";
+const here = path.dirname(fileURLToPath(import.meta.url));
+const LANGFLOW_PNG = path.resolve(here, "assets", "langflow-flow.png");
 
 test.beforeAll(async ({ request }) => {
   // Warm the free-tier backend so login and the agent pipeline stay snappy.
@@ -106,6 +113,11 @@ test("agent", async ({ page }, testInfo) => {
   await expect(page.locator("#feedback-table-body table")).toBeVisible({ timeout: 30_000 });
   await beat(page, 1200);
   endCut();
+  // The pipeline ran in the background — show how it was designed in LangFlow.
+  caption("The pipeline runs in the background — designed in LangFlow.");
+  await showImageOverlay(page, LANGFLOW_PNG);
+  await beat(page, 5200);
+  await hideImageOverlay(page);
   caption("Priority assigned — a scoring bug outranks a nice-to-have.");
   await beat(page, 2800);
 
@@ -135,7 +147,15 @@ test("agent", async ({ page }, testInfo) => {
   await beat(page, 1000);
   endCut();
   caption("Problem, proposed solution, impact, and testable acceptance criteria.");
-  await beat(page, 4200);
+  // Slow scroll through the PRD so it can be read.
+  const modal = page.locator(".modal");
+  await modal.hover();
+  await beat(page, 1000);
+  for (let i = 0; i < 7; i += 1) {
+    await page.mouse.wheel(0, 260);
+    await beat(page, 700);
+  }
+  await beat(page, 3000);
 
   // ── 6. Approve ──────────────────────────────────────────────────────
   caption("Nothing is built automatically — a human approves it.");
